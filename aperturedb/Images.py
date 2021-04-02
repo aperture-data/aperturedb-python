@@ -68,7 +68,7 @@ class Operations(object):
 
 class Images(object):
 
-    def __init__(self, db, batch_size=20):
+    def __init__(self, db, batch_size=100):
 
         self.db_connector = db
 
@@ -84,7 +84,6 @@ class Images(object):
         self.search_result = None
 
         self.batch_size = batch_size
-        self.max_cached_images = 1000
         self.total_cached_images = 0
         self.display_limit = 20
 
@@ -279,7 +278,7 @@ class Images(object):
 
         image = self.get_image_by_index(index)
         # Just decode the image from buffer
-        nparr = np.fromstring(image, np.uint8)
+        nparr = np.frombuffer(image, dtype=np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -337,7 +336,6 @@ class Images(object):
 
             for ent in entities:
                 self.images_ids.append(ent[self.img_id_prop])
-
         except:
             print("Error with search")
 
@@ -424,7 +422,7 @@ class Images(object):
             image    = self.get_image_by_index(i)
 
             # Just decode the image from buffer
-            nparr = np.fromstring(image, np.uint8)
+            nparr = np.frombuffer(image, dtype=np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             if show_bboxes:
