@@ -13,22 +13,6 @@ from matplotlib.patches import Polygon
 
 IMG_ID_PROP = "_uniqueid"
 
-def check_status(json):
-
-    status = 0
-    if (isinstance(json, dict)):
-        if ("status" not in json):
-            status = check_status(json[list(json.keys())[0]])
-        else:
-            status = json["status"]
-    elif (isinstance(json, (tuple, list))):
-        if ("status" not in json[0]):
-            status = check_status(json[0])
-        else:
-            status = json[0]["status"]
-
-    return status
-
 class Constraints(object):
 
     def __init__(self):
@@ -61,11 +45,14 @@ class Operations(object):
 
         self.operations_arr = []
 
+    def get_operations_arr(self):
+        return self.operations_arr
+
     def resize(self, width, height):
 
         op = {
             "type": "resize",
-            "width": width,
+            "width":  width,
             "height": height,
         }
 
@@ -103,63 +90,40 @@ class Images(object):
         self.total_cached_images = 0
         self.display_limit = 20
 
-    def total_results(self):
+    def __retrieve_batch(self, index):
 
-        return len(self.images_ids)
-
-    def get_image_by_index(self, index):
-
-        if index >= len(self.images_ids):
-            print("Index is incorrect")
-            return
-
-        try:
-            uniqueid = self.images_ids[index]
-
-            # If image is not retrieved, go and retrieve the batch
-            if not str(uniqueid) in self.images:
-                self.retrieve_batch(index)
-
-        except:
-            print("Cannot retrieve requested image")
-
-        if self.images[str(uniqueid)] == None:
-            print("Image was not retrieved")
-
-        return self.images[str(uniqueid)]
-
-    # This will retrieve the entire batch corresponding to image index.
-    def retrieve_batch(self, index):
+        '''
+        Retrieve the batch that contains the image with the specified index
+        '''
 
         # Implement the query to retrieve images
         # for that batch
 
         total_batches = math.ceil(len(self.images_ids) / self.batch_size)
-        batch_id = int(math.floor(index / self.batch_size))
+        batch_id      = int(math.floor(index / self.batch_size))
 
         start = batch_id * self.batch_size
-        end   = start + self.batch_size
+        end   = min(start + self.batch_size, len(self.images_ids))
 
         q = []
 
         for idx in range(start, end):
 
-            if idx >= len(self.images_ids):
-                break
-
-            find = { "FindImage": {
+            find = {
+                "FindImage": {
                     "constraints": {
                         "_uniqueid": ["==", self.images_ids[idx]]
-                    }
+                    },
                 }
             }
+
+            if self.operations and len(self.operations.operations_arr) > 0:
+                find["FindImage"]["operations"] = self.operations.operations_arr
             q.append(find)
 
         res, imgs = self.db_connector.query(q)
 
-        status = check_status(res)
-
-        if status != 0:
+        if not self.db_connector.last_query_ok():
             print(self.db_connector.get_last_response_str())
             return
 
@@ -171,32 +135,9 @@ class Images(object):
             uniqueid = self.images_ids[idx]
             self.images[str(uniqueid)] = imgs[i]
 
-    def get_np_image_by_index(self, index):
+    def __get_bounding_boxes_polygons(self, index):
 
-        image = self.get_image_by_index(index)
-        # Just decode the image from buffer
-        nparr = np.fromstring(image, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        return image
-
-    def get_bboxes_by_index(self, index):
-
-        if not self.images_bboxes:
-            self.retrieve_bounding_boxes()
-
-        try:
-            bboxes = self.images_bboxes[str(self.images_ids[index])]
-        except:
-            print("Cannot retrieve requested bboxes")
-
-        return bboxes
-
-    def get_bounding_boxes_polygons(self, index):
-
-        self.retrieve_bounding_boxes(index)
+        self.__retrieve_bounding_boxes(index)
 
         ret_poly = []
 
@@ -231,9 +172,9 @@ class Images(object):
 
         return polygons
 
-    def display_segmentation(self, index):
+    def __display_segmentation(self, index):
 
-        polygons = self.get_bounding_boxes_polygons(index)
+        polygons = self.__get_bounding_boxes_polygons(index)
 
         image = self.get_image_by_index(index)
 
@@ -264,7 +205,7 @@ class Images(object):
             p = PatchCollection(polygon_points, facecolor='none', edgecolors=color, linewidths=2)
             ax.add_collection(p)
 
-    def retrieve_bounding_boxes(self, index):
+    def __retrieve_bounding_boxes(self, index):
 
         self.images_bboxes = {}
 
@@ -312,6 +253,50 @@ class Images(object):
         except:
             print(self.db_connector.get_last_response_str())
 
+    def total_results(self):
+
+        return len(self.images_ids)
+
+    def get_image_by_index(self, index):
+
+        if index >= len(self.images_ids):
+            print("Index is incorrect")
+            return
+
+        uniqueid = self.images_ids[index]
+
+        # If image is not retrieved, go and retrieve the batch
+        if not str(uniqueid) in self.images:
+            self.__retrieve_batch(index)
+
+        if self.images[str(uniqueid)] == None:
+            print("Image was not retrieved")
+
+        return self.images[str(uniqueid)]
+
+    def get_np_image_by_index(self, index):
+
+        image = self.get_image_by_index(index)
+        # Just decode the image from buffer
+        nparr = np.fromstring(image, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        return image
+
+    def get_bboxes_by_index(self, index):
+
+        if not self.images_bboxes:
+            self.__retrieve_bounding_boxes()
+
+        try:
+            bboxes = self.images_bboxes[str(self.images_ids[index])]
+        except:
+            print("Cannot retrieve requested bboxes")
+
+        return bboxes
+
 
     # A new search will throw away the results of any previous search
     def search(self, constraints=None, operations=None, format=None, limit=None):
@@ -329,9 +314,6 @@ class Images(object):
 
         if constraints:
             query["FindImage"]["constraints"] = constraints.constraints
-
-        if operations:
-            query["FindImage"]["operations"] = operations.operations_arr
 
         if format:
             query["FindImage"]["format"] = format
@@ -446,7 +428,7 @@ class Images(object):
 
             if show_bboxes:
                 if not str(uniqueid) in self.images_bboxes:
-                    self.retrieve_bounding_boxes(i)
+                    self.__retrieve_bounding_boxes(i)
 
                 bboxes = self.images_bboxes[uniqueid]["bboxes"]
                 tags   = self.images_bboxes[uniqueid]["tags"]
@@ -476,7 +458,7 @@ class Images(object):
                 plt.imshow(image), plt.axis("off")
 
             elif show_segmentation:
-                self.display_segmentation(i)
+                self.__display_segmentation(i)
 
             else:
 

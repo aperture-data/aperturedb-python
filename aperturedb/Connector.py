@@ -41,10 +41,14 @@ class Connector(object):
                 wait_time *= BACKOFF_MULTIPLIER
                 sys.stderr.write("Retry: " + str(retries) + "\n")
                 sys.stderr.write(self.connector.get_last_response_str())
+                sys.stderr.write("\n")
 
             if retries > n_retries:
-                print("Warning: Query failed after", n_retries, "retries.")
-                print(self.connector.get_last_response_str())
+                error_msg  = "Warning: Query failed after " + str(n_retries)
+                error_msg += " retries\n"
+                sys.stderr.write(error_msg)
+                sys.stderr.write(self.connector.get_last_response_str())
+                sys.stderr.write("\n")
                 break
 
             start = time.time()
