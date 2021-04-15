@@ -23,6 +23,10 @@ class Connector(object):
 
         self.connector.disconnect()
 
+    def create_new_connection(self):
+
+        return Connector(self.ip, self.port)
+
     def query(self, q, blobs=[], n_retries=0):
 
         if n_retries == 0:
