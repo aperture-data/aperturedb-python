@@ -116,7 +116,7 @@ class ImageLoader:
         print("Avg Query Throughput (images/s)):",
             1 / np.mean(times) * self.batchsize * self.numthreads)
 
-        print("Total time(s):", ingestion_time)
+        print("Total time(s):", self.ingestion_time)
         print("Overall insertion throughput (img/s):",
-            len(generator) / ingestion_time)
+            len(generator) / self.ingestion_time)
         print("===========================================")
