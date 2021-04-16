@@ -5,22 +5,15 @@ from threading import Thread
 import numpy as np
 
 from aperturedb import Status
+from aperturedb import ParallelLoader
 
-# TODO: This can be a general parallel/batch loader.
-# Right now it is for images, but it can be easily generalized.
-class ImageLoader:
+class ImageLoader(ParallelLoader.ParallelLoader):
 
-    def __init__(self, db):
+    def __init__(self, db, dry_run=False):
 
-        self.db = db
-        self.batchsize  = 1
-        self.numthreads = 1
+        super().__init__(db, dry_run=dry_run)
 
-        self.times_arr = []
-        self.dry_run = False
-        self.ingestion_time = 0
-
-    def insert_batch(self, db, image_data):
+    def generate_batch(self, image_data):
 
         q = []
         blobs = []
@@ -47,62 +40,7 @@ class ImageLoader:
             blobs.append(data["img_blob"])
             q.append(ai)
 
-        if not self.dry_run:
-            r,b = db.query(q, blobs, n_retries=10)
-            query_time = db.get_last_query_time()
-        else:
-            query_time = 1
-
-        # append is thread-safe
-        self.times_arr.append(query_time)
-
-    def insert_worker(self, generator, start, end):
-
-        db = self.db.create_new_connection()
-
-        image_data = []
-
-        for i in range(start, end):
-
-            image_data.append(generator[i])
-
-            if len(image_data) >= self.batchsize:
-                self.insert_batch(db, image_data)
-                image_data = []
-
-        if len(image_data) > 0:
-            self.insert_batch(db, image_data)
-            image_data = []
-
-    def ingest_images(self, generator, batchsize=1, numthreads=1, stats=False, dry_run=False):
-
-        self.times_arr  = []
-        self.batchsize  = batchsize
-        self.numthreads = numthreads
-        self.dry_run    = dry_run
-
-        elements_per_thread = math.ceil(len(generator) / self.numthreads)
-
-        thread_arr = []
-        for i in range(self.numthreads):
-            idx_start = i * elements_per_thread
-            idx_end   = min(idx_start + elements_per_thread, len(generator))
-
-            thread_add = Thread(target=self.insert_worker,
-                                args=(generator, idx_start, idx_end))
-            thread_arr.append(thread_add)
-
-        start_time = time.time()
-        for thread in thread_arr:
-            thread.start()
-
-        for thread in thread_arr:
-            thread.join()
-
-        self.ingestion_time = time.time() - start_time
-
-        if stats:
-            self.print_stats()
+        return q, blobs
 
     def print_stats(self):
 
