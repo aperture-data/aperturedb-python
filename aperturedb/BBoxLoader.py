@@ -84,10 +84,8 @@ class BBoxGeneratorCSV():
     def validate(self):
 
         self.header = list(self.df.columns.values)
-        print(self.header)
 
         if self.header[1] != HEADER_X_POS:
-            print(self.header[1])
             raise Exception("Error with CSV file field: " + HEADER_X_POS)
         if self.header[2] != HEADER_Y_POS:
             raise Exception("Error with CSV file field: " + HEADER_Y_POS)
@@ -95,10 +93,6 @@ class BBoxGeneratorCSV():
             raise Exception("Error with CSV file field: " + HEADER_WIDTH)
         if self.header[4] != HEADER_HEIGHT:
             raise Exception("Error with CSV file field: " + HEADER_HEIGHT)
-
-    def load(self, batchsize=1, numthreads=1, stats=False):
-
-        super().ingest(self, batchsize, numthreads, stats)
 
 class BBoxLoader(ParallelLoader.ParallelLoader):
 
