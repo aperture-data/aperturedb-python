@@ -13,19 +13,26 @@ class ParallelLoader:
     def __init__(self, db, dry_run=False):
 
         self.db = db
+        self.dry_run = dry_run
+
+        # Default Values
         self.batchsize  = 1
         self.numthreads = 1
+        self.n_retries = 10
 
+        self.total_elements = 0
         self.times_arr = []
-        self.dry_run = dry_run
         self.ingestion_time = 0
+        self.error_counter  = 0
 
     def insert_batch(self, db, data):
 
         q, blobs = self.generate_batch(data)
 
         if not self.dry_run:
-            r,b = db.query(q, blobs, n_retries=10)
+            r,b = db.query(q, blobs, n_retries=self.n_retries)
+            if not db.last_query_ok():
+                self.error_counter +=1
             query_time = db.get_last_query_time()
         else:
             query_time = 1
@@ -56,13 +63,14 @@ class ParallelLoader:
         self.times_arr  = []
         self.batchsize  = batchsize
         self.numthreads = numthreads
+        self.total_elements = len(generator)
 
-        elements_per_thread = math.ceil(len(generator) / self.numthreads)
+        elements_per_thread = math.ceil(self.total_elements / self.numthreads)
 
         thread_arr = []
         for i in range(self.numthreads):
             idx_start = i * elements_per_thread
-            idx_end   = min(idx_start + elements_per_thread, len(generator))
+            idx_end   = min(idx_start + elements_per_thread, self.total_elements)
 
             thread_add = Thread(target=self.insert_worker,
                                 args=(generator, idx_start, idx_end))
@@ -91,5 +99,6 @@ class ParallelLoader:
 
         print("Total time(s):", self.ingestion_time)
         print("Overall insertion throughput (elements/s):",
-            len(generator) / self.ingestion_time)
+            self.total_elements / self.ingestion_time)
+        print("Total errors encountered(s):", self.error_counter)
         print("===========================================")

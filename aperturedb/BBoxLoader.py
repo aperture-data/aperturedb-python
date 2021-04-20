@@ -44,7 +44,7 @@ class BBoxGeneratorCSV():
     def __init__(self, filename):
 
         self.df = pd.read_csv(filename)
-        print(self.df)
+        self.df = self.df.astype('object')
 
         self.validate()
 
@@ -77,8 +77,6 @@ class BBoxGeneratorCSV():
                 properties[key] = self.df.loc[idx, key]
             data[BBOX_PROPERTIES] = properties
 
-        # TODO: Implement connection to arbitraty objects
-
         return data
 
     def validate(self):
@@ -104,10 +102,16 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
 
         q = []
 
+        ref_counter = 1
         for data in bbox_data:
 
+            # TODO we could reuse image references within the batch
+            # instead of creating a new find for every image.
+            img_ref = ref_counter
+            ref_counter += 1
             fi = {
                 "FindImage": {
+                    "_ref": img_ref,
                 }
             }
 
@@ -122,24 +126,23 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
 
             ai = {
                 "AddBoundingBox": {
+                    "image": img_ref,
                     "rectangle": {
                         "x": data["x"],
                         "y": data["y"],
                         "w": data["w"],
                         "h": data["h"],
-                    }
+                    },
                 }
             }
 
             if "properties" in data:
                 ai["AddBoundingBox"]["properties"] = data[BBOX_PROPERTIES]
 
-            # TODO Add connections to arbitrary objects.
-
             q.append(ai)
 
-            if self.dry_run:
-                print(q)
+        if self.dry_run:
+            print(q)
 
         return q, []
 

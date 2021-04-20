@@ -9,6 +9,21 @@ from aperturedb import ParallelLoader
 
 class ImageLoader(ParallelLoader.ParallelLoader):
 
+    '''
+        ApertureDB Image Loader.
+
+        This class is to be used in combination with a "generator".
+        The generator must be an iterable object that generated "image_data"
+        elements:
+            image_data = {
+                "properties":  properties,
+                "constraints": constraints,
+                "operations":  operations,
+                "format":      format ("jpg", "png", etc),
+                "img_blob":    (bytes),
+            }
+    '''
+
     def __init__(self, db, dry_run=False):
 
         super().__init__(db, dry_run=dry_run)
@@ -27,12 +42,12 @@ class ImageLoader(ParallelLoader.ParallelLoader):
 
             if "properties" in data:
                 ai["AddImage"]["properties"] = data["properties"]
-            if "format" in data:
-                ai["AddImage"]["format"] = data["format"]
             if "constraints" in data:
                 ai["AddImage"]["constraints"] = data["constraints"]
             if "operations" in data:
                 ai["AddImage"]["operations"] = data["operations"]
+            if "format" in data:
+                ai["AddImage"]["format"] = data["format"]
 
             if len(data["img_blob"]) == 0:
                 raise Exception("Image cannot be empty")

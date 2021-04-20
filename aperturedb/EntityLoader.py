@@ -61,8 +61,6 @@ class EntityGeneratorCSV():
                 constraints[key[len(CONTRAINTS_PREFIX):]] = ["==", self.df.loc[idx, key]]
             data[CONSTRAINTS] = constraints
 
-        # TODO: Implement connection to arbitraty objects
-
         return data
 
     def validate(self):
@@ -73,6 +71,19 @@ class EntityGeneratorCSV():
             raise Exception("Error with CSV file field: " + HEADER_X_POS)
 
 class EntityLoader(ParallelLoader.ParallelLoader):
+
+    '''
+        ApertureDB Entity Loader.
+
+        This class is to be used in combination with a "generator".
+        The generator must be an iterable object that generated "entity_data"
+        elements:
+            entity_data = {
+                "class":       entity_class,
+                "properties":  properties,
+                "constraints": constraints,
+            }
+    '''
 
     def __init__(self, db, dry_run=False):
 
@@ -96,12 +107,10 @@ class EntityLoader(ParallelLoader.ParallelLoader):
             if CONSTRAINTS in data:
                 ae["AddEntity"][CONSTRAINTS] = data[CONSTRAINTS]
 
-            # TODO Add connections to arbitrary objects.
-
             q.append(ae)
 
-            if self.dry_run:
-                print(q)
+        if self.dry_run:
+            print(q)
 
         return q, []
 
