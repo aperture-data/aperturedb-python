@@ -51,7 +51,11 @@ class Connector(object):
                 error_msg  = "Warning: Query failed after " + str(n_retries)
                 error_msg += " retries\n"
                 sys.stderr.write(error_msg)
+                sys.stderr.write("Response: \n")
                 sys.stderr.write(self.connector.get_last_response_str())
+                sys.stderr.write("\n")
+                sys.stderr.write("Query: \n")
+                sys.stderr.write(str(q))
                 sys.stderr.write("\n")
                 break
 
