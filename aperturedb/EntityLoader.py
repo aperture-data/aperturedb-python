@@ -7,13 +7,14 @@ import pandas as pd
 
 from aperturedb import Status
 from aperturedb import ParallelLoader
+from aperturedb import CSVParser
 
 ENTITY_CLASS      = "EntityClass"
 CONTRAINTS_PREFIX = "constraint_"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
-class EntityGeneratorCSV():
+class EntityGeneratorCSV(CSVParser.CSVParser):
 
     '''
         ApertureDB Entity Data loader.
@@ -30,18 +31,10 @@ class EntityGeneratorCSV():
 
     def __init__(self, filename):
 
-        self.df = pd.read_csv(filename)
-
-        self.validate()
-
-        self.df = self.df.astype('object')
+        super().__init__(filename)
 
         self.props_keys       = [x for x in self.header[1:] if not x.startswith(CONTRAINTS_PREFIX) ]
         self.constraints_keys = [x for x in self.header[1:] if x.startswith(CONTRAINTS_PREFIX) ]
-
-    def __len__(self):
-
-        return len(self.df.index)
 
     def __getitem__(self, idx):
 
@@ -49,26 +42,13 @@ class EntityGeneratorCSV():
             "class": self.df.loc[idx, ENTITY_CLASS]
         }
 
-        if len(self.props_keys) > 0:
-            properties = {}
-            for key in self.props_keys:
-                # Handle Date data type
-                if key.startswith("date:"):
-                    prop = key[len("date:"):] # remove prefix
-                    properties[prop] = {"_date": self.df.loc[idx, key]}
-                else:
-                    properties[key] = self.df.loc[idx, key]
+        properties  = self.parse_properties(self.df, idx)
+        constraints = self.parse_constraints(self.df, idx)
+
+        if properties:
             data[PROPERTIES] = properties
 
-        if len(self.constraints_keys) > 0:
-            constraints = {}
-            for key in self.constraints_keys:
-                if key.startswith("constraint_date:"):
-                    prop = key[len("constraint_date:"):] # remove prefix
-                    constraints[prop] = ["==", {"_date": self.df.loc[idx, key]} ]
-                else:
-                    prop = key[len("constraint_"):] # remove "prefix
-                    constraints[prop] = ["==", self.df.loc[idx, key]]
+        if constraints:
             data[CONSTRAINTS] = constraints
 
         return data
