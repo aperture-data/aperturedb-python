@@ -36,9 +36,36 @@ def generate_person_csv(multiplier):
 
     df.to_csv("input/persons.adb.csv", index=False)
 
+def generate_images_csv(multiplier):
+
+    path    = "input/images/"
+    imgs    = [path + str(x).zfill(4) + ".jpg" for x in range(1,19)] * multiplier
+    license = [x for x in range(10)] * multiplier
+
+    images  = list(product(imgs, license))
+
+    ids      = [int(1000000000* random.random()) for i in range(len(images))]
+    age      = [int(100* random.random())       for i in range(len(images))]
+    height   = [float(200* random.random())     for i in range(len(images))]
+    dog      = [ x > 100 for x in height ]
+    date_cap = [ datetime.now().isoformat()     for x in range(len(images)) ]
+
+    df = pd.DataFrame(images, columns=['filename', 'license'])
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:date_captured"] = date_cap
+    df["constraint_id"] = ids
+
+    df = df.sort_values("id")
+
+    df.to_csv("input/images.adb.csv", index=False)
+
 def main(params):
 
     generate_person_csv(params.multiplier)
+    generate_images_csv(int(params.multiplier/2))
 
 def get_args():
     obj = argparse.ArgumentParser()
