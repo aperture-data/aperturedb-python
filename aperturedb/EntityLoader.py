@@ -52,13 +52,23 @@ class EntityGeneratorCSV():
         if len(self.props_keys) > 0:
             properties = {}
             for key in self.props_keys:
-                properties[key] = self.df.loc[idx, key]
+                # Handle Date data type
+                if key.startswith("date:"):
+                    prop = key[len("date:"):] # remove prefix
+                    properties[prop] = {"_date": self.df.loc[idx, key]}
+                else:
+                    properties[key] = self.df.loc[idx, key]
             data[PROPERTIES] = properties
 
         if len(self.constraints_keys) > 0:
             constraints = {}
             for key in self.constraints_keys:
-                constraints[key[len(CONTRAINTS_PREFIX):]] = ["==", self.df.loc[idx, key]]
+                if key.startswith("constraint_date:"):
+                    prop = key[len("constraint_date:"):] # remove prefix
+                    constraints[prop] = ["==", {"_date": self.df.loc[idx, key]} ]
+                else:
+                    prop = key[len("constraint_"):] # remove "prefix
+                    constraints[prop] = ["==", self.df.loc[idx, key]]
             data[CONSTRAINTS] = constraints
 
         return data
@@ -125,4 +135,4 @@ class EntityLoader(ParallelLoader.ParallelLoader):
             1 / np.mean(times) * self.batchsize * self.numthreads)
 
         print("Total time(s):", self.ingestion_time)
-        print("===========================================")
+        print("============================================")
