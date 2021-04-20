@@ -22,9 +22,9 @@ class EntityGeneratorCSV():
             EntityClass,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
 
         Example csv file:
-        EntityClass,name,lastname,age,
-        Person,John,Salchi,69
-        Person,Johna,Salchi,63
+        EntityClass,name,lastname,age,id,constaint_id
+        Person,John,Salchi,69,321423532,321423532
+        Person,Johna,Salchi,63,42342522,42342522
         ...
     '''
 
