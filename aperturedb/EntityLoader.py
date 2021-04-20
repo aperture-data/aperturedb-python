@@ -10,7 +10,6 @@ from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
 ENTITY_CLASS      = "EntityClass"
-CONTRAINTS_PREFIX = "constraint_"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
@@ -33,8 +32,8 @@ class EntityGeneratorCSV(CSVParser.CSVParser):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CONTRAINTS_PREFIX) ]
-        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
 
     def __getitem__(self, idx):
 

@@ -3,12 +3,15 @@ import time
 from threading import Thread
 
 import numpy as np
+import cv2
 
 from aperturedb import Status
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
-HEADER_PATH="path"
+HEADER_PATH="filename"
+PROPERTIES  = "properties"
+CONSTRAINTS = "constraints"
 
 class ImageGeneratorCSV(CSVParser.CSVParser):
 
@@ -16,26 +19,35 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         ApertureDB Image Data loader.
         Expects a csv file with the following columns:
 
-            path,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
+            filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
 
         Example csv file:
-        path,id,label,constaint_id
+        filename,id,label,constaint_id
         /home/user/file1.jpg,321423532,dog,321423532
         /home/user/file2.jpg,42342522,cat,42342522
         ...
     '''
 
-    def __init__(self, filename):
+    def __init__(self, filename, check_image=True):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CONTRAINTS_PREFIX) ]
-        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CONTRAINTS_PREFIX) ]
+        self.check_image = check_image
+
+        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
 
     def __getitem__(self, idx):
 
+        filename = self.df.loc[idx, HEADER_PATH]
+        img_ok, img = self.load_image(filename)
+
+        if not img_ok:
+            Exception("Error loading image: " + filename )
+
         data = {
-            "class": self.df.loc[idx, HEADER_PATH]
+            "img_blob": img,
+            "format": "jpg"
         }
 
         properties  = self.parse_properties(self.df, idx)
@@ -48,6 +60,28 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
             data[CONSTRAINTS] = constraints
 
         return data
+
+    def load_image(self, filename):
+
+        if self.check_image:
+            try:
+                a = cv2.imread(filename)
+                if a.size <= 0:
+                    print("IMAGE SIZE ERROR:", filename)
+            except:
+                print("IMAGE ERROR:", filename)
+                raise
+
+        try:
+            fd = open(filename, "rb")
+            buff = fd.read()
+            fd.close()
+            return True, buff
+        except:
+            print("IMAGE ERROR:", filename)
+            raise
+
+        return False, None
 
     def validate(self):
 
@@ -98,8 +132,9 @@ class ImageLoader(ParallelLoader.ParallelLoader):
             if "format" in data:
                 ai["AddImage"]["format"] = data["format"]
 
-            if len(data["img_blob"]) == 0:
-                raise Exception("Image cannot be empty")
+            if "img_blob" not in data or len(data["img_blob"]) == 0:
+                print("WARNING: Skipping empty image.")
+                continue
 
             blobs.append(data["img_blob"])
             q.append(ai)
@@ -120,5 +155,5 @@ class ImageLoader(ParallelLoader.ParallelLoader):
 
         print("Total time(s):", self.ingestion_time)
         print("Overall insertion throughput (img/s):",
-            len(generator) / self.ingestion_time)
+            self.total_elements / self.ingestion_time)
         print("===========================================")
