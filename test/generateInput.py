@@ -6,49 +6,45 @@ import pandas as pd
 
 from itertools import product
 
-def generate_person_csv():
+def generate_person_csv(multiplier):
 
-	names    = ["James", "Luis", "Sole", "Maria", "Tom", "Xavi", "Dimitris", "King"]
-	lastname = ["Ramirez", "Berlusconi", "Copola", "Tomson", "Ferro"]
-	persons  = list(product(names, lastname))
+    names     = ["James", "Luis", "Sole", "Maria", "Tom", "Xavi", "Dimitris", "King"]
+    lastnames = ["Ramirez", "Berlusconi", "Copola", "Tomson", "Ferro"]
+    names     = names     * multiplier
+    lastnames = lastnames * multiplier
 
-	entity   = [ "Person"                     for x in range(len(persons)) ]
-	ids		 = [int(1000000* random.random()) for i in range(len(persons))]
-	age		 = [int(100* random.random())     for i in range(len(persons))]
-	height   = [float(200* random.random())   for i in range(len(persons))]
-	dog      = [ x > 100 for x in height ]
-	birth    = [ datetime.now().isoformat()   for x in range(len(persons)) ]
+    persons  = list(product(names, lastnames))
 
-	df = pd.DataFrame(persons, columns=['name', 'lastname'])
-	df["EntityClass"] = entity
-	df = df.reindex(["EntityClass", "name", "lastname"], axis=1)
-	df["id"]       = ids
-	df["age"]      = age
-	df["height"]   = height
-	df["has_dog"]  = dog
-	df["date:dob"] = birth
-	df["constraint_id"] = ids
+    entity   = [ "Person"                       for x in range(len(persons))]
+    ids      = [int(1000000000* random.random()) for i in range(len(persons))]
+    age      = [int(100* random.random())       for i in range(len(persons))]
+    height   = [float(200* random.random())     for i in range(len(persons))]
+    dog      = [ x > 100 for x in height ]
+    birth    = [ datetime.now().isoformat()     for x in range(len(persons)) ]
 
-	df = df.sort_values("id")
+    df = pd.DataFrame(persons, columns=['name', 'lastname'])
+    df["EntityClass"] = entity
+    df = df.reindex(["EntityClass", "name", "lastname"], axis=1)
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:dob"] = birth
+    df["constraint_id"] = ids
 
-	df.to_csv("input/persons.adb.csv", index=False)
-	print(df)
+    df = df.sort_values("id")
+
+    df.to_csv("input/persons.adb.csv", index=False)
 
 def main(params):
 
-	generate_person_csv()
-
+    generate_person_csv(params.multiplier)
 
 def get_args():
     obj = argparse.ArgumentParser()
 
     # Run Config
-    obj.add_argument('-numthreads', type=int, default=32)
-    obj.add_argument('-batchsize',  type=int, default=100)
-
-    # Input CSV
-    obj.add_argument('-in_csv_file', type=str,
-                     default="../data/hotspots/hotspots_bboxes.adb.csv")
+    obj.add_argument('-multiplier', type=int, default=10)
 
     params = obj.parse_args()
 

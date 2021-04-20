@@ -1,42 +1,58 @@
 import argparse
 import time
+import unittest
 
 import dbinfo
 
 from aperturedb import Connector, EntityLoader
+from aperturedb import Status
 
-def main(params):
+class TestLoader(unittest.TestCase):
 
-    db = Connector.Connector(params.db_host, params.db_port)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    print("Creating Generator from CSV...")
-    generator = EntityLoader.EntityGeneratorCSV(params.in_csv_file)
-    print("Generator done.")
+        # ApertureDB Server Info
+        self.db_host = dbinfo.DB_HOST
+        self.db_port = dbinfo.DB_PORT
 
-    loader = EntityLoader.EntityLoader(db)
-    loader.ingest(generator, batchsize=params.batchsize,
-                             numthreads=params.numthreads,
-                             stats=True)
+        # Config params
+        self.batchsize  = 99
+        self.numthreads = 31
 
-def get_args():
-    obj = argparse.ArgumentParser()
+        db_up = False
+        attempts = 0
+        while(not db_up):
+            try:
+                db = Connector.Connector(self.db_host, self.db_port)
+                db_up = True
+                if (attempts > 0):
+                    print("Connection to ApertureDB successful.")
+            except:
+                print("Attempt", attempts,
+                      "to connect to ApertureDB failed, retying...")
+                attempts += 1
+                time.sleep(1) # sleeps 1 second
 
-    # Database config
-    obj.add_argument('-db_host', type=str, default=dbinfo.DB_HOST)
-    obj.add_argument('-db_port', type=int, default=dbinfo.DB_PORT)
+            if attempts > 10:
+                print("Failed to connect to ApertureDB after 10 attempts")
+                exit()
 
-    # Run Config
-    obj.add_argument('-numthreads', type=int, default=32)
-    obj.add_argument('-batchsize',  type=int, default=100)
+    def test_entityLoader(self):
 
-    # Input CSV
-    obj.add_argument('-in_csv_file', type=str,
-                     default="input/persons.adb.csv")
+        db = Connector.Connector(self.db_host, self.db_port)
 
-    params = obj.parse_args()
+        in_csv_file = "./input/persons.adb.csv"
 
-    return params
+        # print("Creating Generator from CSV...")
+        generator = EntityLoader.EntityGeneratorCSV(in_csv_file)
+        # print("Generator done.")
 
-if __name__ == "__main__":
-    args = get_args()
-    main(args)
+        loader = EntityLoader.EntityLoader(db)
+        print("\n")
+        loader.ingest(generator, batchsize=self.batchsize,
+                                 numthreads=self.numthreads,
+                                 stats=True)
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(generator), dbstatus.count_entities("Person"))
