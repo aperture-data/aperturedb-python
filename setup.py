@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aperturedb",
-    version="0.0.6",
+    version="0.0.7",
     description="ApertureDB Client Module",
     install_requires=['vdms', 'scikit-image', 'image',
-                      'opencv-python', 'numpy', 'matplotlib'],
+                      'opencv-python', 'numpy', 'matplotlib', 'pandas'],
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/aperture-data/aperturedb-python",
