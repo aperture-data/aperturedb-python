@@ -44,6 +44,30 @@ class Status(object):
 
         return total_images
 
+    def count_bboxes(self, constraints={}):
+
+        q = [{
+            "FindBoundingBox": {
+                "results": {
+                    "count": "",
+                    "blob": False
+                }
+            }
+        }]
+
+        if constraints:
+            q[0]["FindBoundingBox"]["constraints"] = constraints
+
+        try:
+            res, blobs = self.connector.query(q)
+            total_connections = res[0]["FindBoundingBox"]["count"]
+        except:
+            total_connections = 0
+            print(self.connector.get_last_response_str())
+            raise
+
+        return total_connections
+
     def count_entities(self, entity_class, constraints={}):
 
         q = [{
