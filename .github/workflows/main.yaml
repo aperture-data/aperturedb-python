@@ -48,4 +48,4 @@ jobs:
       - name: Build Notebook Docker
         run: |
           cd docker
-          bash
+          bash build_images.sh
