@@ -7,6 +7,7 @@ import pandas as pd
 
 from aperturedb import Status
 from aperturedb import ParallelLoader
+from aperturedb import CSVParser
 
 HEADER_X_POS  = "x_pos"
 HEADER_Y_POS  = "y_pos"
@@ -14,9 +15,8 @@ HEADER_WIDTH  = "width"
 HEADER_HEIGHT = "height"
 IMG_KEY_PROP  = "img_key_prop"
 IMG_KEY_VAL   = "img_key_value"
-BBOX_PROPERTIES  = "properties"
 
-class BBoxGeneratorCSV():
+class BBoxGeneratorCSV(CSVParser.CSVParser):
 
     '''
         ApertureDB BBox Data loader.
@@ -43,27 +43,21 @@ class BBoxGeneratorCSV():
 
     def __init__(self, filename):
 
-        self.df = pd.read_csv(filename)
-        self.df = self.df.astype('object')
+        super().__init__(filename)
 
-        self.validate()
-
-        self.bbox_props_keys = [x for x in self.header[5:] if not x.startswith("connect_") ]
+        self.props_keys       = [x for x in self.header[5:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[5:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
 
         self.img_key = self.header[0]
 
-    def __len__(self):
-
-        return len(self.df.index)
-
     def __getitem__(self, idx):
 
-        data = {}
-
-        data["x"] = int(self.df.loc[idx, HEADER_X_POS])
-        data["y"] = int(self.df.loc[idx, HEADER_Y_POS])
-        data["w"] = int(self.df.loc[idx, HEADER_WIDTH])
-        data["h"] = int(self.df.loc[idx, HEADER_HEIGHT])
+        data = {
+            "x": int(self.df.loc[idx, HEADER_X_POS]),
+            "y": int(self.df.loc[idx, HEADER_Y_POS]),
+            "w": int(self.df.loc[idx, HEADER_WIDTH]),
+            "h": int(self.df.loc[idx, HEADER_HEIGHT]),
+        }
 
         val = self.df.loc[idx, self.img_key]
 
@@ -71,11 +65,14 @@ class BBoxGeneratorCSV():
             data[IMG_KEY_PROP] = self.img_key
             data[IMG_KEY_VAL]  = val
 
-        if len(self.bbox_props_keys) > 0:
-            properties = {}
-            for key in self.bbox_props_keys:
-                properties[key] = self.df.loc[idx, key]
-            data[BBOX_PROPERTIES] = properties
+        properties  = self.parse_properties(self.df, idx)
+        constraints = self.parse_constraints(self.df, idx)
+
+        if properties:
+            data[CSVParser.PROPERTIES] = properties
+
+        if constraints:
+            data[CSVParser.CONSTRAINTS] = constraints
 
         return data
 
@@ -137,7 +134,7 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
             }
 
             if "properties" in data:
-                ai["AddBoundingBox"]["properties"] = data[BBOX_PROPERTIES]
+                ai["AddBoundingBox"]["properties"] = data[CSVParser.PROPERTIES]
 
             q.append(ai)
 
@@ -157,4 +154,4 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
             1 / np.mean(times) * self.batchsize * self.numthreads)
 
         print("Total time(s):", self.ingestion_time)
-        print("===========================================")
+        print("=================================================")
