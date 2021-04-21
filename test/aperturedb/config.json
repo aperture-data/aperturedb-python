@@ -1,0 +1,18 @@
+// ApertureDB Server
+// This is the run-time config file
+// Sets database paths and other parameters
+{
+    // Network
+    "port": 55555,
+    "max_simultaneous_clients": 100,
+
+    // Database paths
+    "db_root_path": "db",
+
+    "pmgd_disk_sync_option": "never_sync",
+
+    // Serialize graph access
+    "serialize_graph_access": true,
+
+    "more-info": "ApertureDB Server"
+}
