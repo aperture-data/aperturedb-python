@@ -1,5 +1,7 @@
 import argparse
 import random
+import math
+
 from datetime import datetime
 
 import pandas as pd
@@ -36,6 +38,8 @@ def generate_person_csv(multiplier):
 
     df.to_csv("input/persons.adb.csv", index=False)
 
+    return df
+
 def generate_images_csv(multiplier):
 
     path    = "input/images/"
@@ -62,10 +66,55 @@ def generate_images_csv(multiplier):
 
     df.to_csv("input/images.adb.csv", index=False)
 
+    return df
+
+def generate_connections_csv(persons, images):
+
+    connections  = list(product(images["id"][::100], persons["id"][::100]))
+
+    connect   = [ "has_image"   for x in range(len(connections))]
+    confidence  = [ random.random()   for x in range(len(connections))]
+
+    df = pd.DataFrame(connections, columns=['VD:IMG@id', 'Person@id'])
+    df["ConnectionClass"] = connect
+    df = df.reindex(["ConnectionClass", 'VD:IMG@id', 'Person@id'], axis=1)
+
+    df["confidence"]      = confidence
+
+    df.to_csv("input/connections-persons-images.adb.csv", index=False)
+
+def generate_bboxes_csv(images):
+
+    images  = images["id"]
+
+    x   = [ 0   for x in range(len(images))]
+    y   = [ 0   for x in range(len(images))]
+    w   = [ 100 for x in range(len(images))]
+    h   = [ 150 for x in range(len(images))]
+
+    labels = ["dog", "cat", "catdog", "rocko", "philip", "froghead", "drog"]
+
+    confidence  = [ random.random()   for x in range(len(images))]
+    label       = [ labels[math.floor(random.random()*len(labels))]  for x in range(len(images))]
+
+    df = pd.DataFrame(images, columns=['id'])
+
+    df["x_pos"] = x
+    df["y_pos"] = y
+    df["width"] = w
+    df["height"] = h
+    df["confidence"] = confidence
+    df["label"]      = label
+
+    df = df.sort_values("id")
+    df.to_csv("input/bboxes.adb.csv", index=False)
+
 def main(params):
 
-    generate_person_csv(params.multiplier)
-    generate_images_csv(int(params.multiplier/2))
+    persons = generate_person_csv(params.multiplier)
+    images  = generate_images_csv(int(params.multiplier/2))
+    connect = generate_connections_csv(persons, images)
+    bboxes  = generate_bboxes_csv(images)
 
 def get_args():
     obj = argparse.ArgumentParser()
