@@ -95,6 +95,8 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
 
         super().__init__(db, dry_run=dry_run)
 
+        self.type = "bbox"
+
     def generate_batch(self, bbox_data):
 
         q = []
@@ -142,16 +144,3 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
             print(q)
 
         return q, []
-
-    def print_stats(self):
-
-        print("====== ApertureDB BoundingBox Loader Stats ======")
-
-        times = np.array(self.times_arr)
-        print("Avg Query time(s):", np.mean(times))
-        print("Query time std:", np.std (times))
-        print("Avg Query Throughput (bbox/s)):",
-            1 / np.mean(times) * self.batchsize * self.numthreads)
-
-        print("Total time(s):", self.ingestion_time)
-        print("=================================================")

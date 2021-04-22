@@ -88,7 +88,7 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         self.header = list(self.df.columns.values)
 
         if self.header[0] != HEADER_PATH:
-            raise Exception("Error with CSV file field: path. Must be first field")
+            raise Exception("Error with CSV file field: filename. Must be first field")
 
 class ImageLoader(ParallelLoader.ParallelLoader):
 
@@ -110,6 +110,8 @@ class ImageLoader(ParallelLoader.ParallelLoader):
     def __init__(self, db, dry_run=False):
 
         super().__init__(db, dry_run=dry_run)
+
+        self.type = "image"
 
     def generate_batch(self, image_data):
 
@@ -156,4 +158,5 @@ class ImageLoader(ParallelLoader.ParallelLoader):
         print("Total time(s):", self.ingestion_time)
         print("Overall insertion throughput (img/s):",
             self.total_elements / self.ingestion_time)
+        print("Total errors encountered(s):", self.error_counter)
         print("===========================================")

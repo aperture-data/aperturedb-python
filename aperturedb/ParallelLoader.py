@@ -2,6 +2,8 @@ import math
 import time
 from threading import Thread
 
+from progressbar import ProgressBar
+
 import numpy as np
 
 class ParallelLoader:
@@ -14,6 +16,8 @@ class ParallelLoader:
 
         self.db = db
         self.dry_run = dry_run
+
+        self.type = "element"
 
         # Default Values
         self.batchsize  = 1
@@ -32,7 +36,7 @@ class ParallelLoader:
         if not self.dry_run:
             r,b = db.query(q, blobs, n_retries=self.n_retries)
             if not db.last_query_ok():
-                self.error_counter +=1
+                self.error_counter += 1
             query_time = db.get_last_query_time()
         else:
             query_time = 1
@@ -40,11 +44,14 @@ class ParallelLoader:
         # append is thread-safe
         self.times_arr.append(query_time)
 
-    def insert_worker(self, generator, start, end):
+    def insert_worker(self, thid, generator, start, end):
 
         db = self.db.create_new_connection()
 
         data_for_query = []
+
+        if thid == 0 and self.stats:
+            pb = ProgressBar.ProgressBar("loader_progress.log")
 
         for i in range(start, end):
 
@@ -53,16 +60,22 @@ class ParallelLoader:
             if len(data_for_query) >= self.batchsize:
                 self.insert_batch(db, data_for_query)
                 data_for_query = []
+                if thid == 0 and self.stats:
+                    pb.update((i - start) / (end - start))
 
         if len(data_for_query) > 0:
             self.insert_batch(db, data_for_query)
             data_for_query = []
+
+        if thid == 0 and self.stats:
+            pb.update(1)
 
     def ingest(self, generator, batchsize=1, numthreads=1, stats=False):
 
         self.times_arr  = []
         self.batchsize  = batchsize
         self.numthreads = numthreads
+        self.stats      = stats
         self.total_elements = len(generator)
 
         elements_per_thread = math.ceil(self.total_elements / self.numthreads)
@@ -73,7 +86,7 @@ class ParallelLoader:
             idx_end   = min(idx_start + elements_per_thread, self.total_elements)
 
             thread_add = Thread(target=self.insert_worker,
-                                args=(generator, idx_start, idx_end))
+                                args=(i, generator, idx_start, idx_end))
             thread_arr.append(thread_add)
 
         start_time = time.time()
@@ -85,7 +98,7 @@ class ParallelLoader:
 
         self.ingestion_time = time.time() - start_time
 
-        if stats:
+        if self.stats:
             self.print_stats()
 
     def print_stats(self):
@@ -98,7 +111,8 @@ class ParallelLoader:
             1 / np.mean(times) * self.numthreads)
 
         print("Total time(s):", self.ingestion_time)
-        print("Overall insertion throughput (elements/s):",
+        msg = "(" + self.type + "/s):"
+        print("Overall insertion throughput", msg,
             self.total_elements / self.ingestion_time)
-        print("Total errors encountered(s):", self.error_counter)
+        print("Total errors encountered:", self.error_counter)
         print("===========================================")

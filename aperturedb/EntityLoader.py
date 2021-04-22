@@ -9,9 +9,9 @@ from aperturedb import Status
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
-ENTITY_CLASS      = "EntityClass"
-PROPERTIES  = "properties"
-CONSTRAINTS = "constraints"
+ENTITY_CLASS = "EntityClass"
+PROPERTIES   = "properties"
+CONSTRAINTS  = "constraints"
 
 class EntityGeneratorCSV(CSVParser.CSVParser):
 
@@ -57,7 +57,7 @@ class EntityGeneratorCSV(CSVParser.CSVParser):
         self.header = list(self.df.columns.values)
 
         if self.header[0] != ENTITY_CLASS:
-            raise Exception("Error with CSV file field: " + HEADER_X_POS)
+            raise Exception("Error with CSV file field: " + ENTITY_CLASS)
 
 class EntityLoader(ParallelLoader.ParallelLoader):
 
@@ -77,6 +77,8 @@ class EntityLoader(ParallelLoader.ParallelLoader):
     def __init__(self, db, dry_run=False):
 
         super().__init__(db, dry_run=dry_run)
+
+        self.type = "entity"
 
     def generate_batch(self, entity_data):
 
@@ -102,16 +104,3 @@ class EntityLoader(ParallelLoader.ParallelLoader):
             print(q)
 
         return q, []
-
-    def print_stats(self):
-
-        print("====== ApertureDB Entity Loader Stats ======")
-
-        times = np.array(self.times_arr)
-        print("Avg Query time(s):", np.mean(times))
-        print("Query time std:", np.std (times))
-        print("Avg Query Throughput (entities/s)):",
-            1 / np.mean(times) * self.batchsize * self.numthreads)
-
-        print("Total time(s):", self.ingestion_time)
-        print("============================================")
