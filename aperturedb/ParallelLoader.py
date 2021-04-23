@@ -29,7 +29,7 @@ class ParallelLoader:
         self.ingestion_time = 0
         self.error_counter  = 0
 
-    def insert_batch(self, db, data):
+    def do_batch(self, db, data):
 
         q, blobs = self.generate_batch(data)
 
@@ -44,7 +44,7 @@ class ParallelLoader:
         # append is thread-safe
         self.times_arr.append(query_time)
 
-    def insert_worker(self, thid, generator, start, end):
+    def worker(self, thid, generator, start, end):
 
         db = self.db.create_new_connection()
 
@@ -58,13 +58,13 @@ class ParallelLoader:
             data_for_query.append(generator[i])
 
             if len(data_for_query) >= self.batchsize:
-                self.insert_batch(db, data_for_query)
+                self.do_batch(db, data_for_query)
                 data_for_query = []
                 if thid == 0 and self.stats:
                     pb.update((i - start) / (end - start))
 
         if len(data_for_query) > 0:
-            self.insert_batch(db, data_for_query)
+            self.do_batch(db, data_for_query)
             data_for_query = []
 
         if thid == 0 and self.stats:
@@ -85,7 +85,7 @@ class ParallelLoader:
             idx_start = i * elements_per_thread
             idx_end   = min(idx_start + elements_per_thread, self.total_elements)
 
-            thread_add = Thread(target=self.insert_worker,
+            thread_add = Thread(target=self.worker,
                                 args=(i, generator, idx_start, idx_end))
             thread_arr.append(thread_add)
 

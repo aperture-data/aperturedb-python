@@ -9,7 +9,7 @@ from aperturedb import Status
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
-HEADER_PATH="filename"
+HEADER_PATH = "filename"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
@@ -70,7 +70,6 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
                     print("IMAGE SIZE ERROR:", filename)
             except:
                 print("IMAGE ERROR:", filename)
-                raise
 
         try:
             fd = open(filename, "rb")
@@ -79,7 +78,6 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
             return True, buff
         except:
             print("IMAGE ERROR:", filename)
-            raise
 
         return False, None
 
