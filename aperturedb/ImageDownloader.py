@@ -4,6 +4,7 @@ import os
 from os import path
 
 import cv2
+import numpy as np
 
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
@@ -106,9 +107,11 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
                 if a.size <= 0:
                     print("Downloaded image size error:", url)
                     os.remove(filename)
+                    self.error_counter += 1
             except:
                 print("Downloaded image cannot be decoded:", url)
                 os.remove(filename)
+                self.error_counter += 1
         else:
             print("NOTFOUND:", url)
 
@@ -130,3 +133,19 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
 
         if thid == 0 and self.stats:
             pb.update(1)
+
+    def print_stats(self):
+
+        print("====== ApertureDB ImageDownloader Stats ======")
+
+        times = np.array(self.times_arr)
+        print("Avg image download time(s):", np.mean(times))
+        print("Img download time std:", np.std (times))
+        print("Avg download throughput (images/s)):",
+            1 / np.mean(times) * self.numthreads)
+
+        print("Total time(s):", self.ingestion_time)
+        print("Overall throughput (img/s):",
+            self.total_elements / self.ingestion_time)
+        print("Total errors encountered:", self.error_counter)
+        print("=============================================")

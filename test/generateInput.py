@@ -42,8 +42,9 @@ def generate_person_csv(multiplier):
 
 def generate_images_csv(multiplier):
 
+    multiplier = multiplier // 2
     path    = "input/images/"
-    imgs    = [path + str(x).zfill(4) + ".jpg" for x in range(1,19)] * multiplier
+    imgs    = [path + str(x).zfill(4) + ".jpg" for x in range(200)] * multiplier
     license = [x for x in range(10)] * multiplier
 
     images  = list(product(imgs, license))

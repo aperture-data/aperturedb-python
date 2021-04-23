@@ -143,7 +143,12 @@ class ImageLoader(ParallelLoader.ParallelLoader):
 
     def print_stats(self):
 
+        # This is to make sure that the connect has not timed-out
+        # after the loaded completed.
+        self.db = self.db.create_new_connection()
+
         status = Status.Status(self.db)
+
         print("====== ApertureDB Image Loader Stats ======")
         print("Images in the db:", status.count_images())
 
@@ -156,5 +161,7 @@ class ImageLoader(ParallelLoader.ParallelLoader):
         print("Total time(s):", self.ingestion_time)
         print("Overall insertion throughput (img/s):",
             self.total_elements / self.ingestion_time)
-        print("Total errors encountered(s):", self.error_counter)
+        print("Total errors encountered:", self.error_counter)
+        print("Elements added:",
+            self.total_elements - self.error_counter * self.batchsize)
         print("===========================================")

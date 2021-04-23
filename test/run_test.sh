@@ -15,8 +15,12 @@ docker run         \
     -p 80:80       \
     -t -d          \
     --name $DOCKERIMGNAME \
-    --mount src=/home/remis/ad/py-aperturedb/test/aperturedb,target="/aperturedb/",type=bind \
+    --mount src=$PWD/aperturedb,target="/aperturedb/",type=bind \
     aperturedata/aperturedb:v0.5.2-webui
+
+echo "Downloading images..."
+python3 download_images.py          # Test ImageDownloader
+echo "Done downloading images."
 
 echo "Generating input files..."
 python3 generateInput.py
