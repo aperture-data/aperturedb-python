@@ -22,12 +22,14 @@ class ParallelLoader:
         # Default Values
         self.batchsize  = 1
         self.numthreads = 1
-        self.n_retries = 10
+        self.n_retries  = 1
 
         self.total_elements = 0
         self.times_arr = []
         self.ingestion_time = 0
         self.error_counter  = 0
+
+        self.loader_filename = "loader_progress.log"
 
     def do_batch(self, db, data):
 
@@ -51,7 +53,7 @@ class ParallelLoader:
         data_for_query = []
 
         if thid == 0 and self.stats:
-            pb = ProgressBar.ProgressBar("loader_progress.log")
+            pb = ProgressBar.ProgressBar(self.loader_filename)
 
         for i in range(start, end):
 
