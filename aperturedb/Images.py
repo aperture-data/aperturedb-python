@@ -11,8 +11,6 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
-IMG_ID_PROP = "_uniqueid"
-
 class Constraints(object):
 
     def __init__(self):
@@ -89,6 +87,9 @@ class Images(object):
         self.max_cached_images = 1000
         self.total_cached_images = 0
         self.display_limit = 20
+
+        self.img_id_prop     = "_uniqueid"
+        self.bbox_label_prop = "label"
 
     def __retrieve_batch(self, index):
 
@@ -231,7 +232,7 @@ class Images(object):
                 "_ref": 2,
                  "results": {
                     "blob": False,
-                    "list": ["_coordinates", "category_name"],
+                    "list": ["_coordinates", self.bbox_label_prop],
                 }
             }
         }]
@@ -243,7 +244,7 @@ class Images(object):
             tags   = []
             for bbox in res[1]["FindBoundingBox"]["entities"]:
                 bboxes.append(bbox["_coordinates"])
-                tags.append(bbox["category_name"])
+                tags.append(bbox[self.bbox_label_prop])
 
             uniqueid_str = str(uniqueid)
             self.images_bboxes[uniqueid_str] = {}
@@ -324,7 +325,7 @@ class Images(object):
             query["FindImage"]["results"]["limit"] = limit
 
         query["FindImage"]["results"]["list"] = []
-        query["FindImage"]["results"]["list"].append(IMG_ID_PROP)
+        query["FindImage"]["results"]["list"].append(self.img_id_prop)
 
         # Only retrieve images when needed
         query["FindImage"]["results"]["blob"] = False
@@ -335,7 +336,7 @@ class Images(object):
             entities = response[0]["FindImage"]["entities"]
 
             for ent in entities:
-                self.images_ids.append(ent[IMG_ID_PROP])
+                self.images_ids.append(ent[self.img_id_prop])
 
         except:
             print("Error with search")
@@ -399,7 +400,7 @@ class Images(object):
                 entities = response[1]["FindImage"]["entities"]
 
                 for ent in entities[1:]:
-                    imgs_return.images_ids.append(ent[IMG_ID_PROP])
+                    imgs_return.images_ids.append(ent[self.img_id_prop])
 
             except:
                 print("Error with similarity search")
