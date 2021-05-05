@@ -80,6 +80,8 @@ class ParallelLoader:
         self.stats      = stats
         self.total_elements = len(generator)
 
+        start_time = time.time()
+
         elements_per_thread = math.ceil(self.total_elements / self.numthreads)
 
         thread_arr = []
@@ -91,12 +93,9 @@ class ParallelLoader:
                                 args=(i, generator, idx_start, idx_end))
             thread_arr.append(thread_add)
 
-        start_time = time.time()
-        for thread in thread_arr:
-            thread.start()
 
-        for thread in thread_arr:
-            thread.join()
+        a = [ th.start() for th in thread_arr]
+        a = [ th.join()  for th in thread_arr]
 
         self.ingestion_time = time.time() - start_time
 
