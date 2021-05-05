@@ -39,8 +39,8 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
         self.npy_arrays = {}
         self.has_label = False
 
-        self.props_keys       = [x for x in self.header[4:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
-        self.constraints_keys = [x for x in self.header[4:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[3:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[3:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
 
     def __getitem__(self, idx):
 
