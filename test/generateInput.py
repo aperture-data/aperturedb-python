@@ -5,6 +5,7 @@ import math
 from datetime import datetime
 
 import pandas as pd
+import numpy  as np
 
 from itertools import product
 
@@ -110,12 +111,56 @@ def generate_bboxes_csv(images):
     df = df.sort_values("id")
     df.to_csv("input/bboxes.adb.csv", index=False)
 
+def generate_descriptors(images, setname, dims):
+
+    filename = "input/" + setname + "_desc.npy"
+
+    images  = images["id"]
+
+    descriptors = np.random.rand(len(images), dims)
+
+    np.save(filename, descriptors)
+
+    labels = ["dog", "cat", "catdog", "rocko", "philip", "froghead", "drog"]
+    confidence  = [ random.random()   for x in range(len(images))]
+    label       = [ labels[math.floor(random.random()*len(labels))]  for x in range(len(images))]
+
+    df = pd.DataFrame(images, columns=['id'])
+
+    df["filename"] = [ filename for x in range(len(images))]
+    df["index"]    = [ i        for i in range(len(images))]
+    df["set"]      = [ setname  for x in range(len(images))]
+    df["id"]       = [ i        for i in range(len(images))]
+    df["label"]      = label
+    df["confidence"] = confidence
+
+    df = df.sort_values("id")
+    df = df.reindex(columns=["filename", "index", "set", "id", "label", "confidence"])
+    df.to_csv("input/" + setname + ".adb.csv", index=False)
+
+def generate_descriptorset(names, dims):
+
+    df = pd.DataFrame()
+
+    df["name"]       = names
+    df["dimensions"] = dims
+    df["engine"]     = [ "FaissIVFFlat" for i in names]
+    df["metric"]     = [ "L2"           for i in names]
+
+    df.to_csv("input/descriptorset.adb.csv", index=False)
+
 def main(params):
 
     persons = generate_person_csv(params.multiplier)
     images  = generate_images_csv(int(params.multiplier/2))
     connect = generate_connections_csv(persons, images)
     bboxes  = generate_bboxes_csv(images)
+
+    desc_name = ["setA", "setB"]
+    desc_dims = [2048, 1025]    # yes, 1025
+    generate_descriptorset(desc_name, desc_dims)
+    for name,dims in zip(desc_name, desc_dims):
+        generate_descriptors(images, name, dims)
 
 def get_args():
     obj = argparse.ArgumentParser()

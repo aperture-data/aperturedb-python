@@ -7,6 +7,7 @@ import dbinfo
 from aperturedb import Connector, Status
 from aperturedb import EntityLoader, ConnectionLoader
 from aperturedb import ImageLoader, BBoxLoader
+from aperturedb import DescriptorSetLoader, DescriptorLoader
 
 class TestLoader(unittest.TestCase):
 
@@ -109,3 +110,61 @@ class TestEntityLoader(TestLoader):
 
         dbstatus = Status.Status(db)
         self.assertEqual(len(generator), dbstatus.count_bboxes())
+
+    def test_LoaderDescriptorsImages(self):
+
+        # Insert Images, images may be there already, and that case should
+        # be handled correctly by contraints
+        db = Connector.Connector(self.db_host, self.db_port)
+
+        in_csv_file = "./input/images.adb.csv"
+
+        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=False)
+
+        loader = ImageLoader.ImageLoader(db)
+        print("\n")
+        loader.ingest(generator, batchsize=self.batchsize,
+                                 numthreads=self.numthreads,
+                                 stats=self.stats)
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(generator), dbstatus.count_images())
+
+
+        # Insert DescriptorsSet
+        db = Connector.Connector(self.db_host, self.db_port)
+
+        in_csv_file = "./input/descriptorset.adb.csv"
+
+        generator = DescriptorSetLoader.DescriptorSetGeneratorCSV(in_csv_file)
+
+        loader = DescriptorSetLoader.DescriptorSetLoader(db)
+        print("\n")
+        loader.ingest(generator, batchsize=self.batchsize,
+                                 numthreads=self.numthreads,
+                                 stats=self.stats)
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(generator), dbstatus.count_entities("VD:DESCSET"))
+
+        # Insert Descriptors
+
+        sets = ["setA", "setB"]
+
+        total_descriptors = 0
+        for setname in sets:
+            db = Connector.Connector(self.db_host, self.db_port)
+
+            in_csv_file = "./input/" + setname + ".adb.csv"
+
+            generator = DescriptorLoader.DescriptorGeneratorCSV(in_csv_file)
+
+            loader = DescriptorLoader.DescriptorLoader(db)
+            print("\n")
+            loader.ingest(generator, batchsize=self.batchsize,
+                                     numthreads=self.numthreads,
+                                     stats=self.stats)
+
+            dbstatus = Status.Status(db)
+            total_descriptors += len(generator)
+            self.assertEqual(total_descriptors, dbstatus.count_entities("VD:DESC"))
