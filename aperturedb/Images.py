@@ -289,7 +289,7 @@ class Images(object):
     def get_bboxes_by_index(self, index):
 
         if not self.images_bboxes:
-            self.__retrieve_bounding_boxes()
+            self.__retrieve_bounding_boxes(index)
 
         try:
             bboxes = self.images_bboxes[str(self.images_ids[index])]
