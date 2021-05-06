@@ -8,8 +8,7 @@ import numpy as np
 
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
-
-from progressbar import ProgressBar
+from aperturedb import ProgressBar
 
 HEADER_PATH="filename"
 HEADER_URL ="url"
