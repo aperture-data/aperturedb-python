@@ -12,19 +12,20 @@ from aperturedb import CSVParser
 HEADER_PATH = "filename"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
+IMG_FORMAT  = "format"
 
 class ImageGeneratorCSV(CSVParser.CSVParser):
 
     '''
         ApertureDB Image Data loader.
-        Expects a csv file with the following columns:
+        Expects a csv file with the following columns (format optional):
 
-            filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
+            filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
 
         Example csv file:
-        filename,id,label,constaint_id
-        /home/user/file1.jpg,321423532,dog,321423532
-        /home/user/file2.jpg,42342522,cat,42342522
+        filename,id,label,constaint_id,format
+        /home/user/file1.jpg,321423532,dog,321423532,jpg
+        /home/user/file2.jpg,42342522,cat,42342522,png
         ...
     '''
 
@@ -34,21 +35,23 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
 
         self.check_image = check_image
 
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.format_given     = IMG_FORMAT in self.header
+        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.props_keys       = [x for x in self.props_keys if x != IMG_FORMAT]
         self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
 
     def __getitem__(self, idx):
 
-        filename = self.df.loc[idx, HEADER_PATH]
-        img_ok, img = self.load_image(filename)
+        filename   = self.df.loc[idx, HEADER_PATH]
+        data = {}
 
+        img_ok, img = self.load_image(filename)
         if not img_ok:
             Exception("Error loading image: " + filename )
 
-        data = {
-            "img_blob": img,
-            "format": "jpg"
-        }
+        data["img_blob"] = img
+        if self.format_given:
+            data["format"] = self.df.loc[idx, IMG_FORMAT]
 
         properties  = self.parse_properties(self.df, idx)
         constraints = self.parse_constraints(self.df, idx)
