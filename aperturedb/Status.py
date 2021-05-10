@@ -16,7 +16,6 @@ class Status(object):
             res, blobs = self.connector.query(q)
         except:
             print(self.connector.get_last_response_str())
-            raise
 
         return self.connector.get_last_response_str()
 
@@ -40,7 +39,6 @@ class Status(object):
         except:
             total_images = 0
             print(self.connector.get_last_response_str())
-            raise
 
         return total_images
 
@@ -64,7 +62,6 @@ class Status(object):
         except:
             total_connections = 0
             print(self.connector.get_last_response_str())
-            raise
 
         return total_connections
 
@@ -88,7 +85,6 @@ class Status(object):
         except:
             total_entities = 0
             print(self.connector.get_last_response_str())
-            raise
 
         return total_entities
 
@@ -112,6 +108,5 @@ class Status(object):
         except:
             total_connections = 0
             print(self.connector.get_last_response_str())
-            raise
 
         return total_connections
