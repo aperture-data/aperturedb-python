@@ -24,7 +24,6 @@ class ApertureDBDatasetConstraints(data.Dataset):
             raise StopIteration
 
         img = self.imgs_handler.get_np_image_by_index(index)
-        img = transforms.ToTensor()(img)
 
         # This is temporary until we define a good, generic way, of
         # retriving a label associated with the image.
