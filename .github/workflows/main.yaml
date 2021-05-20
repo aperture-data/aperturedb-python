@@ -42,6 +42,7 @@ jobs:
       - name: Run Tests
         run: |
           pip3 install .
+          pip3 install ipython
           cd test
           bash run_test.sh
 
