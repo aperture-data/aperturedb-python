@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -u
+set -e
 
 DOCKERIMGNAME=aperturedb-py-test
 docker stop $DOCKERIMGNAME && docker rm $DOCKERIMGNAME
