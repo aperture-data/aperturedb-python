@@ -42,7 +42,7 @@ jobs:
       - name: Run Tests
         run: |
           pip3 install .
-          pip3 install ipython
+          pip3 install ipython torch torchvision
           cd test
           bash run_test.sh
 
