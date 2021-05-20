@@ -3,6 +3,7 @@ import time
 import unittest
 
 import dbinfo
+import numpy  as np
 
 from aperturedb import Connector, Status
 from aperturedb import EntityLoader, ConnectionLoader
@@ -168,3 +169,40 @@ class TestEntityLoader(TestLoader):
             dbstatus = Status.Status(db)
             total_descriptors += len(generator)
             self.assertEqual(total_descriptors, dbstatus.count_entities("VD:DESC"))
+
+    def test_EntityBlobLoader(self):
+
+        # Insert Person Nodes
+        db = Connector.Connector(self.db_host, self.db_port)
+
+        in_csv_file = "./input/entity_blobs.adb.csv"
+
+        generator = EntityLoader.EntityGeneratorCSV(in_csv_file)
+
+        loader = EntityLoader.EntityLoader(db)
+        print("\n")
+        loader.ingest(generator, batchsize=self.batchsize,
+                                 numthreads=self.numthreads,
+                                 stats=self.stats)
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(generator), dbstatus.count_entities("segmentation"))
+
+        db = Connector.Connector(self.db_host, self.db_port)
+
+        q = [ {
+            "FindEntity": {
+                "class": "segmentation",
+                "results": {
+                    "list": ["license"],
+                    "blob": True,
+                    "limit": 1
+                }
+            }
+        }]
+
+        res, blob = db.query(q)
+        self.assertEqual(len(blob), 1)
+
+        arr = np.frombuffer(blob[0])
+        self.assertEqual(arr[2], 3.3)

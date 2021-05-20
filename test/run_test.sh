@@ -9,6 +9,7 @@ docker stop $DOCKERIMGNAME && docker rm $DOCKERIMGNAME
 sudo rm -rf aperturedb/db
 rm -rf output
 mkdir output
+mkdir -p input/blobs
 
 docker run         \
     --privileged   \
@@ -17,7 +18,7 @@ docker run         \
     -t -d          \
     --name $DOCKERIMGNAME \
     --mount src=$PWD/aperturedb,target="/aperturedb/",type=bind \
-    aperturedata/aperturedb:v0.5.2-webui
+    aperturedata/aperturedb:v0.6.0-webui
 
 echo "Downloading images..."
 python3 download_images.py          # Test ImageDownloader

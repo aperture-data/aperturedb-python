@@ -12,14 +12,15 @@ from aperturedb import CSVParser
 ENTITY_CLASS = "EntityClass"
 PROPERTIES   = "properties"
 CONSTRAINTS  = "constraints"
+BLOB_PATH    = "blob_filename"
 
 class EntityGeneratorCSV(CSVParser.CSVParser):
 
     '''
         ApertureDB Entity Data loader.
-        Expects a csv file with the following columns:
+        Expects a csv file with the following columns (filename optional):
 
-            EntityClass,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
+            EntityClass,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,filename
 
         Example csv file:
         EntityClass,name,lastname,age,id,constaint_id
@@ -32,14 +33,21 @@ class EntityGeneratorCSV(CSVParser.CSVParser):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.blob_present     = BLOB_PATH in self.header
+        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.props_keys       = [x for x in self.props_keys if x != BLOB_PATH]
         self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
 
     def __getitem__(self, idx):
 
-        data = {
-            "class": self.df.loc[idx, ENTITY_CLASS]
-        }
+        data = {}
+        data["class"] = self.df.loc[idx, ENTITY_CLASS]
+        if self.blob_present:
+            filename   = self.df.loc[idx, BLOB_PATH]
+            blob_ok, blob = self.load_blob(filename)
+            if not blob_ok:
+                Exception("Error loading blob: " + filename )
+            data["blob"] = blob
 
         properties  = self.parse_properties(self.df, idx)
         constraints = self.parse_constraints(self.df, idx)
@@ -51,6 +59,18 @@ class EntityGeneratorCSV(CSVParser.CSVParser):
             data[CONSTRAINTS] = constraints
 
         return data
+
+    def load_blob(self, filename):
+
+        try:
+            fd = open(filename, "rb")
+            buff = fd.read()
+            fd.close()
+            return True, buff
+        except:
+            print("BLOB ERROR:", filename)
+
+        return False, None
 
     def validate(self):
 
@@ -71,6 +91,7 @@ class EntityLoader(ParallelLoader.ParallelLoader):
                 "class":       entity_class,
                 "properties":  properties,
                 "constraints": constraints,
+                "blob": blob , optional
             }
     '''
 
@@ -83,6 +104,7 @@ class EntityLoader(ParallelLoader.ParallelLoader):
     def generate_batch(self, entity_data):
 
         q = []
+        blobs = []
 
         for data in entity_data:
 
@@ -98,9 +120,16 @@ class EntityLoader(ParallelLoader.ParallelLoader):
             if CONSTRAINTS in data:
                 ae["AddEntity"][CONSTRAINTS] = data[CONSTRAINTS]
 
+            if "blob" in data:
+                if len(data["blob"]) == 0:
+                    print("WARNING: Skipping empty blob.")
+                    continue
+                ae["AddEntity"]["blob"] = True
+                blobs.append(data["blob"])
+
             q.append(ae)
 
         if self.dry_run:
             print(q)
 
-        return q, []
+        return q, blobs
