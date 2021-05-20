@@ -41,6 +41,36 @@ def generate_person_csv(multiplier):
 
     return df
 
+def generate_entity_blob_csv():
+
+    path       = "input/blobs/"
+    blob_paths = [path + str(x).zfill(4) + ".blob" for x in range(20)]
+    license    = [x for x in range(10)]
+    blobs      = list(product(blob_paths, license))
+
+    # generate the blobs
+    arr = [1.5, 2.4, 3.3, 5.5, 9.9, 111.12, 1000.20]
+    nparr = np.array(arr)
+    for blob in blob_paths:
+        blobfile = open(blob, 'wb')
+        nparr.tofile(blobfile)
+        blobfile.close()
+
+    entity   = [ "segmentation"   for x in range(len(blobs))]
+    ids      = [int(1000000000* random.random()) for i in range(len(blobs))]
+
+    df = pd.DataFrame(blobs, columns=['blob_filename', 'license'])
+    df["EntityClass"]   = entity
+    df                  = df.reindex(["EntityClass", "blob_filename", "license"], axis=1)
+    df["id"]            = ids
+    df["constraint_id"] = ids
+
+    df = df.sort_values("id")
+
+    df.to_csv("input/entity_blobs.adb.csv", index=False)
+
+    return df
+
 def generate_images_csv(multiplier):
 
     multiplier = multiplier // 2
@@ -152,6 +182,7 @@ def generate_descriptorset(names, dims):
 def main(params):
 
     persons = generate_person_csv(params.multiplier)
+    blobs   = generate_entity_blob_csv()
     images  = generate_images_csv(int(params.multiplier/2))
     connect = generate_connections_csv(persons, images)
     bboxes  = generate_bboxes_csv(images)
