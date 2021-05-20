@@ -93,7 +93,7 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
 
         folder = os.path.dirname(filename)
         if not os.path.exists(folder):
-            os.makedirs(folder)
+            os.makedirs(folder, exist_ok=True)
 
         imgdata = requests.get(url)
         if imgdata.ok:
