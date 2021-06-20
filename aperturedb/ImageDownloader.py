@@ -10,8 +10,8 @@ from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 from aperturedb import ProgressBar
 
-HEADER_PATH="filename"
-HEADER_URL ="url"
+HEADER_PATH = "filename"
+HEADER_URL  = "url"
 
 class ImageDownloaderCSV(CSVParser.CSVParser):
 
@@ -112,7 +112,8 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
                 os.remove(filename)
                 self.error_counter += 1
         else:
-            print("NOTFOUND:", url)
+            print("URL not found:", url)
+            self.error_counter += 1
 
         self.times_arr.append(time.time() - start)
 
