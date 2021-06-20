@@ -43,9 +43,6 @@ class Connector(object):
             if retries > 0:
                 time.sleep(wait_time)
                 wait_time *= BACKOFF_MULTIPLIER
-                sys.stderr.write("Retry: " + str(retries) + "\n")
-                sys.stderr.write(self.connector.get_last_response_str())
-                sys.stderr.write("\n")
 
             if retries > n_retries:
                 error_msg  = "Warning: Query failed after " + str(n_retries)
