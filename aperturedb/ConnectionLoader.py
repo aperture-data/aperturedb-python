@@ -109,7 +109,7 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
             fe_a = {
                 "FindEntity": {
                     "_ref": ref_src,
-                    "class": data["ref1_class"],
+                    "with_class": data["ref1_class"],
                 }
             }
 
@@ -122,7 +122,7 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
             fe_b = {
                 "FindEntity": {
                     "_ref": ref_dst,
-                    "class": data["ref2_class"],
+                    "with_class": data["ref2_class"],
                 }
             }
 
@@ -133,8 +133,8 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
             ae = {
                 "AddConnection": {
                     "class": data["class"],
-                    "ref1": ref_src,
-                    "ref2": ref_dst,
+                    "src": ref_src,
+                    "dst": ref_dst,
                 }
             }
 
@@ -142,7 +142,7 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
                 ae["AddConnection"][PROPERTIES] = data[PROPERTIES]
 
             if CONSTRAINTS in data:
-                ae["AddConnection"][CONSTRAINTS] = data[CONSTRAINTS]
+                ae["AddConnection"]["if_not_found"] = data[CONSTRAINTS]
 
             q.append(ae)
 

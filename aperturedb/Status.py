@@ -8,6 +8,10 @@ class Status(object):
 
         self.connector = connector
 
+    def __repr__(self):
+
+        return self.status()
+
     def status(self):
 
         q = [{ "GetStatus": {} }]
@@ -23,9 +27,9 @@ class Status(object):
 
         q = [{
             "FindImage": {
+                "blobs": False,
                 "results": {
-                    "blob": False,
-                    "count": "",
+                    "count": True,
                 }
             }
         }]
@@ -46,9 +50,9 @@ class Status(object):
 
         q = [{
             "FindBoundingBox": {
+                "blobs": False,
                 "results": {
-                    "count": "",
-                    "blob": False
+                    "count": True,
                 }
             }
         }]
@@ -69,9 +73,9 @@ class Status(object):
 
         q = [{
             "FindEntity": {
-                "class": entity_class,
+                "with_class": entity_class,
                 "results": {
-                    "count": "",
+                    "count": True,
                 }
             }
         }]
@@ -92,9 +96,9 @@ class Status(object):
 
         q = [{
             "FindConnection": {
-                "class": connections_class,
+                "with_class": connections_class,
                 "results": {
-                    "count": "",
+                    "count": True,
                 }
             }
         }]

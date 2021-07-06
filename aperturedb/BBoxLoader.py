@@ -53,10 +53,10 @@ class BBoxGeneratorCSV(CSVParser.CSVParser):
     def __getitem__(self, idx):
 
         data = {
-            "x": int(self.df.loc[idx, HEADER_X_POS]),
-            "y": int(self.df.loc[idx, HEADER_Y_POS]),
-            "w": int(self.df.loc[idx, HEADER_WIDTH]),
-            "h": int(self.df.loc[idx, HEADER_HEIGHT]),
+            "x":      int(self.df.loc[idx, HEADER_X_POS]),
+            "y":      int(self.df.loc[idx, HEADER_Y_POS]),
+            "width":  int(self.df.loc[idx, HEADER_WIDTH]),
+            "height": int(self.df.loc[idx, HEADER_HEIGHT]),
         }
 
         val = self.df.loc[idx, self.img_key]
@@ -127,10 +127,10 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
                 "AddBoundingBox": {
                     "image": img_ref,
                     "rectangle": {
-                        "x": data["x"],
-                        "y": data["y"],
-                        "w": data["w"],
-                        "h": data["h"],
+                        "x":      data["x"],
+                        "y":      data["y"],
+                        "width":  data["width"],
+                        "height": data["height"],
                     },
                 }
             }

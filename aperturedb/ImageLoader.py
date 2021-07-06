@@ -129,7 +129,7 @@ class ImageLoader(ParallelLoader.ParallelLoader):
             if "properties" in data:
                 ai["AddImage"]["properties"] = data["properties"]
             if "constraints" in data:
-                ai["AddImage"]["constraints"] = data["constraints"]
+                ai["AddImage"]["if_not_found"] = data["constraints"]
             if "operations" in data:
                 ai["AddImage"]["operations"] = data["operations"]
             if "format" in data:
@@ -143,28 +143,3 @@ class ImageLoader(ParallelLoader.ParallelLoader):
             q.append(ai)
 
         return q, blobs
-
-    def print_stats(self):
-
-        # This is to make sure that the connect has not timed-out
-        # after the loaded completed.
-        self.db = self.db.create_new_connection()
-
-        status = Status.Status(self.db)
-
-        print("====== ApertureDB Image Loader Stats ======")
-        print("Images in the db:", status.count_images())
-
-        times = np.array(self.times_arr)
-        print("Avg Query time(s):", np.mean(times))
-        print("Query time std:", np.std (times))
-        print("Avg Query Throughput (images/s)):",
-            1 / np.mean(times) * self.batchsize * self.numthreads)
-
-        print("Total time(s):", self.ingestion_time)
-        print("Overall insertion throughput (img/s):",
-            self.total_elements / self.ingestion_time)
-        print("Total errors encountered:", self.error_counter)
-        print("Elements added:",
-            self.total_elements - self.error_counter * self.batchsize)
-        print("===========================================")

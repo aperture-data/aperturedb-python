@@ -107,7 +107,7 @@ class DescriptorSetLoader(ParallelLoader.ParallelLoader):
                 ae["AddDescriptorSet"][PROPERTIES] = data[PROPERTIES]
 
             if CONSTRAINTS in data:
-                ae["AddDescriptorSet"][CONSTRAINTS] = data[CONSTRAINTS]
+                ae["AddDescriptorSet"]["if_not_found"] = data[CONSTRAINTS]
 
             q.append(ae)
 
