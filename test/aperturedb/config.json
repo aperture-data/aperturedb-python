@@ -1,0 +1,45 @@
+// ApertureDB Server
+// This is the run-time config file
+// Sets database paths and other parameters
+{
+    // Network
+    "port": 55555,
+    "max_simultaneous_clients": 100,
+
+    // Database paths
+    "db_root_path": "db",
+
+    "pmgd_disk_sync_option": "never_sync",
+
+    // Serialize graph access
+    "serialize_graph_access": true,
+
+    "create_parameters": {
+        "pmgd_num_allocators": 32,
+        "pmgd_journal_size": 1024
+    },
+
+    "index":
+    [
+        {
+            "index_type":     "entity",
+            "class":          "_Image",
+            "property_key":   "id",
+            "property_type":  "integer"
+        },
+        {
+            "index_type":     "entity",
+            "class":          "_Descriptor",
+            "property_key":   "id",
+            "property_type":  "integer"
+        },
+        {
+            "index_type":     "entity",
+            "class":          "Person",
+            "property_key":   "id",
+            "property_type":  "integer"
+        }
+    ],
+
+    "more-info": "ApertureDB Server"
+}

@@ -11,24 +11,6 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
-IMG_ID_PROP = "_uniqueid"
-
-def check_status(json):
-
-    status = 0
-    if (isinstance(json, dict)):
-        if ("status" not in json):
-            status = check_status(json[list(json.keys())[0]])
-        else:
-            status = json["status"]
-    elif (isinstance(json, (tuple, list))):
-        if ("status" not in json[0]):
-            status = check_status(json[0])
-        else:
-            status = json[0]["status"]
-
-    return status
-
 class Constraints(object):
 
     def __init__(self):
@@ -61,11 +43,14 @@ class Operations(object):
 
         self.operations_arr = []
 
+    def get_operations_arr(self):
+        return self.operations_arr
+
     def resize(self, width, height):
 
         op = {
             "type": "resize",
-            "width": width,
+            "width":  width,
             "height": height,
         }
 
@@ -83,7 +68,7 @@ class Operations(object):
 
 class Images(object):
 
-    def __init__(self, db, batch_size=20):
+    def __init__(self, db, batch_size=100):
 
         self.db_connector = db
 
@@ -99,67 +84,46 @@ class Images(object):
         self.search_result = None
 
         self.batch_size = batch_size
-        self.max_cached_images = 1000
         self.total_cached_images = 0
         self.display_limit = 20
 
-    def total_results(self):
+        self.img_id_prop     = "_uniqueid"
+        self.bbox_label_prop = "label"
 
-        return len(self.images_ids)
+    def __retrieve_batch(self, index):
 
-    def get_image_by_index(self, index):
-
-        if index >= len(self.images_ids):
-            print("Index is incorrect")
-            return
-
-        try:
-            uniqueid = self.images_ids[index]
-
-            # If image is not retrieved, go and retrieve the batch
-            if not str(uniqueid) in self.images:
-                self.retrieve_batch(index)
-
-        except:
-            print("Cannot retrieve requested image")
-
-        if self.images[str(uniqueid)] == None:
-            print("Image was not retrieved")
-
-        return self.images[str(uniqueid)]
-
-    # This will retrieve the entire batch corresponding to image index.
-    def retrieve_batch(self, index):
+        '''
+        Retrieve the batch that contains the image with the specified index
+        '''
 
         # Implement the query to retrieve images
         # for that batch
 
         total_batches = math.ceil(len(self.images_ids) / self.batch_size)
-        batch_id = int(math.floor(index / self.batch_size))
+        batch_id      = int(math.floor(index / self.batch_size))
 
         start = batch_id * self.batch_size
-        end   = start + self.batch_size
+        end   = min(start + self.batch_size, len(self.images_ids))
 
-        q = []
+        query = []
 
         for idx in range(start, end):
 
-            if idx >= len(self.images_ids):
-                break
-
-            find = { "FindImage": {
+            find = {
+                "FindImage": {
                     "constraints": {
                         "_uniqueid": ["==", self.images_ids[idx]]
-                    }
+                    },
                 }
             }
-            q.append(find)
 
-        res, imgs = self.db_connector.query(q)
+            if self.operations and len(self.operations.operations_arr) > 0:
+                find["FindImage"]["operations"] = self.operations.operations_arr
+            query.append(find)
 
-        status = check_status(res)
+        res, imgs = self.db_connector.query(query)
 
-        if status != 0:
+        if not self.db_connector.last_query_ok():
             print(self.db_connector.get_last_response_str())
             return
 
@@ -171,59 +135,32 @@ class Images(object):
             uniqueid = self.images_ids[idx]
             self.images[str(uniqueid)] = imgs[i]
 
-    def get_np_image_by_index(self, index):
+    def __get_bounding_boxes_polygons(self, index):
 
-        image = self.get_image_by_index(index)
-        # Just decode the image from buffer
-        nparr = np.fromstring(image, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        return image
-
-    def get_bboxes_by_index(self, index):
-
-        if not self.images_bboxes:
-            self.retrieve_bounding_boxes()
-
-        try:
-            bboxes = self.images_bboxes[str(self.images_ids[index])]
-        except:
-            print("Cannot retrieve requested bboxes")
-
-        return bboxes
-
-    def get_bounding_boxes_polygons(self, index):
-
-        self.retrieve_bounding_boxes(index)
+        self.__retrieve_bounding_boxes(index)
 
         ret_poly = []
 
         uniqueid = self.images_ids[index]
 
-        q = [ {
+        query = [{
             "FindImage": {
                 "_ref": 1,
                 "constraints": {
                     "_uniqueid": ["==", uniqueid]
                 },
-                "results": {
-                    "blob": False,
-                }
+                "blobs": False,
             }
         }, {
             "FindEntity": {
-                "link": {
+                "is_connected_to": {
                     "ref": 1
                 },
-                 "results": {
-                    "blob": True,
-                }
+                "blobs": True,
             }
         }]
 
-        res, polygons = self.db_connector.query(q)
+        res, polygons = self.db_connector.query(query)
         ret_poly.append(polygons)
 
         uniqueid_str = str(uniqueid)
@@ -231,9 +168,9 @@ class Images(object):
 
         return polygons
 
-    def display_segmentation(self, index):
+    def __display_segmentation(self, index):
 
-        polygons = self.get_bounding_boxes_polygons(index)
+        polygons = self.__get_bounding_boxes_polygons(index)
 
         image = self.get_image_by_index(index)
 
@@ -264,7 +201,7 @@ class Images(object):
             p = PatchCollection(polygon_points, facecolor='none', edgecolors=color, linewidths=2)
             ax.add_collection(p)
 
-    def retrieve_bounding_boxes(self, index):
+    def __retrieve_bounding_boxes(self, index):
 
         self.images_bboxes = {}
 
@@ -274,35 +211,34 @@ class Images(object):
 
         uniqueid = self.images_ids[index]
 
-        q = [ {
+        query = [{
             "FindImage": {
                 "_ref": 1,
                 "constraints": {
                     "_uniqueid": ["==", uniqueid]
                 },
-                "results": {
-                    "blob": False,
-                }
+                "blobs": False,
             }
         }, {
             "FindBoundingBox": {
                 "image": 1,
                 "_ref": 2,
-                 "results": {
-                    "blob": False,
-                    "list": ["_coordinates", "category_name"],
+                "blobs": False,
+                "coordinates": True,
+                "results": {
+                    "list": [self.bbox_label_prop],
                 }
             }
         }]
 
         try:
-            res, images = self.db_connector.query(q)
+            res, images = self.db_connector.query(query)
 
             bboxes = []
             tags   = []
             for bbox in res[1]["FindBoundingBox"]["entities"]:
                 bboxes.append(bbox["_coordinates"])
-                tags.append(bbox["category_name"])
+                tags.append(bbox[self.bbox_label_prop])
 
             uniqueid_str = str(uniqueid)
             self.images_bboxes[uniqueid_str] = {}
@@ -311,6 +247,50 @@ class Images(object):
 
         except:
             print(self.db_connector.get_last_response_str())
+
+    def total_results(self):
+
+        return len(self.images_ids)
+
+    def get_image_by_index(self, index):
+
+        if index >= len(self.images_ids):
+            print("Index is incorrect")
+            return
+
+        uniqueid = self.images_ids[index]
+
+        # If image is not retrieved, go and retrieve the batch
+        if not str(uniqueid) in self.images:
+            self.__retrieve_batch(index)
+
+        if self.images[str(uniqueid)] == None:
+            print("Image was not retrieved")
+
+        return self.images[str(uniqueid)]
+
+    def get_np_image_by_index(self, index):
+
+        image = self.get_image_by_index(index)
+        # Just decode the image from buffer
+        nparr = np.frombuffer(image, dtype=np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        return image
+
+    def get_bboxes_by_index(self, index):
+
+        if not self.images_bboxes:
+            self.__retrieve_bounding_boxes(index)
+
+        try:
+            bboxes = self.images_bboxes[str(self.images_ids[index])]
+        except:
+            print("Cannot retrieve requested bboxes")
+
+        return bboxes
 
 
     # A new search will throw away the results of any previous search
@@ -330,11 +310,8 @@ class Images(object):
         if constraints:
             query["FindImage"]["constraints"] = constraints.constraints
 
-        if operations:
-            query["FindImage"]["operations"] = operations.operations_arr
-
         if format:
-            query["FindImage"]["format"] = format
+            query["FindImage"]["as_format"] = format
 
         query["FindImage"]["results"] = {}
 
@@ -342,10 +319,10 @@ class Images(object):
             query["FindImage"]["results"]["limit"] = limit
 
         query["FindImage"]["results"]["list"] = []
-        query["FindImage"]["results"]["list"].append(IMG_ID_PROP)
+        query["FindImage"]["results"]["list"].append(self.img_id_prop)
 
         # Only retrieve images when needed
-        query["FindImage"]["results"]["blob"] = False
+        query["FindImage"]["blobs"] = False
 
         response, images = self.db_connector.query([query])
 
@@ -353,8 +330,7 @@ class Images(object):
             entities = response[0]["FindImage"]["entities"]
 
             for ent in entities:
-                self.images_ids.append(ent[IMG_ID_PROP])
-
+                self.images_ids.append(ent[self.img_id_prop])
         except:
             print("Error with search")
 
@@ -366,43 +342,38 @@ class Images(object):
 
         for uniqueid in self.images_ids:
 
-            q = [ {
+            query = [{
                 "FindImage": {
                     "_ref": 1,
                     "constraints": {
                         "_uniqueid":  ["==", uniqueid]
                     },
-                    "results": {
-                        "blob": False,
-                    }
+                    "blobs": False,
                 }
             },{
                 "FindDescriptor": {
                     "set": set_name,
-                    "link": {
+                    "is_connected_to": {
                         "ref": 1,
                     },
-                    "results": {
-                        "blob": True
-                    }
+                    "blobs": True
                 }
             }]
 
-            response, blobs = self.db_connector.query(q)
+            response, blobs = self.db_connector.query(query)
 
-            q = [ {
+            query = [{
                 "FindDescriptor": {
+                    "_ref": 1,
                     "set": set_name,
                     "k_neighbors": n_neighbors + 1,
-                    "_ref": 1,
-                    "results": {
-                        "list": ["_distance", "_id"],
-                        "blob": False
-                    }
+                    "blobs":     False,
+                    "distances": True,
+                    "ids":       True,
                 }
             }, {
                 "FindImage": {
-                    "link": {
+                    "is_connected_to": {
                         "ref": 1,
                     },
                     "results": {
@@ -411,13 +382,13 @@ class Images(object):
                 }
             }]
 
-            response, blobs = self.db_connector.query(q, blobs)
+            response, blobs = self.db_connector.query(query, blobs)
 
             try:
                 entities = response[1]["FindImage"]["entities"]
 
                 for ent in entities[1:]:
-                    imgs_return.images_ids.append(ent[IMG_ID_PROP])
+                    imgs_return.images_ids.append(ent[self.img_id_prop])
 
             except:
                 print("Error with similarity search")
@@ -441,12 +412,12 @@ class Images(object):
             image    = self.get_image_by_index(i)
 
             # Just decode the image from buffer
-            nparr = np.fromstring(image, np.uint8)
+            nparr = np.frombuffer(image, dtype=np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             if show_bboxes:
                 if not str(uniqueid) in self.images_bboxes:
-                    self.retrieve_bounding_boxes(i)
+                    self.__retrieve_bounding_boxes(i)
 
                 bboxes = self.images_bboxes[uniqueid]["bboxes"]
                 tags   = self.images_bboxes[uniqueid]["tags"]
@@ -459,8 +430,8 @@ class Images(object):
                 for coords in bboxes:
                     left   = coords["x"]
                     top    = coords["y"]
-                    right  = coords["x"] + coords["w"]
-                    bottom = coords["y"] + coords["h"]
+                    right  = coords["x"] + coords["width"]
+                    bottom = coords["y"] + coords["height"]
                     cv2.rectangle(image, (left, top), (right, bottom),
                                   (0, 255, 0), 2)
 
@@ -476,7 +447,7 @@ class Images(object):
                 plt.imshow(image), plt.axis("off")
 
             elif show_segmentation:
-                self.display_segmentation(i)
+                self.__display_segmentation(i)
 
             else:
 
@@ -488,18 +459,16 @@ class Images(object):
     def get_props_names(self):
 
         query = [ {
-            "FindImageInfo": {
-                "results" : {
-                    "list" : [ "*" ]
-                }
+            "GetSchema": {
+                "type" : "entities"
             }
         }]
 
         res, images = self.db_connector.query(query)
 
         try:
-            dictio = res[0]["FindImageInfo"]["classes"][0]["VD:IMG"]
-            search_key = "VD:"
+            dictio = res[0]["FindImageInfo"]["entities"]["classes"][0]["_Image"]
+            search_key = "VD:" # TODO WHAT IS THIS?
             props_array = [key for key, val in dictio.items() if not search_key in key]
         except:
             props_array = []
@@ -517,20 +486,20 @@ class Images(object):
         try:
             for uniqueid in self.images_ids:
 
-                q = [ {
+                query = [{
                     "FindImage": {
                         "_ref": 1,
                         "constraints": {
                             "_uniqueid": ["==", uniqueid]
                         },
+                        "blobs": False,
                         "results": {
-                            "blob": False,
                             "list": prop_list
                         }
                     }
                 }]
 
-                res, images = self.db_connector.query(q)
+                res, images = self.db_connector.query(query)
 
                 return_dictionary[str(uniqueid)] = res[0]["FindImage"]["entities"][0]
         except:
