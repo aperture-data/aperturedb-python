@@ -39,8 +39,8 @@ def draw_bboxes(image, boxes=[], tags=[], save=False):
     for coords in boxes:
         left   = coords["x"]
         top    = coords["y"]
-        right  = coords["x"] + coords["w"]
-        bottom = coords["y"] + coords["h"]
+        right  = coords["x"] + coords["width"]
+        bottom = coords["y"] + coords["height"]
         cv2.rectangle(cv_image, (left, top), (right, bottom), (0, 255, 0), 2)
         y = top - 15 if top - 15 > 15 else top + 15
         cv2.putText(cv_image, tags[counter], (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)

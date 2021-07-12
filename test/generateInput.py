@@ -41,7 +41,7 @@ def generate_person_csv(multiplier):
 
     return df
 
-def generate_entity_blob_csv():
+def generate_blobs_csv():
 
     path       = "input/blobs/"
     blob_paths = [path + str(x).zfill(4) + ".blob" for x in range(20)]
@@ -59,15 +59,14 @@ def generate_entity_blob_csv():
     entity   = [ "segmentation"   for x in range(len(blobs))]
     ids      = [int(1000000000* random.random()) for i in range(len(blobs))]
 
-    df = pd.DataFrame(blobs, columns=['blob_filename', 'license'])
-    df["EntityClass"]   = entity
-    df                  = df.reindex(["EntityClass", "blob_filename", "license"], axis=1)
+    df = pd.DataFrame(blobs, columns=['filename', 'license'])
+    df                  = df.reindex(["filename", "license"], axis=1)
     df["id"]            = ids
     df["constraint_id"] = ids
 
     df = df.sort_values("id")
 
-    df.to_csv("input/entity_blobs.adb.csv", index=False)
+    df.to_csv("input/blobs.adb.csv", index=False)
 
     return df
 
@@ -107,9 +106,9 @@ def generate_connections_csv(persons, images):
     connect   = [ "has_image"   for x in range(len(connections))]
     confidence  = [ random.random()   for x in range(len(connections))]
 
-    df = pd.DataFrame(connections, columns=['VD:IMG@id', 'Person@id'])
+    df = pd.DataFrame(connections, columns=['_Image@id', 'Person@id'])
     df["ConnectionClass"] = connect
-    df = df.reindex(["ConnectionClass", 'VD:IMG@id', 'Person@id'], axis=1)
+    df = df.reindex(["ConnectionClass", '_Image@id', 'Person@id'], axis=1)
 
     df["confidence"]      = confidence
 
@@ -182,7 +181,7 @@ def generate_descriptorset(names, dims):
 def main(params):
 
     persons = generate_person_csv(params.multiplier)
-    blobs   = generate_entity_blob_csv()
+    blobs   = generate_blobs_csv()
     images  = generate_images_csv(int(params.multiplier/2))
     connect = generate_connections_csv(persons, images)
     bboxes  = generate_bboxes_csv(images)

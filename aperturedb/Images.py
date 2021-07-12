@@ -105,7 +105,7 @@ class Images(object):
         start = batch_id * self.batch_size
         end   = min(start + self.batch_size, len(self.images_ids))
 
-        q = []
+        query = []
 
         for idx in range(start, end):
 
@@ -119,9 +119,9 @@ class Images(object):
 
             if self.operations and len(self.operations.operations_arr) > 0:
                 find["FindImage"]["operations"] = self.operations.operations_arr
-            q.append(find)
+            query.append(find)
 
-        res, imgs = self.db_connector.query(q)
+        res, imgs = self.db_connector.query(query)
 
         if not self.db_connector.last_query_ok():
             print(self.db_connector.get_last_response_str())
@@ -143,28 +143,24 @@ class Images(object):
 
         uniqueid = self.images_ids[index]
 
-        q = [ {
+        query = [{
             "FindImage": {
                 "_ref": 1,
                 "constraints": {
                     "_uniqueid": ["==", uniqueid]
                 },
-                "results": {
-                    "blob": False,
-                }
+                "blobs": False,
             }
         }, {
             "FindEntity": {
-                "link": {
+                "is_connected_to": {
                     "ref": 1
                 },
-                 "results": {
-                    "blob": True,
-                }
+                "blobs": True,
             }
         }]
 
-        res, polygons = self.db_connector.query(q)
+        res, polygons = self.db_connector.query(query)
         ret_poly.append(polygons)
 
         uniqueid_str = str(uniqueid)
@@ -215,29 +211,28 @@ class Images(object):
 
         uniqueid = self.images_ids[index]
 
-        q = [ {
+        query = [{
             "FindImage": {
                 "_ref": 1,
                 "constraints": {
                     "_uniqueid": ["==", uniqueid]
                 },
-                "results": {
-                    "blob": False,
-                }
+                "blobs": False,
             }
         }, {
             "FindBoundingBox": {
                 "image": 1,
                 "_ref": 2,
-                 "results": {
-                    "blob": False,
-                    "list": ["_coordinates", self.bbox_label_prop],
+                "blobs": False,
+                "coordinates": True,
+                "results": {
+                    "list": [self.bbox_label_prop],
                 }
             }
         }]
 
         try:
-            res, images = self.db_connector.query(q)
+            res, images = self.db_connector.query(query)
 
             bboxes = []
             tags   = []
@@ -316,7 +311,7 @@ class Images(object):
             query["FindImage"]["constraints"] = constraints.constraints
 
         if format:
-            query["FindImage"]["format"] = format
+            query["FindImage"]["as_format"] = format
 
         query["FindImage"]["results"] = {}
 
@@ -327,7 +322,7 @@ class Images(object):
         query["FindImage"]["results"]["list"].append(self.img_id_prop)
 
         # Only retrieve images when needed
-        query["FindImage"]["results"]["blob"] = False
+        query["FindImage"]["blobs"] = False
 
         response, images = self.db_connector.query([query])
 
@@ -347,43 +342,38 @@ class Images(object):
 
         for uniqueid in self.images_ids:
 
-            q = [ {
+            query = [{
                 "FindImage": {
                     "_ref": 1,
                     "constraints": {
                         "_uniqueid":  ["==", uniqueid]
                     },
-                    "results": {
-                        "blob": False,
-                    }
+                    "blobs": False,
                 }
             },{
                 "FindDescriptor": {
                     "set": set_name,
-                    "link": {
+                    "is_connected_to": {
                         "ref": 1,
                     },
-                    "results": {
-                        "blob": True
-                    }
+                    "blobs": True
                 }
             }]
 
-            response, blobs = self.db_connector.query(q)
+            response, blobs = self.db_connector.query(query)
 
-            q = [ {
+            query = [{
                 "FindDescriptor": {
+                    "_ref": 1,
                     "set": set_name,
                     "k_neighbors": n_neighbors + 1,
-                    "_ref": 1,
-                    "results": {
-                        "list": ["_distance", "_id"],
-                        "blob": False
-                    }
+                    "blobs":     False,
+                    "distances": True,
+                    "ids":       True,
                 }
             }, {
                 "FindImage": {
-                    "link": {
+                    "is_connected_to": {
                         "ref": 1,
                     },
                     "results": {
@@ -392,7 +382,7 @@ class Images(object):
                 }
             }]
 
-            response, blobs = self.db_connector.query(q, blobs)
+            response, blobs = self.db_connector.query(query, blobs)
 
             try:
                 entities = response[1]["FindImage"]["entities"]
@@ -440,8 +430,8 @@ class Images(object):
                 for coords in bboxes:
                     left   = coords["x"]
                     top    = coords["y"]
-                    right  = coords["x"] + coords["w"]
-                    bottom = coords["y"] + coords["h"]
+                    right  = coords["x"] + coords["width"]
+                    bottom = coords["y"] + coords["height"]
                     cv2.rectangle(image, (left, top), (right, bottom),
                                   (0, 255, 0), 2)
 
@@ -469,18 +459,16 @@ class Images(object):
     def get_props_names(self):
 
         query = [ {
-            "FindImageInfo": {
-                "results" : {
-                    "list" : [ "*" ]
-                }
+            "GetSchema": {
+                "type" : "entities"
             }
         }]
 
         res, images = self.db_connector.query(query)
 
         try:
-            dictio = res[0]["FindImageInfo"]["classes"][0]["VD:IMG"]
-            search_key = "VD:"
+            dictio = res[0]["FindImageInfo"]["entities"]["classes"][0]["_Image"]
+            search_key = "VD:" # TODO WHAT IS THIS?
             props_array = [key for key, val in dictio.items() if not search_key in key]
         except:
             props_array = []
@@ -498,20 +486,20 @@ class Images(object):
         try:
             for uniqueid in self.images_ids:
 
-                q = [ {
+                query = [{
                     "FindImage": {
                         "_ref": 1,
                         "constraints": {
                             "_uniqueid": ["==", uniqueid]
                         },
+                        "blobs": False,
                         "results": {
-                            "blob": False,
                             "list": prop_list
                         }
                     }
                 }]
 
-                res, images = self.db_connector.query(q)
+                res, images = self.db_connector.query(query)
 
                 return_dictionary[str(uniqueid)] = res[0]["FindImage"]["entities"][0]
         except:

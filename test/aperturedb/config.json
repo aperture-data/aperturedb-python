@@ -23,13 +23,13 @@
     [
         {
             "index_type":     "entity",
-            "class":          "VD:IMG",
+            "class":          "_Image",
             "property_key":   "id",
             "property_type":  "integer"
         },
         {
             "index_type":     "entity",
-            "class":          "VD:DESC",
+            "class":          "_Descriptor",
             "property_key":   "id",
             "property_type":  "integer"
         },

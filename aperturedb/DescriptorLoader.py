@@ -145,7 +145,7 @@ class DescriptorLoader(ParallelLoader.ParallelLoader):
             if "properties" in data:
                 ai["AddDescriptor"]["properties"] = data["properties"]
             if "constraints" in data:
-                ai["AddDescriptor"]["constraints"] = data["constraints"]
+                ai["AddDescriptor"]["if_not_found"] = data["constraints"]
             if "label" in data:
                 ai["AddDescriptor"]["label"] = data["label"]
 

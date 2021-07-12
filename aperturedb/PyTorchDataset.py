@@ -62,7 +62,7 @@ class ApertureDBDataset(data.Dataset):
         if not "results" in self.query[self.find_image_idx]["FindImage"]:
             self.query[self.find_image_idx]["FindImage"]["results"] = {}
 
-        self.query[self.find_image_idx]["FindImage"]["results"]["batch"] = {}
+        self.query[self.find_image_idx]["FindImage"]["batch"] = {}
 
         try:
             r,b = self.db.query(self.query)
@@ -109,11 +109,11 @@ class ApertureDBDataset(data.Dataset):
         batch_idx     = math.floor(index / self.batch_size)
 
         query  = self.query
-        qbatch = query[self.find_image_idx]["FindImage"]["results"]["batch"]
+        qbatch = query[self.find_image_idx]["FindImage"]["batch"]
         qbatch["batch_size"] = self.batch_size
         qbatch["batch_id"]   = batch_idx
 
-        query[self.find_image_idx]["FindImage"]["results"]["batch"] = qbatch
+        query[self.find_image_idx]["FindImage"]["batch"] = qbatch
 
         try:
             r,b = self.db.query(query)

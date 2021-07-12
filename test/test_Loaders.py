@@ -7,7 +7,7 @@ import numpy  as np
 
 from aperturedb import Connector, Status
 from aperturedb import EntityLoader, ConnectionLoader
-from aperturedb import ImageLoader, BBoxLoader
+from aperturedb import ImageLoader, BBoxLoader, BlobLoader
 from aperturedb import DescriptorSetLoader, DescriptorLoader
 
 class TestLoader(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestLoader(unittest.TestCase):
         # Config params
         self.batchsize  = 99
         self.numthreads = 31
-        self.stats      = True
+        self.stats      = False
 
         db_up = False
         attempts = 0
@@ -53,8 +53,10 @@ class TestEntityLoader(TestLoader):
 
         generator = EntityLoader.EntityGeneratorCSV(in_csv_file)
 
+        if self.stats:
+            print("\n")
+
         loader = EntityLoader.EntityLoader(db)
-        print("\n")
         loader.ingest(generator, batchsize=self.batchsize,
                                  numthreads=self.numthreads,
                                  stats=self.stats)
@@ -70,8 +72,10 @@ class TestEntityLoader(TestLoader):
 
         generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=False)
 
+        if self.stats:
+            print("\n")
+
         loader = ImageLoader.ImageLoader(db)
-        print("\n")
         loader.ingest(generator, batchsize=self.batchsize,
                                  numthreads=self.numthreads,
                                  stats=self.stats)
@@ -87,8 +91,10 @@ class TestEntityLoader(TestLoader):
 
         generator = ConnectionLoader.ConnectionGeneratorCSV(in_csv_file)
 
+        if self.stats:
+            print("\n")
+
         loader = ConnectionLoader.ConnectionLoader(db)
-        print("\n")
         loader.ingest(generator, batchsize=self.batchsize,
                                  numthreads=self.numthreads,
                                  stats=self.stats)
@@ -103,8 +109,10 @@ class TestEntityLoader(TestLoader):
 
         generator = BBoxLoader.BBoxGeneratorCSV(in_csv_file)
 
+        if self.stats:
+            print("\n")
+
         loader = BBoxLoader.BBoxLoader(db)
-        print("\n")
         loader.ingest(generator, batchsize=self.batchsize,
                                  numthreads=self.numthreads,
                                  stats=self.stats)
@@ -122,8 +130,10 @@ class TestEntityLoader(TestLoader):
 
         generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=False)
 
+        if self.stats:
+            print("\n")
+
         loader = ImageLoader.ImageLoader(db)
-        print("\n")
         loader.ingest(generator, batchsize=self.batchsize,
                                  numthreads=self.numthreads,
                                  stats=self.stats)
@@ -139,14 +149,16 @@ class TestEntityLoader(TestLoader):
 
         generator = DescriptorSetLoader.DescriptorSetGeneratorCSV(in_csv_file)
 
+        if self.stats:
+            print("\n")
+
         loader = DescriptorSetLoader.DescriptorSetLoader(db)
-        print("\n")
         loader.ingest(generator, batchsize=self.batchsize,
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
         dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_entities("VD:DESCSET"))
+        self.assertEqual(len(generator), dbstatus.count_entities("_DescriptorSet"))
 
         # Insert Descriptors
 
@@ -160,48 +172,51 @@ class TestEntityLoader(TestLoader):
 
             generator = DescriptorLoader.DescriptorGeneratorCSV(in_csv_file)
 
+            if self.stats:
+                print("\n")
+
             loader = DescriptorLoader.DescriptorLoader(db)
-            print("\n")
             loader.ingest(generator, batchsize=self.batchsize,
                                      numthreads=self.numthreads,
                                      stats=self.stats)
 
             dbstatus = Status.Status(db)
             total_descriptors += len(generator)
-            self.assertEqual(total_descriptors, dbstatus.count_entities("VD:DESC"))
+            self.assertEqual(total_descriptors, dbstatus.count_entities("_Descriptor"))
 
-    def test_EntityBlobLoader(self):
+    def test_BlobLoader(self):
 
         # Insert Person Nodes
         db = Connector.Connector(self.db_host, self.db_port)
 
-        in_csv_file = "./input/entity_blobs.adb.csv"
+        in_csv_file = "./input/blobs.adb.csv"
 
-        generator = EntityLoader.EntityGeneratorCSV(in_csv_file)
+        generator = BlobLoader.BlobGeneratorCSV(in_csv_file)
 
-        loader = EntityLoader.EntityLoader(db)
-        print("\n")
+        if self.stats:
+            print("\n")
+
+        loader = BlobLoader.BlobLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
         dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_entities("segmentation"))
+        self.assertEqual(len(generator), dbstatus.count_entities("_Blob"))
 
         db = Connector.Connector(self.db_host, self.db_port)
 
-        q = [ {
-            "FindEntity": {
-                "class": "segmentation",
+        query = [{
+            "FindBlob": {
+                "blobs": True,
                 "results": {
                     "list": ["license"],
-                    "blob": True,
                     "limit": 1
                 }
             }
         }]
 
-        res, blob = db.query(q)
+        res, blob = db.query(query)
         self.assertEqual(len(blob), 1)
 
         arr = np.frombuffer(blob[0])
