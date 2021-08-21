@@ -3,9 +3,10 @@ import cv2
 import numpy as np
 
 from PIL import Image
+from IPython.display import Video
 from IPython.display import display as ds
 
-DESTINATION_FOLDER = "result_images"
+DESTINATION_FOLDER = "results"
 
 def check_folder(folder):
     if not os.path.exists(folder):
@@ -53,3 +54,14 @@ def draw_bboxes(image, boxes=[], tags=[], save=False):
         check_folder(DESTINATION_FOLDER)
         img_file = DESTINATION_FOLDER + '/res_bboxes.jpg'
         cv2.imwrite(img_file, cv_image)
+
+def display_video_mp4(blob):
+
+    check_folder(DESTINATION_FOLDER)
+
+    name = DESTINATION_FOLDER + "/" + "video_tmp.mp4"
+    fd = open(name, 'wb')
+    fd.write(blob)
+    fd.close()
+
+    ds(Video(name, embed=True))
