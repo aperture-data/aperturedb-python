@@ -26,7 +26,7 @@ class ImageDownloaderCSV(CSVParser.CSVParser):
     def __init__(self, filename, check_image=True):
 
         self.has_filename = False
-        self.check_image = check_image
+        self.check_img    = check_image
 
         super().__init__(filename)
 
