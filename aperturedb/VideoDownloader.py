@@ -13,20 +13,19 @@ from aperturedb import ProgressBar
 HEADER_PATH = "filename"
 HEADER_URL  = "url"
 
-class ImageDownloaderCSV(CSVParser.CSVParser):
+class VideoDownloaderCSV(CSVParser.CSVParser):
 
     '''
-        ApertureDB Image Downloader.
+        ApertureDB Video Downloader.
         Expects a csv file with AT LEAST a "url" column, and
         optionally a "filename" field.
         If "filename" is not present, it is taken from the url.
-
     '''
 
-    def __init__(self, filename, check_image=True):
+    def __init__(self, filename, check_video=True):
 
         self.has_filename = False
-        self.check_img    = check_image
+        self.check_video = check_video
 
         super().__init__(filename)
 
@@ -44,7 +43,7 @@ class ImageDownloaderCSV(CSVParser.CSVParser):
     def url_to_filename(self, url):
 
         filename = url.split("/")[-1]
-        folder = "/tmp/images/"
+        folder = "/tmp/videos/"
 
         return folder + filename
 
@@ -58,57 +57,57 @@ class ImageDownloaderCSV(CSVParser.CSVParser):
         if HEADER_PATH in self.header:
             self.has_filename = True
 
-class ImageDownloader(ParallelLoader.ParallelLoader):
+class VideoDownloader(ParallelLoader.ParallelLoader):
 
     def __init__(self, db, dry_run=False):
 
         super().__init__(db, dry_run=dry_run)
 
-        self.type = "image"
+        self.type = "video"
 
-        self.check_img = False
+        self.check_video = False
 
-    def check_if_image_is_ok(self, filename, url):
+    def check_if_video_is_ok(self, filename, url):
 
         if not os.path.exists(filename):
             return False
 
         try:
-            a = cv2.imread(filename)
-            if a.size <= 0:
-                print("Image present but error reading it:", url)
+            a = cv2.VideoCapture(filename)
+            if a.isOpened() == False:
+                print("Video present but error reading it:", url)
                 return False
         except:
-            print("Image present but error decoding:", url)
+            print("Video present but error decoding:", url)
             return False
 
         return True
 
-    def download_image(self, url, filename):
+    def download_video(self, url, filename):
 
         start = time.time()
 
-        if self.check_img and self.check_if_image_is_ok(filename, url):
+        if self.check_video and self.check_if_video_is_ok(filename, url):
             return
 
         folder = os.path.dirname(filename)
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
 
-        imgdata = requests.get(url)
-        if imgdata.ok:
+        videodata = requests.get(url)
+        if videodata.ok:
             fd = open(filename, "wb")
-            fd.write(imgdata.content)
+            fd.write(videodata.content)
             fd.close()
 
             try:
-                a = cv2.imread(filename)
-                if a.size <= 0:
-                    print("Downloaded image size error:", url)
+                a = cv2.VideoCapture(filename)
+                if a.isOpened() == False:
+                    print("Downloaded Video size error:", url)
                     os.remove(filename)
                     self.error_counter += 1
             except:
-                print("Downloaded image cannot be decoded:", url)
+                print("Downloaded Video cannot be decoded:", url)
                 os.remove(filename)
                 self.error_counter += 1
         else:
@@ -126,7 +125,7 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
 
             url, filename = generator[i]
 
-            self.download_image(url, filename)
+            self.download_video(url, filename)
 
             if thid == 0 and self.stats:
                 pb.update((i - start) / (end - start))
@@ -136,16 +135,16 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
 
     def print_stats(self):
 
-        print("====== ApertureDB ImageDownloader Stats ======")
+        print("====== ApertureDB VideoDownloader Stats ======")
 
         times = np.array(self.times_arr)
-        print("Avg image download time(s):", np.mean(times))
+        print("Avg Video download time(s):", np.mean(times))
         print("Img download time std:", np.std (times))
-        print("Avg download throughput (images/s)):",
+        print("Avg download throughput (videos/s)):",
             1 / np.mean(times) * self.numthreads)
 
         print("Total time(s):", self.ingestion_time)
-        print("Overall throughput (img/s):",
+        print("Overall throughput (videos/s):",
             self.total_elements / self.ingestion_time)
         print("Total errors encountered:", self.error_counter)
         print("=============================================")
