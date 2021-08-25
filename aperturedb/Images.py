@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
+from aperturedb import Status
+
 class Constraints(object):
 
     def __init__(self):
@@ -88,7 +90,7 @@ class Images(object):
         self.display_limit = 20
 
         self.img_id_prop     = "_uniqueid"
-        self.bbox_label_prop = "label"
+        self.bbox_label_prop = "_label"
 
     def __retrieve_batch(self, index):
 
@@ -152,15 +154,19 @@ class Images(object):
                 "blobs": False,
             }
         }, {
-            "FindEntity": {
+            "FindBlob": {
                 "is_connected_to": {
                     "ref": 1
+                },
+                "constraints": {
+                    "type": ["==", "segmentation"]
                 },
                 "blobs": True,
             }
         }]
 
         res, polygons = self.db_connector.query(query)
+
         ret_poly.append(polygons)
 
         uniqueid_str = str(uniqueid)
@@ -225,9 +231,7 @@ class Images(object):
                 "_ref": 2,
                 "blobs": False,
                 "coordinates": True,
-                "results": {
-                    "list": [self.bbox_label_prop],
-                }
+                "labels": True,
             }
         }]
 
@@ -458,18 +462,12 @@ class Images(object):
 
     def get_props_names(self):
 
-        query = [ {
-            "GetSchema": {
-                "type" : "entities"
-            }
-        }]
-
-        res, images = self.db_connector.query(query)
+        status = Status.Status(self.db_connector)
+        schema = status.get_schema()
 
         try:
-            dictio = res[0]["FindImageInfo"]["entities"]["classes"][0]["_Image"]
-            search_key = "VD:" # TODO WHAT IS THIS?
-            props_array = [key for key, val in dictio.items() if not search_key in key]
+            dictio = schema["entities"]["classes"]["_Image"]["properties"]
+            props_array = [key for key, val in dictio.items()]
         except:
             props_array = []
             print("Cannot retrieve properties")
