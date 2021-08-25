@@ -23,6 +23,27 @@ class Status(object):
 
         return self.connector.get_last_response_str()
 
+    def get_schema(self, refresh=False):
+
+        query = [ {
+            "GetSchema": {
+                "type" : "entities",
+                "refresh": refresh,
+            }
+        }]
+
+        res, blobs = self.connector.query(query)
+
+        schema = {}
+
+        try:
+            schema = res[0]["GetSchema"]
+        except:
+            print("Cannot retrieve schema")
+            print(self.connector.get_last_response_str())
+
+        return schema
+
     def count_images(self, constraints={}):
 
         q = [{

@@ -136,7 +136,14 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
             }
 
             if "properties" in data:
-                ai["AddBoundingBox"]["properties"] = data[CSVParser.PROPERTIES]
+                props = data[CSVParser.PROPERTIES]
+                if "_label" in props:
+                    ai["AddBoundingBox"]["label"] = props["_label"]
+                    props.pop("_label")
+
+                # Check if props is not empty after removing "_label"
+                if props:
+                    ai["AddBoundingBox"]["properties"] = props
 
             q.append(ai)
 
