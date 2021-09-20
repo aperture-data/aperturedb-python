@@ -51,7 +51,8 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
         descriptor, desc_ok = self.load_descriptor(filename, index)
 
         if not desc_ok:
-            Exception("Error loading descriptor: " + filename + ":" + index)
+            print("Error loading descriptor: " + filename + ":" + index)
+            raise Exception("Error loading descriptor: " + filename + ":" + index)
 
         data = {
             "descriptor_blob": descriptor,

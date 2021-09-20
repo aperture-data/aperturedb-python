@@ -40,6 +40,7 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         self.props_keys       = [x for x in self.props_keys if x != IMG_FORMAT]
         self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
 
+    # TODO: we can add support for slicing here.
     def __getitem__(self, idx):
 
         filename   = self.df.loc[idx, HEADER_PATH]
@@ -47,7 +48,8 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
 
         img_ok, img = self.load_image(filename)
         if not img_ok:
-            Exception("Error loading image: " + filename )
+            print("Error loading image: " + filename )
+            raise Exception("Error loading image: " + filename )
 
         data["img_blob"] = img
         if self.format_given:
