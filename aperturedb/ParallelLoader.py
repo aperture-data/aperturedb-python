@@ -50,27 +50,30 @@ class ParallelLoader:
 
         db = self.db.create_new_connection()
 
-        data_for_query = []
-
         if thid == 0 and self.stats:
             pb = ProgressBar.ProgressBar(self.loader_filename)
 
-        for i in range(start, end):
+        total_batches = (end - start) // self.batchsize
 
-            data_for_query.append(generator[i])
+        if (end - start) % self.batchsize > 0:
+            total_batches += 1
 
-            if len(data_for_query) >= self.batchsize:
+        for i in range(total_batches):
+
+            batch_start = start + i * self.batchsize
+            batch_end   = min(batch_start + self.batchsize, end)
+
+            try:
+                # This can be done with slices instead of list comprehension.
+                # but required support from generator.
+                data_for_query = [ generator[idx]
+                                   for idx in range(batch_start, batch_end) ]
                 self.do_batch(db, data_for_query)
-                data_for_query = []
-                if thid == 0 and self.stats:
-                    pb.update((i - start) / (end - start))
+            except:
+                self.error_counter += 1
 
-        if len(data_for_query) > 0:
-            self.do_batch(db, data_for_query)
-            data_for_query = []
-
-        if thid == 0 and self.stats:
-            pb.update(1)
+            if thid == 0 and self.stats:
+                pb.update((i + 1) / total_batches)
 
     def ingest(self, generator, batchsize=1, numthreads=1, stats=False):
 
