@@ -45,7 +45,7 @@ class VideoGeneratorCSV(CSVParser.CSVParser):
         video_ok, video = self.load_video(filename)
         if not video_ok:
             print("Error loading video: " + filename )
-            return data
+            raise Exception("Error loading video: " + filename )
 
         data["video_blob"] = video
 

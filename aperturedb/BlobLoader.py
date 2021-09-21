@@ -43,7 +43,9 @@ class BlobGeneratorCSV(CSVParser.CSVParser):
         filename      = self.df.loc[idx, BLOB_PATH]
         blob_ok, blob = self.load_blob(filename)
         if not blob_ok:
-            Exception("Error loading blob: " + filename )
+            print("Error loading blob: " + filename )
+            raise Exception("Error loading blob: " + filename )
+
         data["blob"] = blob
 
         properties  = self.parse_properties (self.df, idx)
