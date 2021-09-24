@@ -26,6 +26,9 @@ class CSVParser():
 
         self.validate()
 
+        if len(self.df) == 0:
+            print("Error: Dataframe empty. Is the CSV file ok?")
+
         self.df = self.df.astype('object')
 
         self.header = list(self.df.columns.values)

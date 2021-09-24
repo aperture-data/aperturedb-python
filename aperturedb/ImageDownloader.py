@@ -23,10 +23,9 @@ class ImageDownloaderCSV(CSVParser.CSVParser):
 
     '''
 
-    def __init__(self, filename, check_image=True):
+    def __init__(self, filename):
 
         self.has_filename = False
-        self.check_img    = check_image
 
         super().__init__(filename)
 
@@ -60,13 +59,15 @@ class ImageDownloaderCSV(CSVParser.CSVParser):
 
 class ImageDownloader(ParallelLoader.ParallelLoader):
 
-    def __init__(self, db, dry_run=False):
+    def __init__(self, db=None, dry_run=False, n_download_retries=0, check_if_present=False):
 
         super().__init__(db, dry_run=dry_run)
 
         self.type = "image"
 
-        self.check_img = False
+        self.check_img = check_if_present
+        self.images_already_downloaded = 0
+        self.n_download_retries = n_download_retries
 
     def check_if_image_is_ok(self, filename, url):
 
@@ -89,13 +90,26 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
         start = time.time()
 
         if self.check_img and self.check_if_image_is_ok(filename, url):
+            self.images_already_downloaded += 1
+            self.times_arr.append(time.time() - start)
             return
 
         folder = os.path.dirname(filename)
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
 
-        imgdata = requests.get(url)
+        retries = 0
+        while True:
+            imgdata = requests.get(url)
+            if imgdata.ok:
+                break
+            else:
+                if retries >= self.n_download_retries:
+                    break
+                print("WARNING: Retrying object:", url)
+                retries += 1
+                time.sleep(2)
+
         if imgdata.ok:
             fd = open(filename, "wb")
             fd.write(imgdata.content)
@@ -120,7 +134,7 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
     def worker(self, thid, generator, start, end):
 
         if thid == 0 and self.stats:
-            pb = ProgressBar.ProgressBar("download_progress.txt")
+            pb = ProgressBar.ProgressBar()
 
         for i in range(start, end):
 
@@ -139,13 +153,22 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
         print("====== ApertureDB ImageDownloader Stats ======")
 
         times = np.array(self.times_arr)
-        print("Avg image download time(s):", np.mean(times))
-        print("Img download time std:", np.std (times))
-        print("Avg download throughput (images/s)):",
+        if len(times) <= 0:
+            print("Error: No downloads.")
+            return
+
+        if self.images_already_downloaded > 0:
+            print("Images already present:", self.images_already_downloaded)
+
+        print("Images downloaded:", len(times) - self.images_already_downloaded)
+        print("Avg image time(s):", np.mean(times))
+        print("Image time std:", np.std (times))
+        print("Throughput (images/s)):",
             1 / np.mean(times) * self.numthreads)
 
         print("Total time(s):", self.ingestion_time)
         print("Overall throughput (img/s):",
             self.total_elements / self.ingestion_time)
-        print("Total errors encountered:", self.error_counter)
+        if self.error_counter > 0:
+            print("Errors encountered:", self.error_counter)
         print("=============================================")
