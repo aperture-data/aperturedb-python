@@ -6,8 +6,8 @@ from aperturedb import ImageDownloader
 
 def main(params):
 
-    loader = ImageDownloader.ImageDownloader(None)
-    loader.ingest(ImageDownloader.ImageDownloaderCSV(params.in_file, check_image=True),
+    loader = ImageDownloader.ImageDownloader(check_if_present=True, n_download_retries=2)
+    loader.ingest(ImageDownloader.ImageDownloaderCSV(params.in_file),
                     numthreads=32,
                     stats=True)
 
