@@ -217,3 +217,49 @@ class TestEntityLoader(TestLoader):
 
         arr = np.frombuffer(blob[0])
         self.assertEqual(arr[2], 3.3)
+
+
+class TestURILoader(TestLoader):
+
+    def test_S3Loader(self):
+
+        # Insert Images
+        db = self.create_connection()
+        dbstatus = Status.Status(db)
+        count_before = dbstatus.count_images()
+
+        in_csv_file = "./input/s3_images.adb.csv"
+        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=True)
+
+        if self.stats:
+            print("\n")
+
+        loader = ImageLoader.ImageLoader(db)
+        loader.ingest(generator, batchsize=self.batchsize,
+                                 numthreads=self.numthreads,
+                                 stats=self.stats)
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(generator), dbstatus.count_images() - count_before)
+
+    def test_HttpImageLoader(self):
+
+        # Insert Images
+        db = self.create_connection()
+        dbstatus = Status.Status(db)
+        count_before = dbstatus.count_images()
+
+        in_csv_file = "./input/http_images.adb.csv"
+        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=True)
+
+        if self.stats:
+            print("\n")
+
+        loader = ImageLoader.ImageLoader(db)
+        loader.ingest(generator, batchsize=self.batchsize,
+                                 numthreads=self.numthreads,
+                                 stats=self.stats)
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(generator), dbstatus.count_images() - count_before)
+
