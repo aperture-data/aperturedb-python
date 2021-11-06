@@ -43,7 +43,10 @@ PROTOCOL_VERSION = 1
 
 class Connector(object):
 
-    def __init__(self, host="localhost", port=55555, use_ssl=True):
+    def __init__(self, host="localhost", port=55555,
+                 user="", password="", token="",
+                 session=None,
+                 use_ssl=True):
 
         self.use_ssl = use_ssl
 
@@ -51,11 +54,22 @@ class Connector(object):
         self.port = port
 
         self.connected = False
-        self.last_response = ''
+        self.last_response   = ''
+        self.last_query_time = 0
+
+        self.session_token = ""
 
         self._connect()
 
-        self.last_query_time = 0
+        if session:
+            self.session = session
+        else:
+            try:
+                self._authenticate(user, password, token)
+            except Exception as e:
+                raise Exception("Authentication failed:", str(e))
+
+        self.session_token = self.session["session_token"]
 
     def _send_msg(self, data):
 
@@ -76,6 +90,29 @@ class Connector(object):
             response += packet
 
         return response
+
+    def _authenticate(self, user, password="", token=""):
+
+        query = [{
+            "Authenticate": {
+                "username": user,
+            }
+        }]
+
+        if password:
+            query[0]["Authenticate"]["password"] = password
+        elif token:
+            query[0]["Authenticate"]["token"] = token
+        else:
+            raise Exception("Either password or token must be specified for authentication")
+
+        response, _ = self.query(query)
+
+        self.session = response[0]["Authenticate"]
+        if self.session["status"] != 0:
+            raise Exception(self.session["info"])
+
+        self.session_token = self.session["session_token"]
 
     def _connect(self):
 
@@ -132,7 +169,7 @@ class Connector(object):
 
     def create_new_connection(self):
 
-        return Connector(self.ip, self.port)
+        return Connector(self.host, self.port, session=self.session)
 
     def _query(self, query, blob_array = []):
 
@@ -149,6 +186,9 @@ class Connector(object):
         # query has .json and .blobs
         query_msg.json = query_str
 
+        # Set Auth token, only when not authenticated before
+        query_msg.token = self.session_token
+
         for blob in blob_array:
             query_msg.blobs.append(blob)
 
@@ -157,8 +197,6 @@ class Connector(object):
         self._send_msg(data)
 
         response = self._recv_msg()
-
-        print(response)
 
         querRes = queryMessage_pb2.queryMessage()
         querRes.ParseFromString(response)
