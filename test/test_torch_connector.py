@@ -14,26 +14,31 @@ class TestTorch(unittest.TestCase):
         super().__init__(*args, **kwargs)
 
         # ApertureDB Server Info
-        self.db_host = dbinfo.DB_HOST
-        self.db_port = dbinfo.DB_PORT
+        self.db_host  = dbinfo.DB_HOST
+        self.db_port  = dbinfo.DB_PORT
+        self.user     = "admin"
+        self.password = "admin"
 
         db_up = False
         attempts = 0
         while(not db_up):
             try:
-                db = Connector.Connector(self.db_host, self.db_port)
+                db = Connector.Connector(self.db_host, self.db_port, self.user, self.password)
                 db_up = True
                 if (attempts > 0):
                     print("Connection to ApertureDB successful.")
             except:
                 print("Attempt", attempts,
-                      "to connect to ApertureDB failed, retying...")
+                      "to connect to ApertureDB failed, retrying...")
                 attempts += 1
                 time.sleep(1) # sleeps 1 second
 
             if attempts > 10:
                 print("Failed to connect to ApertureDB after 10 attempts")
                 exit()
+
+    def create_connection(self):
+        return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
 
 class TestTorchDatasets(TestTorch):
 
@@ -44,7 +49,7 @@ class TestTorchDatasets(TestTorch):
 
     def test_omConstraints(self):
 
-        db = Connector.Connector(self.db_host, self.db_port)
+        db = self.create_connection()
 
         const = Images.Constraints()
         const.greaterequal("age", 0)
@@ -66,7 +71,7 @@ class TestTorchDatasets(TestTorch):
 
     def test_nativeContraints(self):
 
-        db = Connector.Connector(self.db_host, self.db_port)
+        db = self.create_connection()
 
         query = [ {
             "FindImage": {
