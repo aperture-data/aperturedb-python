@@ -16,8 +16,10 @@ class TestLoader(unittest.TestCase):
         super().__init__(*args, **kwargs)
 
         # ApertureDB Server Info
-        self.db_host = dbinfo.DB_HOST
-        self.db_port = dbinfo.DB_PORT
+        self.db_host  = dbinfo.DB_HOST
+        self.db_port  = dbinfo.DB_PORT
+        self.user     = "admin"
+        self.password = "admin"
 
         # Config params
         self.batchsize  = 99
@@ -28,13 +30,13 @@ class TestLoader(unittest.TestCase):
         attempts = 0
         while(not db_up):
             try:
-                db = Connector.Connector(self.db_host, self.db_port)
+                db = Connector.Connector(self.db_host, self.db_port, self.user, self.password)
                 db_up = True
                 if (attempts > 0):
                     print("Connection to ApertureDB successful.")
             except:
                 print("Attempt", attempts,
-                      "to connect to ApertureDB failed, retying...")
+                      "to connect to ApertureDB failed, retrying...")
                 attempts += 1
                 time.sleep(1) # sleeps 1 second
 
@@ -42,12 +44,15 @@ class TestLoader(unittest.TestCase):
                 print("Failed to connect to ApertureDB after 10 attempts")
                 exit()
 
+    def create_connection(self):
+        return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
+
 class TestEntityLoader(TestLoader):
 
     def test_Loader(self):
 
         # Insert Person Nodes
-        db = Connector.Connector(self.db_host, self.db_port)
+        db = self.create_connection()
 
         in_csv_file = "./input/persons.adb.csv"
 
@@ -66,8 +71,6 @@ class TestEntityLoader(TestLoader):
 
 
         # Insert Images
-        db = Connector.Connector(self.db_host, self.db_port)
-
         in_csv_file = "./input/images.adb.csv"
 
         generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=False)
@@ -85,7 +88,6 @@ class TestEntityLoader(TestLoader):
 
 
         # Insert Connections
-        db = Connector.Connector(self.db_host, self.db_port)
 
         in_csv_file = "./input/connections-persons-images.adb.csv"
 
@@ -103,7 +105,6 @@ class TestEntityLoader(TestLoader):
         self.assertEqual(len(generator), dbstatus.count_connections("has_image"))
 
         # Insert BBoxes
-        db = Connector.Connector(self.db_host, self.db_port)
 
         in_csv_file = "./input/bboxes.adb.csv"
 
@@ -124,7 +125,7 @@ class TestEntityLoader(TestLoader):
 
         # Insert Images, images may be there already, and that case should
         # be handled correctly by contraints
-        db = Connector.Connector(self.db_host, self.db_port)
+        db = self.create_connection()
 
         in_csv_file = "./input/images.adb.csv"
 
@@ -143,8 +144,6 @@ class TestEntityLoader(TestLoader):
 
 
         # Insert DescriptorsSet
-        db = Connector.Connector(self.db_host, self.db_port)
-
         in_csv_file = "./input/descriptorset.adb.csv"
 
         generator = DescriptorSetLoader.DescriptorSetGeneratorCSV(in_csv_file)
@@ -166,7 +165,6 @@ class TestEntityLoader(TestLoader):
 
         total_descriptors = 0
         for setname in sets:
-            db = Connector.Connector(self.db_host, self.db_port)
 
             in_csv_file = "./input/" + setname + ".adb.csv"
 
@@ -187,7 +185,7 @@ class TestEntityLoader(TestLoader):
     def test_BlobLoader(self):
 
         # Insert Person Nodes
-        db = Connector.Connector(self.db_host, self.db_port)
+        db = self.create_connection()
 
         in_csv_file = "./input/blobs.adb.csv"
 
@@ -204,8 +202,6 @@ class TestEntityLoader(TestLoader):
         dbstatus = Status.Status(db)
         self.assertEqual(len(generator), dbstatus.count_entities("_Blob"))
 
-        db = Connector.Connector(self.db_host, self.db_port)
-
         query = [{
             "FindBlob": {
                 "blobs": True,
@@ -221,3 +217,49 @@ class TestEntityLoader(TestLoader):
 
         arr = np.frombuffer(blob[0])
         self.assertEqual(arr[2], 3.3)
+
+
+class TestURILoader(TestLoader):
+
+    def test_S3Loader(self):
+
+        # Insert Images
+        db = self.create_connection()
+        dbstatus = Status.Status(db)
+        count_before = dbstatus.count_images()
+
+        in_csv_file = "./input/s3_images.adb.csv"
+        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=True)
+
+        if self.stats:
+            print("\n")
+
+        loader = ImageLoader.ImageLoader(db)
+        loader.ingest(generator, batchsize=self.batchsize,
+                                 numthreads=self.numthreads,
+                                 stats=self.stats)
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(generator), dbstatus.count_images() - count_before)
+
+    def test_HttpImageLoader(self):
+
+        # Insert Images
+        db = self.create_connection()
+        dbstatus = Status.Status(db)
+        count_before = dbstatus.count_images()
+
+        in_csv_file = "./input/http_images.adb.csv"
+        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=True)
+
+        if self.stats:
+            print("\n")
+
+        loader = ImageLoader.ImageLoader(db)
+        loader.ingest(generator, batchsize=self.batchsize,
+                                 numthreads=self.numthreads,
+                                 stats=self.stats)
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(generator), dbstatus.count_images() - count_before)
+

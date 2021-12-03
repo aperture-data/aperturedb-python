@@ -99,6 +99,52 @@ def generate_images_csv(multiplier):
 
     return df
 
+def generate_http_images_csv(ip_file_csv):
+
+    images    = pd.read_csv(ip_file_csv, sep=",", header=None)
+
+    ids      = [int(1000000000* random.random()) for i in range(len(images))]
+    age      = [int(100* random.random())       for i in range(len(images))]
+    height   = [float(200* random.random())     for i in range(len(images))]
+    license  = [x for x in range(len(images))]
+
+    df = pd.DataFrame()
+    df['url']      = images
+    df["urlid"]    = ids
+    df['license']  = license
+    df["age"]      = age
+    df["height"]   = height
+    df["constraint_urlid"] = ids
+
+    df = df.sort_values("urlid")
+
+    df.to_csv("input/http_images.adb.csv", index=False)
+
+    return df
+
+def generate_s3_images_csv(ip_file_csv):
+
+    images    = pd.read_csv(ip_file_csv, sep=",", header=None)
+
+    ids      = [int(1000000000* random.random()) for i in range(len(images))]
+    age      = [int(100* random.random())       for i in range(len(images))]
+    height   = [float(200* random.random())     for i in range(len(images))]
+    license  = [x for x in range(len(images))]
+
+    df = pd.DataFrame()
+    df['s3_url']   = images
+    df["id"]       = ids
+    df['license']  = license
+    df["age"]      = age
+    df["height"]   = height
+    df["constraint_id"] = ids
+
+    df = df.sort_values("id")
+
+    df.to_csv("input/s3_images.adb.csv", index=False)
+
+    return df
+
 def generate_connections_csv(persons, images):
 
     connections  = list(product(images["id"][::100], persons["id"][::100]))
@@ -183,6 +229,8 @@ def main(params):
     persons = generate_person_csv(params.multiplier)
     blobs   = generate_blobs_csv()
     images  = generate_images_csv(int(params.multiplier/2))
+    s3_imgs = generate_http_images_csv("input/sample_http_urls.csv")
+    s3_imgs = generate_s3_images_csv("input/sample_s3_urls.csv")
     connect = generate_connections_csv(persons, images)
     bboxes  = generate_bboxes_csv(images)
 
