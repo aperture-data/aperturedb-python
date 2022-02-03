@@ -18,8 +18,8 @@ class TestLoader(unittest.TestCase):
         # ApertureDB Server Info
         self.db_host  = dbinfo.DB_HOST
         self.db_port  = dbinfo.DB_PORT
-        self.user     = "admin"
-        self.password = "admin"
+        self.user     = dbinfo.DB_USER
+        self.password = dbinfo.DB_PASSWORD
 
         # Config params
         self.batchsize  = 99
