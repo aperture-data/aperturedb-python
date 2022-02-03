@@ -18,7 +18,7 @@ docker run         \
     -t -d          \
     --name $DOCKERIMGNAME \
     --mount src=$PWD/aperturedb,target="/aperturedb/",type=bind \
-    aperturedata/aperturedb:v0.7.0-webui
+    aperturedata/aperturedb:v0.9.0-webui
 
 echo "Downloading images..."
 python3 download_images.py          # Test ImageDownloader

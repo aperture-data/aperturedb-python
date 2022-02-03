@@ -47,7 +47,9 @@ class CSVParser():
                     prop = key[len("date:"):] # remove prefix
                     properties[prop] = {"_date": self.df.loc[idx, key]}
                 else:
-                    properties[key] = self.df.loc[idx, key]
+                    value = self.df.loc[idx, key]
+                    if value == value:  # skips nan values
+                        properties[key] = value
 
         return properties
 

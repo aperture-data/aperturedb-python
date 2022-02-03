@@ -85,7 +85,11 @@ class ParallelLoader:
 
         start_time = time.time()
 
-        elements_per_thread = math.ceil(self.total_elements / self.numthreads)
+        if self.total_elements < batchsize:
+            elements_per_thread = self.total_elements
+            self.numthreads = 1
+        else:
+            elements_per_thread = math.ceil(self.total_elements / self.numthreads)
 
         thread_arr = []
         for i in range(self.numthreads):

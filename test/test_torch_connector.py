@@ -1,6 +1,10 @@
 import argparse
 import time
 import unittest
+import os
+
+import torch
+import torch.distributed as dist
 
 import dbinfo
 
@@ -14,26 +18,31 @@ class TestTorch(unittest.TestCase):
         super().__init__(*args, **kwargs)
 
         # ApertureDB Server Info
-        self.db_host = dbinfo.DB_HOST
-        self.db_port = dbinfo.DB_PORT
+        self.db_host  = dbinfo.DB_HOST
+        self.db_port  = dbinfo.DB_PORT
+        self.user     = dbinfo.DB_USER
+        self.password = dbinfo.DB_PASSWORD
 
         db_up = False
         attempts = 0
         while(not db_up):
             try:
-                db = Connector.Connector(self.db_host, self.db_port)
+                db = Connector.Connector(self.db_host, self.db_port, self.user, self.password)
                 db_up = True
                 if (attempts > 0):
                     print("Connection to ApertureDB successful.")
             except:
                 print("Attempt", attempts,
-                      "to connect to ApertureDB failed, retying...")
+                      "to connect to ApertureDB failed, retrying...")
                 attempts += 1
                 time.sleep(1) # sleeps 1 second
 
             if attempts > 10:
                 print("Failed to connect to ApertureDB after 10 attempts")
                 exit()
+
+    def create_connection(self):
+        return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
 
 class TestTorchDatasets(TestTorch):
 
@@ -44,7 +53,7 @@ class TestTorchDatasets(TestTorch):
 
     def test_omConstraints(self):
 
-        db = Connector.Connector(self.db_host, self.db_port)
+        db = self.create_connection()
 
         const = Images.Constraints()
         const.greaterequal("age", 0)
@@ -66,7 +75,7 @@ class TestTorchDatasets(TestTorch):
 
     def test_nativeContraints(self):
 
-        db = Connector.Connector(self.db_host, self.db_port)
+        db = self.create_connection()
 
         query = [ {
             "FindImage": {
@@ -101,3 +110,94 @@ class TestTorchDatasets(TestTorch):
 
         print("\n")
         print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
+
+    def test_datasetWithMultiprocessing(self):
+
+        db = self.create_connection()
+
+        query = [ {
+            "FindImage": {
+                "constraints": {
+                    "age": [">=", 0]
+                },
+                "operations": [
+                    {
+                        "type": "resize",
+                        "width": 224,
+                        "height": 224
+                    }
+                ],
+                "results": {
+                    "list": ["license"]
+                }
+            }
+        }]
+
+        dataset = PyTorchDataset.ApertureDBDataset(db, query, label_prop="license")
+
+        dbstatus = Status.Status(db)
+        self.assertEqual(len(dataset), dbstatus.count_images())
+
+        start = time.time()
+
+        # Iterate over dataset.
+        for img in dataset:
+            if len(img[0]) < 0:
+                print("Empty image?")
+                self.assertEqual(True, False)
+
+        print("\n")
+        print("Sequential Throughput (imgs/s):", len(dataset) / (time.time() - start))
+
+        # Distributed Data Loader Setup
+
+        # Needed for init_process_group
+        os.environ['MASTER_ADDR'] = 'localhost'
+        os.environ['MASTER_PORT'] = '12355'
+
+        dist.init_process_group("gloo", rank=0, world_size=1)
+
+        # === Distributed Data Loader Sequential
+
+        data_loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=10,          # pick random values here to test
+            num_workers=4,          # num_workers > 1 to test multiprocessing works
+            pin_memory=True,
+            drop_last=True,
+        )
+
+        start = time.time()
+
+        # Iterate over dataset.
+        for img in data_loader:
+            if len(img[0]) < 0:
+                print("Empty image?")
+                self.assertEqual(True, False)
+
+        print("Distributed Data Loader Sequential Throughput (imgs/s):", len(dataset) / (time.time() - start))
+
+        # === Distributed Data Loader Shuffler
+
+        # This will generate a random sampler, which will make the use
+        # of batching wasteful
+        sampler     = torch.utils.data.DistributedSampler(dataset, shuffle=True)
+
+        data_loader = torch.utils.data.DataLoader(
+            dataset,
+            sampler=sampler,
+            batch_size=10,          # pick random values here to test
+            num_workers=4,          # num_workers > 1 to test multiprocessing works
+            pin_memory=True,
+            drop_last=True,
+        )
+
+        start = time.time()
+
+        # Iterate over dataset.
+        for img in data_loader:
+            if len(img[0]) < 0:
+                print("Empty image?")
+                self.assertEqual(True, False)
+
+        print("Distributed Data Loader Shuffle Throughput (imgs/s):", len(dataset) / (time.time() - start))

@@ -1,5 +1,8 @@
 import math
 import time
+import requests
+import os
+import boto3
 from threading import Thread
 
 import numpy as np
@@ -9,10 +12,12 @@ from aperturedb import Status
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
-HEADER_PATH = "filename"
-PROPERTIES  = "properties"
-CONSTRAINTS = "constraints"
-IMG_FORMAT  = "format"
+HEADER_PATH   = "filename"
+HEADER_URL    = "url"
+HEADER_S3_URL = "s3_url"
+PROPERTIES    = "properties"
+CONSTRAINTS   = "constraints"
+IMG_FORMAT    = "format"
 
 class ImageGeneratorCSV(CSVParser.CSVParser):
 
@@ -21,6 +26,11 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         Expects a csv file with the following columns (format optional):
 
             filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
+            OR
+            url,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
+            OR
+            s3_url,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
+            ...
 
         Example csv file:
         filename,id,label,constaint_id,format
@@ -29,7 +39,7 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         ...
     '''
 
-    def __init__(self, filename, check_image=True):
+    def __init__(self, filename, check_image=True, n_download_retries=3):
 
         super().__init__(filename)
 
@@ -40,13 +50,31 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         self.props_keys       = [x for x in self.props_keys if x != IMG_FORMAT]
         self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
 
+        self.source_type      = self.header[0]
+        if self.source_type not in [ HEADER_PATH, HEADER_URL, HEADER_S3_URL ]:
+            print("Source not recognized: " + self.source_type)
+            raise Exception("Error loading image: " + filename )
+
+        self.n_download_retries = n_download_retries
+
     # TODO: we can add support for slicing here.
     def __getitem__(self, idx):
 
-        filename   = self.df.loc[idx, HEADER_PATH]
         data = {}
 
-        img_ok, img = self.load_image(filename)
+        img_ok = True
+        img = None
+
+        if self.source_type == HEADER_PATH:
+            image_path   = self.df.loc[idx, HEADER_PATH]
+            img_ok, img  = self.load_image(image_path)
+        elif self.source_type == HEADER_URL:
+            image_path   = self.df.loc[idx, HEADER_URL]
+            img_ok, img  = self.load_url(image_path)
+        elif self.source_type == HEADER_S3_URL:
+            image_path   = self.df.loc[idx, HEADER_S3_URL]
+            img_ok, img  = self.load_s3_url(image_path)
+
         if not img_ok:
             print("Error loading image: " + filename )
             raise Exception("Error loading image: " + filename )
@@ -67,12 +95,12 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         return data
 
     def load_image(self, filename):
-
         if self.check_image:
             try:
                 a = cv2.imread(filename)
                 if a.size <= 0:
                     print("IMAGE SIZE ERROR:", filename)
+                    return false, None
             except:
                 print("IMAGE ERROR:", filename)
 
@@ -83,14 +111,73 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
             return True, buff
         except:
             print("IMAGE ERROR:", filename)
+        return False, None
 
+    def check_image_buffer(self, img):
+        try:
+            decoded_img = cv2.imdecode(img, cv2.IMREAD_COLOR)
+
+            # Check image is correct
+            decoded_img = decoded_img if decoded_img is not None else img
+
+            return True
+        except:
+            return False
+
+    def load_url(self, url):
+        retries = 0
+        while True:
+            imgdata = requests.get(url)
+            if imgdata.ok:
+                imgbuffer = np.frombuffer(imgdata.content, dtype='uint8')
+                if self.check_image and not self.check_image_buffer(imgbuffer):
+                    print("IMAGE ERROR: ", url)
+                    return False, None
+
+                return imgdata.ok, imgdata.content
+            else:
+                if retries >= self.n_download_retries:
+                    break
+                print("WARNING: Retrying object:", url)
+                retries += 1
+                time.sleep(2)
+
+        return False, None
+
+    def load_s3_url(self, s3_url):
+        retries = 0
+
+        # The connections by boto3 cause ResourceWarning. Known
+        # issue: https://github.com/boto/boto3/issues/454
+        s3 = boto3.client('s3')
+
+        while True:
+            try:
+                bucket_name = s3_url.split("/")[2]
+                object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
+                s3_response_object = s3.get_object(Bucket=bucket_name, Key=object_name)
+                img = s3_response_object['Body'].read()
+                imgbuffer = np.frombuffer(img, dtype='uint8')
+                if self.check_image and not self.check_image_buffer(imgbuffer):
+                    print("IMAGE ERROR: ", s3_url)
+                    return False, None
+
+                return True, img
+            except:
+                if retries >= self.n_download_retries:
+                    break
+                print("WARNING: Retrying object:", s3_url)
+                retries += 1
+                time.sleep(2)
+
+        print("S3 ERROR:", s3_url)
         return False, None
 
     def validate(self):
 
         self.header = list(self.df.columns.values)
 
-        if self.header[0] != HEADER_PATH:
+        if self.header[0] not in [ HEADER_PATH, HEADER_URL, HEADER_S3_URL ]:
             raise Exception("Error with CSV file field: filename. Must be first field")
 
 class ImageLoader(ParallelLoader.ParallelLoader):

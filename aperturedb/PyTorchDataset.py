@@ -10,6 +10,8 @@ import torch
 from torch.utils import data
 from torchvision import transforms
 
+DEFAULT_BATCH_SIZE = 50
+
 class ApertureDBDatasetConstraints(data.Dataset):
 
     # initialise function of class
@@ -39,15 +41,18 @@ class ApertureDBDataset(data.Dataset):
     # initialise function of class
     def __init__(self, db, query, label_prop=None):
 
-        self.db = db
+        self.db = db.create_new_connection()
         self.query = query
         self.find_image_idx = None
         self.total_elements = 0
-        self.batch_size     = 100
+        self.batch_size     = DEFAULT_BATCH_SIZE
         self.batch_images   = []
         self.batch_start    = 0
         self.batch_end      = 0
         self.label_prop     = label_prop
+
+        self.prev_requested   = -1
+        self.sequence_counter = DEFAULT_BATCH_SIZE
 
         for i in range(len(query)):
 
@@ -75,6 +80,18 @@ class ApertureDBDataset(data.Dataset):
             raise
 
     def __getitem__(self, index):
+
+        if index == self.prev_requested + 1:
+            self.sequence_counter += 1
+        else:
+            self.sequence_counter = 0
+
+        if self.sequence_counter >= DEFAULT_BATCH_SIZE:
+            self.batch_size = DEFAULT_BATCH_SIZE
+        else:
+            self.batch_size = 1
+
+        self.prev_requested = index
 
         if index >= self.total_elements:
             raise StopIteration
@@ -116,7 +133,21 @@ class ApertureDBDataset(data.Dataset):
         query[self.find_image_idx]["FindImage"]["batch"] = qbatch
 
         try:
-            r,b = self.db.query(query)
+
+            # This is to handle potential issues with
+            # disconnection/timeout and SSL context on multiprocessing
+            connection_ok = False
+            try:
+                r,b = self.db.query(query)
+                connection_ok = True
+            except:
+                # Connection failed, we retry just once to re-connect
+                self.db = self.db.create_new_connection()
+
+            if not connection_ok:
+                # Connection failed, we have reconnected, we try again.
+                r,b = self.db.query(query)
+
             if len(b) == 0:
                 print("index:", index)
                 raise Exception("No results returned from ApertureDB")
