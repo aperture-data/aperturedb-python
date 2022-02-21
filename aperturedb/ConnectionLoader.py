@@ -104,47 +104,55 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
 
         for data in entity_data:
 
-            ref_src = ref_counter
-            ref_counter += 1
-            fe_a = {
-                "FindEntity": {
-                    "_ref": ref_src,
-                    "with_class": data["ref1_class"],
+            try:
+
+                ref_src = ref_counter
+                ref_counter += 1
+                fe_a = {
+                    "FindEntity": {
+                        "_ref": ref_src,
+                        "with_class": data["ref1_class"],
+                    }
                 }
-            }
 
-            fe_a["FindEntity"]["constraints"] = {}
-            fe_a["FindEntity"]["constraints"][data["ref1_key"]] = ["==", data["ref1_val"]]
-            q.append(fe_a)
+                fe_a["FindEntity"]["constraints"] = {}
+                fe_a["FindEntity"]["constraints"][data["ref1_key"]] = ["==", data["ref1_val"]]
+                q.append(fe_a)
 
-            ref_dst = ref_counter
-            ref_counter += 1
-            fe_b = {
-                "FindEntity": {
-                    "_ref": ref_dst,
-                    "with_class": data["ref2_class"],
+                ref_dst = ref_counter
+                ref_counter += 1
+                fe_b = {
+                    "FindEntity": {
+                        "_ref": ref_dst,
+                        "with_class": data["ref2_class"],
+                    }
                 }
-            }
 
-            fe_b["FindEntity"]["constraints"] = {}
-            fe_b["FindEntity"]["constraints"][data["ref2_key"]] = ["==", data["ref2_val"]]
-            q.append(fe_b)
+                fe_b["FindEntity"]["constraints"] = {}
+                fe_b["FindEntity"]["constraints"][data["ref2_key"]] = ["==", data["ref2_val"]]
+                q.append(fe_b)
 
-            ae = {
-                "AddConnection": {
-                    "class": data["class"],
-                    "src": ref_src,
-                    "dst": ref_dst,
+                ae = {
+                    "AddConnection": {
+                        "class": data["class"],
+                        "src": ref_src,
+                        "dst": ref_dst,
+                    }
                 }
-            }
 
-            if PROPERTIES in data:
-                ae["AddConnection"][PROPERTIES] = data[PROPERTIES]
+                if PROPERTIES in data:
+                    ae["AddConnection"][PROPERTIES] = data[PROPERTIES]
 
-            if CONSTRAINTS in data:
-                ae["AddConnection"]["if_not_found"] = data[CONSTRAINTS]
+                if CONSTRAINTS in data:
+                    ae["AddConnection"]["if_not_found"] = data[CONSTRAINTS]
 
-            q.append(ae)
+                q.append(ae)
+            except KeyError as ex:
+                error_str = "ERROR: ConnectionLoader::generate_batch():" + \
+                    " expected key='" + ex.args[0] + "' in '" + str(data) + \
+                    "'. Ignored.";
+                print(error_str)
+                sys.stdout.write(error_str + "\n")
 
         if self.dry_run:
             print(q)
