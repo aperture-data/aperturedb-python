@@ -13,3 +13,46 @@ elements in ApertureDB at the object level.
 * NotebookHelpers.py provides helpers to show images/bounding boxes on Jupyter Notebooks
 
 For more information, visit https://aperturedata.io
+
+
+## Object Mapper API
+This API allows the user to interact with the database with the idea of objects that can be Created, Read, Updated and Deleted through an intutive interface involving these objects.
+
+It supports the following types of Objects in the Database as Python objects:
+| Object | Dcumentation |
+| ----- | -----|
+| Blob||
+| BoundingBox || 
+| Descriptor||
+| DescriptorSet||
+| Entity||
+| Image||
+| Video||
+
+
+### Examples
+**Create an Image**
+
+```
+from aperturedb import Connector, Images
+images = Images.Images(db_connector)
+with open(abs_path, "rb") as instream:
+    img_data = instream.read()
+    images.create_new(
+        properties: {
+            description: "A new image API",
+            custom_index: 92
+        }
+    )
+    image = image.save()
+    # image is an object with _uniqueid and arbitrary properties, and methods.
+```
+
+**Retrieve an Image**
+
+```
+from aperturedb import Connector, Images
+images = Images.Images(db_connector)
+
+image = image.get(id=92)
+```
