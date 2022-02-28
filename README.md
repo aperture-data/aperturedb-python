@@ -35,6 +35,8 @@ It supports the following types of Objects in the Database as Python objects:
 
 ```
 from aperturedb import Connector, Images
+
+db_connector = Connector.Connector(user="admin", password="admin")
 images = Images.Images(db_connector)
 with open(abs_path, "rb") as instream:
     img_data = instream.read()
@@ -52,7 +54,24 @@ with open(abs_path, "rb") as instream:
 
 ```
 from aperturedb import Connector, Images
+
+db_connector = Connector.Connector(user="admin", password="admin")
 images = Images.Images(db_connector)
 
 image = image.get(id=92)
+```
+
+**Connect an Image to BoundingBox**
+```
+from aperturedb import Connector, Images, BoundingBoxes
+
+db_connector = Connector.Connector(user="admin", password="admin")
+
+bboxes = BoundingBoxes.BoundingBoxes(db_connector)
+bbox = bboxes.get(id=34)
+
+images = Images.Images(db_connector)
+img = images.get(id=1)
+
+img.connect_BoundingBox(bbox)
 ```
