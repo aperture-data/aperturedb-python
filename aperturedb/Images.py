@@ -12,6 +12,7 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
 from aperturedb import Status
+from aperturedb.Repository import Repository
 
 class Constraints(object):
 
@@ -68,10 +69,10 @@ class Operations(object):
 
         self.operations_arr.append(op)
 
-class Images(object):
+class Images(Repository):
 
     def __init__(self, db, batch_size=100):
-
+        super().__init__(db)
         self.db_connector = db
 
         self.images        = {}
@@ -91,6 +92,7 @@ class Images(object):
 
         self.img_id_prop     = "_uniqueid"
         self.bbox_label_prop = "_label"
+        self._object_type = "Image"
 
     def __retrieve_batch(self, index):
 

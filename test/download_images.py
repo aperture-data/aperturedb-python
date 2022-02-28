@@ -1,7 +1,4 @@
 import argparse
-import random
-import math
-
 from aperturedb import ImageDownloader
 
 def main(params):
