@@ -37,6 +37,8 @@ def connect_entity(src, dest):
     resp, blob = src._db.query(connect_command)
     print(resp)
 
+def delete_entity(entity):
+    resp = entity._db.query([entity._deletequery])
 
 class Repository:
     def __init__(self, db: Connector.Connector) -> None:
@@ -44,16 +46,16 @@ class Repository:
         self._status = Status.Status(db)
         self._schema = self._status.get_schema()
         self._object_type = "Entity"
-        if self._object_type in self._schema["entities"]["classes"]:
-            self._properties = [k for k in self._schema["entities"]["classes"][self._object_type]["properties"]]
-        else:
-            self._properties = {}
+        self._id_prop = "_uniqueid"
         
     def _find_command(self) -> str:
         return f"{FIND_COMMAND_PREFIX}{self._object_type}"
 
     def _add_command(self) -> str:
         return f"{ADD_COMMAND_PREFIX}{self._object_type}"
+
+    def _delete_command(self) -> str:
+        return f"{DELETE_COMMAND_PREFIX}{self._object_type}"
 
     def _create_object(self, resp):
         # Safe property names. Remove spaces.
@@ -62,6 +64,7 @@ class Repository:
 
         for o in all_objects:
             setattr(instance, f"connect_{o}", types.MethodType(connect_entity, instance))
+            setattr(instance, "delete", types.MethodType(delete_entity, instance))
 
         self._entity = instance
         return instance
@@ -128,11 +131,19 @@ class Repository:
                     }
                 }
         }
+        delete_query = {
+            self._delete_command(): {
+                "constraints": {
+                        "_uniqueid": ["==", id]
+                }
+            }
+        }
         resp, blob = self._db.query([find_query])
         if resp[0][self._find_command()]["returned"] != 1:
             raise Exception("not found unique entity")
         entity = self._create_object(resp)
         setattr(entity, "_findquery", find_query)
+        setattr(entity, "_deletequery", delete_query)
         setattr(entity, "_db", self._db)
         return entity
 
@@ -152,3 +163,59 @@ class Repository:
         self._class = eclass
         self._rectangle = rectangle
         self._label = label
+
+    def filter(self, constraints=None, operations=None, format=None, limit=None):
+        """
+        A new search will throw away the results of any previous search
+        """
+        self.constraints = constraints
+        self.operations  = operations
+        self.format      = format
+        self.limit       = limit
+
+        self.images = {}
+        self.entities_ids = []
+        self.images_bboxes = {}
+
+        query = { self._find_command(): {} }
+
+        if constraints:
+            query[self._find_command()]["constraints"] = constraints.constraints
+
+        if format:
+            query[self._find_command()]["as_format"] = format
+
+        query[self._find_command()]["results"] = {}
+
+        if limit:
+            query[self._find_command()]["results"]["limit"] = limit
+
+        query[self._find_command()]["results"]["list"] = []
+        query[self._find_command()]["results"]["list"].append(self._id_prop)
+
+        # Only retrieve images when needed
+        query[self._find_command()]["blobs"] = False
+
+        response, images = self._db.query([query])
+
+        try:
+            entities = response[0][self._find_command()]["entities"]
+
+            for ent in entities:
+                self.entities_ids.append(ent[self._id_prop])
+        except:
+            print("Error with search")
+
+        self.search_result = response
+        return self
+
+    def __iter__(self):
+        self.index = 0
+        return self
+
+    def __next__(self):
+        if self.index >= len(self.entities_ids):
+            raise StopIteration
+        retVal = self.get(self.entities_ids[self.index])
+        self.index += 1
+        return retVal

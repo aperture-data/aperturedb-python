@@ -9,8 +9,14 @@ from aperturedb import Connector, Status
 from aperturedb import EntityLoader, ConnectionLoader
 from aperturedb import ImageLoader, BBoxLoader, BlobLoader
 from aperturedb import DescriptorSetLoader, DescriptorLoader
+from utils import cleanDB
 
 class TestLoader(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        db = Connector.Connector(user="admin", password="admin")
+        cleanDB(db)
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,7 +52,7 @@ class TestLoader(unittest.TestCase):
 
     def create_connection(self):
         return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
-
+        
 class TestEntityLoader(TestLoader):
 
     def test_Loader(self):

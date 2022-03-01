@@ -2,6 +2,7 @@ from datetime import datetime
 import unittest
 import  os
 from aperturedb import Connector, Images, Repository, Status, BoundingBoxes
+from utils import cleanDB
 
 class TestImageMethods(unittest.TestCase):
     @classmethod
@@ -9,6 +10,7 @@ class TestImageMethods(unittest.TestCase):
         cls.db = Connector.Connector(user="admin", password="admin")
         cls.status = Status.Status(cls.db)
         cls.images = Images.Images(cls.db)
+        cleanDB(cls.db)
 
     def create_Bounding_Box(self):
         bboxes = BoundingBoxes.BoundingBoxes(self.db)
@@ -89,6 +91,11 @@ class TestImageMethods(unittest.TestCase):
         bbox = bboxes.get(id=box._uniqueid)
         img = self.images.get(id=image._uniqueid)
         img.connect_BoundingBox(bbox)
+
+    def test_enumerate(self):
+        for image in self.images.filter():
+            self.assertIsNotNone(image)
+            self.assertTrue(hasattr(image, "_uniqueid"))
 
         
 
