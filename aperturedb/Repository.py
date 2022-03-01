@@ -164,7 +164,7 @@ class Repository:
         self._rectangle = rectangle
         self._label = label
 
-    def filter(self, constraints=None, operations=None, format=None, limit=None):
+    def filter(self, constraints=None, operations=None, format=None, limit=None, getBlobs=False):
         """
         A new search will throw away the results of any previous search
         """
@@ -194,7 +194,8 @@ class Repository:
         query[self._find_command()]["results"]["list"].append(self._id_prop)
 
         # Only retrieve images when needed
-        query[self._find_command()]["blobs"] = False
+        if getBlobs:
+            query[self._find_command()]["blobs"] = False
 
         response, images = self._db.query([query])
 
