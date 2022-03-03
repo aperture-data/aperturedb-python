@@ -19,23 +19,25 @@ all_objects = [
     "Video"
 ]
 
-def connect_entity(src, dest):
-    src._findquery["_ref"] = 1
-    dest._findquery["_ref"] = 2
+def connect_entity(src, dst):
+    src._findquery[src._find_command()]["_ref"] = 1
+    dst._findquery[dst._find_command()]["_ref"] = 2
     connect_command = [
         src._findquery,
-        dest._findquery,
+        dst._findquery,
         {
             "AddConnection": {
                 "class": "edge",
                 "src" : 1,
-                "dest" : 2
+                "dst" : 2
             }
         }
     ]
-    print(connect_command)
     resp, blob = src._db.query(connect_command)
-    print(resp)
+    connection = ObjectHelper.dict_to_obj(resp[2]["AddConnection"], "Connection")
+    setattr(connection, "src", src)
+    setattr(connection, "dst", dst)
+    return connection
 
 def delete_entity(entity):
     resp = entity._db.query([entity._deletequery])
@@ -142,6 +144,10 @@ class Repository:
         if resp[0][self._find_command()]["returned"] != 1:
             raise Exception("not found unique entity")
         entity = self._create_object(resp)
+        setattr(entity, "_find_command", self._find_command)
+        setattr(entity, "_add_command", self._add_command)
+        setattr(entity, "_delete_command", self._delete_command)
+
         setattr(entity, "_findquery", find_query)
         setattr(entity, "_deletequery", delete_query)
         setattr(entity, "_db", self._db)

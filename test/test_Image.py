@@ -90,7 +90,10 @@ class TestImageMethods(unittest.TestCase):
         bboxes = BoundingBoxes.BoundingBoxes(self.db)
         bbox = bboxes.get(id=box._uniqueid)
         img = self.images.get(id=image._uniqueid)
-        img.connect_BoundingBox(bbox)
+        connection = img.connect_BoundingBox(bbox)
+        self.assertEqual(connection.status, 0)
+        self.assertEqual(connection.src, img)
+        self.assertEqual(connection.dst, bbox)
 
     def test_enumerate(self):
         for image in self.images.filter():

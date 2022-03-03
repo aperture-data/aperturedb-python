@@ -132,3 +132,7 @@ dmypy.json
 *.adb.csv
 *.jpg
 *.npy
+
+env3/*
+test/aperturedb/db/*
+test/input/blobs/*
