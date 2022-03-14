@@ -135,3 +135,4 @@ dmypy.json
 env3/
 test/aperturedb/db/
 test/input/blobs/
+docs/*.rst
