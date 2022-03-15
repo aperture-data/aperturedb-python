@@ -15,6 +15,33 @@ class BoundingBoxes(Repository):
         label: str,
         properties: Optional[Dict],
         rectangle: Dict) -> BoundingBox:
+        """**Create a new Bounding box**
+
+        Args:
+            label (str): Label associated with the bounding box.
+            properties (Optional[Dict]): Arbitrary key value pairs.
+            rectangle (Dict): Dictionary comprising of x, y, width and height attributes.
+
+        Returns:
+            BoundingBox: Python object representing a Bounding box.
+
+        Example::
+
+            bboxes = BoundingBoxes.BoundingBoxes(self.db)
+            bbox = bboxes.create_new(
+                label="Plane",
+                properties={
+                    "label_id": 43
+                },
+                rectangle={
+                    "x": 0,
+                    "y": 0,
+                    "width": 100,
+                    "height": 200
+                }
+            )
+            bbox.save()
+        """
         return BoundingBox(
             db=self._db,
             properties=properties,

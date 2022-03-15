@@ -4,14 +4,12 @@ from aperturedb import Connector
 
 
 class Repository:
-    """**This is repository interface.**
-
-    
-    Repository can be thought of as a homogenous store of entities
+    """**Repository can be thought of as a store of homogenous entities**
 
     Notes:
-        This interface tries to match pytorch's Dataset interface.
-        Ideally, there should be a way to convert to/from pytorch dataset into Data in aperturedb.
+        - This interface tries to match pytorch's Dataset interface.
+        - Ideally, there should be a way to convert to/from pytorch dataset into Data in aperturedb.
+        - This has options to extract the entities in the database in various ways, controled by filter ctriteria.
     
     Example::
     
@@ -72,7 +70,7 @@ class Repository:
         """**Restrict the number of entities based on ctriteria**
 
         A new search will throw away the results of any previous search
-        Without any constraints the method acts as find_all
+        Without any constraints the method acts as ``find_all``
 
         Args:
             constraints: The criteria for search, optional
@@ -117,23 +115,20 @@ class Repository:
             operations (List[dict]): A list of operations to be aplpied on the entity before persisting it.
             blob (Bytestring): An in-memory representation of data for the image.
             rectangle (Dict): A dcit representing a rectangle.
-            eclass (str): A class associated with generic repository.
+            entity_class (str): A class associated with generic repository.
 
         Example::
 
-            with open(path, "rb") as instream:
-                img_data = instream.read()
-                self.images.create_new(
-                    properties={
-                        "description" : "A first class image",
-                        "timestamp": str(datetime.now()),
-                        "path": path
-                    },
-                    operations=[],
-                    blob=img_data)
-                image = self.images.save()
-
-        Testing a non block.
+            entities = Repository.Repository(self.db)
+            entity = entities.create_new(
+                properties={
+                    "name": "James Bond",
+                    "age": 7,
+                    "email": "james@aperturedata.io"
+                },
+                entity_class="Person"
+            )
+            entity.save()
         """
         #Create the entity, and run a db query with add directive.
         obj = self._entity_types[self._object_type](self._db, properties, operations, blob, self._object_type)

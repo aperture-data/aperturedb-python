@@ -9,5 +9,5 @@ python setup.py install
 cd -
 
 #Generate the docs from the docstrings.
-sphinx-apidoc -f -o . ../aperturedb
+# sphinx-apidoc -f -o . ../aperturedb
 make clean && make html

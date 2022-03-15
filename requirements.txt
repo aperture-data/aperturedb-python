@@ -3,6 +3,7 @@ aperturedb==0.1.1
 argon2-cffi==21.3.0
 argon2-cffi-bindings==21.2.0
 asgiref==3.5.0
+astroid==2.11.0
 asttokens==2.0.5
 attrs==21.4.0
 Babel==2.9.1
@@ -43,6 +44,7 @@ jupyter-client==7.1.2
 jupyter-core==4.9.2
 jupyterlab-pygments==0.1.2
 kiwisolver==1.3.2
+lazy-object-proxy==1.7.1
 MarkupSafe==2.1.0
 matplotlib==3.5.1
 matplotlib-inline==0.1.3
@@ -81,6 +83,7 @@ pytest==7.0.1
 python-dateutil==2.8.2
 pytz==2021.3
 PyWavelets==1.2.0
+PyYAML==6.0
 pyzmq==22.3.0
 requests==2.27.1
 s3transfer==0.5.2
@@ -90,6 +93,7 @@ Send2Trash==1.8.0
 six==1.16.0
 snowballstemmer==2.2.0
 Sphinx==4.4.0
+sphinx-autoapi==1.8.4
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-applehelp==1.0.2
 sphinxcontrib-devhelp==1.0.2
@@ -108,8 +112,10 @@ torchvision==0.11.3
 tornado==6.1
 traitlets==5.1.1
 typing-extensions==4.1.1
+Unidecode==1.3.4
 urllib3==1.26.8
 vdms==0.0.16
 wcwidth==0.2.5
 webencodings==0.5.1
+wrapt==1.14.0
 zipp==3.7.0

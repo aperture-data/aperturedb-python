@@ -10,9 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../aperturedb'))
+# import os
+# import sys
+# sys.path.insert(0, os.path.abspath('../aperturedb'))
 
 
 # -- Project information -----------------------------------------------------
@@ -32,8 +32,24 @@ release = '0.1'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'autoapi.extension',
+    'sphinx.ext.inheritance_diagram',
+    'sphinx.ext.graphviz'
 ]
+graphviz_output_format = 'svg'
+autoapi_type = 'python'
+autoapi_dirs = ['../aperturedb']
+autoapi_options = [
+    'members',
+    'undoc-members',
+    'show-inheritance',
+    'show-module-summary',
+    'special-members',
+    'imported-members',
+    'show-inheritance-diagram'
+]
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -71,3 +87,5 @@ napoleon_use_rtype = True
 napoleon_preprocess_types = False
 napoleon_type_aliases = None
 napoleon_attr_annotations = True
+
+add_module_names = False
