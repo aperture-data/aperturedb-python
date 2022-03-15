@@ -1,5 +1,4 @@
-from typing import Dict, Optional
-from aperturedb.OM.Dataset import Dataset
+from typing import Dict, List, Optional
 from aperturedb.OM.Entity import Entity
 from aperturedb import Connector
 
@@ -69,7 +68,7 @@ class Repository:
     def filter(self, 
         constraints = None, 
         operations = None, 
-        format = None) -> Dataset[Entity]:
+        format = None) -> List[Entity]:
         """**Restrict the number of entities based on ctriteria**
 
         A new search will throw away the results of any previous search
@@ -79,6 +78,15 @@ class Repository:
             constraints: The criteria for search, optional
             operations: Operations before returning the list, optional
             format: Encoding format
+
+        Returns:
+            List of Entities.
+
+        Example::
+
+            for image in self.images.filter():
+                self.assertIsNotNone(image)
+                self.assertTrue(hasattr(image, "_uniqueid"))
         """
         query = {
             self._find_command(): {
@@ -90,7 +98,6 @@ class Repository:
         }
         resp, _ = self._db.query([query])
 
-        # print(resp)
         return map(lambda x: self._entity_types[self._object_type](
             db=self._db,
             properties=x), resp[0][self._find_command()]["entities"])
@@ -132,7 +139,7 @@ class Repository:
         obj = self._entity_types[self._object_type](self._db, properties, operations, blob, self._object_type)
         return obj
 
-    def find_similar(self, sample) -> Dataset[Entity]:
+    def find_similar(self, sample) -> List[Entity]:
         """**Get entities similar to the sample**
         
         This will return a set of entities that are similar to the input simple.

@@ -25,6 +25,20 @@ class Images(Repository):
         pass
 
     def dataset_import(self, dataset: VisionDataset, root: str = None) -> int:
+        """Import a Pytorch VisionDataSet into aperturedb
+
+        Args:
+            dataset (VisionDataset): _description_
+            root (str, optional): _description_. Defaults to None.
+
+        Returns:
+            int: 0 on success.
+
+        Example use::
+
+            mnist = torchvision.datasets.MNIST(root='.', download=True)
+            self.images.dataset_import(dataset=mnist)
+        """
         def image_to_byte_array(image:Image):
             imgByteArr = io.BytesIO()
             image.save(imgByteArr, format='JPEG')
@@ -40,5 +54,6 @@ class Images(Repository):
                 }
             )
             adImage.save()
+        return 0
 
         
