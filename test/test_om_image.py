@@ -3,6 +3,7 @@ import unittest
 import  os
 from aperturedb import Connector, Status
 from aperturedb.OM import Images, Repository, BoundingBoxes
+from aperturedb import Images as nativeImages
 import torchvision
 
 #Cannot run this till cleanDB is merged.
@@ -91,6 +92,13 @@ class TestImageMethods(unittest.TestCase):
         #Import a pytorch dataset into aperturedb
         mnist = torchvision.datasets.MNIST(root='.', download=True)
         self.images.dataset_import(dataset=mnist)
+
+    def test_update(self):
+        constraints = nativeImages.Constraints()
+        constraints.equal('class', 3)
+        images = self.images.filter(constraints=constraints)
+        bounding_boxes = BoundingBoxes.BoundingBoxes(self.db).filter()
+        images.associate_entities(bounding_boxes)
 
    
 

@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional
+from aperturedb.OM.Cursor import Cursor
 from aperturedb.OM.Entity import Entity
 from aperturedb import Connector
 
@@ -7,7 +8,6 @@ class Repository:
     """**Repository can be thought of as a store of homogenous entities**
 
     Notes:
-        - This interface tries to match pytorch's Dataset interface.
         - Ideally, there should be a way to convert to/from pytorch dataset into Data in aperturedb.
         - This has options to extract the entities in the database in various ways, controled by filter ctriteria.
     
@@ -66,7 +66,7 @@ class Repository:
     def filter(self, 
         constraints = None, 
         operations = None, 
-        format = None) -> List[Entity]:
+        format = None) -> Cursor[Entity]:
         """**Restrict the number of entities based on ctriteria**
 
         A new search will throw away the results of any previous search
@@ -96,9 +96,10 @@ class Repository:
         }
         resp, _ = self._db.query([query])
 
-        return map(lambda x: self._entity_types[self._object_type](
+
+        return Cursor[self._entity_types[self._object_type]](list(map(lambda x: self._entity_types[self._object_type](
             db=self._db,
-            properties=x), resp[0][self._find_command()]["entities"])
+            properties=x), resp[0][self._find_command()]["entities"])))
 
     def create_new(self, 
         properties=None, 
