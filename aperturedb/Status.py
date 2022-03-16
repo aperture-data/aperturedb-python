@@ -6,7 +6,7 @@ class Status(object):
 
     def __init__(self, connector):
 
-        self.connector = connector
+        self.connector = connector.create_new_connection()
 
     def __repr__(self):
 
@@ -19,15 +19,19 @@ class Status(object):
         try:
             res, blobs = self.connector.query(q)
         except:
-            print(self.connector.get_last_response_str())
+            self.connector.print_last_response()
 
         return self.connector.get_last_response_str()
+
+    def print_schema(self, refresh=False):
+
+        self.get_schema(refresh=refresh)
+        self.connector.print_last_response()
 
     def get_schema(self, refresh=False):
 
         query = [ {
             "GetSchema": {
-                "type" : "entities",
                 "refresh": refresh,
             }
         }]
@@ -40,7 +44,7 @@ class Status(object):
             schema = res[0]["GetSchema"]
         except:
             print("Cannot retrieve schema")
-            print(self.connector.get_last_response_str())
+            self.connector.print_last_response()
 
         return schema
 
@@ -63,7 +67,7 @@ class Status(object):
             total_images = res[0]["FindImage"]["count"]
         except:
             total_images = 0
-            print(self.connector.get_last_response_str())
+            self.connector.print_last_response()
 
         return total_images
 
@@ -86,7 +90,7 @@ class Status(object):
             total_connections = res[0]["FindBoundingBox"]["count"]
         except:
             total_connections = 0
-            print(self.connector.get_last_response_str())
+            self.connector.print_last_response()
 
         return total_connections
 
@@ -109,7 +113,7 @@ class Status(object):
             total_entities = res[0]["FindEntity"]["count"]
         except:
             total_entities = 0
-            print(self.connector.get_last_response_str())
+            self.connector.print_last_response()
 
         return total_entities
 
@@ -132,6 +136,31 @@ class Status(object):
             total_connections = res[0]["FindConnection"]["count"]
         except:
             total_connections = 0
-            print(self.connector.get_last_response_str())
+            self.connector.print_last_response()
 
         return total_connections
+
+    def remove_descriptorset(self, set_name):
+
+        q = [{
+            "FindDescriptorSet": {
+                "_ref": 1,
+                "with_name": set_name,
+
+            }
+        }, {
+            "DeleteDescriptorSet": {
+                "ref": 1
+            }
+        }]
+
+        try:
+            res, _ = self.connector.query(q)
+            if not self.connector.last_query_ok():
+                self.connector.print_last_response()
+                return False
+        except:
+            self.connector.print_last_response()
+            return False
+
+        return True
