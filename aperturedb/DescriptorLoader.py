@@ -77,7 +77,13 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
     # app-specific structure on the npz file.
     def retrieve_by_index(self, filename, index):
 
-        return self.npy_arrays[filename][index]
+        try:
+            desc = self.npy_arrays[filename][index]
+        except:
+            err_msg = "Cannot retrieve descriptor {} from {}".format(str(index), filename)
+            raise Exception(err_msg)
+
+        return desc
 
     def load_descriptor(self, filename, index):
 
