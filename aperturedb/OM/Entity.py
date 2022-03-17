@@ -5,6 +5,9 @@ from aperturedb import Connector
 class Entity:
     """**This is the base class for the various ApertureDB Objects.**
 
+    Entity is also a generic object type in aperturedb.
+    It can be subclassed as anything, for example, a Person, an Encounter, etc.
+
     ApertureDB objects:
         * Entity
         * Image

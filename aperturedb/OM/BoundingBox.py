@@ -4,6 +4,13 @@ from aperturedb.OM.Entity import Entity
 
 
 class BoundingBox(Entity):
+    """**Bounding box is a highlighted area of an image**
+    
+    Bounding box is a visual annotation to specific area of an Image.
+    It contains a rectangle and a label.
+
+    
+    """
     def __init__(self, 
         db: Connector, 
         properties: Optional[Dict], 
