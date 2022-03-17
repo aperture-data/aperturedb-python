@@ -7,10 +7,7 @@ from aperturedb import ProgressBar
 import numpy as np
 
 class ParallelLoader:
-
-    """
-        Parallel and Batch Loader for ApertureDB
-    """
+    """**Parallel and Batch Loader for ApertureDB**"""
 
     def __init__(self, db, dry_run=False):
 

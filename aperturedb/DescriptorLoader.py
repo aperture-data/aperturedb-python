@@ -11,20 +11,22 @@ PROPERTIES   = "properties"
 CONSTRAINTS  = "constraints"
 
 class DescriptorGeneratorCSV(CSVParser.CSVParser):
+    """
+        **ApertureDB Descriptor Data loader.**
 
-    '''
-        ApertureDB Descriptor Data loader.
+    .. note::
         Expects a csv file with the following columns, and a numpy
         array file "npz" for the descriptors:
 
-            filename,index,set,label,PROP_NAME_N,constraint_PROP1,connect_to
+            ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_N``, ``constraint_PROP1``, ``connect_to``
 
-        Example csv file:
+    Example csv file::
+
         filename,index,set,label,isTable,connect_VD:ROI,connect_VD:ROI@index
         /mnt/data/embeddings/kitchen.npz,0,kitchen,kitchen_table,True,has_descriptor,0
         /mnt/data/embeddings/dining_chairs.npz,1,dining_chairs,special_chair,False,has_descriptor,1
         ...
-    '''
+    """
 
     def __init__(self, filename):
 
@@ -109,20 +111,21 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: set. Must be third field")
 
 class DescriptorLoader(ParallelLoader.ParallelLoader):
+    """**ApertureDB Descriptor Loader.**
 
-    '''
-        ApertureDB Descriptor Loader.
+    This class is to be used in combination with a "generator".
+    The generator must be an iterable object that generated "descriptor_data"
+    elements.
 
-        This class is to be used in combination with a "generator".
-        The generator must be an iterable object that generated "descriptor_data"
-        elements:
+    Example::
+
             image_data = {
                 "label":       label,
                 "properties":  properties,
                 "constraints": constraints,
                 "descriptor_blob": (bytes),
             }
-    '''
+    """
 
     def __init__(self, db, dry_run=False):
 

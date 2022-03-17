@@ -93,9 +93,8 @@ class Images(object):
         self.bbox_label_prop = "_label"
 
     def __retrieve_batch(self, index):
-
         '''
-        Retrieve the batch that contains the image with the specified index
+        **Retrieve the batch that contains the image with the specified index**
         '''
 
         # Implement the query to retrieve images
