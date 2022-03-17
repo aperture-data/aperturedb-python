@@ -69,7 +69,8 @@ class ParallelLoader:
                 data_for_query = [ generator[idx]
                                    for idx in range(batch_start, batch_end) ]
                 self.do_batch(db, data_for_query)
-            except:
+            except Exception as e:
+                print(e)
                 self.error_counter += 1
 
             if thid == 0 and self.stats:
@@ -118,19 +119,24 @@ class ParallelLoader:
         print("============ ApertureDB Loader Stats ============")
         print("Total time (s):", self.ingestion_time)
         print("Total queries executed:", total_queries_exec)
-        print("Avg Query time (s):", np.mean(times))
-        print("Query time std:", np.std (times))
-        print("Avg Query Throughput (q/s)):",
-                1 / np.mean(times) * self.numthreads)
 
-        msg = "(" + self.type + "/s):"
-        print("Overall insertion throughput", msg,
-                self.total_elements / self.ingestion_time)
+        if total_queries_exec == 0:
+            print("All queries failed!")
 
-        if self.error_counter > 0:
-            print("Total errors encountered:", self.error_counter)
-            inserted_elements -= self.error_counter * self.batchsize
-            print("Errors (%):", 100 * self.error_counter / total_queries_exec)
+        else:
+            print("Avg Query time (s):", np.mean(times))
+            print("Query time std:", np.std (times))
+            print("Avg Query Throughput (q/s)):",
+                    1 / np.mean(times) * self.numthreads)
 
-        print("Total inserted elements:", inserted_elements)
+            msg = "(" + self.type + "/s):"
+            print("Overall insertion throughput", msg,
+                    self.total_elements / self.ingestion_time)
+
+            if self.error_counter > 0:
+                print("Total errors encountered:", self.error_counter)
+                inserted_elements -= self.error_counter * self.batchsize
+                print("Errors (%):", 100 * self.error_counter / total_queries_exec)
+
+            print("Total inserted elements:", inserted_elements)
         print("=================================================")
