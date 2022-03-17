@@ -1,11 +1,3 @@
-import math
-import time
-from threading import Thread
-
-import numpy  as np
-import pandas as pd
-
-from aperturedb import Status
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
@@ -17,24 +9,24 @@ IMG_KEY_PROP  = "img_key_prop"
 IMG_KEY_VAL   = "img_key_value"
 
 class BBoxGeneratorCSV(CSVParser.CSVParser):
-
-    '''
-        ApertureDB BBox Data loader.
+    '''**ApertureDB BBox Data loader.**
+        
+    .. note::
         Expects a csv file with the following columns:
+        IMG_KEY,x_pos,y_pos,width,height,BBOX_PROP_NAME_1, ... BBOX_PROP_NAME_N
 
-            IMG_KEY,x_pos,y_pos,width,height,BBOX_PROP_NAME_1, ... BBOX_PROP_NAME_N
+    IMG_KEY column has the property name of the image property that
+    the bounding box will be connected to, and each row has the value
+    that will be used for finding the image.
 
-        IMG_KEY column has the property name of the image property that
-        the bounding box will be connected to, and each row has the value
-        that will be used for finding the image.
+    x_pos,y_pos,width,height are the coordinates of the bounding boxes,
+    as integers (unit is in pixels)
 
-        x_pos,y_pos,width,height are the coordinates of the bounding boxes,
-        as integers (unit is in pixels)
+    BBOX_PROP_NAME_N is an arbitrary name of the property of the bounding
+    box, and each row has the value for that property.
 
-        BBOX_PROP_NAME_N is an arbitrary name of the property of the bounding
-        box, and each row has the value for that property.
+    Example csv file::
 
-        Example csv file:
         img_unique_id,x_pos,y_pos,width,height,type
         d5b25253-9c1e,257,154,84,125,manual
         d5b25253-9c1e,7,537,522,282,manual

@@ -16,12 +16,16 @@ CONSTRAINTS = "constraints"
 class VideoGeneratorCSV(CSVParser.CSVParser):
 
     '''
-        ApertureDB Video Data loader.
+        **ApertureDB Video Data loader.**
+
+    .. important::
+
         Expects a csv file with the following columns:
 
-            filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
+            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
 
-        Example csv file:
+    Example csv file::
+
         filename,id,label,constaint_id
         /home/user/file1.jpg,321423532,dog,321423532
         /home/user/file2.jpg,42342522,cat,4234252
@@ -88,13 +92,14 @@ class VideoGeneratorCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: filename. Must be first field")
 
 class VideoLoader(ParallelLoader.ParallelLoader):
+    '''**ApertureDB Video Loader.**
 
-    '''
-        ApertureDB Video Loader.
+    This class is to be used in combination with a :class:`~aperturedb.VideoLoader.VideoGeneratorCSV`.
+    The generator must be an iterable object that generated `video_data`
+    elements.
 
-        This class is to be used in combination with a "generator".
-        The generator must be an iterable object that generated "image_data"
-        elements:
+    Example::
+
             image_data = {
                 "properties":  properties,
                 "constraints": constraints,

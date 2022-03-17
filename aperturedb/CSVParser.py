@@ -14,9 +14,7 @@ PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
 class CSVParser():
-
-    '''
-        ApertureDB General CSV Parser for Loaders.
+    '''**ApertureDB General CSV Parser for Loaders.**
         ...
     '''
 

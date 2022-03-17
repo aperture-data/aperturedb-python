@@ -1,6 +1,6 @@
 from datetime import datetime
 import unittest
-import  os
+import os
 from aperturedb import Connector, Status
 from aperturedb.OM import Images, Repository, BoundingBoxes
 from aperturedb import Images as nativeImages

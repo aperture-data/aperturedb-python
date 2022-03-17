@@ -15,13 +15,14 @@ BLOB_PATH   = "filename"
 
 class BlobGeneratorCSV(CSVParser.CSVParser):
 
-    '''
-        ApertureDB Blob Data loader.
-        Expects a csv file with the following columns:
+    '''**ApertureDB Blob Data loader.**
 
-            filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
+    Expects a csv file with the following columns:
 
-        Example csv file:
+        filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
+
+    Example csv file::
+
         filename,name,lastname,age,id,constaint_id
         /mnt/blob1,John,Salchi,69,321423532,321423532
         /mnt/blob2,Johna,Salchi,63,42342522,42342522
@@ -79,13 +80,15 @@ class BlobGeneratorCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: " + BLOB_PATH)
 
 class BlobLoader(ParallelLoader.ParallelLoader):
-
     '''
-        ApertureDB Blob Loader.
+        **ApertureDB Blob Loader.**
 
         This class is to be used in combination with a "generator".
         The generator must be an iterable object that generated "Blob_data"
-        elements:
+        elements.
+
+        Example::
+
             Blob_data = {
                 "properties":  properties,
                 "constraints": constraints,

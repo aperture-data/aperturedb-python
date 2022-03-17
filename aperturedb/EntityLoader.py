@@ -14,14 +14,14 @@ PROPERTIES   = "properties"
 CONSTRAINTS  = "constraints"
 
 class EntityGeneratorCSV(CSVParser.CSVParser):
+    '''**ApertureDB Entity Data loader.**
 
-    '''
-        ApertureDB Entity Data loader.
-        Expects a csv file with the following columns:
+    Expects a csv file with the following columns:
 
-            EntityClass,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
+        EntityClass,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1
 
-        Example csv file:
+    Example csv file::
+
         EntityClass,name,lastname,age,id,constaint_id
         Person,John,Salchi,69,321423532,321423532
         Person,Johna,Salchi,63,42342522,42342522
@@ -59,13 +59,14 @@ class EntityGeneratorCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: " + ENTITY_CLASS)
 
 class EntityLoader(ParallelLoader.ParallelLoader):
-
-    '''
-        ApertureDB Entity Loader.
+    '''**ApertureDB Entity Loader.**
 
         This class is to be used in combination with a "generator".
         The generator must be an iterable object that generated "entity_data"
-        elements:
+        elements.
+
+    Example::
+    
             entity_data = {
                 "class":       entity_class,
                 "properties":  properties,

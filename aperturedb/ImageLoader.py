@@ -20,10 +20,9 @@ CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
 class ImageGeneratorCSV(CSVParser.CSVParser):
-
-    '''
-        ApertureDB Image Data loader.
-        Expects a csv file with the following columns (format optional):
+    '''**ApertureDB Image Data loader.**
+        
+    Expects a csv file with the following columns (format optional):
 
             filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
             OR
@@ -32,11 +31,14 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
             s3_url,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
             ...
 
-        Example csv file:
+    Example csv file::
+
         filename,id,label,constaint_id,format
         /home/user/file1.jpg,321423532,dog,321423532,jpg
         /home/user/file2.jpg,42342522,cat,42342522,png
         ...
+
+    
     '''
 
     def __init__(self, filename, check_image=True, n_download_retries=3):
@@ -183,11 +185,14 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
 class ImageLoader(ParallelLoader.ParallelLoader):
 
     '''
-        ApertureDB Image Loader.
+        **ApertureDB Image Loader.**
 
         This class is to be used in combination with a "generator".
         The generator must be an iterable object that generated "image_data"
-        elements:
+        elements.
+
+        Example::
+
             image_data = {
                 "properties":  properties,
                 "constraints": constraints,

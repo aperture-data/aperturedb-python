@@ -14,14 +14,14 @@ PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
 class ConnectionGeneratorCSV(CSVParser.CSVParser):
+    '''**ApertureDB Connection Data loader.**
 
-    '''
-        ApertureDB Connection Data loader.
-        Expects a csv file with the following columns:
+    Expects a csv file with the following columns:
 
-            ConnectionClass,Class1@PROP_NAME, Class2@PROP_NAME ... PROP_NAME_N,constraint_PROP1
+        ConnectionClass,Class1@PROP_NAME, Class2@PROP_NAME ... PROP_NAME_N,constraint_PROP1
 
-        Example csv file:
+    Example csv file::
+
         ConnectionClass,VD:IMG@id,Person@id,confidence,id,constaint_id
         has_image,321423532,42342522,0.4354,5432543254,5432543254
         has_image,321423532,53241521,0.6432,98476542,98476542
@@ -76,13 +76,14 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: 2")
 
 class ConnectionLoader(ParallelLoader.ParallelLoader):
-
-    '''
-        ApertureDB Connection Loader.
+    '''**ApertureDB Connection Loader.**
 
         This class is to be used in combination with a "generator".
         The generator must be an iterable object that generated "entity_data"
-        elements:
+        elements.
+
+    Example::
+
             entity_data = {
                 "class":       connection_class,
                 "properties":  properties,

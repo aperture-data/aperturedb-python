@@ -16,10 +16,13 @@ HEADER_URL  = "url"
 class VideoDownloaderCSV(CSVParser.CSVParser):
 
     '''
-        ApertureDB Video Downloader.
-        Expects a csv file with AT LEAST a "url" column, and
-        optionally a "filename" field.
-        If "filename" is not present, it is taken from the url.
+        **ApertureDB Video Downloader.**
+
+    .. important::
+
+        Expects a csv file with AT LEAST a ``url`` column, and
+        optionally a ``filename`` field.
+        If ``filename`` is not present, it is taken from the url.
     '''
 
     def __init__(self, filename, check_video=True):
