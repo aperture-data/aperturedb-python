@@ -140,6 +140,25 @@ class Status(object):
 
         return total_connections
 
+    def count_descriptorsets(self):
+
+        q = [{
+            "FindDescriptorSet": {
+                "results": {
+                    "count": True,
+                }
+            }
+        }]
+
+        try:
+            res, blobs = self.connector.query(q)
+            total_descriptor_sets = res[0]["FindDescriptorSet"]["count"]
+        except:
+            total_descriptor_sets = 0
+            self.connector.print_last_response()
+
+        return total_descriptor_sets
+
     def remove_descriptorset(self, set_name):
 
         q = [{
