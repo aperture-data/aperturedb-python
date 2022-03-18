@@ -14,7 +14,7 @@ class ParallelLoader:
 
     def __init__(self, db, dry_run=False):
 
-        self.db = db
+        self.db = db.create_new_connection()
         self.dry_run = dry_run
 
         self.type = "element"
@@ -22,7 +22,6 @@ class ParallelLoader:
         # Default Values
         self.batchsize  = 1
         self.numthreads = 1
-        self.n_retries  = 1
 
         self.total_elements = 0
         self.times_arr = []
@@ -36,7 +35,7 @@ class ParallelLoader:
         q, blobs = self.generate_batch(data)
 
         if not self.dry_run:
-            r,b = db.query(q, blobs, n_retries=self.n_retries)
+            r,b = db.query(q, blobs)
             if not db.last_query_ok():
                 self.error_counter += 1
             query_time = db.get_last_query_time()
@@ -48,6 +47,7 @@ class ParallelLoader:
 
     def worker(self, thid, generator, start, end):
 
+        # A new connection will be created for each batch
         db = self.db.create_new_connection()
 
         if thid == 0 and self.stats:
