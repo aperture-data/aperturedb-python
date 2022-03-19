@@ -14,7 +14,12 @@ class ParallelLoader:
 
     def __init__(self, db, dry_run=False):
 
-        self.db = db.create_new_connection()
+        # db can me None in the case of Downloaders
+        # or other abstractions that want to use the parallel/batching
+        # structures without running queries
+        if db:
+            self.db = db.create_new_connection()
+
         self.dry_run = dry_run
 
         self.type = "element"

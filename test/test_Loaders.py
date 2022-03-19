@@ -1,53 +1,15 @@
-import argparse
 import time
-import unittest
 
-import dbinfo
 import numpy  as np
 
-from aperturedb import Connector, Status
+from test_Base import TestBase
+
+from aperturedb import Utils
 from aperturedb import EntityLoader, ConnectionLoader
 from aperturedb import ImageLoader, BBoxLoader, BlobLoader
 from aperturedb import DescriptorSetLoader, DescriptorLoader
 
-class TestLoader(unittest.TestCase):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # ApertureDB Server Info
-        self.db_host  = dbinfo.DB_HOST
-        self.db_port  = dbinfo.DB_PORT
-        self.user     = dbinfo.DB_USER
-        self.password = dbinfo.DB_PASSWORD
-
-        # Config params
-        self.batchsize  = 99
-        self.numthreads = 31
-        self.stats      = False
-
-        db_up = False
-        attempts = 0
-        while(not db_up):
-            try:
-                db = Connector.Connector(self.db_host, self.db_port, self.user, self.password)
-                db_up = True
-                if (attempts > 0):
-                    print("Connection to ApertureDB successful.")
-            except:
-                print("Attempt", attempts,
-                      "to connect to ApertureDB failed, retrying...")
-                attempts += 1
-                time.sleep(1) # sleeps 1 second
-
-            if attempts > 10:
-                print("Failed to connect to ApertureDB after 10 attempts")
-                exit()
-
-    def create_connection(self):
-        return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
-
-class TestEntityLoader(TestLoader):
+class TestEntityLoader(TestBase):
 
     def test_Loader(self):
 
@@ -66,9 +28,8 @@ class TestEntityLoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_entities("Person"))
-
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_entities("Person"))
 
         # Insert Images
         in_csv_file = "./input/images.adb.csv"
@@ -83,8 +44,8 @@ class TestEntityLoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_images())
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_images())
 
 
         # Insert Connections
@@ -101,8 +62,8 @@ class TestEntityLoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_connections("has_image"))
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_connections("has_image"))
 
         # Insert BBoxes
 
@@ -118,8 +79,8 @@ class TestEntityLoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_bboxes())
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_bboxes())
 
     def test_LoaderDescriptorsImages(self):
 
@@ -139,8 +100,8 @@ class TestEntityLoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_images())
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_images())
 
 
         # Insert DescriptorsSet
@@ -156,8 +117,8 @@ class TestEntityLoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_entities("_DescriptorSet"))
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_entities("_DescriptorSet"))
 
         # Insert Descriptors
 
@@ -178,9 +139,9 @@ class TestEntityLoader(TestLoader):
                                      numthreads=self.numthreads,
                                      stats=self.stats)
 
-            dbstatus = Status.Status(db)
+            dbutils = Utils.Utils(db)
             total_descriptors += len(generator)
-            self.assertEqual(total_descriptors, dbstatus.count_entities("_Descriptor"))
+            self.assertEqual(total_descriptors, dbutils.count_entities("_Descriptor"))
 
     def test_BlobLoader(self):
 
@@ -199,8 +160,8 @@ class TestEntityLoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_entities("_Blob"))
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_entities("_Blob"))
 
         query = [{
             "FindBlob": {
@@ -218,15 +179,14 @@ class TestEntityLoader(TestLoader):
         arr = np.frombuffer(blob[0])
         self.assertEqual(arr[2], 3.3)
 
-
-class TestURILoader(TestLoader):
+class TestURILoader(TestBase):
 
     def test_S3Loader(self):
 
         # Insert Images
         db = self.create_connection()
-        dbstatus = Status.Status(db)
-        count_before = dbstatus.count_images()
+        dbutils = Utils.Utils(db)
+        count_before = dbutils.count_images()
 
         in_csv_file = "./input/s3_images.adb.csv"
         generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=True)
@@ -239,15 +199,15 @@ class TestURILoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_images() - count_before)
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_images() - count_before)
 
     def test_HttpImageLoader(self):
 
         # Insert Images
         db = self.create_connection()
-        dbstatus = Status.Status(db)
-        count_before = dbstatus.count_images()
+        dbutils = Utils.Utils(db)
+        count_before = dbutils.count_images()
 
         in_csv_file = "./input/http_images.adb.csv"
         generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=True)
@@ -260,6 +220,6 @@ class TestURILoader(TestLoader):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(generator), dbstatus.count_images() - count_before)
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(generator), dbutils.count_images() - count_before)
 

@@ -2,7 +2,7 @@ import os
 import sys
 import time
 
-class Status(object):
+class Utils(object):
 
     def __init__(self, connector):
 
