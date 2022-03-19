@@ -13,9 +13,14 @@ class TestEntityLoader(TestBase):
 
     def test_Loader(self):
 
-        # Insert Person Nodes
         db = self.create_connection()
+        dbutils = Utils.Utils(db)
 
+        dbutils.create_entity_index("_Image",      "id", "integer")
+        dbutils.create_entity_index("_Descriptor", "id", "integer")
+        dbutils.create_entity_index("Person",      "id", "integer")
+
+        # Insert Person Nodes
         in_csv_file = "./input/persons.adb.csv"
 
         generator = EntityLoader.EntityGeneratorCSV(in_csv_file)
@@ -28,7 +33,6 @@ class TestEntityLoader(TestBase):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbutils = Utils.Utils(db)
         self.assertEqual(len(generator), dbutils.count_entities("Person"))
 
         # Insert Images
@@ -44,7 +48,6 @@ class TestEntityLoader(TestBase):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbutils = Utils.Utils(db)
         self.assertEqual(len(generator), dbutils.count_images())
 
 
@@ -62,7 +65,6 @@ class TestEntityLoader(TestBase):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbutils = Utils.Utils(db)
         self.assertEqual(len(generator), dbutils.count_connections("has_image"))
 
         # Insert BBoxes
@@ -79,7 +81,6 @@ class TestEntityLoader(TestBase):
                                  numthreads=self.numthreads,
                                  stats=self.stats)
 
-        dbutils = Utils.Utils(db)
         self.assertEqual(len(generator), dbutils.count_bboxes())
 
     def test_LoaderDescriptorsImages(self):
