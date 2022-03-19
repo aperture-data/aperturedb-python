@@ -48,6 +48,38 @@ class Utils(object):
 
         return schema
 
+    def _create_index(self, index_type, class_name, property_key, property_type):
+
+        q = [{
+            "CreateIndex": {
+                "index_type":    index_type,
+                "class" :        class_name,
+                "property_key" : property_key,
+                "property_type": property_type
+            }
+        }]
+
+        try:
+            res, blobs = self.connector.query(q)
+            if not self.connector.last_query_ok():
+                self.connector.print_last_response()
+                return False
+        except:
+            self.connector.print_last_response()
+            return False
+
+        return True
+
+    def create_entity_index(self, class_name, property_key, property_type):
+
+        return self._create_index("entity", class_name,
+                                  property_key, property_type)
+
+    def create_connection_index(self, class_name, property_key, property_type):
+
+        return self._create_index("connection", class_name,
+                                  property_key, property_type)
+
     def count_images(self, constraints={}):
 
         q = [{
