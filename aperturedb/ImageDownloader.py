@@ -131,6 +131,9 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
 
         self.times_arr.append(time.time() - start)
 
+    # We need to define ImageDownload owns worker,
+    # because the ParallelLoador worker is design to run queries
+    # on a given db.
     def worker(self, thid, generator, start, end):
 
         if thid == 0 and self.stats:

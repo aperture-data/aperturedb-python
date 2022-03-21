@@ -1,11 +1,5 @@
-import math
-import time
-from threading import Thread
-
-import numpy as np
 import cv2
 
-from aperturedb import Status
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 

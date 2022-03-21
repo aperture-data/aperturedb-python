@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
-from aperturedb import Status
+from aperturedb import Utils
 
 class Constraints(object):
 
@@ -462,8 +462,8 @@ class Images(object):
 
     def get_props_names(self):
 
-        status = Status.Status(self.db_connector)
-        schema = status.get_schema()
+        dbutils = Utils.Utils(self.db_connector)
+        schema = dbutils.get_schema()
 
         try:
             dictio = schema["entities"]["classes"]["_Image"]["properties"]

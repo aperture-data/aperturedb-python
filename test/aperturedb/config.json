@@ -9,34 +9,13 @@
     // Database paths
     "db_root_path": "db",
 
+    // For faster, unpersisted, transactions
     "pmgd_disk_sync_option": "never_sync",
 
     "create_parameters": {
         "pmgd_num_allocators": 32,
         "pmgd_journal_size": 1024
     },
-
-    "index":
-    [
-        {
-            "index_type":     "entity",
-            "class":          "_Image",
-            "property_key":   "id",
-            "property_type":  "integer"
-        },
-        {
-            "index_type":     "entity",
-            "class":          "_Descriptor",
-            "property_key":   "id",
-            "property_type":  "integer"
-        },
-        {
-            "index_type":     "entity",
-            "class":          "Person",
-            "property_key":   "id",
-            "property_type":  "integer"
-        }
-    ],
 
     "more-info": "ApertureDB Server"
 }

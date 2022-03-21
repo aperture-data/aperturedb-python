@@ -1,11 +1,5 @@
-import math
-import time
-from threading import Thread
-
-import numpy  as np
 import pandas as pd
 
-from aperturedb import Status
 from aperturedb import ParallelLoader
 
 ENTITY_CLASS      = "EntityClass"
