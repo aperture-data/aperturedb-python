@@ -71,6 +71,11 @@ class Connector(object):
 
         self.session_token = self.session["session_token"]
 
+    def __del__(self):
+
+        self.conn.close()
+        self.connected = False
+
     def _send_msg(self, data):
 
         sent_len = struct.pack('@I', len(data)) # send size first
@@ -162,15 +167,6 @@ class Connector(object):
 
         self.connected = True
 
-    def __del__(self):
-
-        self.conn.close()
-        self.connected = False
-
-    def create_new_connection(self):
-
-        return Connector(self.host, self.port, session=self.session)
-
     def _query(self, query, blob_array = []):
 
         # Check the query type
@@ -209,44 +205,16 @@ class Connector(object):
 
         return (self.last_response, response_blob_array)
 
-    # This is the API method, that has a retry mechanism
-    def query(self, q, blobs=[], n_retries=0):
+    def query(self, q, blobs=[]):
 
-        if n_retries == 0:
-            start = time.time()
-            self.response, self.blobs = self._query(q, blobs)
-            self.last_query_time = time.time() - start
-            return self.response, self.blobs
-
-        status  = -1
-        retries = 0
-        wait_time = BACKOFF_TIME
-        while (status < 0) :
-
-            if retries > 0:
-                time.sleep(wait_time)
-                wait_time *= BACKOFF_MULTIPLIER
-
-            if retries > n_retries:
-                error_msg  = "Warning: Query failed after " + str(n_retries)
-                error_msg += " retries\n"
-                sys.stderr.write(error_msg)
-                sys.stderr.write("Response: \n")
-                sys.stderr.write(self.get_last_response_str())
-                sys.stderr.write("\n")
-                sys.stderr.write("Query: \n")
-                sys.stderr.write(str(q))
-                sys.stderr.write("\n")
-                break
-
-            start = time.time()
-            self.response, self.blobs = self._query(q, blobs)
-            self.last_query_time = time.time() - start
-            status = self.check_status(self.response)
-
-            retries += 1
-
+        start = time.time()
+        self.response, self.blobs = self._query(q, blobs)
+        self.last_query_time = time.time() - start
         return self.response, self.blobs
+
+    def create_new_connection(self):
+
+        return Connector(self.host, self.port, session=self.session)
 
     def get_last_response_str(self):
 

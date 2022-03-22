@@ -1,4 +1,3 @@
-import argparse
 import time
 import unittest
 import os
@@ -6,49 +5,18 @@ import os
 import torch
 import torch.distributed as dist
 
-import dbinfo
+from test_Base import TestBase
 
-from aperturedb import Connector, Status
+from aperturedb import Connector, Utils
 from aperturedb import Images
 from aperturedb import PyTorchDataset
 
-class TestTorch(unittest.TestCase):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # ApertureDB Server Info
-        self.db_host  = dbinfo.DB_HOST
-        self.db_port  = dbinfo.DB_PORT
-        self.user     = dbinfo.DB_USER
-        self.password = dbinfo.DB_PASSWORD
-
-        db_up = False
-        attempts = 0
-        while(not db_up):
-            try:
-                db = Connector.Connector(self.db_host, self.db_port, self.user, self.password)
-                db_up = True
-                if (attempts > 0):
-                    print("Connection to ApertureDB successful.")
-            except:
-                print("Attempt", attempts,
-                      "to connect to ApertureDB failed, retrying...")
-                attempts += 1
-                time.sleep(1) # sleeps 1 second
-
-            if attempts > 10:
-                print("Failed to connect to ApertureDB after 10 attempts")
-                exit()
-
-    def create_connection(self):
-        return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
-
-class TestTorchDatasets(TestTorch):
+class TestTorchDatasets(TestBase):
 
     '''
         These tests need to be run after the Loaders, because it uses
         data inserted by the loaders.
+        TODO: We should change this so that we do not depend on them
     '''
 
     def test_omConstraints(self):
@@ -59,8 +27,8 @@ class TestTorchDatasets(TestTorch):
         const.greaterequal("age", 0)
         dataset = PyTorchDataset.ApertureDBDatasetConstraints(db, constraints=const)
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(dataset), dbstatus.count_images())
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(dataset), dbutils.count_images())
 
         start = time.time()
 
@@ -97,8 +65,8 @@ class TestTorchDatasets(TestTorch):
 
         dataset = PyTorchDataset.ApertureDBDataset(db, query, label_prop="license")
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(dataset), dbstatus.count_images())
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(dataset), dbutils.count_images())
 
         start = time.time()
 
@@ -135,8 +103,8 @@ class TestTorchDatasets(TestTorch):
 
         dataset = PyTorchDataset.ApertureDBDataset(db, query, label_prop="license")
 
-        dbstatus = Status.Status(db)
-        self.assertEqual(len(dataset), dbstatus.count_images())
+        dbutils = Utils.Utils(db)
+        self.assertEqual(len(dataset), dbutils.count_images())
 
         start = time.time()
 

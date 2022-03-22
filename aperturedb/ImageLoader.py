@@ -1,14 +1,10 @@
-import math
 import time
 import requests
-import os
 import boto3
-from threading import Thread
 
 import numpy as np
 import cv2
 
-from aperturedb import Status
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
