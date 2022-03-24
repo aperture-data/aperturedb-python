@@ -10,7 +10,7 @@ Welcome to aperturedb-python's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+   autoapi/aperturedb/index
 
 Indices and tables
 ==================
