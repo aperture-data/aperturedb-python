@@ -1,0 +1,7 @@
+repos:
+    - repo: https://github.com/pre-commit/mirrors-autopep8
+      rev: 898691a
+      hooks:
+      - id: autopep8
+        exclude: _pb2.py$
+        args: ["--ignore", "E251,E241,E221", "-i"]

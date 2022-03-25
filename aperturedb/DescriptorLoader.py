@@ -10,6 +10,7 @@ HEADER_LABEL = "label"
 PROPERTIES   = "properties"
 CONSTRAINTS  = "constraints"
 
+
 class DescriptorGeneratorCSV(CSVParser.CSVParser):
     """
         **ApertureDB Descriptor Data loader.**
@@ -35,8 +36,10 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
         self.npy_arrays = {}
         self.has_label = False
 
-        self.props_keys       = [x for x in self.header[3:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
-        self.constraints_keys = [x for x in self.header[3:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[3:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.constraints_keys = [x for x in self.header[3:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
     def __getitem__(self, idx):
 
@@ -48,7 +51,8 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
 
         if not desc_ok:
             print("Error loading descriptor: " + filename + ":" + index)
-            raise Exception("Error loading descriptor: " + filename + ":" + index)
+            raise Exception("Error loading descriptor: " +
+                            filename + ":" + index)
 
         data = {
             "descriptor_blob": descriptor,
@@ -76,7 +80,8 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
         try:
             desc = self.npy_arrays[filename][index]
         except:
-            err_msg = "Cannot retrieve descriptor {} from {}".format(str(index), filename)
+            err_msg = "Cannot retrieve descriptor {} from {}".format(
+                str(index), filename)
             raise Exception(err_msg)
 
         return desc
@@ -104,11 +109,15 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
             self.has_label = True
 
         if self.header[0] != HEADER_PATH:
-            raise Exception("Error with CSV file field: filename. Must be first field")
+            raise Exception(
+                "Error with CSV file field: filename. Must be first field")
         if self.header[1] != HEADER_INDEX:
-            raise Exception("Error with CSV file field: index. Must be second field")
+            raise Exception(
+                "Error with CSV file field: index. Must be second field")
         if self.header[2] != HEADER_SET:
-            raise Exception("Error with CSV file field: set. Must be third field")
+            raise Exception(
+                "Error with CSV file field: set. Must be third field")
+
 
 class DescriptorLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB Descriptor Loader.**

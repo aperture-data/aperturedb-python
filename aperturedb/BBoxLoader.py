@@ -8,6 +8,7 @@ HEADER_HEIGHT = "height"
 IMG_KEY_PROP  = "img_key_prop"
 IMG_KEY_VAL   = "img_key_value"
 
+
 class BBoxGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB BBox Data loader.**
 
@@ -38,8 +39,10 @@ class BBoxGeneratorCSV(CSVParser.CSVParser):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[5:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
-        self.constraints_keys = [x for x in self.header[5:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[5:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.constraints_keys = [x for x in self.header[5:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
         self.img_key = self.header[0]
 
@@ -81,6 +84,7 @@ class BBoxGeneratorCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: " + HEADER_WIDTH)
         if self.header[4] != HEADER_HEIGHT:
             raise Exception("Error with CSV file field: " + HEADER_HEIGHT)
+
 
 class BBoxLoader(ParallelLoader.ParallelLoader):
 

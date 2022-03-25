@@ -13,6 +13,7 @@ from aperturedb import ProgressBar
 HEADER_PATH = "filename"
 HEADER_URL  = "url"
 
+
 class ImageDownloaderCSV(CSVParser.CSVParser):
     """**ApertureDB Image Downloader.**
 
@@ -57,6 +58,7 @@ class ImageDownloaderCSV(CSVParser.CSVParser):
 
         if HEADER_PATH in self.header:
             self.has_filename = True
+
 
 class ImageDownloader(ParallelLoader.ParallelLoader):
 
@@ -164,15 +166,16 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
         if self.images_already_downloaded > 0:
             print("Images already present:", self.images_already_downloaded)
 
-        print("Images downloaded:", len(times) - self.images_already_downloaded)
+        print("Images downloaded:", len(times) -
+              self.images_already_downloaded)
         print("Avg image time(s):", np.mean(times))
-        print("Image time std:", np.std (times))
+        print("Image time std:", np.std(times))
         print("Throughput (images/s)):",
-            1 / np.mean(times) * self.numthreads)
+              1 / np.mean(times) * self.numthreads)
 
         print("Total time(s):", self.ingestion_time)
         print("Overall throughput (img/s):",
-            self.total_elements / self.ingestion_time)
+              self.total_elements / self.ingestion_time)
         if self.error_counter > 0:
             print("Errors encountered:", self.error_counter)
         print("=============================================")

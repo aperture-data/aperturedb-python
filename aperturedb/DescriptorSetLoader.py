@@ -8,6 +8,7 @@ HEADER_METRIC = "metric"
 PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 
+
 class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB DescriptorSet Data loader.**
 
@@ -29,8 +30,10 @@ class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[4:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
-        self.constraints_keys = [x for x in self.header[4:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[4:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.constraints_keys = [x for x in self.header[4:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
     def __getitem__(self, idx):
 
@@ -64,6 +67,7 @@ class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: " + HEADER_ENGINE)
         if self.header[3] != HEADER_METRIC:
             raise Exception("Error with CSV file field: " + HEADER_METRIC)
+
 
 class DescriptorSetLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB DescriptorSet Loader.**

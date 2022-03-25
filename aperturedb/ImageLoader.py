@@ -15,6 +15,7 @@ PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
+
 class ImageGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Image Data loader.**
 
@@ -49,14 +50,16 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         self.check_image = check_image
 
         self.format_given     = IMG_FORMAT in self.header
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.props_keys       = [x for x in self.header[1:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.props_keys       = [x for x in self.props_keys if x != IMG_FORMAT]
-        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[1:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
         self.source_type      = self.header[0]
-        if self.source_type not in [ HEADER_PATH, HEADER_URL, HEADER_S3_URL ]:
+        if self.source_type not in [HEADER_PATH, HEADER_URL, HEADER_S3_URL]:
             print("Source not recognized: " + self.source_type)
-            raise Exception("Error loading image: " + filename )
+            raise Exception("Error loading image: " + filename)
 
         self.n_download_retries = n_download_retries
 
@@ -79,8 +82,8 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
             img_ok, img  = self.load_s3_url(image_path)
 
         if not img_ok:
-            print("Error loading image: " + filename )
-            raise Exception("Error loading image: " + filename )
+            print("Error loading image: " + filename)
+            raise Exception("Error loading image: " + filename)
 
         data["img_blob"] = img
         if self.format_given:
@@ -158,7 +161,8 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
             try:
                 bucket_name = s3_url.split("/")[2]
                 object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
-                s3_response_object = s3.get_object(Bucket=bucket_name, Key=object_name)
+                s3_response_object = s3.get_object(
+                    Bucket=bucket_name, Key=object_name)
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
                 if self.check_image and not self.check_image_buffer(imgbuffer):
@@ -180,8 +184,10 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
 
         self.header = list(self.df.columns.values)
 
-        if self.header[0] not in [ HEADER_PATH, HEADER_URL, HEADER_S3_URL ]:
-            raise Exception("Error with CSV file field: filename. Must be first field")
+        if self.header[0] not in [HEADER_PATH, HEADER_URL, HEADER_S3_URL]:
+            raise Exception(
+                "Error with CSV file field: filename. Must be first field")
+
 
 class ImageLoader(ParallelLoader.ParallelLoader):
     """

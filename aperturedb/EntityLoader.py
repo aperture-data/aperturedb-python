@@ -5,6 +5,7 @@ ENTITY_CLASS = "EntityClass"
 PROPERTIES   = "properties"
 CONSTRAINTS  = "constraints"
 
+
 class EntityGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Entity Data loader.**
 
@@ -25,8 +26,10 @@ class EntityGeneratorCSV(CSVParser.CSVParser):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[1:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.constraints_keys = [x for x in self.header[1:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
     def __getitem__(self, idx):
 
@@ -50,6 +53,7 @@ class EntityGeneratorCSV(CSVParser.CSVParser):
 
         if self.header[0] != ENTITY_CLASS:
             raise Exception("Error with CSV file field: " + ENTITY_CLASS)
+
 
 class EntityLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB Entity Loader.**

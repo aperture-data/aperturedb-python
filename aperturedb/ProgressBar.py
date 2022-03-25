@@ -1,6 +1,7 @@
 import os
 import time
 
+
 class ProgressBar(object):
 
     def __init__(self, filename="", use_last=0):
@@ -28,7 +29,7 @@ class ProgressBar(object):
 
     def msg(self):
 
-        progress = "{:.2f}".format(self.progress*100)
+        progress = "{:.2f}".format(self.progress * 100)
         eta = "{:.2f}".format(self.eta)
         msg = "Progress: " + progress
         msg += "% - ETA(" + self.eta_unit + "): " + eta
@@ -91,7 +92,7 @@ class ProgressBar(object):
             self.eta_unit = "s"
 
         if len(self.progress_arr) > self.use_last:
-            self.progress_arr  = self.progress_arr [:self.use_last]
+            self.progress_arr  = self.progress_arr[:self.use_last]
             self.progress_time = self.progress_time[:self.use_last]
 
     def update(self, progress):

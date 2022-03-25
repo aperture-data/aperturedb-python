@@ -12,6 +12,7 @@ from torchvision import transforms
 
 DEFAULT_BATCH_SIZE = 50
 
+
 class ApertureDBDatasetConstraints(data.Dataset):
 
     # initialise function of class
@@ -35,6 +36,7 @@ class ApertureDBDatasetConstraints(data.Dataset):
     def __len__(self):
 
         return self.imgs_handler.total_results()
+
 
 class ApertureDBDataset(data.Dataset):
 
@@ -70,7 +72,7 @@ class ApertureDBDataset(data.Dataset):
         self.query[self.find_image_idx]["FindImage"]["batch"] = {}
 
         try:
-            r,b = self.db.query(self.query)
+            r, b = self.db.query(self.query)
             batch = r[self.find_image_idx]["FindImage"]["batch"]
             self.total_elements = batch["total_elements"]
         except:
@@ -138,7 +140,7 @@ class ApertureDBDataset(data.Dataset):
             # disconnection/timeout and SSL context on multiprocessing
             connection_ok = False
             try:
-                r,b = self.db.query(query)
+                r, b = self.db.query(query)
                 connection_ok = True
             except:
                 # Connection failed, we retry just once to re-connect
@@ -146,7 +148,7 @@ class ApertureDBDataset(data.Dataset):
 
             if not connection_ok:
                 # Connection failed, we have reconnected, we try again.
-                r,b = self.db.query(query)
+                r, b = self.db.query(query)
 
             if len(b) == 0:
                 print("index:", index)
@@ -158,9 +160,9 @@ class ApertureDBDataset(data.Dataset):
 
             if self.label_prop:
                 entities = r[self.find_image_idx]["FindImage"]["entities"]
-                self.batch_labels = [ l[self.label_prop] for l in entities]
+                self.batch_labels = [l[self.label_prop] for l in entities]
             else:
-                self.batch_labels = [ "none" for l in range(len(b))]
+                self.batch_labels = ["none" for l in range(len(b))]
         except:
             print("Query error:")
             print(self.db.get_last_response_str())

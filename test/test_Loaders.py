@@ -1,6 +1,6 @@
 import time
 
-import numpy  as np
+import numpy as np
 
 from test_Base import TestBase
 
@@ -8,6 +8,7 @@ from aperturedb import Utils
 from aperturedb import EntityLoader, ConnectionLoader
 from aperturedb import ImageLoader, BBoxLoader, BlobLoader
 from aperturedb import DescriptorSetLoader, DescriptorLoader
+
 
 class TestEntityLoader(TestBase):
 
@@ -30,26 +31,26 @@ class TestEntityLoader(TestBase):
 
         loader = EntityLoader.EntityLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
         self.assertEqual(len(generator), dbutils.count_entities("Person"))
 
         # Insert Images
         in_csv_file = "./input/images.adb.csv"
 
-        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=False)
+        generator = ImageLoader.ImageGeneratorCSV(
+            in_csv_file, check_image=False)
 
         if self.stats:
             print("\n")
 
         loader = ImageLoader.ImageLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
         self.assertEqual(len(generator), dbutils.count_images())
-
 
         # Insert Connections
 
@@ -62,10 +63,11 @@ class TestEntityLoader(TestBase):
 
         loader = ConnectionLoader.ConnectionLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
-        self.assertEqual(len(generator), dbutils.count_connections("has_image"))
+        self.assertEqual(
+            len(generator), dbutils.count_connections("has_image"))
 
         # Insert BBoxes
 
@@ -78,8 +80,8 @@ class TestEntityLoader(TestBase):
 
         loader = BBoxLoader.BBoxLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
         self.assertEqual(len(generator), dbutils.count_bboxes())
 
@@ -91,19 +93,19 @@ class TestEntityLoader(TestBase):
 
         in_csv_file = "./input/images.adb.csv"
 
-        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=False)
+        generator = ImageLoader.ImageGeneratorCSV(
+            in_csv_file, check_image=False)
 
         if self.stats:
             print("\n")
 
         loader = ImageLoader.ImageLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
         dbutils = Utils.Utils(db)
         self.assertEqual(len(generator), dbutils.count_images())
-
 
         # Insert DescriptorsSet
         in_csv_file = "./input/descriptorset.adb.csv"
@@ -115,11 +117,12 @@ class TestEntityLoader(TestBase):
 
         loader = DescriptorSetLoader.DescriptorSetLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
         dbutils = Utils.Utils(db)
-        self.assertEqual(len(generator), dbutils.count_entities("_DescriptorSet"))
+        self.assertEqual(
+            len(generator), dbutils.count_entities("_DescriptorSet"))
 
         # Insert Descriptors
 
@@ -137,12 +140,13 @@ class TestEntityLoader(TestBase):
 
             loader = DescriptorLoader.DescriptorLoader(db)
             loader.ingest(generator, batchsize=self.batchsize,
-                                     numthreads=self.numthreads,
-                                     stats=self.stats)
+                          numthreads=self.numthreads,
+                          stats=self.stats)
 
             dbutils = Utils.Utils(db)
             total_descriptors += len(generator)
-            self.assertEqual(total_descriptors, dbutils.count_entities("_Descriptor"))
+            self.assertEqual(total_descriptors,
+                             dbutils.count_entities("_Descriptor"))
 
     def test_BlobLoader(self):
 
@@ -158,8 +162,8 @@ class TestEntityLoader(TestBase):
 
         loader = BlobLoader.BlobLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
         dbutils = Utils.Utils(db)
         self.assertEqual(len(generator), dbutils.count_entities("_Blob"))
@@ -180,6 +184,7 @@ class TestEntityLoader(TestBase):
         arr = np.frombuffer(blob[0])
         self.assertEqual(arr[2], 3.3)
 
+
 class TestURILoader(TestBase):
 
     def test_S3Loader(self):
@@ -190,15 +195,16 @@ class TestURILoader(TestBase):
         count_before = dbutils.count_images()
 
         in_csv_file = "./input/s3_images.adb.csv"
-        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=True)
+        generator = ImageLoader.ImageGeneratorCSV(
+            in_csv_file, check_image=True)
 
         if self.stats:
             print("\n")
 
         loader = ImageLoader.ImageLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
         dbutils = Utils.Utils(db)
         self.assertEqual(len(generator), dbutils.count_images() - count_before)
@@ -211,16 +217,16 @@ class TestURILoader(TestBase):
         count_before = dbutils.count_images()
 
         in_csv_file = "./input/http_images.adb.csv"
-        generator = ImageLoader.ImageGeneratorCSV(in_csv_file, check_image=True)
+        generator = ImageLoader.ImageGeneratorCSV(
+            in_csv_file, check_image=True)
 
         if self.stats:
             print("\n")
 
         loader = ImageLoader.ImageLoader(db)
         loader.ingest(generator, batchsize=self.batchsize,
-                                 numthreads=self.numthreads,
-                                 stats=self.stats)
+                      numthreads=self.numthreads,
+                      stats=self.stats)
 
         dbutils = Utils.Utils(db)
         self.assertEqual(len(generator), dbutils.count_images() - count_before)
-

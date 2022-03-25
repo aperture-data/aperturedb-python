@@ -5,6 +5,7 @@ import dbinfo
 
 from aperturedb import Connector
 
+
 class TestBase(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -36,7 +37,7 @@ class TestBase(unittest.TestCase):
                 # db.print_last_response()
 
                 attempts += 1
-                time.sleep(1) # sleeps 1 second
+                time.sleep(1)  # sleeps 1 second
 
             if attempts > 10:
                 print("Failed to connect to ApertureDB after 10 attempts")

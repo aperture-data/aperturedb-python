@@ -13,6 +13,7 @@ from matplotlib.patches import Polygon
 
 from aperturedb import Utils
 
+
 class Constraints(object):
 
     def __init__(self):
@@ -38,6 +39,7 @@ class Constraints(object):
     def less(self, key, value):
 
         self.constraints[key] = ["<", value]
+
 
 class Operations(object):
 
@@ -67,6 +69,7 @@ class Operations(object):
         }
 
         self.operations_arr.append(op)
+
 
 class Images(object):
 
@@ -128,7 +131,7 @@ class Images(object):
             print(self.db_connector.get_last_response_str())
             return
 
-        for (idx,i) in zip(range(start, end), range(end - start)):
+        for (idx, i) in zip(range(start, end), range(end - start)):
 
             if idx >= len(self.images_ids):
                 return
@@ -183,27 +186,30 @@ class Images(object):
         I = io.imread(img_stringIO)
 
         fig1, ax1 = plt.subplots()
-        plt.imshow(I); plt.axis('off')
+        plt.imshow(I)
+        plt.axis('off')
 
         for poly in polygons:
 
             sample = np.frombuffer(poly, dtype=np.float32)
 
-            c = (np.random.random((1, 3))*0.6+0.4).tolist()[0]
+            c = (np.random.random((1, 3)) * 0.6 + 0.4).tolist()[0]
             color = []
             color.append(c)
 
             polygon_points = []
-            poly = np.array(sample).reshape((int(len(sample)/2), 2))
+            poly = np.array(sample).reshape((int(len(sample) / 2), 2))
             polygon_points.append(Polygon(poly))
 
             ax = plt.gca()
             ax.set_autoscale_on(False)
 
-            p = PatchCollection(polygon_points, facecolor=color, linewidths=0, alpha=0.4)
+            p = PatchCollection(
+                polygon_points, facecolor=color, linewidths=0, alpha=0.4)
             ax.add_collection(p)
 
-            p = PatchCollection(polygon_points, facecolor='none', edgecolors=color, linewidths=2)
+            p = PatchCollection(polygon_points, facecolor='none',
+                                edgecolors=color, linewidths=2)
             ax.add_collection(p)
 
     def __retrieve_bounding_boxes(self, index):
@@ -295,8 +301,8 @@ class Images(object):
 
         return bboxes
 
-
     # A new search will throw away the results of any previous search
+
     def search(self, constraints=None, operations=None, format=None, limit=None):
 
         self.constraints = constraints
@@ -308,7 +314,7 @@ class Images(object):
         self.images_ids = []
         self.images_bboxes = {}
 
-        query = { "FindImage": {} }
+        query = {"FindImage": {}}
 
         if constraints:
             query["FindImage"]["constraints"] = constraints.constraints
@@ -353,7 +359,7 @@ class Images(object):
                     },
                     "blobs": False,
                 }
-            },{
+            }, {
                 "FindDescriptor": {
                     "set": set_name,
                     "is_connected_to": {
@@ -498,7 +504,8 @@ class Images(object):
 
                 res, images = self.db_connector.query(query)
 
-                return_dictionary[str(uniqueid)] = res[0]["FindImage"]["entities"][0]
+                return_dictionary[str(
+                    uniqueid)] = res[0]["FindImage"]["entities"][0]
         except:
             print("Cannot retrieved properties")
 

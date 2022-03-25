@@ -5,6 +5,7 @@ CONNECTION_CLASS = "ConnectionClass"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
+
 class ConnectionGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Connection Data loader.**
 
@@ -25,9 +26,11 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[3:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[3:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-        self.constraints_keys = [x for x in self.header[3:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[3:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
         self.ref1_class   = self.header[1].split("@")[0]
         self.ref1_key     = self.header[1].split("@")[1]
@@ -62,11 +65,13 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
         self.header = list(self.df.columns.values)
 
         if self.header[0] != CONNECTION_CLASS:
-            raise Exception("Error with CSV file field: 0 - " + CONNECTION_CLASS)
+            raise Exception(
+                "Error with CSV file field: 0 - " + CONNECTION_CLASS)
         if "@" not in self.header[1]:
             raise Exception("Error with CSV file field: 1")
         if "@" not in self.header[2]:
             raise Exception("Error with CSV file field: 2")
+
 
 class ConnectionLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB Connection Loader.**
@@ -110,7 +115,8 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
                 }
 
                 fe_a["FindEntity"]["constraints"] = {}
-                fe_a["FindEntity"]["constraints"][data["ref1_key"]] = ["==", data["ref1_val"]]
+                fe_a["FindEntity"]["constraints"][data["ref1_key"]] = [
+                    "==", data["ref1_val"]]
                 q.append(fe_a)
 
                 ref_dst = ref_counter
@@ -123,7 +129,8 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
                 }
 
                 fe_b["FindEntity"]["constraints"] = {}
-                fe_b["FindEntity"]["constraints"][data["ref2_key"]] = ["==", data["ref2_val"]]
+                fe_b["FindEntity"]["constraints"][data["ref2_key"]] = [
+                    "==", data["ref2_val"]]
                 q.append(fe_b)
 
                 ae = {
@@ -144,7 +151,7 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
             except KeyError as ex:
                 error_str = "ERROR: ConnectionLoader::generate_batch():" + \
                     " expected key='" + ex.args[0] + "' in '" + str(data) + \
-                    "'. Ignored.";
+                    "'. Ignored."
                 print(error_str)
                 sys.stdout.write(error_str + "\n")
 

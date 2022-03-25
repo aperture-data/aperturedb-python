@@ -7,6 +7,7 @@ HEADER_PATH = "filename"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
+
 class VideoGeneratorCSV(CSVParser.CSVParser):
     """
         **ApertureDB Video Data loader.**
@@ -31,8 +32,10 @@ class VideoGeneratorCSV(CSVParser.CSVParser):
 
         self.check_video = check_video
 
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[1:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.constraints_keys = [x for x in self.header[1:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
     def __getitem__(self, idx):
 
@@ -41,8 +44,8 @@ class VideoGeneratorCSV(CSVParser.CSVParser):
 
         video_ok, video = self.load_video(filename)
         if not video_ok:
-            print("Error loading video: " + filename )
-            raise Exception("Error loading video: " + filename )
+            print("Error loading video: " + filename)
+            raise Exception("Error loading video: " + filename)
 
         data["video_blob"] = video
 
@@ -82,7 +85,9 @@ class VideoGeneratorCSV(CSVParser.CSVParser):
         self.header = list(self.df.columns.values)
 
         if self.header[0] != HEADER_PATH:
-            raise Exception("Error with CSV file field: filename. Must be first field")
+            raise Exception(
+                "Error with CSV file field: filename. Must be first field")
+
 
 class VideoLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB Video Loader.**

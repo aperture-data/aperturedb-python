@@ -5,6 +5,7 @@ PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 BLOB_PATH   = "filename"
 
+
 class BlobGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Blob Data loader.**
 
@@ -25,9 +26,11 @@ class BlobGeneratorCSV(CSVParser.CSVParser):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.props_keys       = [x for x in self.header[1:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.props_keys       = [x for x in self.props_keys if x != BLOB_PATH]
-        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[1:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
     def __getitem__(self, idx):
 
@@ -36,12 +39,12 @@ class BlobGeneratorCSV(CSVParser.CSVParser):
         filename      = self.df.loc[idx, BLOB_PATH]
         blob_ok, blob = self.load_blob(filename)
         if not blob_ok:
-            print("Error loading blob: " + filename )
-            raise Exception("Error loading blob: " + filename )
+            print("Error loading blob: " + filename)
+            raise Exception("Error loading blob: " + filename)
 
         data["blob"] = blob
 
-        properties  = self.parse_properties (self.df, idx)
+        properties  = self.parse_properties(self.df, idx)
         constraints = self.parse_constraints(self.df, idx)
 
         if properties:
@@ -70,6 +73,7 @@ class BlobGeneratorCSV(CSVParser.CSVParser):
 
         if self.header[0] != BLOB_PATH:
             raise Exception("Error with CSV file field: " + BLOB_PATH)
+
 
 class BlobLoader(ParallelLoader.ParallelLoader):
     """
