@@ -16,7 +16,7 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
 
     Example csv file::
 
-        ConnectionClass,VD:IMG@id,Person@id,confidence,id,constaint_id
+        ConnectionClass,_Image@id,Person@id,confidence,id,constaint_id
         has_image,321423532,42342522,0.4354,5432543254,5432543254
         has_image,321423532,53241521,0.6432,98476542,98476542
         ...
