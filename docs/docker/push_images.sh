@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script pushes the docker images tp dockerhub
+# This script pushes the docker images to dockerhub
 
 VERSION=$1
 
