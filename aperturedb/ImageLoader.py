@@ -15,25 +15,33 @@ PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
-class ImageGeneratorCSV(CSVParser.CSVParser):
 
-    '''
-        ApertureDB Image Data loader.
+class ImageGeneratorCSV(CSVParser.CSVParser):
+    """**ApertureDB Image Data loader.**
+
+    .. note::
         Expects a csv file with the following columns (format optional):
 
-            filename,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
+            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
             OR
-            url,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
+
+            ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
             OR
-            s3_url,PROP_NAME_1, ... PROP_NAME_N,constraint_PROP1,format
+
+            ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
             ...
 
-        Example csv file:
+    Example csv file::
+
         filename,id,label,constaint_id,format
         /home/user/file1.jpg,321423532,dog,321423532,jpg
         /home/user/file2.jpg,42342522,cat,42342522,png
         ...
-    '''
+
+
+    """
 
     def __init__(self, filename, check_image=True, n_download_retries=3):
 
@@ -42,14 +50,16 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         self.check_image = check_image
 
         self.format_given     = IMG_FORMAT in self.header
-        self.props_keys       = [x for x in self.header[1:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.props_keys       = [x for x in self.header[1:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.props_keys       = [x for x in self.props_keys if x != IMG_FORMAT]
-        self.constraints_keys = [x for x in self.header[1:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[1:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
         self.source_type      = self.header[0]
-        if self.source_type not in [ HEADER_PATH, HEADER_URL, HEADER_S3_URL ]:
+        if self.source_type not in [HEADER_PATH, HEADER_URL, HEADER_S3_URL]:
             print("Source not recognized: " + self.source_type)
-            raise Exception("Error loading image: " + filename )
+            raise Exception("Error loading image: " + filename)
 
         self.n_download_retries = n_download_retries
 
@@ -72,8 +82,8 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
             img_ok, img  = self.load_s3_url(image_path)
 
         if not img_ok:
-            print("Error loading image: " + filename )
-            raise Exception("Error loading image: " + filename )
+            print("Error loading image: " + filename)
+            raise Exception("Error loading image: " + filename)
 
         data["img_blob"] = img
         if self.format_given:
@@ -151,7 +161,8 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
             try:
                 bucket_name = s3_url.split("/")[2]
                 object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
-                s3_response_object = s3.get_object(Bucket=bucket_name, Key=object_name)
+                s3_response_object = s3.get_object(
+                    Bucket=bucket_name, Key=object_name)
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
                 if self.check_image and not self.check_image_buffer(imgbuffer):
@@ -173,25 +184,29 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
 
         self.header = list(self.df.columns.values)
 
-        if self.header[0] not in [ HEADER_PATH, HEADER_URL, HEADER_S3_URL ]:
-            raise Exception("Error with CSV file field: filename. Must be first field")
+        if self.header[0] not in [HEADER_PATH, HEADER_URL, HEADER_S3_URL]:
+            raise Exception(
+                "Error with CSV file field: filename. Must be first field")
+
 
 class ImageLoader(ParallelLoader.ParallelLoader):
+    """
+    **ApertureDB Image Loader.**
 
-    '''
-        ApertureDB Image Loader.
+    This class is to be used in combination with a "generator".
+    The generator must be an iterable object that generated "image_data"
+    elements.
 
-        This class is to be used in combination with a "generator".
-        The generator must be an iterable object that generated "image_data"
-        elements:
-            image_data = {
-                "properties":  properties,
-                "constraints": constraints,
-                "operations":  operations,
-                "format":      format ("jpg", "png", etc),
-                "img_blob":    (bytes),
-            }
-    '''
+    Example::
+
+        image_data = {
+            "properties":  properties,
+            "constraints": constraints,
+            "operations":  operations,
+            "format":      format ("jpg", "png", etc),
+            "img_blob":    (bytes),
+        }
+    """
 
     def __init__(self, db, dry_run=False):
 

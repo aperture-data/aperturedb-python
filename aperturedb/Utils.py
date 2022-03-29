@@ -2,6 +2,7 @@ import os
 import sys
 import time
 
+
 class Utils(object):
 
     def __init__(self, connector):
@@ -14,7 +15,7 @@ class Utils(object):
 
     def status(self):
 
-        q = [{ "GetStatus": {} }]
+        q = [{"GetStatus": {}}]
 
         try:
             res, blobs = self.connector.query(q)
@@ -30,7 +31,7 @@ class Utils(object):
 
     def get_schema(self, refresh=False):
 
-        query = [ {
+        query = [{
             "GetSchema": {
                 "refresh": refresh,
             }
@@ -53,8 +54,8 @@ class Utils(object):
         q = [{
             "CreateIndex": {
                 "index_type":    index_type,
-                "class" :        class_name,
-                "property_key" : property_key,
+                "class":        class_name,
+                "property_key": property_key,
                 "property_type": property_type
             }
         }]

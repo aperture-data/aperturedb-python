@@ -7,12 +7,11 @@ CONTRAINTS_PREFIX = "constraint_"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
-class CSVParser():
 
-    '''
-        ApertureDB General CSV Parser for Loaders.
-        ...
-    '''
+class CSVParser():
+    """**ApertureDB General CSV Parser for Loaders.**
+    ...
+    """
 
     def __init__(self, filename):
 
@@ -38,7 +37,7 @@ class CSVParser():
             for key in self.props_keys:
                 # Handle Date data type
                 if key.startswith("date:"):
-                    prop = key[len("date:"):] # remove prefix
+                    prop = key[len("date:"):]  # remove prefix
                     properties[prop] = {"_date": self.df.loc[idx, key]}
                 else:
                     value = self.df.loc[idx, key]
@@ -53,10 +52,11 @@ class CSVParser():
         if len(self.constraints_keys) > 0:
             for key in self.constraints_keys:
                 if key.startswith("constraint_date:"):
-                    prop = key[len("constraint_date:"):] # remove prefix
-                    constraints[prop] = ["==", {"_date": self.df.loc[idx, key]} ]
+                    prop = key[len("constraint_date:"):]  # remove prefix
+                    constraints[prop] = [
+                        "==", {"_date": self.df.loc[idx, key]}]
                 else:
-                    prop = key[len("constraint_"):] # remove "prefix
+                    prop = key[len("constraint_"):]  # remove "prefix
                     constraints[prop] = ["==", self.df.loc[idx, key]]
 
         return constraints

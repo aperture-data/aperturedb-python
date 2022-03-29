@@ -13,14 +13,17 @@ from aperturedb import ProgressBar
 HEADER_PATH = "filename"
 HEADER_URL  = "url"
 
-class VideoDownloaderCSV(CSVParser.CSVParser):
 
-    '''
-        ApertureDB Video Downloader.
-        Expects a csv file with AT LEAST a "url" column, and
-        optionally a "filename" field.
-        If "filename" is not present, it is taken from the url.
-    '''
+class VideoDownloaderCSV(CSVParser.CSVParser):
+    """
+        **ApertureDB Video Downloader.**
+
+    .. important::
+
+        Expects a csv file with AT LEAST a ``url`` column, and
+        optionally a ``filename`` field.
+        If ``filename`` is not present, it is taken from the url.
+    """
 
     def __init__(self, filename, check_video=True):
 
@@ -56,6 +59,7 @@ class VideoDownloaderCSV(CSVParser.CSVParser):
 
         if HEADER_PATH in self.header:
             self.has_filename = True
+
 
 class VideoDownloader(ParallelLoader.ParallelLoader):
 
@@ -139,12 +143,12 @@ class VideoDownloader(ParallelLoader.ParallelLoader):
 
         times = np.array(self.times_arr)
         print("Avg Video download time(s):", np.mean(times))
-        print("Img download time std:", np.std (times))
+        print("Img download time std:", np.std(times))
         print("Avg download throughput (videos/s)):",
-            1 / np.mean(times) * self.numthreads)
+              1 / np.mean(times) * self.numthreads)
 
         print("Total time(s):", self.ingestion_time)
         print("Overall throughput (videos/s):",
-            self.total_elements / self.ingestion_time)
+              self.total_elements / self.ingestion_time)
         print("Total errors encountered:", self.error_counter)
         print("=============================================")

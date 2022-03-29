@@ -8,9 +8,11 @@ from IPython.display import display as ds
 
 DESTINATION_FOLDER = "results"
 
+
 def check_folder(folder):
     if not os.path.exists(folder):
-            os.makedirs(folder)
+        os.makedirs(folder)
+
 
 def display(images_array, save=False):
 
@@ -30,6 +32,7 @@ def display(images_array, save=False):
             fd.write(im)
             fd.close()
 
+
 def draw_bboxes(image, boxes=[], tags=[], save=False):
 
     nparr    = np.fromstring(image, np.uint8)
@@ -44,7 +47,8 @@ def draw_bboxes(image, boxes=[], tags=[], save=False):
         bottom = coords["y"] + coords["height"]
         cv2.rectangle(cv_image, (left, top), (right, bottom), (0, 255, 0), 2)
         y = top - 15 if top - 15 > 15 else top + 15
-        cv2.putText(cv_image, tags[counter], (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+        cv2.putText(cv_image, tags[counter], (left, y),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
         counter += 1
 
     cv_image_rgb = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
@@ -54,6 +58,7 @@ def draw_bboxes(image, boxes=[], tags=[], save=False):
         check_folder(DESTINATION_FOLDER)
         img_file = DESTINATION_FOLDER + '/res_bboxes.jpg'
         cv2.imwrite(img_file, cv_image)
+
 
 def display_video_mp4(blob):
 

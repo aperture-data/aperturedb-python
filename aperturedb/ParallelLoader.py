@@ -6,11 +6,9 @@ from aperturedb import ProgressBar
 
 import numpy as np
 
-class ParallelLoader:
 
-    """
-        Parallel and Batch Loader for ApertureDB
-    """
+class ParallelLoader:
+    """**Parallel and Batch Loader for ApertureDB**"""
 
     def __init__(self, db, dry_run=False):
 
@@ -40,7 +38,7 @@ class ParallelLoader:
         q, blobs = self.generate_batch(data)
 
         if not self.dry_run:
-            r,b = db.query(q, blobs)
+            r, b = db.query(q, blobs)
             if not db.last_query_ok():
                 self.error_counter += 1
             query_time = db.get_last_query_time()
@@ -71,8 +69,8 @@ class ParallelLoader:
             try:
                 # This can be done with slices instead of list comprehension.
                 # but required support from generator.
-                data_for_query = [ generator[idx]
-                                   for idx in range(batch_start, batch_end) ]
+                data_for_query = [generator[idx]
+                                  for idx in range(batch_start, batch_end)]
                 self.do_batch(db, data_for_query)
             except Exception as e:
                 print(e)
@@ -95,20 +93,21 @@ class ParallelLoader:
             elements_per_thread = self.total_elements
             self.numthreads = 1
         else:
-            elements_per_thread = math.ceil(self.total_elements / self.numthreads)
+            elements_per_thread = math.ceil(
+                self.total_elements / self.numthreads)
 
         thread_arr = []
         for i in range(self.numthreads):
             idx_start = i * elements_per_thread
-            idx_end   = min(idx_start + elements_per_thread, self.total_elements)
+            idx_end   = min(idx_start + elements_per_thread,
+                            self.total_elements)
 
             thread_add = Thread(target=self.worker,
                                 args=(i, generator, idx_start, idx_end))
             thread_arr.append(thread_add)
 
-
-        a = [ th.start() for th in thread_arr]
-        a = [ th.join()  for th in thread_arr]
+        a = [th.start() for th in thread_arr]
+        a = [th.join() for th in thread_arr]
 
         self.ingestion_time = time.time() - start_time
 
@@ -130,18 +129,19 @@ class ParallelLoader:
 
         else:
             print("Avg Query time (s):", np.mean(times))
-            print("Query time std:", np.std (times))
+            print("Query time std:", np.std(times))
             print("Avg Query Throughput (q/s)):",
-                    1 / np.mean(times) * self.numthreads)
+                  1 / np.mean(times) * self.numthreads)
 
             msg = "(" + self.type + "/s):"
             print("Overall insertion throughput", msg,
-                    self.total_elements / self.ingestion_time)
+                  self.total_elements / self.ingestion_time)
 
             if self.error_counter > 0:
                 print("Total errors encountered:", self.error_counter)
                 inserted_elements -= self.error_counter * self.batchsize
-                print("Errors (%):", 100 * self.error_counter / total_queries_exec)
+                print("Errors (%):", 100 *
+                      self.error_counter / total_queries_exec)
 
             print("Total inserted elements:", inserted_elements)
         print("=================================================")
