@@ -173,9 +173,9 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
         print("Throughput (images/s)):",
               1 / np.mean(times) * self.numthreads)
 
-        print("Total time(s):", self.ingestion_time)
+        print("Total time(s):", self.queries_time)
         print("Overall throughput (img/s):",
-              self.total_elements / self.ingestion_time)
+              self.total_elements / self.queries_time)
         if self.error_counter > 0:
             print("Errors encountered:", self.error_counter)
         print("=============================================")
