@@ -173,6 +173,30 @@ class Utils(object):
 
         return total_connections
 
+    def add_descriptorset(self, name, dim, metric="L2", engine="FaissFlat"):
+
+        query = [{
+            "AddDescriptorSet": {
+                "name":       name,
+                "dimensions": dim,
+                "metric":     metric,
+                "engine":     engine
+            }
+        }]
+
+        response, arr = self.connector.query(query)
+
+        expected = [{
+            "AddDescriptorSet": {
+                "status": 0,
+            }
+        }]
+
+        if response != expected:
+            print("Error inserting set", name)
+            self.connector.print_last_response()
+
+
     def count_descriptorsets(self):
 
         q = [{
@@ -191,6 +215,29 @@ class Utils(object):
             self.connector.print_last_response()
 
         return total_descriptor_sets
+
+    def get_descriptorset_list(self):
+
+        q = [{
+            "FindDescriptorSet": {
+                "results": {
+                    "all_properties": True,
+                }
+
+            }
+        }]
+
+        try:
+            res, _ = self.connector.query(q)
+
+            if not self.connector.last_query_ok():
+                self.connector.print_last_response()
+                return []
+        except:
+            self.connector.print_last_response()
+            return []
+
+        return [ent["_name"] for ent in res[0]["FindDescriptorSet"]["entities"]]
 
     def remove_descriptorset(self, set_name):
 

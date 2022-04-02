@@ -6,13 +6,11 @@ from os import path
 import cv2
 import numpy as np
 
-from aperturedb import ParallelLoader
+from aperturedb import Parallelizer
 from aperturedb import CSVParser
-from aperturedb import ProgressBar
 
 HEADER_PATH = "filename"
 HEADER_URL  = "url"
-
 
 class ImageDownloaderCSV(CSVParser.CSVParser):
     """**ApertureDB Image Downloader.**
@@ -60,11 +58,11 @@ class ImageDownloaderCSV(CSVParser.CSVParser):
             self.has_filename = True
 
 
-class ImageDownloader(ParallelLoader.ParallelLoader):
+class ImageDownloader(Parallelizer.Parallelizer):
 
-    def __init__(self, db=None, dry_run=False, n_download_retries=0, check_if_present=False):
+    def __init__(self, n_download_retries=0, check_if_present=False):
 
-        super().__init__(db, dry_run=dry_run)
+        super().__init__()
 
         self.type = "image"
 
@@ -134,13 +132,7 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
 
         self.times_arr.append(time.time() - start)
 
-    # We need to define ImageDownload owns worker,
-    # because the ParallelLoador worker is design to run queries
-    # on a given db.
     def worker(self, thid, generator, start, end):
-
-        if thid == 0 and self.stats:
-            pb = ProgressBar.ProgressBar()
 
         for i in range(start, end):
 
@@ -149,20 +141,17 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
             self.download_image(url, filename)
 
             if thid == 0 and self.stats:
-                pb.update((i - start) / (end - start))
-
-        if thid == 0 and self.stats:
-            pb.update(1)
+                self.pb.update((i - start) / (end - start))
 
     def print_stats(self):
 
-        print("====== ApertureDB ImageDownloader Stats ======")
-
         times = np.array(self.times_arr)
+
         if len(times) <= 0:
             print("Error: No downloads.")
             return
 
+        print("====== ApertureDB ImageDownloader Stats ======")
         if self.images_already_downloaded > 0:
             print("Images already present:", self.images_already_downloaded)
 
@@ -173,9 +162,9 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
         print("Throughput (images/s)):",
               1 / np.mean(times) * self.numthreads)
 
-        print("Total time(s):", self.ingestion_time)
+        print("Total time(s):", self.total_actions_time)
         print("Overall throughput (img/s):",
-              self.total_elements / self.ingestion_time)
+              self.total_actions / self.total_actions_time)
         if self.error_counter > 0:
             print("Errors encountered:", self.error_counter)
         print("=============================================")

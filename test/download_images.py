@@ -4,15 +4,14 @@ import math
 
 from aperturedb import ImageDownloader
 
-
 def main(params):
 
-    loader = ImageDownloader.ImageDownloader(
+    downloader = ImageDownloader.ImageDownloader(
         check_if_present=True, n_download_retries=2)
-    loader.ingest(ImageDownloader.ImageDownloaderCSV(params.in_file),
+    downloader.run(ImageDownloader.ImageDownloaderCSV(params.in_file),
                   numthreads=32,
+                  batchsize=1,
                   stats=True)
-
 
 def get_args():
     obj = argparse.ArgumentParser()
