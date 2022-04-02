@@ -17,17 +17,16 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
     def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
 
-        self.total_elements = len(generator)
         self.query(generator, batchsize, numthreads, stats)
 
     def print_stats(self):
 
         times = np.array(self.times_arr)
         total_queries_exec = len(times)
-        inserted_elements  = self.total_elements
+        inserted_elements  = self.total_actions
 
         print("============ ApertureDB Loader Stats ============")
-        print("Total time (s):", self.queries_time)
+        print("Total time (s):", self.total_actions_time)
         print("Total queries executed:", total_queries_exec)
 
         if total_queries_exec == 0:
@@ -41,7 +40,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
             msg = "(" + self.type + "/s):"
             print("Overall insertion throughput", msg,
-                  self.total_elements / self.queries_time)
+                  self.total_actions / self.total_actions_time)
 
             if self.error_counter > 0:
                 print("Total errors encountered:", self.error_counter)

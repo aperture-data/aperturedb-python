@@ -19,13 +19,12 @@ class ProgressBar(object):
         self.progress_arr  = []
         self.progress_time = []
 
+        self.done = False
+
     def __del__(self):
 
         if self.file:
-            self.fd.write('\n')
             self.fd.close()
-        else:
-            print('\n')
 
     def msg(self):
 
@@ -33,6 +32,9 @@ class ProgressBar(object):
         eta = "{:.2f}".format(self.eta)
         msg = "Progress: " + progress
         msg += "% - ETA(" + self.eta_unit + "): " + eta
+
+        if self.done:
+            msg += "\n"
 
         return msg
 
@@ -47,6 +49,9 @@ class ProgressBar(object):
         print(self.msg(), end=" ", flush=True)
 
     def compute_stats(self, progress):
+
+        if int(progress) == 1:
+            self.done = True
 
         if progress < self.progress:
             self.progress = []
