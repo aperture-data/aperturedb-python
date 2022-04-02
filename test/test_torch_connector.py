@@ -11,6 +11,7 @@ from aperturedb import Connector, Utils
 from aperturedb import Images
 from aperturedb import PyTorchDataset
 
+
 class TestTorchDatasets(TestBase):
 
     '''
@@ -25,7 +26,8 @@ class TestTorchDatasets(TestBase):
 
         const = Images.Constraints()
         const.greaterequal("age", 0)
-        dataset = PyTorchDataset.ApertureDBDatasetConstraints(db, constraints=const)
+        dataset = PyTorchDataset.ApertureDBDatasetConstraints(
+            db, constraints=const)
 
         dbutils = Utils.Utils(db)
         self.assertEqual(len(dataset), dbutils.count_images())
@@ -45,7 +47,7 @@ class TestTorchDatasets(TestBase):
 
         db = self.create_connection()
 
-        query = [ {
+        query = [{
             "FindImage": {
                 "constraints": {
                     "age": [">=", 0]
@@ -63,7 +65,8 @@ class TestTorchDatasets(TestBase):
             }
         }]
 
-        dataset = PyTorchDataset.ApertureDBDataset(db, query, label_prop="license")
+        dataset = PyTorchDataset.ApertureDBDataset(
+            db, query, label_prop="license")
 
         dbutils = Utils.Utils(db)
         self.assertEqual(len(dataset), dbutils.count_images())
@@ -83,7 +86,7 @@ class TestTorchDatasets(TestBase):
 
         db = self.create_connection()
 
-        query = [ {
+        query = [{
             "FindImage": {
                 "constraints": {
                     "age": [">=", 0]
@@ -101,7 +104,8 @@ class TestTorchDatasets(TestBase):
             }
         }]
 
-        dataset = PyTorchDataset.ApertureDBDataset(db, query, label_prop="license")
+        dataset = PyTorchDataset.ApertureDBDataset(
+            db, query, label_prop="license")
 
         dbutils = Utils.Utils(db)
         self.assertEqual(len(dataset), dbutils.count_images())
@@ -115,7 +119,8 @@ class TestTorchDatasets(TestBase):
                 self.assertEqual(True, False)
 
         print("\n")
-        print("Sequential Throughput (imgs/s):", len(dataset) / (time.time() - start))
+        print("Sequential Throughput (imgs/s):",
+              len(dataset) / (time.time() - start))
 
         # Distributed Data Loader Setup
 
@@ -143,13 +148,15 @@ class TestTorchDatasets(TestBase):
                 print("Empty image?")
                 self.assertEqual(True, False)
 
-        print("Distributed Data Loader Sequential Throughput (imgs/s):", len(dataset) / (time.time() - start))
+        print("Distributed Data Loader Sequential Throughput (imgs/s):",
+              len(dataset) / (time.time() - start))
 
         # === Distributed Data Loader Shuffler
 
         # This will generate a random sampler, which will make the use
         # of batching wasteful
-        sampler     = torch.utils.data.DistributedSampler(dataset, shuffle=True)
+        sampler     = torch.utils.data.DistributedSampler(
+            dataset, shuffle=True)
 
         data_loader = torch.utils.data.DataLoader(
             dataset,
@@ -168,4 +175,5 @@ class TestTorchDatasets(TestBase):
                 print("Empty image?")
                 self.assertEqual(True, False)
 
-        print("Distributed Data Loader Shuffle Throughput (imgs/s):", len(dataset) / (time.time() - start))
+        print("Distributed Data Loader Shuffle Throughput (imgs/s):",
+              len(dataset) / (time.time() - start))

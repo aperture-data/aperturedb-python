@@ -8,28 +8,32 @@ HEADER_METRIC = "metric"
 PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 
-class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
 
-    '''
-        ApertureDB DescriptorSet Data loader.
+class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
+    """**ApertureDB DescriptorSet Data loader.**
+
+    .. note::
         Expects a csv file with the following columns:
 
-            name,dimensions,engine,metric,PROP_NAME_N,constraint_PROP1
+            ``name``, ``dimensions``, ``engine``, ``metric``, ``PROP_NAME_N``, ``constraint_PROP1``
 
-        Example csv file:
+    Example csv file::
+
         name,dimensions,engine,metric
         dining_chairs,2048,FaissIVFFlat,L2
         chandeliers,2048,FaissIVFFlat,L2
         console_tables,2048,FaissIVFFlat,L2
         ...
-    '''
+    """
 
     def __init__(self, filename):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[4:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
-        self.constraints_keys = [x for x in self.header[4:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[4:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.constraints_keys = [x for x in self.header[4:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
     def __getitem__(self, idx):
 
@@ -64,20 +68,22 @@ class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
         if self.header[3] != HEADER_METRIC:
             raise Exception("Error with CSV file field: " + HEADER_METRIC)
 
-class DescriptorSetLoader(ParallelLoader.ParallelLoader):
 
-    '''
-        ApertureDB DescriptorSet Loader.
+class DescriptorSetLoader(ParallelLoader.ParallelLoader):
+    """**ApertureDB DescriptorSet Loader.**
 
         This class is to be used in combination with a "generator".
         The generator must be an iterable object that generated "entity_data"
-        elements:
+        elements.
+
+    Example::
+
             entity_data = {
                 "class":       entity_class,
                 "properties":  properties,
                 "constraints": constraints,
             }
-    '''
+    """
 
     def __init__(self, db, dry_run=False):
 

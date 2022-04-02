@@ -6,10 +6,12 @@ from aperturedb import ImageDownloader
 
 def main(params):
 
-    loader = ImageDownloader.ImageDownloader(check_if_present=True, n_download_retries=2)
-    loader.ingest(ImageDownloader.ImageDownloaderCSV(params.in_file),
-                    numthreads=32,
-                    stats=True)
+    downloader = ImageDownloader.ImageDownloader(
+        check_if_present=True, n_download_retries=2)
+    downloader.run(ImageDownloader.ImageDownloaderCSV(params.in_file),
+                  numthreads=32,
+                  batchsize=1,
+                  stats=True)
 
 def get_args():
     obj = argparse.ArgumentParser()
@@ -20,6 +22,7 @@ def get_args():
     params = obj.parse_args()
 
     return params
+
 
 if __name__ == "__main__":
     args = get_args()

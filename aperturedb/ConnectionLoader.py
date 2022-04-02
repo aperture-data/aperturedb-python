@@ -5,28 +5,32 @@ CONNECTION_CLASS = "ConnectionClass"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
-class ConnectionGeneratorCSV(CSVParser.CSVParser):
 
-    '''
-        ApertureDB Connection Data loader.
+class ConnectionGeneratorCSV(CSVParser.CSVParser):
+    """**ApertureDB Connection Data loader.**
+
+    .. note::
         Expects a csv file with the following columns:
 
-            ConnectionClass,Class1@PROP_NAME, Class2@PROP_NAME ... PROP_NAME_N,constraint_PROP1
+            ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
 
-        Example csv file:
-        ConnectionClass,VD:IMG@id,Person@id,confidence,id,constaint_id
+    Example csv file::
+
+        ConnectionClass,_Image@id,Person@id,confidence,id,constaint_id
         has_image,321423532,42342522,0.4354,5432543254,5432543254
         has_image,321423532,53241521,0.6432,98476542,98476542
         ...
-    '''
+    """
 
     def __init__(self, filename):
 
         super().__init__(filename)
 
-        self.props_keys       = [x for x in self.header[3:] if not x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.props_keys       = [x for x in self.header[3:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-        self.constraints_keys = [x for x in self.header[3:] if x.startswith(CSVParser.CONTRAINTS_PREFIX) ]
+        self.constraints_keys = [x for x in self.header[3:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
         self.ref1_class   = self.header[1].split("@")[0]
         self.ref1_key     = self.header[1].split("@")[1]
@@ -61,26 +65,29 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
         self.header = list(self.df.columns.values)
 
         if self.header[0] != CONNECTION_CLASS:
-            raise Exception("Error with CSV file field: 0 - " + CONNECTION_CLASS)
+            raise Exception(
+                "Error with CSV file field: 0 - " + CONNECTION_CLASS)
         if "@" not in self.header[1]:
             raise Exception("Error with CSV file field: 1")
         if "@" not in self.header[2]:
             raise Exception("Error with CSV file field: 2")
 
-class ConnectionLoader(ParallelLoader.ParallelLoader):
 
-    '''
-        ApertureDB Connection Loader.
+class ConnectionLoader(ParallelLoader.ParallelLoader):
+    """**ApertureDB Connection Loader.**
 
         This class is to be used in combination with a "generator".
         The generator must be an iterable object that generated "entity_data"
-        elements:
+        elements.
+
+    Example::
+
             entity_data = {
                 "class":       connection_class,
                 "properties":  properties,
                 "constraints": constraints,
             }
-    '''
+    """
 
     def __init__(self, db, dry_run=False):
 
@@ -108,7 +115,8 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
                 }
 
                 fe_a["FindEntity"]["constraints"] = {}
-                fe_a["FindEntity"]["constraints"][data["ref1_key"]] = ["==", data["ref1_val"]]
+                fe_a["FindEntity"]["constraints"][data["ref1_key"]] = [
+                    "==", data["ref1_val"]]
                 q.append(fe_a)
 
                 ref_dst = ref_counter
@@ -121,7 +129,8 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
                 }
 
                 fe_b["FindEntity"]["constraints"] = {}
-                fe_b["FindEntity"]["constraints"][data["ref2_key"]] = ["==", data["ref2_val"]]
+                fe_b["FindEntity"]["constraints"][data["ref2_key"]] = [
+                    "==", data["ref2_val"]]
                 q.append(fe_b)
 
                 ae = {
@@ -142,7 +151,7 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
             except KeyError as ex:
                 error_str = "ERROR: ConnectionLoader::generate_batch():" + \
                     " expected key='" + ex.args[0] + "' in '" + str(data) + \
-                    "'. Ignored.";
+                    "'. Ignored."
                 print(error_str)
                 sys.stdout.write(error_str + "\n")
 

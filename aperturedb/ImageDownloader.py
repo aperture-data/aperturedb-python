@@ -6,22 +6,22 @@ from os import path
 import cv2
 import numpy as np
 
-from aperturedb import ParallelLoader
+from aperturedb import Parallelizer
 from aperturedb import CSVParser
-from aperturedb import ProgressBar
 
 HEADER_PATH = "filename"
 HEADER_URL  = "url"
 
 class ImageDownloaderCSV(CSVParser.CSVParser):
+    """**ApertureDB Image Downloader.**
 
-    '''
-        ApertureDB Image Downloader.
+    .. note::
+
         Expects a csv file with AT LEAST a "url" column, and
         optionally a "filename" field.
         If "filename" is not present, it is taken from the url.
 
-    '''
+    """
 
     def __init__(self, filename):
 
@@ -57,11 +57,12 @@ class ImageDownloaderCSV(CSVParser.CSVParser):
         if HEADER_PATH in self.header:
             self.has_filename = True
 
-class ImageDownloader(ParallelLoader.ParallelLoader):
 
-    def __init__(self, db=None, dry_run=False, n_download_retries=0, check_if_present=False):
+class ImageDownloader(Parallelizer.Parallelizer):
 
-        super().__init__(db, dry_run=dry_run)
+    def __init__(self, n_download_retries=0, check_if_present=False):
+
+        super().__init__()
 
         self.type = "image"
 
@@ -131,13 +132,7 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
 
         self.times_arr.append(time.time() - start)
 
-    # We need to define ImageDownload owns worker,
-    # because the ParallelLoador worker is design to run queries
-    # on a given db.
     def worker(self, thid, generator, start, end):
-
-        if thid == 0 and self.stats:
-            pb = ProgressBar.ProgressBar()
 
         for i in range(start, end):
 
@@ -146,32 +141,30 @@ class ImageDownloader(ParallelLoader.ParallelLoader):
             self.download_image(url, filename)
 
             if thid == 0 and self.stats:
-                pb.update((i - start) / (end - start))
-
-        if thid == 0 and self.stats:
-            pb.update(1)
+                self.pb.update((i - start) / (end - start))
 
     def print_stats(self):
 
-        print("====== ApertureDB ImageDownloader Stats ======")
-
         times = np.array(self.times_arr)
+
         if len(times) <= 0:
             print("Error: No downloads.")
             return
 
+        print("====== ApertureDB ImageDownloader Stats ======")
         if self.images_already_downloaded > 0:
             print("Images already present:", self.images_already_downloaded)
 
-        print("Images downloaded:", len(times) - self.images_already_downloaded)
+        print("Images downloaded:", len(times) -
+              self.images_already_downloaded)
         print("Avg image time(s):", np.mean(times))
-        print("Image time std:", np.std (times))
+        print("Image time std:", np.std(times))
         print("Throughput (images/s)):",
-            1 / np.mean(times) * self.numthreads)
+              1 / np.mean(times) * self.numthreads)
 
-        print("Total time(s):", self.ingestion_time)
+        print("Total time(s):", self.total_actions_time)
         print("Overall throughput (img/s):",
-            self.total_elements / self.ingestion_time)
+              self.total_actions / self.total_actions_time)
         if self.error_counter > 0:
             print("Errors encountered:", self.error_counter)
         print("=============================================")

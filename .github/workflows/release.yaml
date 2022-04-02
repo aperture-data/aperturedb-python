@@ -1,6 +1,6 @@
 # This is a basic workflow to run tests on commit/PRs on develop
 
-name: CI-develop
+name: CI-release
 
 # Controls when the action will run.
 on:
@@ -8,11 +8,7 @@ on:
   # but only for the develop, master, and release branches
   push:
     branches:
-      - develop
-      - master
-  pull_request:
-    branches:
-      - develop
+      - release*
       - master
 
   # Allows you to run this workflow manually from the Actions tab
@@ -54,6 +50,7 @@ jobs:
         run: |
           cd docker
           bash build_images.sh
+
   build_and_deploy_docs:
 
     # The type of runner that the job will run on Ubuntu 18.04 (latest)
@@ -75,18 +72,5 @@ jobs:
       - name: Build and push docker
         run: |
           cd docs/docker
-          bash build.sh ${GITHUB_REF##*/}
-          bash push_images.sh ${GITHUB_REF##*/}
-
-  trailing-spaces:
-
-    # The type of runner that the job will run on Ubuntu 18.04 (latest)
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be
-    # executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE,
-      # so your job can access it
-      - uses: actions/checkout@v2
-      - uses: luisremis/find-trailing-whitespace@master
+          bash build.sh
+          bash push_images.sh
