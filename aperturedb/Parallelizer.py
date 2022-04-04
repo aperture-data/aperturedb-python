@@ -8,8 +8,14 @@ from aperturedb import ProgressBar
 
 
 class Parallelizer:
+    """**Generic Parallelizer**
 
-    """** Generic Parallelizer**"""
+    A parallelizer converts a series of operations to be executed and partitions it into
+    bataches, to be execued by multiple threads of execution.
+
+    .. image:: /_static/parallelizer.svg
+
+    """
 
     def __init__(self, progress_to_file=""):
 
