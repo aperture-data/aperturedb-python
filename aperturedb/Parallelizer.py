@@ -6,10 +6,10 @@ import numpy as np
 
 from aperturedb import ProgressBar
 
+
 class Parallelizer:
 
     """** Generic Parallelizer**"""
-
 
     def __init__(self, progress_to_file=""):
 
@@ -45,19 +45,21 @@ class Parallelizer:
             elements_per_thread = self.total_actions
             self.numthreads = 1
         else:
-            elements_per_thread = math.ceil(self.total_actions / self.numthreads)
+            elements_per_thread = math.ceil(
+                self.total_actions / self.numthreads)
 
         thread_arr = []
         for i in range(self.numthreads):
             idx_start = i * elements_per_thread
-            idx_end   = min(idx_start + elements_per_thread, self.total_actions)
+            idx_end   = min(idx_start + elements_per_thread,
+                            self.total_actions)
 
             thread_add = Thread(target=self.worker,
                                 args=(i, generator, idx_start, idx_end))
             thread_arr.append(thread_add)
 
-        a = [ th.start() for th in thread_arr]
-        a = [ th.join()  for th in thread_arr]
+        a = [th.start() for th in thread_arr]
+        a = [th.join() for th in thread_arr]
 
         self.total_actions_time = time.time() - start_time
 
@@ -65,7 +67,6 @@ class Parallelizer:
             self.print_stats()
 
     def print_stats(self):
-
         """
             Must be implemented by child class
         """

@@ -196,7 +196,6 @@ class Utils(object):
             print("Error inserting set", name)
             self.connector.print_last_response()
 
-
     def count_descriptorsets(self):
 
         q = [{
