@@ -75,6 +75,8 @@ class Connector(object):
         self.last_query_time = 0
 
         self.session_token = ""
+        self.authenticate_timestamp = None
+        self.session_token_expires_in = 0.0
 
         self._connect()
 
@@ -129,13 +131,51 @@ class Connector(object):
             raise Exception(
                 "Either password or token must be specified for authentication")
 
+
         response, _ = self.query(query)
 
         self.session = response[0]["Authenticate"]
         if self.session["status"] != 0:
             raise Exception(self.session["info"])
 
+        self.authenticate_timestamp = time.time()
         self.session_token = self.session["session_token"]
+        self.refresh_token = self.session["refresh_token"]
+        self.session_token_expires_in = self.session["session_token_expires_in"]
+
+
+    def _check_session_status(self):
+
+        if not self.authenticate_timestamp:
+            return
+
+        session_age = time.time() - self.authenticate_timestamp
+
+        if session_age > self.session_token_expires_in:
+
+            self._refresh_token()
+
+
+    def _refresh_token(self):
+
+        query = [{
+            "RefreshToken": {
+                "refresh_token": self.session["refresh_token"]
+            }
+        }]
+
+        self.authenticate_timestamp = time.time()
+
+        response, _ = self.query(query)
+
+        self.session = response[0]["RefreshToken"]
+        if self.session["status"] != 0:
+            raise Exception(self.session["info"])
+
+        self.session_token = self.session["session_token"]
+        self.refresh_token = self.session["refresh_token"]
+        self.session_token_expires_in = self.session["session_token_expires_in"]
+
 
     def _connect(self):
 
@@ -187,6 +227,8 @@ class Connector(object):
         self.connected = True
 
     def _query(self, query, blob_array = []):
+
+        self._check_session_status()
 
         # Check the query type
         if not isinstance(query, str):  # assumes json
