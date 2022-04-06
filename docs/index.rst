@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Aperturedb-python's documentation.
+ApertureDB Python Package Documentation.
 ==================================
 aperturedb-python is a helper package that facilitates interaction with an instance of aperturedb.
 
