@@ -27,3 +27,21 @@ The following files are under *image_classification*
 | prepare_aperturedb.py | Helper to download images from coco dataset, and load them into aperturedb | ``python prepare_aperturedb.py -images_count 100`` |
 | pytorch_classification.py | Pulls all images from aperturedb with a certain property set by prepare_aperturedb.py script , and classifies them using alexnet | ``python pytorch_classification.py`` |
 | pytorch_classification.ipynb | It does the same operation as ``pytorch_classification.py``. Also displays the classified images | Also available to read at [Aperturedb python documentation](https://python.docs.aperturedata.io/examples/pytorch_classification.html) |
+
+## Example 3: Similarity search using apertureDB
+
+This needs a bit of extra setup.
+- Install the dependent packages using the commands as shown, in the top level path of this repo.
+```
+pip install -r requirements.txt && pip install .
+
+```
+- Setup kaggle account and the API token as per the official [kagggle api guide](https://github.com/Kaggle/kaggle-api).
+
+The following files are under *example_3*
+
+| File | Description | instructions |
+| -----| ------------| -----|
+| similarity_search.ipynb | A notebook with some sample code for describing similarity search using aperturedb | Also available to read at [Aperturedb python documentation](https://python.docs.aperturedata.io/examples/loaders.html)|
+| facenet.py | Face Recognition using facenet and pytorch | Is invoked indirectly |
+| add_faces.py | A Script to load celebA dataset into aperturedb | ``python add_faces.py``|
