@@ -10,9 +10,8 @@ fi
 
 
 mkdir -p build/docs
-cp ../../{setup.py,README.md} build
-cp  ../{*.*,Makefile} build/docs
-cp -r ../../aperturedb build
+cp -r ../../{setup.py,README.md,aperturedb} build
+cp -r ../{*.*,Makefile,_static} build/docs
 
 docker build -t aperturedata/aperturedb-python-docs:v$VERSION .
 

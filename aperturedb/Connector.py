@@ -43,6 +43,22 @@ PROTOCOL_VERSION = 1
 
 
 class Connector(object):
+    """
+    .. _connector-label:
+
+    **Class to facilitate connections with an instance of aperturedb**
+
+    It lets the client execute any query as per the `Native Query specs <https://docs.aperturedata.io/>`_
+
+    Args:
+        str (host): Address of the host to connect to.
+        int (port): Port to connect to.
+        str (user): Username to specify while establishing a connection.
+        str (password): Password to specify while connecting to the db.
+        str (token): Token to use while connecting to the database.
+        object (session):
+        bool (use_ssl): Use SSL to encrypt communication with the database.
+    """
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",

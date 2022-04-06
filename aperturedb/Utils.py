@@ -2,10 +2,18 @@ import os
 import sys
 import time
 
+from aperturedb.Connector import Connector
+
 
 class Utils(object):
+    """
+    **A bunch of helper methods to get information from aperturedb.**
 
-    def __init__(self, connector):
+    Args:
+        object (Connector): The underlying Connector.
+    """
+
+    def __init__(self, connector: Connector):
 
         self.connector = connector.create_new_connection()
 
@@ -195,7 +203,6 @@ class Utils(object):
         if response != expected:
             print("Error inserting set", name)
             self.connector.print_last_response()
-
 
     def count_descriptorsets(self):
 

@@ -12,6 +12,7 @@ from aperturedb import CSVParser
 HEADER_PATH = "filename"
 HEADER_URL  = "url"
 
+
 class ImageDownloaderCSV(CSVParser.CSVParser):
     """**ApertureDB Image Downloader.**
 

@@ -10,6 +10,10 @@ cd ..
 python setup.py install
 cd -
 
+cd _static
+dot -Tsvg parallelizer.dot > parallelizer.svg
+cd -
+
 #Generate the docs from the docstrings.
 make clean && make html
 
