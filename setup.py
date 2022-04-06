@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.1.7",
     description="ApertureDB Client Module",
     install_requires=['vdms', 'scikit-image', 'image', 'requests', 'boto3',
-                      'opencv-python', 'numpy', 'matplotlib', 'pandas'],
+                      'opencv-python', 'numpy', 'matplotlib', 'pandas', 'kaggle'],
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/aperture-data/aperturedb-python",

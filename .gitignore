@@ -138,3 +138,6 @@ test/input/blobs/
 docs/examples/
 examples/coco
 examples/classification.txt
+test/kaggleds/
+kaggleds/
+examples/kaggleds/

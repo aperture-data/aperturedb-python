@@ -3,7 +3,7 @@
 set -u
 set -e
 
-(cd .. && pip3 install .)
+(cd .. && pip3 install . && pip3 install -r requirements.txt)
 
 sudo rm -rf aperturedb/db
 rm -rf output

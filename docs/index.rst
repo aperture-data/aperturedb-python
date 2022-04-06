@@ -42,6 +42,7 @@ Miscelaneous :class:`~aperturedb.Utils.Utils`
 
    autoapi/aperturedb/index
    examples/loaders
+   examples/similarity_search
 
 Indices and tables
 ==================
