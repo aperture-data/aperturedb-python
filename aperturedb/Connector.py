@@ -92,6 +92,8 @@ class Connector(object):
         self.last_response   = ''
         self.last_query_time = 0
 
+        self.session = None
+
         self._connect()
 
         if session:
@@ -149,13 +151,16 @@ class Connector(object):
         if session_info["status"] != 0:
             raise Exception(session_info["info"])
 
-        self.session = Session(session.info["session_token"],
-                               session.info["refresh_token"],
+        self.session = Session(session_info["session_token"],
+                               session_info["refresh_token"],
                                session_info["session_token_expires_in"],
                                session_info["refresh_token_expires_in"],
                                )
 
     def _check_session_status(self):
+
+        if not self.session:
+            return
 
         if not self.session.valid():
             self._refresh_token()
@@ -247,7 +252,8 @@ class Connector(object):
         query_msg.json = query_str
 
         # Set Auth token, only when not authenticated before
-        query_msg.token = self.session.session_token
+        if self.session:
+            query_msg.token = self.session.session_token
 
         for blob in blob_array:
             query_msg.blobs.append(blob)
@@ -261,9 +267,7 @@ class Connector(object):
         querRes = queryMessage_pb2.queryMessage()
         querRes.ParseFromString(response)
 
-        response_blob_array = []
-        for b in querRes.blobs:
-            response_blob_array.append(b)
+        response_blob_array = [b for b in querRes.blobs]
 
         self.last_response = json.loads(querRes.json)
 
