@@ -10,7 +10,7 @@ mkdir -p input/blobs
 
 docker-compose down && docker-compose up -d
 
-(cd .. && pip3 install .)
+# (cd .. && pip3 install .)
 
 echo "Downloading images..."
 python3 download_images.py          # Test ImageDownloader
