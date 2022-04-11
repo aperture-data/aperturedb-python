@@ -10,6 +10,8 @@ mkdir -p input/blobs
 
 docker-compose down && docker-compose up -d
 
+# (cd .. && pip3 install .)
+
 echo "Downloading images..."
 python3 download_images.py          # Test ImageDownloader
 echo "Done downloading images."
@@ -21,4 +23,4 @@ echo "Done generating input files."
 echo "Running tests..."
 python3 -m unittest discover --pattern=test_*.py -v
 
-#docker-compose down
+docker-compose down
