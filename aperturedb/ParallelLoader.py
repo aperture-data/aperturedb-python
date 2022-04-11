@@ -6,6 +6,7 @@ from aperturedb import ParallelQuery
 
 import numpy as np
 
+
 class ParallelLoader(ParallelQuery.ParallelQuery):
     """**Parallel and Batch Loader for ApertureDB**"""
 

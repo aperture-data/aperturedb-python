@@ -6,16 +6,16 @@ services:
     volumes:
       - ./aperturedb:/aperturedb
     ports:
-      - 55555:55555
+      - 55557:55555
     restart: always
 
   webui:
     image: aperturedata/aperturedb-webui
     ports:
-      - 80:80
+      - 8087:80
     restart: always
     depends_on:
       - aperturedb
     environment:
       - APP_PRIVATE_VDMS_SERVER_ADDR=aperturedb
-      - APP_PRIVATE_VDMS_SERVER_PORT=55555
+      - APP_PRIVATE_VDMS_SERVER_PORT=55557

@@ -6,10 +6,10 @@ from aperturedb import Parallelizer
 
 import numpy as np
 
+
 class ParallelQuery(Parallelizer.Parallelizer):
 
     """**Parallel and Batch Querier for ApertureDB**"""
-
 
     def __init__(self, db, dry_run=False):
 
@@ -22,12 +22,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.type = "query"
 
     def generate_batch(self, data):
-
         """
             Here we flatten the individual queries to run them as
             a single query in a batch
         """
-        q     = [cmd  for query in data for cmd  in query[0]]
+        q     = [cmd for query in data for cmd in query[0]]
         blobs = [blob for query in data for blob in query[1]]
 
         return q, blobs
@@ -37,7 +36,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         q, blobs = self.generate_batch(data)
 
         if not self.dry_run:
-            r,b = db.query(q, blobs)
+            r, b = db.query(q, blobs)
             if not db.last_query_ok():
                 self.error_counter += 1
             query_time = db.get_last_query_time()
@@ -65,8 +64,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
             try:
                 # This can be done with slices instead of list comprehension.
                 # but required support from generator.
-                data_for_query = [ generator[idx]
-                                   for idx in range(batch_start, batch_end) ]
+                data_for_query = [generator[idx]
+                                  for idx in range(batch_start, batch_end)]
                 self.do_batch(db, data_for_query)
             except Exception as e:
                 print(e)
@@ -93,16 +92,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         else:
             print("Avg Query time (s):", np.mean(times))
-            print("Query time std:", np.std (times))
+            print("Query time std:", np.std(times))
             print("Avg Query Throughput (q/s)):",
-                    1 / np.mean(times) * self.numthreads)
+                  1 / np.mean(times) * self.numthreads)
 
             msg = "(" + self.type + "/s):"
             print("Overall throughput", msg,
-                    self.total_actions / self.total_actions_time)
+                  self.total_actions / self.total_actions_time)
 
             if self.error_counter > 0:
                 print("Total errors encountered:", self.error_counter)
-                print("Errors (%):", 100 * self.error_counter / total_queries_exec)
+                print("Errors (%):", 100 *
+                      self.error_counter / total_queries_exec)
 
         print("=========================================================")

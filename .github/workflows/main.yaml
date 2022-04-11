@@ -54,6 +54,7 @@ jobs:
         run: |
           cd docker
           bash build_images.sh
+
   build_and_deploy_docs:
 
     # The type of runner that the job will run on Ubuntu 18.04 (latest)
