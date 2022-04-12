@@ -19,7 +19,7 @@ class TestBase(unittest.TestCase):
 
         # Config params
         self.batchsize  = 99
-        self.numthreads = 23
+        self.numthreads = 4
         self.stats      = False
 
         db_up = False
