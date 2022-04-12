@@ -1,6 +1,6 @@
 # This is a basic workflow to run tests on commit/PRs on develop
 
-name: CI-release
+name: release
 
 # Controls when the action will run.
 on:
