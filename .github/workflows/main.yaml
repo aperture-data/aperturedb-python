@@ -65,16 +65,3 @@ jobs:
           cd docs/docker
           bash build.sh ${GITHUB_REF##*/}
           bash push_images.sh ${GITHUB_REF##*/}
-
-  trailing-spaces:
-
-    # The type of runner that the job will run on Ubuntu 18.04 (latest)
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be
-    # executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE,
-      # so your job can access it
-      - uses: actions/checkout@v2
-      - uses: luisremis/find-trailing-whitespace@master
