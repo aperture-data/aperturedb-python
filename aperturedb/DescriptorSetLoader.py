@@ -1,3 +1,4 @@
+import ast
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
@@ -37,11 +38,21 @@ class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
 
     def __getitem__(self, idx):
 
+        # Metrics/Engine can be of the form:
+        #       "IP", or
+        #       ["IP" ...]
+
+        metrics = self.df.loc[idx, HEADER_METRIC]
+        metrics = metrics if "[" not in metrics else ast.literal_eval(metrics)
+
+        engines = self.df.loc[idx, HEADER_ENGINE]
+        engines = engines if "[" not in engines else ast.literal_eval(engines)
+
         data = {
             "name":       self.df.loc[idx, HEADER_NAME],
             "dimensions": self.df.loc[idx, HEADER_DIM],
-            "engine":     self.df.loc[idx, HEADER_ENGINE],
-            "metric":     self.df.loc[idx, HEADER_METRIC],
+            "engine":     engines,
+            "metric":     metrics,
         }
 
         properties  = self.parse_properties(self.df, idx)
