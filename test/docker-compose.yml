@@ -18,4 +18,4 @@ services:
       - aperturedb
     environment:
       - APP_PRIVATE_VDMS_SERVER_ADDR=aperturedb
-      - APP_PRIVATE_VDMS_SERVER_PORT=55557
+      - APP_PRIVATE_VDMS_SERVER_PORT=55555
