@@ -229,12 +229,15 @@ def generate_descriptors(images, setname, dims):
 
 def generate_descriptorset(names, dims):
 
+    metrics = ["L2", "IP", "CS", ["CS", "IP"], ["L2", "CS", "IP"]]
+    engines = ["FaissIVFFlat", "FaissFlat", ["FaissIVFFlat", "FaissFlat"]]
+
     df = pd.DataFrame()
 
     df["name"]       = names
     df["dimensions"] = dims
-    df["engine"]     = ["FaissIVFFlat" for i in names]
-    df["metric"]     = ["L2" for i in names]
+    df["engine"]     = [random.sample(engines, 1)[0] for i in names]
+    df["metric"]     = [random.sample(metrics, 1)[0] for i in names]
 
     df.to_csv("input/descriptorset.adb.csv", index=False)
 
@@ -249,8 +252,8 @@ def main(params):
     connect = generate_connections_csv(persons, images)
     bboxes  = generate_bboxes_csv(images)
 
-    desc_name = ["setA", "setB"]
-    desc_dims = [2048, 1025]    # yes, 1025
+    desc_name = ["setA", "setB", "setC", "setD", "setE", "setF"]
+    desc_dims = [2048, 1025, 2048, 1025, 2048, 1025]    # yes, 1025
     generate_descriptorset(desc_name, desc_dims)
     for name, dims in zip(desc_name, desc_dims):
         generate_descriptors(images, name, dims)
