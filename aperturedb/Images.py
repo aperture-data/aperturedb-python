@@ -14,63 +14,6 @@ from matplotlib.patches import Polygon
 from aperturedb import Utils
 
 
-class Constraints(object):
-
-    def __init__(self):
-
-        self.constraints = {}
-
-    def equal(self, key, value):
-
-        self.constraints[key] = ["==", value]
-
-    def greaterequal(self, key, value):
-
-        self.constraints[key] = [">=", value]
-
-    def greater(self, key, value):
-
-        self.constraints[key] = [">", value]
-
-    def lessequal(self, key, value):
-
-        self.constraints[key] = ["<=", value]
-
-    def less(self, key, value):
-
-        self.constraints[key] = ["<", value]
-
-
-class Operations(object):
-
-    def __init__(self):
-
-        self.operations_arr = []
-
-    def get_operations_arr(self):
-        return self.operations_arr
-
-    def resize(self, width, height):
-
-        op = {
-            "type": "resize",
-            "width":  width,
-            "height": height,
-        }
-
-        self.operations_arr.append(op)
-
-    def rotate(self, angle, resize=False):
-
-        op = {
-            "type": "rotate",
-            "angle": angle,
-            "resize": resize,
-        }
-
-        self.operations_arr.append(op)
-
-
 class Images(object):
 
     def __init__(self, db, batch_size=100):

@@ -8,7 +8,7 @@ import torch.distributed as dist
 from test_Base import TestBase
 
 from aperturedb import Connector, Utils
-from aperturedb import Images
+from aperturedb import Constraints
 from aperturedb import PyTorchDataset
 
 
@@ -24,7 +24,7 @@ class TestTorchDatasets(TestBase):
 
         db = self.create_connection()
 
-        const = Images.Constraints()
+        const = Constraints.Constraints()
         const.greaterequal("age", 0)
         dataset = PyTorchDataset.ApertureDBDatasetConstraints(
             db, constraints=const)
