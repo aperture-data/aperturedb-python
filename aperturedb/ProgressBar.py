@@ -28,6 +28,8 @@ class ProgressBar(object):
 
     def msg(self):
 
+        self.progress = 100 if self.progress > 100 else self.progress
+
         progress = "{:.2f}".format(self.progress * 100)
         eta = "{:.2f}".format(self.eta)
         msg = "Progress: " + progress
