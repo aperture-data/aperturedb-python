@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aperturedb",
-    version="0.1.6",
+    version="0.1.7",
     description="ApertureDB Client Module",
     install_requires=['vdms', 'scikit-image', 'image', 'requests', 'boto3',
                       'opencv-python', 'numpy', 'matplotlib', 'pandas'],
