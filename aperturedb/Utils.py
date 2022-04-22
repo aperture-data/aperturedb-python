@@ -350,7 +350,8 @@ class Utils(object):
 
             count -= batch_size
 
-            pb.update(abs((count - total) / total))
+            if self.verbose:
+                pb.update(abs((count - total) / total))
 
         return True
 
