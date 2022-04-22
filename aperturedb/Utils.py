@@ -3,6 +3,10 @@ import sys
 import time
 
 from aperturedb.Connector import Connector
+from aperturedb import ProgressBar
+
+DESCRIPTOR_CLASS = "_Descriptor"
+DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
 
 
 class Utils(object):
@@ -13,13 +17,19 @@ class Utils(object):
         object (Connector): The underlying Connector.
     """
 
-    def __init__(self, connector: Connector):
+    def __init__(self, connector: Connector, verbose=False):
 
         self.connector = connector.create_new_connection()
+        self.verbose = verbose
 
     def __repr__(self):
 
         return self.status()
+
+    def print(self, str):
+
+        if self.verbose:
+            print(str)
 
     def status(self):
 
@@ -263,17 +273,16 @@ class Utils(object):
             }
         }]
 
+        sets = []
         try:
             res, _ = self.connector.query(q)
 
-            if not self.connector.last_query_ok():
-                self.connector.print_last_response()
-                return []
+            sets = [ent["_name"]
+                    for ent in res[0]["FindDescriptorSet"]["entities"]]
         except:
             self.connector.print_last_response()
-            return []
 
-        return [ent["_name"] for ent in res[0]["FindDescriptorSet"]["entities"]]
+        return sets
 
     def remove_descriptorset(self, set_name):
 
@@ -299,3 +308,106 @@ class Utils(object):
             return False
 
         return True
+
+    def _remove_objects(self, type, class_name, batch_size):
+
+        if type == "entities":
+            cmd = "Entity"
+            count = self.count_entities(class_name)
+        elif type == "connections":
+            cmd = "Connection"
+            count = self.count_connections(class_name)
+        else:
+            raise ValueError("Type must be either 'entities' or 'connections'")
+
+        total = count
+
+        pb = ProgressBar.ProgressBar()
+
+        find = "Find" + cmd
+        dele = "Delete" + cmd
+        while count > 0:
+
+            q = [{
+                find: {
+                    "_ref": 1,
+                    "with_class": class_name,
+                    "results": {
+                        "limit": batch_size
+                    }
+                }
+            }, {
+                dele: {
+                    "ref": 1
+                }
+            }]
+
+            res, _ = self.connector.query(q)
+
+            if not self.connector.last_query_ok():
+                self.connector.print_last_response()
+                return False
+
+            count -= batch_size
+
+            pb.update(abs((count - total) / total))
+
+        return True
+
+    def remove_entities(self, class_name, batch_size=1000):
+
+        return self._remove_objects("entities", class_name, batch_size)
+
+    def remove_connections(self, class_name, batch_size=1000):
+
+        return self._remove_objects("connections", class_name, batch_size)
+
+    def remove_all_descriptorsets(self):
+
+        self.print("Removing indexes...")
+
+        idx_props = self.get_indexed_props(DESCRIPTOR_CLASS)
+
+        for idx in idx_props:
+            self.remove_entity_index(DESCRIPTOR_CLASS, idx)
+
+        self.print("Done removing indexes.")
+
+        self.print("Removing connections...")
+        if not self.remove_connections(DESCRIPTOR_CONNECTION_CLASS):
+            print("Error removing connections.")
+            return False
+        self.print("Done removing connections.")
+
+        self.print("Removing descriptors...")
+        if not self.remove_entities(DESCRIPTOR_CLASS):
+            print("Error removing descriptors.")
+            return False
+        self.print("Done removing descriptors.")
+
+        sets = self.get_descriptorset_list()
+
+        self.print("Removing sets...")
+        for s in sets:
+            self.print("Removing {}...".format(s))
+            self.remove_descriptorset(s)
+
+        self.print("Done removing sets.")
+
+    def get_indexed_props(self, class_name, type="entities"):
+        """
+        Returns all the indexed properties for a given class.
+        """
+
+        if type is not "entities" and type is not "connections":
+            raise ValueError("Type must be either 'entities' or 'connections'")
+
+        # TODO we should probably set refresh=True so we always
+        # check the latest state, but it may take a long time to complete.
+        schema = self.get_schema(refresh=False)
+
+        indexed_props = schema[type]["classes"][class_name]["properties"]
+        indexed_props = [
+            k for k in indexed_props.keys() if indexed_props[k][1]]
+
+        return indexed_props

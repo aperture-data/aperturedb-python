@@ -275,10 +275,13 @@ class Connector(object):
 
     def query(self, q, blobs=[]):
 
-        start = time.time()
-        self.response, self.blobs = self._query(q, blobs)
-        self.last_query_time = time.time() - start
-        return self.response, self.blobs
+        try:
+            start = time.time()
+            self.response, self.blobs = self._query(q, blobs)
+            self.last_query_time = time.time() - start
+            return self.response, self.blobs
+        except:
+            raise ConnectionError("ApertureDB disconnected")
 
     def create_new_connection(self):
 
