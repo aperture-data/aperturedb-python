@@ -92,7 +92,8 @@ class VideoGeneratorCSV(CSVParser.CSVParser):
 class VideoLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB Video Loader.**
 
-    This class is to be used in combination with a :class:`~aperturedb.VideoLoader.VideoGeneratorCSV`.
+    This class is to be used in combination with a "generator",
+    for example :class:`~aperturedb.VideoLoader.VideoGeneratorCSV`.
     The generator must be an iterable object that generated `video_data`
     elements.
 

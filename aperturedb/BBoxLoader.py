@@ -10,28 +10,31 @@ IMG_KEY_VAL   = "img_key_value"
 
 
 class BBoxGeneratorCSV(CSVParser.CSVParser):
-    """**ApertureDB BBox Data loader.**
+    """**ApertureDB Bounding Box Data generator.**
 
     .. note::
-        Expects a csv file with the following columns:
+        Is backed by a csv file with the following columns:
 
-            ``IMG_KEY``, ``x_pos``, ``y_pos``, ``width``, ``height``, ``BBOX_PROP_NAME_1``, ... ``BBOX_PROP_NAME_N``
+            ``IMG_KEY``, ``x_pos``, ``y_pos``, ``width``, ``height``, ``BBOX_PROP_NAME_1``, ... ``BBOX_PROP_NAME_N``, ``constraint_BBOX_PROP_NAME_1``
 
-    IMG_KEY column has the property name of the image property that
+    **IMG_KEY**: column has the property name of the image property that
     the bounding box will be connected to, and each row has the value
     that will be used for finding the image.
 
-    x_pos,y_pos,width,height are the coordinates of the bounding boxes,
-    as integers (unit is in pixels)
+    **x_pos, y_pos**: Specify the coordinates of top left of the bounding box.
 
-    BBOX_PROP_NAME_N is an arbitrary name of the property of the bounding
+    **width, height**: Specify the dimensions of the bounding box, as integers (unit is in pixels).
+
+    **BBOX_PROP_NAME_N**: is an arbitrary name of the property of the bounding
     box, and each row has the value for that property.
+
+    **constraint_BBOX_PROP_NAME_1**: Constraints against specific property, used for conditionally adding a Bounding Box.
 
     Example csv file::
 
-        img_unique_id,x_pos,y_pos,width,height,type
-        d5b25253-9c1e,257,154,84,125,manual
-        d5b25253-9c1e,7,537,522,282,manual
+        img_unique_id,x_pos,y_pos,width,height,type,dataset_id,constraint_dataset_id
+        d5b25253-9c1e,257,154,84,125,manual,12345,12345
+        d5b25253-9c1e,7,537,522,282,manual,12346,12346
         ...
     """
 
@@ -87,6 +90,32 @@ class BBoxGeneratorCSV(CSVParser.CSVParser):
 
 
 class BBoxLoader(ParallelLoader.ParallelLoader):
+    """
+    **A loader that helps to ingest Bounding box information against existing images**
+
+    This class facilitates the insertions of Bounding box information connecting them with
+    the images already inserted in the database.
+
+    This executes in conjunction with a **generator** object for example :class:`~aperturedb.BBoxLoader.BBoxGeneratorCSV`,
+    which is a class that implements iterable inteface and generates "bounding box" elements.
+
+    Example::
+
+        bbox_data = {
+            "x": ,
+            "y": ,
+            "width": ,
+            "height":,
+            "properties: {
+                "BBOX_PROP_NAME_1": "BBOX_PROP_VALUE_1",
+                .
+                .
+                .
+                "BBOX_PROP_NAME_N": "BBOX_PROP_VALUE_N"
+            }
+        }
+
+    """
 
     def __init__(self, db, dry_run=False):
 

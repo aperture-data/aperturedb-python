@@ -7,19 +7,29 @@ CONSTRAINTS = "constraints"
 
 
 class ConnectionGeneratorCSV(CSVParser.CSVParser):
-    """**ApertureDB Connection Data loader.**
+    """**ApertureDB Connection Data generator.**
 
     .. note::
-        Expects a csv file with the following columns:
+        Is backed by a csv file with the following columns:
 
             ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
 
     Example csv file::
 
-        ConnectionClass,_Image@id,Person@id,confidence,id,constaint_id
-        has_image,321423532,42342522,0.4354,5432543254,5432543254
-        has_image,321423532,53241521,0.6432,98476542,98476542
+        ConnectionClass,_Image@id,_Descriptor@UUID,confidence,id,constaint_id
+        has_image,321423532,AID-0X3E,0.4354,5432543254,5432543254
+        has_image,42342522,BXY-AB1Z,0.6432,98476542,98476542
         ...
+
+    **ConnectionClass**: Arbitrary class name for the entity this would be saved as.
+
+    **<ClassName>@<PropertyName>** This is a special combination of Class Name and
+    Property Name that can uniquely identify an entity.
+    '@' is a delimeter, so should not be used in a property name.
+
+    **PROP_NAME_1 .. PROP_NAME_N** Arbitraty property names.
+
+    **constraint_PROP_NAME_1** A equality check against a unique property to ensure duplicates are not inserted.
     """
 
     def __init__(self, filename):
@@ -32,21 +42,21 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[3:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-        self.ref1_class   = self.header[1].split("@")[0]
-        self.ref1_key     = self.header[1].split("@")[1]
-        self.ref2_class   = self.header[2].split("@")[0]
-        self.ref2_key     = self.header[2].split("@")[1]
+        self.src_class   = self.header[1].split("@")[0]
+        self.src_key     = self.header[1].split("@")[1]
+        self.dst_class   = self.header[2].split("@")[0]
+        self.dst_key     = self.header[2].split("@")[1]
 
     def __getitem__(self, idx):
 
         data = {
             "class":      self.df.loc[idx, CONNECTION_CLASS],
-            "ref1_class": self.ref1_class,
-            "ref1_key":   self.ref1_key,
-            "ref1_val":   self.df.loc[idx, self.header[1]],
-            "ref2_class": self.ref2_class,
-            "ref2_key":   self.ref2_key,
-            "ref2_val":   self.df.loc[idx, self.header[2]],
+            "src_class": self.src_class,
+            "src_key":   self.src_key,
+            "src_val":   self.df.loc[idx, self.header[1]],
+            "dst_class": self.dst_class,
+            "dst_key":   self.dst_key,
+            "dst_val":   self.df.loc[idx, self.header[2]],
         }
 
         properties  = self.parse_properties(self.df, idx)
@@ -76,14 +86,20 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
 class ConnectionLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB Connection Loader.**
 
-        This class is to be used in combination with a "generator".
-        The generator must be an iterable object that generated "entity_data"
-        elements.
+    This executes in conjunction with a **generator** object,
+    for example :class:`~aperturedb.ConnectionLoader.ConnectionGeneratorCSV`,
+    which is a class that implements iterable inteface and generates "connection data" elements.
 
     Example::
 
-            entity_data = {
+            connection_data = {
                 "class":       connection_class,
+                "src_class": "_Image",
+                "src_key":   "id",
+                "src_val":   "321423532",
+                "dst_class": "_Descriptor",
+                "dst_key":   "UUID",
+                "dst_val":   "AID-0X3E",
                 "properties":  properties,
                 "constraints": constraints,
             }
@@ -110,13 +126,13 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
                 fe_a = {
                     "FindEntity": {
                         "_ref": ref_src,
-                        "with_class": data["ref1_class"],
+                        "with_class": data["src_class"],
                     }
                 }
 
                 fe_a["FindEntity"]["constraints"] = {}
-                fe_a["FindEntity"]["constraints"][data["ref1_key"]] = [
-                    "==", data["ref1_val"]]
+                fe_a["FindEntity"]["constraints"][data["src_key"]] = [
+                    "==", data["src_val"]]
                 q.append(fe_a)
 
                 ref_dst = ref_counter
@@ -124,13 +140,13 @@ class ConnectionLoader(ParallelLoader.ParallelLoader):
                 fe_b = {
                     "FindEntity": {
                         "_ref": ref_dst,
-                        "with_class": data["ref2_class"],
+                        "with_class": data["dst_class"],
                     }
                 }
 
                 fe_b["FindEntity"]["constraints"] = {}
-                fe_b["FindEntity"]["constraints"][data["ref2_key"]] = [
-                    "==", data["ref2_val"]]
+                fe_b["FindEntity"]["constraints"][data["dst_key"]] = [
+                    "==", data["dst_val"]]
                 q.append(fe_b)
 
                 ae = {
