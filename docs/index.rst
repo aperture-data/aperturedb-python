@@ -41,6 +41,7 @@ Miscelaneous :class:`~aperturedb.Utils.Utils`
    :caption: Contents:
 
    autoapi/aperturedb/index
+   examples/loaders
 
 Indices and tables
 ==================
