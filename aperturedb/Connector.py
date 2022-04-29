@@ -173,14 +173,14 @@ class Connector(object):
             }
         }]
 
-        response, _ = self.query(query)
+        response, _ = self._query(query, [], False)
 
         session_info = response[0]["RefreshToken"]
         if session_info["status"] != 0:
             raise Exception(session_info["info"])
 
-        self.session = Session(session.info["session_token"],
-                               session.info["refresh_token"],
+        self.session = Session(session_info["session_token"],
+                               session_info["refresh_token"],
                                session_info["session_token_expires_in"],
                                session_info["refresh_token_expires_in"],
                                )
@@ -234,9 +234,10 @@ class Connector(object):
 
         self.connected = True
 
-    def _query(self, query, blob_array = []):
+    def _query(self, query, blob_array = [], check_status=True):
 
-        self._check_session_status()
+        if check_status:
+            self._check_session_status()
 
         # Check the query type
         if not isinstance(query, str):  # assumes json
