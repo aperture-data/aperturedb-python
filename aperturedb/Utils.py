@@ -407,8 +407,11 @@ class Utils(object):
         # check the latest state, but it may take a long time to complete.
         schema = self.get_schema(refresh=False)
 
-        indexed_props = schema[type]["classes"][class_name]["properties"]
-        indexed_props = [
-            k for k in indexed_props.keys() if indexed_props[k][1]]
+        try:
+            indexed_props = schema[type]["classes"][class_name]["properties"]
+            indexed_props = [
+                k for k in indexed_props.keys() if indexed_props[k][1]]
+        except:
+            indexed_props = []
 
         return indexed_props
