@@ -20,19 +20,21 @@ class TestSession(TestBase):
             db = self.create_connection()
             # force session token expiry
             db.session.session_token_ttl = 1
-            print( "Connected? {0}".format( "yes" if db.connected else "no" ))
-            print( "Session valid? {0}".format( "yes" if db.session.valid() else "no"))
-            print( "Valid length: {0}".format( db.session.session_token_ttl ))
+            print("Connected? {0}".format("yes" if db.connected else "no"))
+            print(
+                "Session valid? {0}".format(
+                    "yes" if db.session.valid() else "no"))
+            print("Valid length: {0}".format(db.session.session_token_ttl))
             time.sleep(2)
             query = [{
-                "FindImage" : {
-                    "results":{
-                        "limit":5
-                        }
+                "FindImage": {
+                    "results": {
+                        "limit": 5
                     }
-                }]
-            responses,blobs = db.query(query)
+                }
+            }]
+            responses, blobs = db.query(query)
             print(responses)
-            self.assertTrue( db.session.valid(), "Failed to renew Session")
+            self.assertTrue(db.session.valid(), "Failed to renew Session")
         except Exception:
             self.fail("Failed to renew Session")
