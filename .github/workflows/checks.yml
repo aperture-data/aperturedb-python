@@ -14,19 +14,5 @@ jobs:
       with:
         python-version: '3.8.10'
     - uses: pre-commit/action@v2.0.3
-
     - uses: actions/checkout@v2
     - uses: luisremis/find-trailing-whitespace@master
-
-  trailing-spaces:
-
-    # The type of runner that the job will run on Ubuntu 18.04 (latest)
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be
-    # executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE,
-      # so your job can access it
-      - uses: actions/checkout@v2
-      - uses: luisremis/find-trailing-whitespace@master

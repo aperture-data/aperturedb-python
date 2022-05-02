@@ -11,7 +11,7 @@ class Parallelizer:
     """**Generic Parallelizer**
 
     A parallelizer converts a series of operations to be executed and partitions it into
-    bataches, to be execued by multiple threads of execution.
+    batches, to be execued by multiple threads of execution.
 
     .. image:: /_static/parallelizer.svg
 

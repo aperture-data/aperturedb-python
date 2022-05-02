@@ -7,12 +7,18 @@ BLOB_PATH   = "filename"
 
 
 class BlobGeneratorCSV(CSVParser.CSVParser):
-    """**ApertureDB Blob Data loader.**
+    """**ApertureDB Blob Data generator.**
 
     .. note::
-        Expects a csv file with the following columns:
+        Is backed by a csv file with the following columns:
 
-            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+            ``FILENAME``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_1``
+
+    **FILENAME**: The path of the blob object on the file system.
+
+    **PROP_NAME_1 ... PROP_NAME_N**: Arbitrary property names associated with this blob.
+
+    **constraint_PROP_NAME_1**: Constraints against specific property, used for conditionally adding a Blob.
 
     Example csv file::
 
@@ -20,6 +26,10 @@ class BlobGeneratorCSV(CSVParser.CSVParser):
         /mnt/blob1,John,Salchi,69,321423532,321423532
         /mnt/blob2,Johna,Salchi,63,42342522,42342522
         ...
+
+    .. important::
+        In the above example, the constraint_id ensures that a blob with the specified
+        id would be only inserted if it does not already exist in the database.
     """
 
     def __init__(self, filename):
@@ -79,9 +89,8 @@ class BlobLoader(ParallelLoader.ParallelLoader):
     """
     **ApertureDB Blob Loader.**
 
-    This class is to be used in combination with a "generator".
-    The generator must be an iterable object that generated "Blob_data"
-    elements.
+    This executes in conjunction with a **generator** object for example :class:`~aperturedb.BlobLoader.BlobGeneratorCSV`,
+    which is a class that implements iterable inteface and generates "blob" elements.
 
     Example::
 

@@ -56,7 +56,7 @@ class CSVParser():
                     constraints[prop] = [
                         "==", {"_date": self.df.loc[idx, key]}]
                 else:
-                    prop = key[len("constraint_"):]  # remove "prefix
+                    prop = key[len(CONTRAINTS_PREFIX):]  # remove "prefix
                     constraints[prop] = ["==", self.df.loc[idx, key]]
 
         return constraints
