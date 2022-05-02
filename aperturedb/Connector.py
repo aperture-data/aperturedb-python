@@ -153,7 +153,7 @@ class Connector(object):
 
         self.session = Session(session_info["session_token"],
                                session_info["refresh_token"],
-                               5, #session_info["session_token_expires_in"],
+                               session_info["session_token_expires_in"],
                                session_info["refresh_token_expires_in"],
                                )
 
