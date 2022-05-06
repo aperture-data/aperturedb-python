@@ -1,8 +1,6 @@
 import torch
 from torchvision import transforms
 from torchvision import models
-import numpy as np
-import cv2
 from PIL import Image
 
 
@@ -24,10 +22,7 @@ class AlexNetClassifier(object):
         with open('imagenet_classes.txt') as f:
             self.classes = [line.strip() for line in f.readlines()]
 
-    def classify(self, image_blob):
-
-        nparr = np.fromstring(image_blob, np.uint8)
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    def classify(self, image):
         img   = Image.fromarray(image.astype('uint8'), 'RGB')
 
         img_t = self.transform(img)
