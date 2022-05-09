@@ -1,59 +1,80 @@
+from collections import namedtuple
+from genericpath import exists
 import os
-import unittest
+import zipfile
 from test_Base import TestBase
-import numpy as np
-from PIL import Image
-import io
 import pandas as pd
 import os
+from kaggle.api.kaggle_api_extended import KaggleApi
+from aperturedb.KaggleDataset import KaggleDataset
+from unittest.mock import MagicMock, patch
+
+kf = namedtuple("files", ["files"])
+file = namedtuple("file", ["fileType", "totalBytes", "name"])
 
 
-@unittest.skip("Not intended to be run on CI.")
+def custom_download(workdir, files):
+    def dload_zip(dataset, path, unzip):
+        assert(dataset in workdir)
+        assert(path == workdir)
+        assert(not unzip)
+        # Simulate a download from kaggle.
+        # the kaggle API leads to a zipped dataset downloaded into the dataset_ref path.
+        os.makedirs(workdir, exist_ok=True)
+        with zipfile.ZipFile(os.path.join(workdir, "file.zip"), "w") as zip:
+            for file in files:
+                zip.writestr(file["name"], file["contents"])
+    return dload_zip
+
+
 class TestKaggleIngest(TestBase):
     def setUp(self) -> None:
-        from aperturedb import DataHelper
-        self.ds = DataHelper.DataHelper()
-        return super().setUp()
+        self.root = "kaggleds"
+        self.authenticates = False
 
-    def test_ingest_images_in_dir(self):
-        def process_row(dataset_ref, workdir, columns, row):
-            value = {
-                "img_blob": open(os.path.join(workdir, row[1]["filepaths"]), "rb").read(),
-                "properties": {
-                    c: row[1][c] for c in columns
-                }
-            }
-            return value
-        self.ds.ingest_kaggle(
-            dataset_ref="gpiosenka/good-guysbad-guys-image-data-set",
-            generator=process_row
-        )
+    def does_auth(self):
+        # When kaggle.authenticate would be invoked.
+        self.authenticates = True
 
-    def test_ingest_images_in_csv(self):
-        def custom_generator(dataset_ref, workdir, columns, row):
-            def image_to_byte_array(image: Image) -> bytes:
-                c = image.convert("L")
-                imgByteArr = io.BytesIO()
-                c.save(imgByteArr, format='JPEG')
-                imgByteArr = imgByteArr.getvalue()
-                return imgByteArr
+    def test_builtin_indexer_csv(self):
+        """
+        This type of dataset comes wiht 1 csv file, and Kaggle Dataset is able to
+        process it without the need for a custom indexer.
+        """
+        dataset_ref = "gpiosenka/good-guysbad-guys-image-data-set"
+        f = file(".csv", 1024, "index.csv")
+        k = kf(files = [f])
+        archive_files = [{"name": "index.csv",
+                          "contents": "filename,class\r\n001.jpg,1"}]
+        dz = custom_download(f"kaggleds/{dataset_ref}", files=archive_files)
 
-            def PixelsToMatrix(x):
-                return np.array(x.split()).astype(np.float32).reshape(48, 48)
-            value = {
-                "index": row[0],
-                "img_blob": image_to_byte_array(Image.fromarray(PixelsToMatrix(row[1]["pixels"]))),
-                "properties": {
-                    c: row[1][c] for c in columns[:-1]
-                }
-            }
-            return value
-        self.ds.ingest_kaggle(
-            dataset_ref="https://www.kaggle.com/datasets/nipunarora8/age-gender-and-ethnicity-face-data-csv",
-            generator=custom_generator
-        )
+        # Mock the kaggle methods that are expected to be called from Kaggle Dataset.
+        with patch.multiple(KaggleApi,
+                            dataset_list_files = MagicMock(return_value=k),
+                            dataset_download_files = MagicMock(side_effect=dz),
+                            authenticate = MagicMock(
+                                side_effect = self.does_auth)
+                            ) as mocks:
+            dataset = KaggleDataset(
+                dataset_ref=dataset_ref
+            )
+        self.assertNotEqual(len(dataset), 0)
+        self.assertTrue(os.path.exists(
+            os.path.join(self.root, dataset_ref, "file.zip")))
+        self.assertTrue(self.authenticates)
 
-    def test_ingest_annotations(self):
+    def test_ingest_annotations_images_without_index(self):
+        dataset_ref = "crawford/cat-dataset"
+        f = file(".csv", 1024, "index.csv")
+        k = kf(files = [f])
+        archive_files = [
+            {"name": "cat1.jpg", "contents": "filename,class\r\n001.jpg,1"},
+            {"name": "cat1.jpg.cat", "contents": "1 2 3 4"},
+            {"name": "cat2.jpg", "contents": "filename,class\r\n001.jpg,1"},
+            {"name": "cat2.jpg.cat", "contents": "5 6 7 8"}
+        ]
+        dz = custom_download(f"kaggleds/{dataset_ref}", files=archive_files)
+
         def get_collection_from_file_system(root):
             related_files = []
             for path, b, c in os.walk(root):
@@ -65,14 +86,19 @@ class TestKaggleIngest(TestBase):
                         })
             return pd.json_normalize(related_files)
 
-        def process_row(dataset_ref, workdir, columns, row):
-            value = {
-                "img_blob": open(row[1]["image"], "rb").read(),
-            }
-            return value
+        # Mock the kaggle methods that are expected to be called from Kaggle Dataset.
+        with patch.multiple(KaggleApi,
+                            dataset_list_files = MagicMock(return_value=k),
+                            dataset_download_files = MagicMock(side_effect=dz),
+                            authenticate = MagicMock(
+                                side_effect = self.does_auth)
+                            ) as mocks:
 
-        self.ds.ingest_kaggle(
-            indexer=get_collection_from_file_system,
-            dataset_ref="crawford/cat-dataset",
-            generator=process_row
-        )
+            dataset = KaggleDataset(
+                indexer=get_collection_from_file_system,
+                dataset_ref=dataset_ref
+            )
+        self.assertEqual(len(dataset), 2)
+        self.assertTrue(os.path.exists(
+            os.path.join(self.root, dataset_ref, "file.zip")))
+        self.assertTrue(self.authenticates)

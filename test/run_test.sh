@@ -21,4 +21,4 @@ python3 generateInput.py
 echo "Done generating input files."
 
 echo "Running tests..."
-python3 -m unittest discover --pattern=test_*.py -v
+KAGGLE_username=ci KAGGLE_key=dummy python3 -m unittest discover --pattern=test_*.py -v

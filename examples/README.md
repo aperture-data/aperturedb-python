@@ -3,7 +3,7 @@
 Following are the table of contents for this folder and it's subfolders.
 There are instructions to run these scripts also.
 
-A part of Coco validation needs to be downloaded. 
+A part of Coco validation needs to be downloaded.
 This is a prerequisite for running some of the scripts below.
 
 ```
