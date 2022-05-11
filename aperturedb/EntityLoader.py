@@ -9,6 +9,9 @@ CONSTRAINTS  = "constraints"
 class EntityGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Entity Data loader.**
 
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.EntityDataCSV.EntityDataCSV` instead.
+
     .. note::
         Expects a csv file with the following columns:
 

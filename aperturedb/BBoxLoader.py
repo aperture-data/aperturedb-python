@@ -12,6 +12,9 @@ IMG_KEY_VAL   = "img_key_value"
 class BBoxGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Bounding Box Data generator.**
 
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.BBoxDataCSV.BBoxDataCSV` instead.
+
     .. note::
         Is backed by a csv file with the following columns:
 

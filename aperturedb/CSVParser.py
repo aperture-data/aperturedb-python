@@ -61,6 +61,20 @@ class CSVParser():
 
         return constraints
 
+    def _basic_command(self, idx, custom_fields: dict = {}):
+        properties = self.parse_properties(self.df, idx)
+        constraints = self.parse_constraints(self.df, idx)
+        query = {
+            self.command: custom_fields
+        }
+        if properties:
+            query[self.command][PROPERTIES] = properties
+
+        if constraints:
+            query[self.command]["if_not_found"] = constraints
+
+        return query
+
     def __getitem__(self, idx):
 
         Exception("__getitem__ not implemented!")

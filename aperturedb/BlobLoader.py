@@ -9,6 +9,9 @@ BLOB_PATH   = "filename"
 class BlobGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Blob Data generator.**
 
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.BlobDataCSV.BlobDataCSV` instead.
+
     .. note::
         Is backed by a csv file with the following columns:
 

@@ -400,7 +400,7 @@ class Utils(object):
         Returns all the indexed properties for a given class.
         """
 
-        if type is not "entities" and type is not "connections":
+        if type not in ["entities", "connections"]:
             raise ValueError("Type must be either 'entities' or 'connections'")
 
         # TODO we should probably set refresh=True so we always

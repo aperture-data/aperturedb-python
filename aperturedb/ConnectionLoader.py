@@ -9,6 +9,9 @@ CONSTRAINTS = "constraints"
 class ConnectionGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Connection Data generator.**
 
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV` instead.
+
     .. note::
         Is backed by a csv file with the following columns:
 

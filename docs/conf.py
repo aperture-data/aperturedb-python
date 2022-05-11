@@ -45,10 +45,22 @@ autoapi_options = [
     'undoc-members',
     'show-inheritance',
     'show-module-summary',
-    'special-members',
+    # 'special-members',
     'imported-members',
     'show-inheritance-diagram'
 ]
+
+
+def skip_util_classes(app, what, name, obj, skip, options):
+    print(f"Checking {name}, type={what}")
+    if what in ["data"]:
+        print(f"Skipping {name}")
+        skip = True
+    return skip
+
+
+def setup(sphinx):
+    sphinx.connect("autoapi-skip-member", skip_util_classes)
 
 
 # Add any paths that contain templates here, relative to this directory.

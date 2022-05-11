@@ -10,7 +10,11 @@ CONSTRAINTS = "constraints"
 
 class VideoGeneratorCSV(CSVParser.CSVParser):
     """
-        **ApertureDB Video Data loader.**
+    **ApertureDB Video Data loader.**
+
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.VideoDataCSV.VideoDataCSV` instead.
+
 
     .. important::
 
@@ -24,6 +28,8 @@ class VideoGeneratorCSV(CSVParser.CSVParser):
         /home/user/file1.jpg,321423532,dog,321423532
         /home/user/file2.jpg,42342522,cat,4234252
         ...
+
+
     """
 
     def __init__(self, filename, check_video=True):

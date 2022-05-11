@@ -11,12 +11,12 @@ PROPERTIES   = "properties"
 CONSTRAINTS  = "constraints"
 
 
-class DescriptorGeneratorCSV(CSVParser.CSVParser):
+class DescriptorDataCSV(CSVParser.CSVParser):
     """
-    **ApertureDB Descriptor Data generator.**
+    **ApertureDB Descriptor Data.**
 
-    .. warning::
-        Deprecated. Use :class:`~aperturedb.DescriptorDataCSV.DescriptorDataCSV` instead.
+    This class loads the Descriptor Data which is present in a csv file,
+    and converts it into a series of aperturedb queries.
 
     .. note::
         Is backed by a csv file with the following columns, and a numpy
@@ -44,12 +44,26 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
         /mnt/data/embeddings/dining_chairs.npz,1,dining_chairs,special_chair,False,COO-SE1R,COO-SE1R
         ...
 
+    Example usage:
+
+    .. code-block:: python
+
+        data = DescriptorDataCSV("/path/to/DescriptorData.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data)
+
+
+
     .. important::
         In the above example, the index uniqely identiifes the actual np array from the many arrays in the npz file
         which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
 
         Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
-        using :class:`~aperturedb.ConnectionLoader.ConnectionLoader`
+        using :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV`
+
+        In the above example, the constraint_UUID ensures that a connection with the specified
+        UUID would be only inserted if it does not already exist in the database.
+
 
     """
 
@@ -64,6 +78,7 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
                                  if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.constraints_keys = [x for x in self.header[3:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        self.command = "AddDescriptor"
 
     def __getitem__(self, idx):
 
@@ -78,24 +93,19 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
             raise Exception("Error loading descriptor: " +
                             filename + ":" + index)
 
-        data = {
-            "descriptor_blob": descriptor,
-            "set": desc_set
-        }
-
+        q = []
+        blobs = []
+        # for data in image_data:
+        custom_fields = {"set": desc_set}
         if self.has_label:
-            data[HEADER_LABEL] = self.df.loc[idx, HEADER_LABEL]
+            custom_fields["label"] = self.df.loc[idx, HEADER_LABEL]
 
-        properties  = self.parse_properties(self.df, idx)
-        constraints = self.parse_constraints(self.df, idx)
+        ad = self._basic_command(idx, custom_fields)
 
-        if properties:
-            data[PROPERTIES] = properties
+        blobs.append(descriptor)
+        q.append(ad)
 
-        if constraints:
-            data[CONSTRAINTS] = constraints
-
-        return data
+        return q, blobs
 
     # This function can be re-defined by user when they have
     # app-specific structure on the npz file.
@@ -141,60 +151,3 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
         if self.header[2] != HEADER_SET:
             raise Exception(
                 "Error with CSV file field: set. Must be third field")
-
-
-class DescriptorLoader(ParallelLoader.ParallelLoader):
-    """**ApertureDB Descriptor Loader.**
-
-    This class is to be used in combination with a **generator** object,
-    for example :class:`~aperturedb.DescriptorLoader.DescriptorGeneratorCSV`,
-    which is a class that implements iterable inteface and generates "descriptor data" elements.
-
-    Example::
-
-            descriptor_data = {
-                "label": label,
-                "set": set_name,
-                "properties": properties,
-                "constraints": constraints,
-                "descriptor_blob": (bytes),
-            }
-    """
-
-    def __init__(self, db, dry_run=False):
-
-        super().__init__(db, dry_run=dry_run)
-
-        self.type = "descriptor"
-
-    def generate_batch(self, image_data):
-
-        q = []
-        blobs = []
-
-        for data in image_data:
-
-            ai = {
-                "AddDescriptor": {
-                    "set": data[HEADER_SET]
-                }
-            }
-
-            if "properties" in data:
-                ai["AddDescriptor"]["properties"] = data["properties"]
-            if "constraints" in data:
-                ai["AddDescriptor"]["if_not_found"] = data["constraints"]
-            if "label" in data:
-                ai["AddDescriptor"]["label"] = data["label"]
-
-            if "descriptor_blob" not in data or len(data["descriptor_blob"]) == 0:
-                print("WARNING: Skipping empty descriptor.")
-                continue
-
-            blobs.append(data["descriptor_blob"])
-            q.append(ai)
-
-        if self.dry_run:
-            print(q)
-
-        return q, blobs

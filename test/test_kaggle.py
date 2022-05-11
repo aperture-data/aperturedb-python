@@ -1,12 +1,12 @@
 from collections import namedtuple
-from genericpath import exists
 import os
+from typing import List, Tuple
 import zipfile
 from test_Base import TestBase
 import pandas as pd
 import os
 from kaggle.api.kaggle_api_extended import KaggleApi
-from aperturedb.KaggleDataset import KaggleDataset
+from aperturedb.KaggleData import KaggleData
 from unittest.mock import MagicMock, patch
 
 kf = namedtuple("files", ["files"])
@@ -25,6 +25,33 @@ def custom_download(workdir, files):
             for file in files:
                 zip.writestr(file["name"], file["contents"])
     return dload_zip
+
+
+class GoodGuysBadGuysImageDataKaggle(KaggleData):
+    def __init__(self):
+        super().__init__(dataset_ref="gpiosenka/good-guysbad-guys-image-data-set")
+
+    def generate_index(self, root: str, records_count: int) -> pd.DataFrame:
+        return pd.read_csv(os.path.join(root, "index.csv"))
+
+    def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
+        return super().generate_query(idx)
+
+
+class CatDataKaggle(KaggleData):
+    def __init__(self):
+        super().__init__(dataset_ref="crawford/cat-dataset")
+
+    def generate_index(self, root: str, records_count: int) -> pd.DataFrame:
+        related_files = []
+        for path, b, c in os.walk(root):
+            for f in c:
+                if f.endswith("jpg"):
+                    related_files.append({
+                        "image": os.path.join(path, f),
+                        "annotation": os.path.join(path, f"{f}.cat")
+                    })
+        return pd.json_normalize(related_files)
 
 
 class TestKaggleIngest(TestBase):
@@ -55,10 +82,8 @@ class TestKaggleIngest(TestBase):
                             authenticate = MagicMock(
                                 side_effect = self.does_auth)
                             ) as mocks:
-            dataset = KaggleDataset(
-                dataset_ref=dataset_ref
-            )
-        self.assertNotEqual(len(dataset), 0)
+            dataset = GoodGuysBadGuysImageDataKaggle()
+        self.assertEqual(len(dataset), 1)
         self.assertTrue(os.path.exists(
             os.path.join(self.root, dataset_ref, "file.zip")))
         self.assertTrue(self.authenticates)
@@ -75,17 +100,6 @@ class TestKaggleIngest(TestBase):
         ]
         dz = custom_download(f"kaggleds/{dataset_ref}", files=archive_files)
 
-        def get_collection_from_file_system(root):
-            related_files = []
-            for path, b, c in os.walk(root):
-                for f in c:
-                    if f.endswith("jpg"):
-                        related_files.append({
-                            "image": os.path.join(path, f),
-                            "annotation": os.path.join(path, f"{f}.cat")
-                        })
-            return pd.json_normalize(related_files)
-
         # Mock the kaggle methods that are expected to be called from Kaggle Dataset.
         with patch.multiple(KaggleApi,
                             dataset_list_files = MagicMock(return_value=k),
@@ -94,10 +108,7 @@ class TestKaggleIngest(TestBase):
                                 side_effect = self.does_auth)
                             ) as mocks:
 
-            dataset = KaggleDataset(
-                indexer=get_collection_from_file_system,
-                dataset_ref=dataset_ref
-            )
+            dataset = CatDataKaggle()
         self.assertEqual(len(dataset), 2)
         self.assertTrue(os.path.exists(
             os.path.join(self.root, dataset_ref, "file.zip")))

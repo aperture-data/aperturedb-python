@@ -19,7 +19,7 @@ query = [{
             }
         ],
         "results": {
-            "list": ["id"],
+            "list": ["image_id"],
         }
     }
 }]
@@ -28,7 +28,7 @@ query = [{
 classifier = alexnet.AlexNetClassifier()
 with open(out_file_name, 'w') as classification:
     dataset = PyTorchDataset.ApertureDBDataset(
-        db=db, query=query, label_prop='id')
+        db=db, query=query, label_prop='image_id')
     start = time.time()
     for item in dataset:
         image, id = item
