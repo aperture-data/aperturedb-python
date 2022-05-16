@@ -153,6 +153,9 @@ class TestEntityLoader(TestBase):
             self.assertEqual(total_descriptors,
                              dbutils.count_entities("_Descriptor"))
 
+            self.assertEqual(dbutils.count_descriptors_in_set(
+                setname), len(generator))
+
     def test_BlobLoader(self):
 
         # Insert Person Nodes
