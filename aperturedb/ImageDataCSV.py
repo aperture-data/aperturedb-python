@@ -38,7 +38,7 @@ class ImageDataCSV(CSVParser.CSVParser):
 
     Example csv file::
 
-        filename,id,label,constaint_id,format
+        filename,id,label,constraint_id,format
         /home/user/file1.jpg,321423532,dog,321423532,jpg
         /home/user/file2.jpg,42342522,cat,42342522,png
         ...
@@ -86,7 +86,7 @@ class ImageDataCSV(CSVParser.CSVParser):
         self.command = "AddImage"
 
     # TODO: we can add support for slicing here.
-    def __getitem__(self, idx):
+    def getitem(self, idx):
         image_path = self.df.loc[idx, self.source_type]
         img_ok, img = self.source_loader[self.source_type](image_path)
 

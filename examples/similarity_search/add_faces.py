@@ -1,12 +1,12 @@
 from aperturedb import Utils, ParallelLoader
 from facenet import generate_embedding
-from ExamplesHelper import ExamplesHelper
+from dbinfo import DBInfo
 from CelebADataKaggle import CelebADataKaggle
 
 search_set_name = "similar_celebreties"
 
 
-def main(helper: ExamplesHelper):
+def main(helper: DBInfo):
     utils = Utils.Utils(helper.create_connector())
     utils.remove_descriptorset(search_set_name)
     utils.add_descriptorset(search_set_name, 512,
@@ -24,7 +24,7 @@ def main(helper: ExamplesHelper):
 
 
 if __name__ == "__main__":
-    main(ExamplesHelper(mandatory_params={
+    main(DBInfo(mandatory_params={
         "images_count": {
             "type": int,
             "help": "The number of images to ingest into aperturedb"

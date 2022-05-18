@@ -69,7 +69,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
         self.img_key = self.header[0]
         self.command = "AddBoundingBox"
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         val = self.df.loc[idx, self.img_key]
         box_data_headers = [HEADER_X_POS,

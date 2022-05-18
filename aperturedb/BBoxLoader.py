@@ -52,7 +52,7 @@ class BBoxGeneratorCSV(CSVParser.CSVParser):
 
         self.img_key = self.header[0]
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         data = {
             "x":      int(self.df.loc[idx, HEADER_X_POS]),

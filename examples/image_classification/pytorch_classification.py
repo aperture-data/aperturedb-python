@@ -1,9 +1,9 @@
 import time
 import AlexNetClassifier as alexnet
-from ExamplesHelper import ExamplesHelper
+from dbinfo import DBInfo
 from aperturedb import PyTorchDataset
 
-helper = ExamplesHelper()
+helper = DBInfo()
 db = helper.create_connector()
 out_file_name = "classification.txt"
 query = [{

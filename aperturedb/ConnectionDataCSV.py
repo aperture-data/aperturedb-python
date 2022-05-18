@@ -19,7 +19,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
 
     Example csv file::
 
-        ConnectionClass,_Image@id,_Descriptor@UUID,confidence,id,constaint_id
+        ConnectionClass,_Image@id,_Descriptor@UUID,confidence,id,constraint_id
         has_image,321423532,AID-0X3E,0.4354,5432543254,5432543254
         has_image,42342522,BXY-AB1Z,0.6432,98476542,98476542
         ...
@@ -67,7 +67,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
         self.dst_key     = self.header[2].split("@")[1]
         self.command     = "AddConnection"
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
         src_value = self.df.loc[idx, self.header[1]]
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]

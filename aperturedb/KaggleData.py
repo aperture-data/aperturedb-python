@@ -53,7 +53,7 @@ class KaggleData(object):
            def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
                record = self.collection[idx]
                p = record
-               t = [
+               q = [
                    {
                        "AddImage": {
                            "_ref": 1,
@@ -81,7 +81,7 @@ class KaggleData(object):
                        }
                    }
                ]
-               t[0]["AddImage"]["properties"]["keypoints"] = f"10 {p['lefteye_x']} {p['lefteye_y']} {p['righteye_x']} {p['righteye_y']} {p['nose_x']} {p['nose_y']} {p['leftmouth_x']} {p['leftmouth_y']} {p['rightmouth_x']} {p['rightmouth_y']}"
+               q[0]["AddImage"]["properties"]["keypoints"] = f"10 {p['lefteye_x']} {p['lefteye_y']} {p['righteye_x']} {p['righteye_y']} {p['nose_x']} {p['nose_y']} {p['leftmouth_x']} {p['leftmouth_y']} {p['rightmouth_x']} {p['rightmouth_y']}"
                image_file_name = os.path.join(
                    self.workdir,
                    'img_align_celeba/img_align_celeba',
@@ -89,7 +89,7 @@ class KaggleData(object):
                blob = open(image_file_name, "rb").read()
                embedding = self.embedding_generator(Image.open(image_file_name))
                serialized = embedding.cpu().detach().numpy().tobytes()
-               return t, [blob, serialized]
+               return q, [blob, serialized]
 
         Args:
             dataset_ref (str): URL of kaggle dataset, for example 'https://www.kaggle.com/datasets/crawford/cat-dataset'
@@ -133,10 +133,15 @@ class KaggleData(object):
         self.collection = self.generate_index(
             workdir, self.records_count).to_dict('records')
 
-    def __getitem__(self, index):
-        if index >= len(self.collection):
+    def __getitem__(self, subscript):
+        if isinstance(subscript, slice):
+            start = subscript.start if subscript.start else 0
+            stop = subscript.stop if subscript.stop else len(self)
+            step = subscript.step if subscript.step else 1
+            return [self.generate_query(i) for i in range(start, stop, step)]
+        if subscript >= len(self.collection):
             raise StopIteration
-        return self.generate_query(index)
+        return self.generate_query(subscript)
 
     def __len__(self):
         return len(self.collection)

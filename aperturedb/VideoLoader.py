@@ -43,7 +43,7 @@ class VideoGeneratorCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[1:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         filename   = self.df.loc[idx, HEADER_PATH]
         data = {}

@@ -2,11 +2,11 @@ import io
 
 from aperturedb.ParallelLoader import ParallelLoader
 from PIL import Image
-from ExamplesHelper import ExamplesHelper
+from dbinfo import DBInfo
 from CocoDataPytorch import CocoDataPytorch
 
 
-def main(config: ExamplesHelper):
+def main(config: DBInfo):
     # Define a helper function to convert PIL.image to a bytes array.
     def image_to_byte_array(image: Image) -> bytes:
         imgByteArr = io.BytesIO()
@@ -31,7 +31,7 @@ def main(config: ExamplesHelper):
 
 
 if __name__ == "__main__":
-    main(ExamplesHelper(mandatory_params={
+    main(DBInfo(mandatory_params={
         "images_count": {
             "type": int,
             "help": "The number of images to ingest into aperturedb"

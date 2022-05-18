@@ -20,7 +20,7 @@ def in_notebook():
     return True
 
 
-class ExamplesHelper:
+class DBInfo:
     """
     **Common helper methods needed for multiple example programs**
     It is used in notebooks in the examples as well as the command line programs in there.

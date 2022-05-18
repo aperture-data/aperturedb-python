@@ -14,7 +14,7 @@ from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 
 
-def insert_data_from_csv(self: TestBase, in_csv_file):
+def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
     file_data_pair = {
         "./input/persons.adb.csv": EntityDataCSV,
         "./input/images.adb.csv": ImageDataCSV,
@@ -25,10 +25,13 @@ def insert_data_from_csv(self: TestBase, in_csv_file):
         "./input/setA.adb.csv": DescriptorDataCSV,
         "./input/setB.adb.csv": DescriptorDataCSV,
         "./input/s3_images.adb.csv": ImageDataCSV,
-        "./input/http_images.adb.csv": ImageDataCSV
+        "./input/http_images.adb.csv": ImageDataCSV,
+        './input/bboxes-constraints.adb.csv': BBoxDataCSV
     }
 
     data = file_data_pair[in_csv_file](in_csv_file)
+    if rec_count != -1:
+        data = data[:rec_count]
 
     if self.stats:
         print("\n")
@@ -131,6 +134,23 @@ class TestEntityLoader(TestBase):
 
         arr = np.frombuffer(blob[0])
         self.assertEqual(arr[2], 3.3)
+
+    def test_conditional_add(self):
+        self.db = self.create_connection()
+        dbutils = Utils.Utils(self.db)
+        self.assertTrue(dbutils.remove_entities("_BoundingBox"))
+        self.assertTrue(dbutils.remove_entities("_Image"))
+        # insert one of the images from image csv, for bboxes to refer to.
+        images = insert_data_from_csv(
+            self, in_csv_file="./input/images.adb.csv", rec_count=1)
+        self.assertEqual(len(images), 1)
+
+        # Insert BBoxes with repeated entries.
+        # There is just one unique entry in the input csv.
+        boxes = insert_data_from_csv(
+            self, in_csv_file="./input/bboxes-constraints.adb.csv")
+        self.assertEqual(3, len(boxes))
+        self.assertEqual(1, dbutils.count_bboxes())
 
 
 class TestURILoader(TestBase):

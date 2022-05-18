@@ -55,7 +55,7 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.command = "AddDescriptorSet"
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         # Metrics/Engine can be of the form:
         #       "IP", or

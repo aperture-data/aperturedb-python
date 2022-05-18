@@ -24,7 +24,7 @@ class BlobDataCSV(CSVParser.CSVParser):
 
     Example csv file::
 
-        filename,name,lastname,age,id,constaint_id
+        filename,name,lastname,age,id,constraint_id
         /mnt/blob1,John,Salchi,69,321423532,321423532
         /mnt/blob2,Johna,Salchi,63,42342522,42342522
         ...
@@ -54,7 +54,7 @@ class BlobDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.command = "AddBlob"
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
         filename = self.df.loc[idx, BLOB_PATH]
 
         blob_ok, blob = self.load_blob(filename)

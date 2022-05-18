@@ -37,7 +37,7 @@ class CelebADataKaggle(KaggleData):
     def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
         record = self.collection[idx]
         p = record
-        t = [
+        q = [
             {
                 "AddImage": {
                     "_ref": 1,
@@ -65,7 +65,7 @@ class CelebADataKaggle(KaggleData):
                 }
             }
         ]
-        t[0]["AddImage"]["properties"]["keypoints"] = f"10 {p['lefteye_x']} {p['lefteye_y']} {p['righteye_x']} {p['righteye_y']} {p['nose_x']} {p['nose_y']} {p['leftmouth_x']} {p['leftmouth_y']} {p['rightmouth_x']} {p['rightmouth_y']}"
+        q[0]["AddImage"]["properties"]["keypoints"] = f"10 {p['lefteye_x']} {p['lefteye_y']} {p['righteye_x']} {p['righteye_y']} {p['nose_x']} {p['nose_y']} {p['leftmouth_x']} {p['leftmouth_y']} {p['rightmouth_x']} {p['rightmouth_y']}"
         image_file_name = os.path.join(
             self.workdir,
             'img_align_celeba/img_align_celeba',
@@ -73,4 +73,4 @@ class CelebADataKaggle(KaggleData):
         blob = open(image_file_name, "rb").read()
         embedding = self.embedding_generator(Image.open(image_file_name))
         serialized = embedding.cpu().detach().numpy().tobytes()
-        return t, [blob, serialized]
+        return q, [blob, serialized]

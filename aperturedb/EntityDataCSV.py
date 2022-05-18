@@ -18,7 +18,7 @@ class EntityDataCSV(CSVParser.CSVParser):
 
     Example csv file::
 
-        EntityClass,name,lastname,age,id,constaint_id
+        EntityClass,name,lastname,age,id,constraint_id
         Person,John,Salchi,69,321423532,321423532
         Person,Johna,Salchi,63,42342522,42342522
         ...
@@ -49,14 +49,13 @@ class EntityDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.command = "AddEntity"
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
         eclass = self.df.loc[idx, ENTITY_CLASS]
         q = []
-        ae = self._basic_command(
-            custom_fields = {
-                "class": eclass
-            }
-        )
+        ae = self._basic_command(idx,
+                                 custom_fields = {
+                                     "class": eclass
+                                 })
 
         q.append(ae)
         return q, []
