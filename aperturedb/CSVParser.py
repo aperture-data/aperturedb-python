@@ -1,6 +1,7 @@
 import pandas as pd
+import logging
 
-from aperturedb import ParallelLoader
+logger = logging.getLogger(__name__)
 
 ENTITY_CLASS      = "EntityClass"
 CONTRAINTS_PREFIX = "constraint_"
@@ -20,7 +21,7 @@ class CSVParser():
         self.validate()
 
         if len(self.df) == 0:
-            print("Error: Dataframe empty. Is the CSV file ok?")
+            logger.error("Dataframe empty. Is the CSV file ok?")
 
         self.df = self.df.astype('object')
 

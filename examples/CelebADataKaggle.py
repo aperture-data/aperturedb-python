@@ -3,6 +3,9 @@ from aperturedb.KaggleData import KaggleData
 import pandas as pd
 import os
 from PIL import Image
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CelebADataKaggle(KaggleData):
@@ -30,7 +33,7 @@ class CelebADataKaggle(KaggleData):
 
         rows = rows[:records_count]
 
-        print(
+        logger.info(
             f"Created {len(rows)} items from {original_size} in the original dataset.")
         return rows
 

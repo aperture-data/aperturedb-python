@@ -6,3 +6,5 @@ nbconvert
 ipython
 kaggle
 facenet-pytorch
+pytest
+coverage

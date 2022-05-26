@@ -1,5 +1,8 @@
 import cv2
+import logging
 from aperturedb import CSVParser
+
+logger = logging.getLogger(__name__)
 
 HEADER_PATH = "filename"
 PROPERTIES  = "properties"
@@ -53,7 +56,7 @@ class VideoDataCSV(CSVParser.CSVParser):
         video_ok, video = self.load_video(filename)
 
         if not video_ok:
-            print("Error loading video: " + filename)
+            logger.error("Error loading video: " + filename)
             raise Exception("Error loading video: " + filename)
 
         q = []
@@ -70,17 +73,19 @@ class VideoDataCSV(CSVParser.CSVParser):
             try:
                 a = cv2.VideoCapture(filename)
                 if a.isOpened() == False:
-                    print("Video reading Error:", filename)
-            except:
-                print("Video Error:", filename)
+                    logger.error("Video reading Error:", filename)
+            except Exception as e:
+                logger.error("Video Error:", filename)
+                logger.exception(e)
 
         try:
             fd = open(filename, "rb")
             buff = fd.read()
             fd.close()
             return True, buff
-        except:
-            print("Video Error:", filename)
+        except Exception as e:
+            logger.error("Video Error:", filename)
+            logger.exception(e)
 
         return False, None
 

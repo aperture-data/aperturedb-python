@@ -1,16 +1,16 @@
-import os
 import math
-
 import numpy as np
 import cv2
+import logging
 
 from aperturedb import Images
 
-import torch
 from torch.utils import data
-from torchvision import transforms
+
 
 DEFAULT_BATCH_SIZE = 50
+
+logger = logging.getLogger(__name__)
 
 
 class ApertureDBDatasetConstraints(data.Dataset):
@@ -63,7 +63,8 @@ class ApertureDBDataset(data.Dataset):
                 self.find_image_idx = i
 
         if self.find_image_idx is None:
-            print("Query error. The query must containt one FindImage command")
+            logger.error(
+                "Query error. The query must containt one FindImage command")
             raise Exception('Query Error')
 
         if not "results" in self.query[self.find_image_idx]["FindImage"]:
@@ -76,9 +77,8 @@ class ApertureDBDataset(data.Dataset):
             batch = r[self.find_image_idx]["FindImage"]["batch"]
             self.total_elements = batch["total_elements"]
         except:
-            print("Query error:")
-            print(self.query)
-            print(self.db.get_last_response_str())
+            logger.error(
+                f"Query error: {self.query} {self.db.get_last_response_str()}")
             raise
 
     def __getitem__(self, index):
@@ -151,7 +151,7 @@ class ApertureDBDataset(data.Dataset):
                 r, b = self.db.query(query)
 
             if len(b) == 0:
-                print("index:", index)
+                logger.error("index:", index)
                 raise Exception("No results returned from ApertureDB")
 
             self.batch_images = b
@@ -164,6 +164,5 @@ class ApertureDBDataset(data.Dataset):
             else:
                 self.batch_labels = ["none" for l in range(len(b))]
         except:
-            print("Query error:")
-            print(self.db.get_last_response_str())
+            logger.error(f"Query error: {self.db.get_last_response_str()}")
             raise

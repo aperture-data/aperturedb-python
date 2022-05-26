@@ -6,6 +6,9 @@ import numpy as np
 import cv2
 
 from aperturedb import CSVParser
+import logging
+
+logger = logging.getLogger(__name__)
 
 HEADER_PATH   = "filename"
 HEADER_URL    = "url"
@@ -76,7 +79,7 @@ class ImageDataCSV(CSVParser.CSVParser):
         loaders = [self.load_image, self.load_url, self.load_s3_url]
         source_types = [HEADER_PATH, HEADER_URL, HEADER_S3_URL]
         if self.source_type not in source_types:
-            print("Source not recognized: " + self.source_type)
+            logger.error("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
         self.source_loader    = {
             st: sl for st, sl in zip(source_types, loaders)
@@ -85,13 +88,12 @@ class ImageDataCSV(CSVParser.CSVParser):
         self.n_download_retries = n_download_retries
         self.command = "AddImage"
 
-    # TODO: we can add support for slicing here.
     def getitem(self, idx):
         image_path = self.df.loc[idx, self.source_type]
         img_ok, img = self.source_loader[self.source_type](image_path)
 
         if not img_ok:
-            print("Error loading image: " + image_path)
+            logger.error("Error loading image: " + image_path)
             raise Exception("Error loading image: " + image_path)
 
         q = []
@@ -110,18 +112,20 @@ class ImageDataCSV(CSVParser.CSVParser):
             try:
                 a = cv2.imread(filename)
                 if a.size <= 0:
-                    print("IMAGE SIZE ERROR:", filename)
+                    logger.error("IMAGE SIZE ERROR:", filename)
                     return False, None
-            except:
-                print("IMAGE ERROR:", filename)
+            except Exception as e:
+                logger.error("IMAGE ERROR:", filename)
+                logger.exception(e)
 
         try:
             fd = open(filename, "rb")
             buff = fd.read()
             fd.close()
             return True, buff
-        except:
-            print("IMAGE ERROR:", filename)
+        except Exception as e:
+            logger.error("IMAGE ERROR:", filename)
+            logger.exception(e)
         return False, None
 
     def check_image_buffer(self, img):
@@ -142,14 +146,14 @@ class ImageDataCSV(CSVParser.CSVParser):
             if imgdata.ok:
                 imgbuffer = np.frombuffer(imgdata.content, dtype='uint8')
                 if self.check_image and not self.check_image_buffer(imgbuffer):
-                    print("IMAGE ERROR: ", url)
+                    logger.error("IMAGE ERROR: ", url)
                     return False, None
 
                 return imgdata.ok, imgdata.content
             else:
                 if retries >= self.n_download_retries:
                     break
-                print("WARNING: Retrying object:", url)
+                logger.warning("WARNING: Retrying object:", url)
                 retries += 1
                 time.sleep(2)
 
@@ -171,18 +175,18 @@ class ImageDataCSV(CSVParser.CSVParser):
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
                 if self.check_image and not self.check_image_buffer(imgbuffer):
-                    print("IMAGE ERROR: ", s3_url)
+                    logger.error("IMAGE ERROR: ", s3_url)
                     return False, None
 
                 return True, img
             except:
                 if retries >= self.n_download_retries:
                     break
-                print("WARNING: Retrying object:", s3_url)
+                logger.warning("WARNING: Retrying object:", s3_url)
                 retries += 1
                 time.sleep(2)
 
-        print("S3 ERROR:", s3_url)
+        logger.error("S3 ERROR:", s3_url)
         return False, None
 
     def validate(self):

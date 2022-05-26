@@ -1,6 +1,7 @@
 import time
 import requests
 import os
+import logging
 from os import path
 
 import cv2
@@ -11,6 +12,8 @@ from aperturedb import CSVParser
 
 HEADER_PATH = "filename"
 HEADER_URL  = "url"
+
+logger = logging.getLogger(__name__)
 
 
 class ImageDownloaderCSV(CSVParser.CSVParser):
@@ -79,10 +82,11 @@ class ImageDownloader(Parallelizer.Parallelizer):
         try:
             a = cv2.imread(filename)
             if a.size <= 0:
-                print("Image present but error reading it:", url)
+                logger.warning("Image present but error reading it:", url)
                 return False
-        except:
-            print("Image present but error decoding:", url)
+        except Exception as e:
+            logger.error("Image present but error decoding:", url)
+            logger.exception(e)
             return False
 
         return True
@@ -108,7 +112,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
             else:
                 if retries >= self.n_download_retries:
                     break
-                print("WARNING: Retrying object:", url)
+                logger.warning("Retrying object:", url)
                 retries += 1
                 time.sleep(2)
 
@@ -120,15 +124,16 @@ class ImageDownloader(Parallelizer.Parallelizer):
             try:
                 a = cv2.imread(filename)
                 if a.size <= 0:
-                    print("Downloaded image size error:", url)
+                    logger.error("Downloaded image size error:", url)
                     os.remove(filename)
                     self.error_counter += 1
-            except:
-                print("Downloaded image cannot be decoded:", url)
+            except Exception as e:
+                logger.error("Downloaded image cannot be decoded:", url)
+                logger.exception(e)
                 os.remove(filename)
                 self.error_counter += 1
         else:
-            print("URL not found:", url)
+            logger.error("URL not found:", url)
             self.error_counter += 1
 
         self.times_arr.append(time.time() - start)

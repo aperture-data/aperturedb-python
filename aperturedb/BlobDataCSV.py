@@ -1,8 +1,11 @@
+import logging
 from aperturedb import CSVParser
 
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 BLOB_PATH   = "filename"
+
+logger = logging.getLogger(__name__)
 
 
 class BlobDataCSV(CSVParser.CSVParser):
@@ -59,7 +62,7 @@ class BlobDataCSV(CSVParser.CSVParser):
 
         blob_ok, blob = self.load_blob(filename)
         if not blob_ok:
-            print("Error loading blob: " + filename)
+            logger.error("Error loading blob: " + filename)
             raise Exception("Error loading blob: " + filename)
 
         q = []
@@ -75,8 +78,8 @@ class BlobDataCSV(CSVParser.CSVParser):
             buff = fd.read()
             fd.close()
             return True, buff
-        except:
-            print("BLOB ERROR:", filename)
+        except Exception as e:
+            logger.exception(e)
 
         return False, None
 

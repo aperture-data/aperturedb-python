@@ -2,7 +2,8 @@ import time
 
 from test_Base import TestBase
 
-from aperturedb import Connector
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TestSession(TestBase):
@@ -20,11 +21,13 @@ class TestSession(TestBase):
             db = self.create_connection()
             # force session token expiry
             db.session.session_token_ttl = 1
-            print("Connected? {0}".format("yes" if db.connected else "no"))
-            print(
+            logging.debug("Connected? {0}".format(
+                "yes" if db.connected else "no"))
+            logging.debug(
                 "Session valid? {0}".format(
                     "yes" if db.session.valid() else "no"))
-            print("Valid length: {0}".format(db.session.session_token_ttl))
+            logging.debug("Valid length: {0}".format(
+                db.session.session_token_ttl))
             time.sleep(2)
             query = [{
                 "FindImage": {
@@ -34,7 +37,7 @@ class TestSession(TestBase):
                 }
             }]
             responses, blobs = db.query(query)
-            print(responses)
+            logging.debug(responses)
             self.assertTrue(db.session.valid(), "Failed to renew Session")
         except Exception:
             self.fail("Failed to renew Session")

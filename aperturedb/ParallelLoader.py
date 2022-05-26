@@ -5,6 +5,8 @@ from threading import Thread
 from aperturedb import ParallelQuery
 
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
 
 
 class ParallelLoader(ParallelQuery.ParallelQuery):
@@ -17,7 +19,8 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         self.type = "element"
 
     def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
-
+        logger.info(
+            f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
         self.query(generator, batchsize, numthreads, stats)
 
     def print_stats(self):

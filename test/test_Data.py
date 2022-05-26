@@ -13,6 +13,9 @@ from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
     file_data_pair = {
@@ -40,6 +43,7 @@ def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
     loader.ingest(data, batchsize=self.batchsize,
                   numthreads=self.numthreads,
                   stats=self.stats)
+    self.assertEqual(loader.error_counter, 0)
     return data
 
 
@@ -138,6 +142,7 @@ class TestEntityLoader(TestBase):
     def test_conditional_add(self):
         self.db = self.create_connection()
         dbutils = Utils.Utils(self.db)
+        logger.debug(f"Cleaning existing data")
         self.assertTrue(dbutils.remove_entities("_BoundingBox"))
         self.assertTrue(dbutils.remove_entities("_Image"))
         # insert one of the images from image csv, for bboxes to refer to.
@@ -147,6 +152,7 @@ class TestEntityLoader(TestBase):
 
         # Insert BBoxes with repeated entries.
         # There is just one unique entry in the input csv.
+        logger.debug(f"Inserting bounding box data")
         boxes = insert_data_from_csv(
             self, in_csv_file="./input/bboxes-constraints.adb.csv")
         self.assertEqual(3, len(boxes))
