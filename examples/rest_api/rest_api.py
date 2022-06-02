@@ -4,7 +4,7 @@ import argparse
 import json
 import os
 
-URL = "http://" + dbinfo.DB_HOST + '/api'
+URL = "https://" + dbinfo.DB_HOST + '/api'
 
 VERIFY_SSL = False
 
@@ -53,7 +53,8 @@ def query_api(query, st, files_upload=[]):
 
     response = requests.post(URL,
                              headers = {'Authorization': "Bearer " + st},
-                             files   = files)
+                             files   = files,
+                             verify  = VERIFY_SSL)
 
     # Parse response:
     try:
@@ -85,7 +86,7 @@ def add_image_by_id(st, id):
         "AddImage": {
             "properties": {
                 "id": id
-            }
+            },
         }
     }]
 
@@ -122,6 +123,7 @@ def list_images(st):
 
 def main(params):
 
+    global VERIFY_SSL
     VERIFY_SSL = params.verify_ssl
 
     print("-" * 80)
@@ -167,7 +169,7 @@ def main(params):
 def get_args():
     obj = argparse.ArgumentParser()
 
-    obj.add_argument('-verify_ssl',  type=bool, default=False)
+    obj.add_argument('-verify_ssl',  type=bool, default=True)
 
     params = obj.parse_args()
 
