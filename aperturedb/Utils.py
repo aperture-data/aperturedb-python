@@ -436,6 +436,18 @@ class Utils(object):
                 }
             }
         }]
+       total = -1
+       try:
+            res, _ = self.connector.query(q)
+            if not self.connector.last_query_ok():
+                self.connector.print_last_response()
+            else:
+                total = res[1]["FindDescriptor"]["count"]
+        except:
+            self.connector.print_last_response()
+      
+
+        return total
 
         try:
             res, _ = self.connector.query(q)
