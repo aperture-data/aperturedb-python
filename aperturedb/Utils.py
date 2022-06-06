@@ -445,7 +445,6 @@ class Utils(object):
                 total = res[1]["FindDescriptor"]["count"]
         except:
             self.connector.print_last_response()
-      
 
         return total
 
