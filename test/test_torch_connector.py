@@ -37,11 +37,11 @@ class TestTorchDatasets(TestBase):
         # Iterate over dataset.
         for img in dataset:
             if len(img[0]) < 0:
-                print("Empty image?")
+                self.print("Empty image?")
                 self.assertEqual(True, False)
 
-        print("\n")
-        print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
+        self.print("\n")
+        self.print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
 
     def test_nativeContraints(self):
 
@@ -76,11 +76,11 @@ class TestTorchDatasets(TestBase):
         # Iterate over dataset.
         for img in dataset:
             if len(img[0]) < 0:
-                print("Empty image?")
+                self.print("Empty image?")
                 self.assertEqual(True, False)
 
-        print("\n")
-        print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
+        self.print("\n")
+        self.print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
 
     def test_datasetWithMultiprocessing(self):
 
@@ -115,11 +115,11 @@ class TestTorchDatasets(TestBase):
         # Iterate over dataset.
         for img in dataset:
             if len(img[0]) < 0:
-                print("Empty image?")
+                self.print("Empty image?")
                 self.assertEqual(True, False)
 
-        print("\n")
-        print("Sequential Throughput (imgs/s):",
+        self.print("\n")
+        self.print("Sequential Throughput (imgs/s):",
               len(dataset) / (time.time() - start))
 
         # Distributed Data Loader Setup
@@ -148,7 +148,7 @@ class TestTorchDatasets(TestBase):
                 print("Empty image?")
                 self.assertEqual(True, False)
 
-        print("Distributed Data Loader Sequential Throughput (imgs/s):",
+        self.print("Distributed Data Loader Sequential Throughput (imgs/s):",
               len(dataset) / (time.time() - start))
 
         # === Distributed Data Loader Shuffler
@@ -172,8 +172,8 @@ class TestTorchDatasets(TestBase):
         # Iterate over dataset.
         for img in data_loader:
             if len(img[0]) < 0:
-                print("Empty image?")
+                self.print("Empty image?")
                 self.assertEqual(True, False)
 
-        print("Distributed Data Loader Shuffle Throughput (imgs/s):",
+        self.print("Distributed Data Loader Shuffle Throughput (imgs/s):",
               len(dataset) / (time.time() - start))

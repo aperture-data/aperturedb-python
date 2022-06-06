@@ -22,6 +22,9 @@ class TestBase(unittest.TestCase):
         self.numthreads = 31
         self.stats      = False
 
+        # Flag to enable/disable debugging prints
+        self.debug = False
+
         db_up = False
         attempts = 0
         while(not db_up):
@@ -45,3 +48,5 @@ class TestBase(unittest.TestCase):
 
     def create_connection(self):
         return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
+    def print(self, msg):
+        print(msg) if self.debug else None
