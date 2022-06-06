@@ -48,5 +48,5 @@ class TestBase(unittest.TestCase):
 
     def create_connection(self):
         return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
-    def print(self, msg):
-        print(msg) if self.debug else None
+    def print(self, *args):
+        print(*args) if self.debug else None
