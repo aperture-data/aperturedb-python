@@ -13,13 +13,16 @@ class ProgressBar(object):
         else:
             self.file = False
 
-        self.use_last = 5 if use_last == 0 else use_last
+        self.use_last = 50 if use_last == 0 else use_last
         self.progress = 0.0
+        self.eta = 0
 
         self.progress_arr  = []
         self.progress_time = []
 
         self.done = False
+
+        self.last_msg_call = time.time()
 
     def __del__(self):
 
@@ -84,6 +87,14 @@ class ProgressBar(object):
         if samples >= 2:
             avg_progress_per_sec = progress_per_sec / (samples - 1)
 
+        now = time.time()
+        # If we called this function less than a second ago,
+        # we don't update ETE because jitters too much.
+        if now - self.last_msg_call < 1 and self.eta > 0:
+            return
+
+        self.last_msg_call = now
+
         if avg_progress_per_sec > 0:
             self.eta = (1 - progress) / avg_progress_per_sec
         else:
@@ -99,8 +110,8 @@ class ProgressBar(object):
             self.eta_unit = "s"
 
         if len(self.progress_arr) > self.use_last:
-            self.progress_arr  = self.progress_arr[:self.use_last]
-            self.progress_time = self.progress_time[:self.use_last]
+            self.progress_arr  = self.progress_arr[-(self.use_last):]
+            self.progress_time = self.progress_time[-(self.use_last):]
 
     def update(self, progress):
 

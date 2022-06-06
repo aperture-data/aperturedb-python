@@ -20,6 +20,14 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         self.type = "query"
 
+        self.responses = []
+
+        self.has_response_handler = False
+
+    def install_response_handler(self):
+
+        self.has_response_handler = True
+
     def generate_batch(self, data):
         """
             Here we flatten the individual queries to run them as
@@ -30,9 +38,19 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         return q, blobs
 
+    def call_response_handler(self, r, b):
+
+        try:
+            self.generator.response_handler(r, b)
+        except BaseException as e:
+            print("handler error:", r)
+            print(e)
+
     def do_batch(self, db, data):
 
         q, blobs = self.generate_batch(data)
+
+        query_time = 0
 
         if not self.dry_run:
             r, b = db.query(q, blobs)
@@ -40,6 +58,18 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 # Transaction failed entirely.
                 logger.error(f"Failed query = {q} with response = {r}")
                 self.error_counter += 1
+
+            if self.has_response_handler:
+                # We could potentially always call this handler function
+                # and let the user deal with the error cases.
+
+                cmds_per_query = math.ceil(len(r) / self.batchsize)
+                for i in range(self.batchsize):
+                    start = i * cmds_per_query
+                    end = start + cmds_per_query
+                    self.call_response_handler(
+                        r[start:end], b[start:end])
+
             if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
                 logger.warning(
                     f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
