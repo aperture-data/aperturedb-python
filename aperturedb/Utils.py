@@ -418,6 +418,8 @@ class Utils(object):
 
     def count_descriptors_in_set(self, set_name):
 
+        total = -1
+
         q = [{
             "FindDescriptorSet": {
                 "_ref": 1,
@@ -436,8 +438,8 @@ class Utils(object):
                 }
             }
         }]
-       total = -1
-       try:
+
+        try:
             res, _ = self.connector.query(q)
             if not self.connector.last_query_ok():
                 self.connector.print_last_response()
@@ -447,17 +449,3 @@ class Utils(object):
             self.connector.print_last_response()
 
         return total
-
-        try:
-            res, _ = self.connector.query(q)
-            if not self.connector.last_query_ok():
-                self.connector.print_last_response()
-                return -1
-
-            total = res[1]["FindDescriptor"]["count"]
-            return total
-        except:
-            self.connector.print_last_response()
-            return -1
-
-        return -1
