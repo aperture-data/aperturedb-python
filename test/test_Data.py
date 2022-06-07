@@ -16,6 +16,7 @@ from aperturedb.BBoxDataCSV import BBoxDataCSV
 import logging
 logger = logging.getLogger(__name__)
 
+
 def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
     file_data_pair = {
         "./input/persons.adb.csv": EntityDataCSV,
