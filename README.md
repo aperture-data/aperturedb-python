@@ -26,7 +26,8 @@ Running specefic tests can be accomplished by invoking it with pytest as follows
 ``python -m pytest test_Session.py -v --log-cli-level=DEBUG``
 
 # Reporting bugs.
-Any error in the functionality / documentation / tests maybe reported by creating a [github issue](https://github.com/aperture-data/aperturedb-python/issues).
+Any error in the functionality / documentation / tests maybe reported by creating a 
+[github issue](https://github.com/aperture-data/aperturedb-python/issues).
 
 # Development guidelines.
 For inclusion of any features, a PR may be created with a patch, and a brief description of the problem and the fix. The CI enforces a coding style guideline with autopep8 and a script to detect trailing white spaces.
