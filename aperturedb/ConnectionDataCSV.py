@@ -1,5 +1,7 @@
-from aperturedb import ParallelLoader
+import logging
 from aperturedb import CSVParser
+
+logger = logging.getLogger(__name__)
 
 CONNECTION_CLASS = "ConnectionClass"
 PROPERTIES  = "properties"
@@ -110,10 +112,9 @@ class ConnectionDataCSV(CSVParser.CSVParser):
 
             q.append(ae)
         except KeyError as ex:
-            error_str = "ERROR: ConnectionDataCSV::__getitem__():" + \
-                " expected key='" + ex.args[0] + "' in '" + self.df.loc[idx] + \
+            error_str = " expected key='" + ex.args[0] + "' in '" + self.df.loc[idx] + \
                 "'. Ignored."
-            print(error_str)
+            logger.error(error_str)
 
         return q, []
 

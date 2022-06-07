@@ -1,7 +1,8 @@
 import numpy as np
-
-from aperturedb import ParallelLoader
 from aperturedb import CSVParser
+import logging
+
+logger = logging.getLogger(__name__)
 
 HEADER_PATH  = "filename"
 HEADER_INDEX = "index"
@@ -89,7 +90,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         descriptor, desc_ok = self.load_descriptor(filename, index)
 
         if not desc_ok:
-            print("Error loading descriptor: " + filename + ":" + index)
+            logger.error("Error loading descriptor: " + filename + ":" + index)
             raise Exception("Error loading descriptor: " +
                             filename + ":" + index)
 

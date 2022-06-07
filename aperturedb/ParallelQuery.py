@@ -1,10 +1,9 @@
-import math
-import time
-from threading import Thread
-
 from aperturedb import Parallelizer
-
 import numpy as np
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ParallelQuery(Parallelizer.Parallelizer):
@@ -38,7 +37,12 @@ class ParallelQuery(Parallelizer.Parallelizer):
         if not self.dry_run:
             r, b = db.query(q, blobs)
             if not db.last_query_ok():
+                # Transaction failed entirely.
+                logger.error(f"Failed query = {q} with response = {r}")
                 self.error_counter += 1
+            if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
+                logger.warning(
+                    f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
             query_time = db.get_last_query_time()
         else:
             query_time = 1
@@ -64,7 +68,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             try:
                 self.do_batch(db, generator[batch_start:batch_end])
             except Exception as e:
-                print(e)
+                logger.exception(e)
                 self.error_counter += 1
 
             if thid == 0 and self.stats:
