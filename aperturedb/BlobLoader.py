@@ -9,6 +9,9 @@ BLOB_PATH   = "filename"
 class BlobGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Blob Data generator.**
 
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.BlobDataCSV.BlobDataCSV` instead.
+
     .. note::
         Is backed by a csv file with the following columns:
 
@@ -42,7 +45,7 @@ class BlobGeneratorCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[1:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         data = {}
 

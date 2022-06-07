@@ -19,28 +19,38 @@ Connector
 
 Loader (ParallelLoader)
 -----------------------
-Parallel and Batch Loader for ApertureDB
-:class:`~aperturedb.ParallelLoader.ParallelLoader` is further subclassed as:
-   * :class:`~aperturedb.BBoxLoader.BBoxLoader`
-   * :class:`~aperturedb.BlobLoader.BlobLoader`
-   * :class:`~aperturedb.ConnectionLoader.ConnectionLoader`
-   * :class:`~aperturedb.DescriptorLoader.DescriptorLoader`
-   * :class:`~aperturedb.DescriptorSetLoader.DescriptorSetLoader`
-   * :class:`~aperturedb.ImageLoader.ImageLoader`
-   * :class:`~aperturedb.VideoLoader.VideoLoader`
+:class:`~aperturedb.ParallelLoader.ParallelLoader`
+is a mechanism to ingest contents represented by one of the Data Classes into apertruredb.
+
+It takes as input an object instantiated from one of the following classes.
+   * :class:`~aperturedb.BBoxDataCSV.BBoxDataCSV`
+   * :class:`~aperturedb.BlobDataCSV.BlobDataCSV`
+   * :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV`
+   * :class:`~aperturedb.DescriptorDataCSV.DescriptorDataCSV`
+   * :class:`~aperturedb.DescriptorSetDataCSV.DescriptorSetDataCSV`
+   * :class:`~aperturedb.ImageDataCSV.ImageDataCSV`
+   * :class:`~aperturedb.VideoDataCSV.VideoDataCSV`
+   * A class derived from :class:`~aperturedb.PytorchData.PytorchData`
+   * A class derived from :class:`~apertruredb.KaggleData.KaggleData`
 
 Utils
 -----
-Miscelaneous :class:`~aperturedb.Utils.Utils`
+:class:`~aperturedb.Utils.Utils`
+
+Miscelaneous  utilities consists of various helper
+functions that are often used by applications built using apertruredb.
 
 .. note::
-   For a complete list of functionality, refer to apertruredb > Submodules in the index
+   For a complete list of functionality, refer to apertruredb > Submodules in the index.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    autoapi/aperturedb/index
+   examples/loaders
+   examples/pytorch_classification
+   examples/similarity_search
 
 Indices and tables
 ==================

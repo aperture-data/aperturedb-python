@@ -12,6 +12,9 @@ IMG_KEY_VAL   = "img_key_value"
 class BBoxGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Bounding Box Data generator.**
 
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.BBoxDataCSV.BBoxDataCSV` instead.
+
     .. note::
         Is backed by a csv file with the following columns:
 
@@ -49,7 +52,7 @@ class BBoxGeneratorCSV(CSVParser.CSVParser):
 
         self.img_key = self.header[0]
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         data = {
             "x":      int(self.df.loc[idx, HEADER_X_POS]),

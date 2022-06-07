@@ -9,6 +9,9 @@ CONSTRAINTS = "constraints"
 class ConnectionGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Connection Data generator.**
 
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV` instead.
+
     .. note::
         Is backed by a csv file with the following columns:
 
@@ -47,7 +50,7 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
         self.dst_class   = self.header[2].split("@")[0]
         self.dst_key     = self.header[2].split("@")[1]
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         data = {
             "class":      self.df.loc[idx, CONNECTION_CLASS],

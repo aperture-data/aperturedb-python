@@ -5,7 +5,6 @@ import boto3
 import numpy as np
 import cv2
 
-from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
 HEADER_PATH   = "filename"
@@ -16,11 +15,12 @@ CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
 
-class ImageGeneratorCSV(CSVParser.CSVParser):
-    """**ApertureDB Image Data generator.**
+class ImageDataCSV(CSVParser.CSVParser):
+    """**ApertureDB Image Data.**
 
-    .. warning::
-        Deprecated. Use :class:`~aperturedb.ImageDataCSV.ImageDataCSV` instead.
+    This class loads the Image Data which is present in a csv file,
+    and converts it into a series of aperturedb queries.
+
 
     .. note::
         Is backed by a csv file with the following columns (format optional):
@@ -38,10 +38,23 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
 
     Example csv file::
 
-        filename,id,label,constaint_id,format
+        filename,id,label,constraint_id,format
         /home/user/file1.jpg,321423532,dog,321423532,jpg
         /home/user/file2.jpg,42342522,cat,42342522,png
         ...
+
+    Example usage:
+
+    .. code-block:: python
+
+        data = ImageDataCSV("/path/to/ImageData.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data)
+
+
+    .. important::
+        In the above example, the constraint_id ensures that an Image with the specified
+        id would be only inserted if it does not already exist in the database.
 
 
     """
@@ -60,48 +73,37 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
         self.source_type      = self.header[0]
-        if self.source_type not in [HEADER_PATH, HEADER_URL, HEADER_S3_URL]:
+        loaders = [self.load_image, self.load_url, self.load_s3_url]
+        source_types = [HEADER_PATH, HEADER_URL, HEADER_S3_URL]
+        if self.source_type not in source_types:
             print("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
+        self.source_loader    = {
+            st: sl for st, sl in zip(source_types, loaders)
+        }
 
         self.n_download_retries = n_download_retries
+        self.command = "AddImage"
 
     # TODO: we can add support for slicing here.
     def getitem(self, idx):
-
-        data = {}
-
-        img_ok = True
-        img = None
-
-        if self.source_type == HEADER_PATH:
-            image_path   = self.df.loc[idx, HEADER_PATH]
-            img_ok, img  = self.load_image(image_path)
-        elif self.source_type == HEADER_URL:
-            image_path   = self.df.loc[idx, HEADER_URL]
-            img_ok, img  = self.load_url(image_path)
-        elif self.source_type == HEADER_S3_URL:
-            image_path   = self.df.loc[idx, HEADER_S3_URL]
-            img_ok, img  = self.load_s3_url(image_path)
+        image_path = self.df.loc[idx, self.source_type]
+        img_ok, img = self.source_loader[self.source_type](image_path)
 
         if not img_ok:
-            print("Error loading image: " + filename)
-            raise Exception("Error loading image: " + filename)
+            print("Error loading image: " + image_path)
+            raise Exception("Error loading image: " + image_path)
 
-        data["img_blob"] = img
+        q = []
+        blobs = []
+        custom_fields = {}
         if self.format_given:
-            data["format"] = self.df.loc[idx, IMG_FORMAT]
+            custom_fields["format"] = self.df.loc[idx, IMG_FORMAT]
+        ai = self._basic_command(idx, custom_fields)
+        blobs.append(img)
+        q.append(ai)
 
-        properties  = self.parse_properties(self.df, idx)
-        constraints = self.parse_constraints(self.df, idx)
-
-        if properties:
-            data[PROPERTIES] = properties
-
-        if constraints:
-            data[CONSTRAINTS] = constraints
-
-        return data
+        return q, blobs
 
     def load_image(self, filename):
         if self.check_image:
@@ -109,7 +111,7 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
                 a = cv2.imread(filename)
                 if a.size <= 0:
                     print("IMAGE SIZE ERROR:", filename)
-                    return false, None
+                    return False, None
             except:
                 print("IMAGE ERROR:", filename)
 
@@ -190,59 +192,3 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         if self.header[0] not in [HEADER_PATH, HEADER_URL, HEADER_S3_URL]:
             raise Exception(
                 "Error with CSV file field: filename. Must be first field")
-
-
-class ImageLoader(ParallelLoader.ParallelLoader):
-    """
-    **ApertureDB Image Loader.**
-
-    This class is to be used in combination with a **generator** object,
-    for example :class:`~aperturedb.ImageLoader.ImageGeneratorCSV`,
-    which is a class that implements iterable inteface and generates "image data" elements.
-
-    Example::
-
-        image_data = {
-            "properties":  properties,
-            "constraints": constraints,
-            "operations":  operations,
-            "format":      format ("jpg", "png", etc),
-            "img_blob":    (bytes),
-        }
-    """
-
-    def __init__(self, db, dry_run=False):
-
-        super().__init__(db, dry_run=dry_run)
-
-        self.type = "image"
-
-    def generate_batch(self, image_data):
-
-        q = []
-        blobs = []
-
-        for data in image_data:
-
-            ai = {
-                "AddImage": {
-                }
-            }
-
-            if "properties" in data:
-                ai["AddImage"]["properties"] = data["properties"]
-            if "constraints" in data:
-                ai["AddImage"]["if_not_found"] = data["constraints"]
-            if "operations" in data:
-                ai["AddImage"]["operations"] = data["operations"]
-            if "format" in data:
-                ai["AddImage"]["format"] = data["format"]
-
-            if "img_blob" not in data or len(data["img_blob"]) == 0:
-                print("WARNING: Skipping empty image.")
-                continue
-
-            blobs.append(data["img_blob"])
-            q.append(ai)
-
-        return q, blobs

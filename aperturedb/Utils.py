@@ -151,8 +151,10 @@ class Utils(object):
 
         return total_images
 
-    def count_bboxes(self, constraints={}):
-
+    def count_bboxes(self, constraints=None):
+        # The default params in python functions should not be
+        # mutable objects.
+        # It can lead to https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
         q = [{
             "FindBoundingBox": {
                 "blobs": False,
@@ -174,7 +176,7 @@ class Utils(object):
 
         return total_connections
 
-    def count_entities(self, entity_class, constraints={}):
+    def count_entities(self, entity_class, constraints=None):
 
         q = [{
             "FindEntity": {
@@ -197,7 +199,7 @@ class Utils(object):
 
         return total_entities
 
-    def count_connections(self, connections_class, constraints={}):
+    def count_connections(self, connections_class, constraints=None):
 
         q = [{
             "FindConnection": {
@@ -400,7 +402,7 @@ class Utils(object):
         Returns all the indexed properties for a given class.
         """
 
-        if type is not "entities" and type is not "connections":
+        if type not in ["entities", "connections"]:
             raise ValueError("Type must be either 'entities' or 'connections'")
 
         # TODO we should probably set refresh=True so we always

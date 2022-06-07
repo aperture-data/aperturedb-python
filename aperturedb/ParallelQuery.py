@@ -62,11 +62,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batch_end   = min(batch_start + self.batchsize, end)
 
             try:
-                # This can be done with slices instead of list comprehension.
-                # but required support from generator.
-                data_for_query = [generator[idx]
-                                  for idx in range(batch_start, batch_end)]
-                self.do_batch(db, data_for_query)
+                self.do_batch(db, generator[batch_start:batch_end])
             except Exception as e:
                 print(e)
                 self.error_counter += 1
