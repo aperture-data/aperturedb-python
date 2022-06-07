@@ -269,7 +269,7 @@ class Utils(object):
         q = [{
             "FindDescriptorSet": {
                 "results": {
-                    "all_properties": True,
+                    "list": ["_name"],
                 }
 
             }
@@ -417,3 +417,37 @@ class Utils(object):
             indexed_props = []
 
         return indexed_props
+
+    def count_descriptors_in_set(self, set_name):
+
+        total = -1
+
+        q = [{
+            "FindDescriptorSet": {
+                "_ref": 1,
+                "with_name": set_name,
+
+            }
+        }, {
+            "FindDescriptor": {
+                "set": set_name,
+                "is_connected_to": {
+                    "ref": 1,
+                    "connection_class": "_DescriptorSetToDescriptor"
+                },
+                "results": {
+                    "count": True
+                }
+            }
+        }]
+
+        try:
+            res, _ = self.connector.query(q)
+            if not self.connector.last_query_ok():
+                self.connector.print_last_response()
+            else:
+                total = res[1]["FindDescriptor"]["count"]
+        except:
+            self.connector.print_last_response()
+
+        return total
