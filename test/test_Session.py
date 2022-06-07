@@ -20,11 +20,15 @@ class TestSession(TestBase):
             db = self.create_connection()
             # force session token expiry
             db.session.session_token_ttl = 1
-            self.print("Connected? {0}".format("yes" if db.connected else "no"))
+            self.print(
+                "Connected? {0}".format(
+                    "yes" if db.connected else "no"))
             self.print(
                 "Session valid? {0}".format(
                     "yes" if db.session.valid() else "no"))
-            self.print("Valid length: {0}".format(db.session.session_token_ttl))
+            self.print(
+                "Valid length: {0}".format(
+                    db.session.session_token_ttl))
             time.sleep(2)
             query = [{
                 "FindImage": {

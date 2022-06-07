@@ -29,12 +29,15 @@ class TestBase(unittest.TestCase):
         attempts = 0
         while(not db_up):
             try:
-                db = Connector.Connector(self.db_host, self.db_port,
-                                         user=self.user, password=self.password)
+                db = Connector.Connector(
+                    self.db_host,
+                    self.db_port,
+                    user=self.user,
+                    password=self.password)
                 db_up = True
                 if (attempts > 0):
                     print("Connection to ApertureDB successful.")
-            except:
+            except BaseException:
                 print("Attempt", attempts,
                       "to connect to ApertureDB failed, retrying...")
                 # db.print_last_response()
@@ -47,6 +50,11 @@ class TestBase(unittest.TestCase):
                 exit()
 
     def create_connection(self):
-        return Connector.Connector(self.db_host, self.db_port, self.user, self.password)
+        return Connector.Connector(
+            self.db_host,
+            self.db_port,
+            self.user,
+            self.password)
+
     def print(self, *args):
         print(*args) if self.debug else None

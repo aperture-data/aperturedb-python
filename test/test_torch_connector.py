@@ -41,7 +41,8 @@ class TestTorchDatasets(TestBase):
                 self.assertEqual(True, False)
 
         self.print("\n")
-        self.print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
+        self.print("Throughput (imgs/s):",
+                   len(dataset) / (time.time() - start))
 
     def test_nativeContraints(self):
 
@@ -80,7 +81,8 @@ class TestTorchDatasets(TestBase):
                 self.assertEqual(True, False)
 
         self.print("\n")
-        self.print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
+        self.print("Throughput (imgs/s):",
+                   len(dataset) / (time.time() - start))
 
     def test_datasetWithMultiprocessing(self):
 
@@ -120,7 +122,7 @@ class TestTorchDatasets(TestBase):
 
         self.print("\n")
         self.print("Sequential Throughput (imgs/s):",
-              len(dataset) / (time.time() - start))
+                   len(dataset) / (time.time() - start))
 
         # Distributed Data Loader Setup
 
@@ -149,7 +151,7 @@ class TestTorchDatasets(TestBase):
                 self.assertEqual(True, False)
 
         self.print("Distributed Data Loader Sequential Throughput (imgs/s):",
-              len(dataset) / (time.time() - start))
+                   len(dataset) / (time.time() - start))
 
         # === Distributed Data Loader Shuffler
 
@@ -176,4 +178,4 @@ class TestTorchDatasets(TestBase):
                 self.assertEqual(True, False)
 
         self.print("Distributed Data Loader Shuffle Throughput (imgs/s):",
-              len(dataset) / (time.time() - start))
+                   len(dataset) / (time.time() - start))
