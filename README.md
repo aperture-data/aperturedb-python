@@ -35,4 +35,5 @@ and a brief description of the problem and the fix.
 The CI enforces a coding style guideline with autopep8 and 
 a script to detect trailing white spaces.
 
-In case a PR encounters failures, the log would describe the location of the offending line with a description of the problem.
+In case a PR encounters failures, the log would describe the location of 
+the offending line with a description of the problem.
