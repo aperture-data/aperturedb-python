@@ -1,32 +1,35 @@
+import argparse
 from aperturedb import Utils, ParallelLoader
 from facenet import generate_embedding
-from dbinfo import DBInfo
+import dbinfo
 from CelebADataKaggle import CelebADataKaggle
 
 search_set_name = "similar_celebreties"
 
 
-def main(helper: DBInfo):
-    utils = Utils.Utils(helper.create_connector())
+def main(params):
+    utils = Utils.Utils(dbinfo.create_connector())
     utils.remove_descriptorset(search_set_name)
     utils.add_descriptorset(search_set_name, 512,
                             metric="L2", engine="FaissFlat")
 
     dataset = CelebADataKaggle(
-        records_count=helper.params.images_count,
+        records_count=params.images_count,
         embedding_generator=generate_embedding,
         search_set_name=search_set_name
     )
     print(len(dataset))
 
-    loader = ParallelLoader.ParallelLoader(helper.create_connector())
+    loader = ParallelLoader.ParallelLoader(dbinfo.create_connector())
     loader.ingest(dataset, stats=True)
 
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-images_count', type=int, required=True,
+                        help="The number of images to ingest into aperturedb")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    main(DBInfo(mandatory_params={
-        "images_count": {
-            "type": int,
-            "help": "The number of images to ingest into aperturedb"
-        }
-    }))
+    main(get_args())

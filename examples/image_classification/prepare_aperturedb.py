@@ -2,11 +2,12 @@ import io
 
 from aperturedb.ParallelLoader import ParallelLoader
 from PIL import Image
-from dbinfo import DBInfo
+import dbinfo
 from CocoDataPytorch import CocoDataPytorch
+import argparse
 
 
-def main(config: DBInfo):
+def main(params):
     # Define a helper function to convert PIL.image to a bytes array.
     def image_to_byte_array(image: Image) -> bytes:
         imgByteArr = io.BytesIO()
@@ -22,18 +23,20 @@ def main(config: DBInfo):
         X, y = t
         if len(y) > 0:
             images.append(t)
-            if len(images) == config.params.images_count:
+            if len(images) == params.images_count:
                 break
 
-    loader = ParallelLoader(config.create_connector())
+    loader = ParallelLoader(dbinfo.create_connector())
     loader.ingest(generator = images, stats=True)
-    print(f"Inserted {config.params.images_count} images to aperturedb")
+    print(f"Inserted {params.images_count} images to aperturedb")
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-images_count', type=int, required=True,
+                        help="The number of images to ingest into aperturedb")
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    main(DBInfo(mandatory_params={
-        "images_count": {
-            "type": int,
-            "help": "The number of images to ingest into aperturedb"
-        }
-    }))
+    main(get_args())
