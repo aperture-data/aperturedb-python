@@ -147,7 +147,7 @@ class Connector(object):
             raise Exception(
                 "Either password or token must be specified for authentication")
 
-        response, _ = self.query(query)
+        response, _ = self._query(query)
 
         session_info = response[0]["Authenticate"]
         if session_info["status"] != 0:
@@ -175,7 +175,7 @@ class Connector(object):
             }
         }]
 
-        response, _ = self._query(query, [], False)
+        response, _ = self._query(query, [])
 
         session_info = response[0]["RefreshToken"]
         if session_info["status"] != 0:
@@ -236,10 +236,7 @@ class Connector(object):
 
         self.connected = True
 
-    def _query(self, query, blob_array = [], check_status=True):
-
-        if check_status:
-            self._check_session_status()
+    def _query(self, query, blob_array = []):
 
         # Check the query type
         if not isinstance(query, str):  # assumes json
@@ -278,12 +275,15 @@ class Connector(object):
 
     def query(self, q, blobs=[]):
 
+        self._check_session_status()
+
         try:
             start = time.time()
             self.response, self.blobs = self._query(q, blobs)
             self.last_query_time = time.time() - start
             return self.response, self.blobs
-        except BaseException:
+        except BaseException as e:
+            print(e)
             raise ConnectionError("ApertureDB disconnected")
 
     def create_new_connection(self):

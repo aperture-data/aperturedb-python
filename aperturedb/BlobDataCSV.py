@@ -7,7 +7,6 @@ BLOB_PATH   = "filename"
 
 logger = logging.getLogger(__name__)
 
-
 class BlobDataCSV(CSVParser.CSVParser):
     """**ApertureDB Blob Data.**
 

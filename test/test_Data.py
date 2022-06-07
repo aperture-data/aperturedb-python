@@ -16,7 +16,6 @@ from aperturedb.BBoxDataCSV import BBoxDataCSV
 import logging
 logger = logging.getLogger(__name__)
 
-
 def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
     file_data_pair = {
         "./input/persons.adb.csv": EntityDataCSV,
@@ -143,6 +142,7 @@ class TestEntityLoader(TestBase):
         self.db = self.create_connection()
         dbutils = Utils.Utils(self.db)
         logger.debug(f"Cleaning existing data")
+
         self.assertTrue(dbutils.remove_entities("_BoundingBox"))
         self.assertTrue(dbutils.remove_entities("_Image"))
         # insert one of the images from image csv, for bboxes to refer to.

@@ -1,19 +1,18 @@
 import dbinfo
 import requests
+import argparse
 import json
+import os
 
 URL = "http://" + dbinfo.DB_HOST + '/api'
 
-
-def dict_query_to_str(dict_query):
-
-    return str(json.dumps(dict_query)).replace("'", '\"')
+VERIFY_SSL = False
 
 
 def parse_auth(res):
 
     res = json.loads(json.loads(res)["json"])
-    print(res)
+    print(json.dumps(res, indent=4, sort_keys=False))
 
     session_token = res[0]["Authenticate"]["session_token"]
     refresh_token = res[0]["Authenticate"]["refresh_token"]
@@ -29,10 +28,11 @@ def auth():
         }
     }]
 
-    query = dict_query_to_str(query)
-
     # Authenticate
-    response = requests.post(URL, data = {'json_query': query})
+    response = requests.post(URL,
+                             files = [
+                                 ('json_query', (None, json.dumps(query)))],
+                             verify= VERIFY_SSL)
 
     # print(response.status_code)
     # print(response.text)
@@ -40,21 +40,32 @@ def auth():
     return parse_auth(response.text)
 
 
-def query_api(query, st):
+def query_api(query, st, files_upload=[]):
 
-    query = dict_query_to_str(query)
-    # print(repr(query))
+    files = [
+        ('json_query', (None, json.dumps(query))),
+    ]
 
-    response = requests.post(URL, headers = {'Authorization': "Bearer " + st},
-                             data    = {'json_query': query})
+    for file in files_upload:
+        instream = open(file, 'rb')
+        files.append(
+            ('blobs', (os.path.basename(file), instream, 'image/jpeg')))
 
-    # print(response.status_code)
-    # print(response.text)
+    response = requests.post(URL,
+                             headers = {'Authorization': "Bearer " + st},
+                             files   = files)
 
     # Parse response:
-    json_response = json.loads(response.text)
-    response      = json.loads(json_response["json"])
-    blobs         = json_response["blobs"]
+    try:
+        json_response = json.loads(response.text)
+        response      = json.loads(json_response["json"])
+        blobs         = json_response["blobs"]
+    except:
+        print("Error with response:")
+        print(response.status_code)
+        print(response.text)
+        response = "error!"
+        blobs = []
 
     return response, blobs
 
@@ -66,6 +77,19 @@ def get_status(st):
     }]
 
     return query_api(query, st)
+
+
+def add_image_by_id(st, id):
+
+    query = [{
+        "AddImage": {
+            "properties": {
+                "id": id
+            }
+        }
+    }]
+
+    return query_api(query, st, files_upload=["songbird.jpg"])
 
 
 def get_image_by_id(st, id):
@@ -96,7 +120,9 @@ def list_images(st):
     return query_api(query, st)
 
 
-def main():
+def main(params):
+
+    VERIFY_SSL = params.verify_ssl
 
     print("-" * 80)
     print("Authentication:")
@@ -128,7 +154,26 @@ def main():
         print("Image size (base64 enconded): {}".format(len(img)))
 
     # ----------------------
+    print("-" * 80)
+    print("Add image by id:")
+    r, blobs = add_image_by_id(session_token, 123456789)
+
+    print("Response:")
+    print(json.dumps(r, indent=4, sort_keys=False))
+
+    # ----------------------
+
+
+def get_args():
+    obj = argparse.ArgumentParser()
+
+    obj.add_argument('-verify_ssl',  type=bool, default=False)
+
+    params = obj.parse_args()
+
+    return params
 
 
 if __name__ == "__main__":
-    main()
+    args = get_args()
+    main(args)
