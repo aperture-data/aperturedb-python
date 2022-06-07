@@ -15,6 +15,13 @@ PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
+# Workaround for issue of ResourceWarning for boto3 package
+
+
+def http_closer(http_response, **kwargs):
+    if http_response:
+        http_response.close()
+
 
 class ImageGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Image Data generator.**
@@ -153,9 +160,13 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
     def load_s3_url(self, s3_url):
         retries = 0
 
-        # The connections by boto3 cause ResourceWarning. Known
-        # issue: https://github.com/boto/boto3/issues/454
+        # The connections by boto3 cause ResourceWarning.
+        # Known issue: https://github.com/boto/boto3/issues/454
         s3 = boto3.client('s3')
+
+        # events = s3.meta.events
+        # # This is a workraround for the known issue above
+        # events.register("after-call.s3.*", http_closer)
 
         while True:
             try:
@@ -170,7 +181,8 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
                     return False, None
 
                 return True, img
-            except:
+            except Exception as e:
+                print(e)
                 if retries >= self.n_download_retries:
                     break
                 print("WARNING: Retrying object:", s3_url)
