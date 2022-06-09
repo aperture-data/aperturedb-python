@@ -8,3 +8,4 @@ kaggle
 facenet-pytorch
 pytest
 coverage
+protobuf
