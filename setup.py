@@ -7,7 +7,7 @@ setuptools.setup(
     name="aperturedb",
     version="0.2.0",
     description="ApertureDB Client Module",
-    install_requires=['vdms', 'scikit-image', 'image', 'requests', 'boto3',
+    install_requires=['protobuf>=3.20.0', 'scikit-image', 'image', 'requests', 'boto3',
                       'opencv-python', 'numpy', 'matplotlib', 'pandas', 'kaggle'],
     long_description=long_description,
     long_description_content_type="text/markdown",
