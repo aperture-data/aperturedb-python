@@ -13,8 +13,11 @@ CONSTRAINTS   = "constraints"
 class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB DescriptorSet Data loader.**
 
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.DescriptorSetDataCSV.DescriptorSetDataCSV` instead.
+
     .. note::
-        Expects a csv file with the following columns:
+        Is backed by a csv file with the following columns:
 
             ``name``, ``dimensions``, ``engine``, ``metric``, ``PROP_NAME_N``, ``constraint_PROP1``
 
@@ -36,7 +39,7 @@ class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[4:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         # Metrics/Engine can be of the form:
         #       "IP", or
@@ -83,16 +86,17 @@ class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
 class DescriptorSetLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB DescriptorSet Loader.**
 
-        This class is to be used in combination with a "generator".
-        The generator must be an iterable object that generated "entity_data"
-        elements.
+    This class is to be used in combination with a **generator** object,
+    for example :class:`~aperturedb.DescriptorSetLoader.DescriptorSetGeneratorCSV`,
+    which is a class that implements iterable inteface and generates "descriptor set data" elements.
 
     Example::
 
-            entity_data = {
-                "class":       entity_class,
-                "properties":  properties,
-                "constraints": constraints,
+            descriptor_set_data = {
+                "name": "dining_chairs",
+                "dimensions": 2048,
+                "engine": "FaissIVFFlat",
+                "metric": "L2"
             }
     """
 

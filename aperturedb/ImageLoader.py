@@ -17,10 +17,13 @@ IMG_FORMAT    = "format"
 
 
 class ImageGeneratorCSV(CSVParser.CSVParser):
-    """**ApertureDB Image Data loader.**
+    """**ApertureDB Image Data generator.**
+
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.ImageDataCSV.ImageDataCSV` instead.
 
     .. note::
-        Expects a csv file with the following columns (format optional):
+        Is backed by a csv file with the following columns (format optional):
 
             ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
@@ -64,7 +67,7 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         self.n_download_retries = n_download_retries
 
     # TODO: we can add support for slicing here.
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         data = {}
 
@@ -193,9 +196,9 @@ class ImageLoader(ParallelLoader.ParallelLoader):
     """
     **ApertureDB Image Loader.**
 
-    This class is to be used in combination with a "generator".
-    The generator must be an iterable object that generated "image_data"
-    elements.
+    This class is to be used in combination with a **generator** object,
+    for example :class:`~aperturedb.ImageLoader.ImageGeneratorCSV`,
+    which is a class that implements iterable inteface and generates "image data" elements.
 
     Example::
 

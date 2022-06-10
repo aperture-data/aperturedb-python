@@ -11,6 +11,14 @@ from aperturedb import DescriptorSetLoader, DescriptorLoader
 
 
 class TestEntityLoader(TestBase):
+    def setUp(self) -> None:
+        db = self.create_connection()
+        dbutils = Utils.Utils(db)
+        classes = ["_Image", "_Descriptor", "Person", "_BoundingBox"]
+        for c in classes:
+            # Assert that we have a clean slate to begin with.
+            self.assertEqual(dbutils.remove_entities(c), True)
+            self.assertEqual(dbutils.count_entities(c), 0)
 
     def test_Loader(self):
 
@@ -152,6 +160,9 @@ class TestEntityLoader(TestBase):
             total_descriptors += len(generator)
             self.assertEqual(total_descriptors,
                              dbutils.count_entities("_Descriptor"))
+
+            self.assertEqual(dbutils.count_descriptors_in_set(
+                setname), len(generator))
 
     def test_BlobLoader(self):
 

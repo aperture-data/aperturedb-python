@@ -197,6 +197,38 @@ def generate_bboxes_csv(images):
     df.to_csv("input/bboxes.adb.csv", index=False)
 
 
+def generate_bboxes_constraints_csv(images):
+    image_id = images.iloc[0]["id"]
+    num_boxes = 3
+
+    x   = [0 for x in range(num_boxes)]
+    y   = [0 for x in range(num_boxes)]
+    w   = [100 for x in range(num_boxes)]
+    h   = [150 for x in range(num_boxes)]
+
+    labels = ["dog", "cat", "catdog", "rocko", "philip", "froghead", "drog"]
+
+    confidence  = [random.random() for x in range(num_boxes)]
+    label       = [labels[math.floor(random.random() * num_boxes)]
+                   for x in range(num_boxes)]
+
+    df = pd.DataFrame([{
+        "id": image_id,
+    } for _ in range(num_boxes)])
+
+    df["x_pos"] = x
+    df["y_pos"] = y
+    df["width"] = w
+    df["height"] = h
+    df["confidence"] = confidence
+    df["label"]      = label
+    df["box_id"] = [123] * num_boxes
+    df["constraint_box_id"] = [123] * num_boxes
+
+    df = df.sort_values("id")
+    df.to_csv("input/bboxes-constraints.adb.csv", index=False)
+
+
 def generate_descriptors(images, setname, dims):
 
     filename = "input/" + setname + "_desc.npy"
@@ -251,6 +283,7 @@ def main(params):
     s3_imgs = generate_s3_images_csv("input/sample_s3_urls.csv")
     connect = generate_connections_csv(persons, images)
     bboxes  = generate_bboxes_csv(images)
+    bboxes_constraints = generate_bboxes_constraints_csv(images)
 
     desc_name = ["setA", "setB", "setC", "setD", "setE", "setF"]
     desc_dims = [2048, 1025, 2048, 1025, 2048, 1025]    # yes, 1025

@@ -13,20 +13,44 @@ CONSTRAINTS  = "constraints"
 
 class DescriptorGeneratorCSV(CSVParser.CSVParser):
     """
-        **ApertureDB Descriptor Data loader.**
+    **ApertureDB Descriptor Data generator.**
+
+    .. warning::
+        Deprecated. Use :class:`~aperturedb.DescriptorDataCSV.DescriptorDataCSV` instead.
 
     .. note::
-        Expects a csv file with the following columns, and a numpy
+        Is backed by a csv file with the following columns, and a numpy
         array file "npz" for the descriptors:
 
-            ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_N``, ``constraint_PROP1``, ``connect_to``
+            ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
+
+    **filename**: Path to a npz file which comprises of np arrays.
+
+    **index**: The 0 based index of a np array in the npz file.
+
+    **set**: The search space to restrict the knn search queries to.
+
+    **label**: Arbitraty name given to the label associated with this descriptor.
+
+    **PROP_NAME_1 .. PROP_NAME_N**: Arbitrarily assigned properties to this descriptor.
+
+    **constraint_PROP_NAME_1**: A constraint to enusre uniqueness when inserting this descriptor.
 
     Example csv file::
 
-        filename,index,set,label,isTable,connect_VD:ROI,connect_VD:ROI@index
-        /mnt/data/embeddings/kitchen.npz,0,kitchen,kitchen_table,True,has_descriptor,0
-        /mnt/data/embeddings/dining_chairs.npz,1,dining_chairs,special_chair,False,has_descriptor,1
+        filename,index,set,label,isTable,UUID,constraint_UUID
+        /mnt/data/embeddings/kitchen.npz,0,kitchen,kitchen_table,True,AID-0X3E,AID-0X3E
+        /mnt/data/embeddings/kitchen.npz,1,kitchen,kitchen_table,True,BXY-AB1Z,BXY-AB1Z
+        /mnt/data/embeddings/dining_chairs.npz,1,dining_chairs,special_chair,False,COO-SE1R,COO-SE1R
         ...
+
+    .. important::
+        In the above example, the index uniqely identiifes the actual np array from the many arrays in the npz file
+        which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
+
+        Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
+        using :class:`~aperturedb.ConnectionLoader.ConnectionLoader`
+
     """
 
     def __init__(self, filename):
@@ -41,7 +65,7 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[3:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-    def __getitem__(self, idx):
+    def getitem(self, idx):
 
         filename = self.df.loc[idx, HEADER_PATH]
         index    = self.df.loc[idx, HEADER_INDEX]
@@ -122,15 +146,16 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
 class DescriptorLoader(ParallelLoader.ParallelLoader):
     """**ApertureDB Descriptor Loader.**
 
-    This class is to be used in combination with a "generator".
-    The generator must be an iterable object that generated "descriptor_data"
-    elements.
+    This class is to be used in combination with a **generator** object,
+    for example :class:`~aperturedb.DescriptorLoader.DescriptorGeneratorCSV`,
+    which is a class that implements iterable inteface and generates "descriptor data" elements.
 
     Example::
 
-            image_data = {
-                "label":       label,
-                "properties":  properties,
+            descriptor_data = {
+                "label": label,
+                "set": set_name,
+                "properties": properties,
                 "constraints": constraints,
                 "descriptor_blob": (bytes),
             }

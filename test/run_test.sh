@@ -3,7 +3,7 @@
 set -u
 set -e
 
-(cd .. && pip3 install .)
+(cd .. && pip3 install -r requirements.txt && pip3 install .)
 
 sudo rm -rf aperturedb/db
 rm -rf output
@@ -21,4 +21,4 @@ python3 generateInput.py
 echo "Done generating input files."
 
 echo "Running tests..."
-python3 -m unittest discover --pattern=test_*.py -v
+KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_*.py -v

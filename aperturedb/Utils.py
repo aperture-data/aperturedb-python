@@ -151,8 +151,10 @@ class Utils(object):
 
         return total_images
 
-    def count_bboxes(self, constraints={}):
-
+    def count_bboxes(self, constraints=None):
+        # The default params in python functions should not be
+        # mutable objects.
+        # It can lead to https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
         q = [{
             "FindBoundingBox": {
                 "blobs": False,
@@ -174,7 +176,7 @@ class Utils(object):
 
         return total_connections
 
-    def count_entities(self, entity_class, constraints={}):
+    def count_entities(self, entity_class, constraints=None):
 
         q = [{
             "FindEntity": {
@@ -197,7 +199,7 @@ class Utils(object):
 
         return total_entities
 
-    def count_connections(self, connections_class, constraints={}):
+    def count_connections(self, connections_class, constraints=None):
 
         q = [{
             "FindConnection": {
@@ -267,7 +269,7 @@ class Utils(object):
         q = [{
             "FindDescriptorSet": {
                 "results": {
-                    "all_properties": True,
+                    "list": ["_name"],
                 }
 
             }
@@ -400,15 +402,52 @@ class Utils(object):
         Returns all the indexed properties for a given class.
         """
 
-        if type is not "entities" and type is not "connections":
+        if type not in ["entities", "connections"]:
             raise ValueError("Type must be either 'entities' or 'connections'")
 
         # TODO we should probably set refresh=True so we always
         # check the latest state, but it may take a long time to complete.
         schema = self.get_schema(refresh=False)
 
-        indexed_props = schema[type]["classes"][class_name]["properties"]
-        indexed_props = [
-            k for k in indexed_props.keys() if indexed_props[k][1]]
+        try:
+            indexed_props = schema[type]["classes"][class_name]["properties"]
+            indexed_props = [
+                k for k in indexed_props.keys() if indexed_props[k][1]]
+        except:
+            indexed_props = []
 
         return indexed_props
+
+    def count_descriptors_in_set(self, set_name):
+
+        total = -1
+
+        q = [{
+            "FindDescriptorSet": {
+                "_ref": 1,
+                "with_name": set_name,
+
+            }
+        }, {
+            "FindDescriptor": {
+                "set": set_name,
+                "is_connected_to": {
+                    "ref": 1,
+                    "connection_class": "_DescriptorSetToDescriptor"
+                },
+                "results": {
+                    "count": True
+                }
+            }
+        }]
+
+        try:
+            res, _ = self.connector.query(q)
+            if not self.connector.last_query_ok():
+                self.connector.print_last_response()
+            else:
+                total = res[1]["FindDescriptor"]["count"]
+        except:
+            self.connector.print_last_response()
+
+        return total
