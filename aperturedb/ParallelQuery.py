@@ -2,6 +2,7 @@ from aperturedb import Parallelizer
 import numpy as np
 import json
 import logging
+import math
 
 logger = logging.getLogger(__name__)
 
