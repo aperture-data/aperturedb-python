@@ -3,7 +3,7 @@
 set -u
 set -e
 
-pip3 install --upgrade pip
+pip3 install --upgrade protobuf
 (cd .. && pip3 install --upgrade .)
 
 sudo rm -rf aperturedb/db
