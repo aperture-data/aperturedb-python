@@ -2,9 +2,12 @@ wheel
 autopep8
 pre-commit
 torch
+torchvision
+boto3
 nbconvert
 ipython
 kaggle
 facenet-pytorch
 pytest
 coverage
+protobuf
