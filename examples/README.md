@@ -38,10 +38,20 @@ pip install -r requirements.txt && pip install .
 ```
 - Setup kaggle account and the API token as per the official [kagggle api guide](https://github.com/Kaggle/kaggle-api).
 
-The following files are under *example_3*
+The following files are under *similarity_search*
 
 | File | Description | instructions |
 | -----| ------------| -----|
 | similarity_search.ipynb | A notebook with some sample code for describing similarity search using aperturedb | Also available to read at [Aperturedb python documentation](https://python.docs.aperturedata.io/examples/loaders.html)|
 | facenet.py | Face Recognition using facenet and pytorch | Is invoked indirectly |
 | add_faces.py | A Script to load celebA dataset into aperturedb | ``python add_faces.py``|
+
+## Example 4: REST interface to apertureDB.
+
+The following files are under *rest_api*
+
+| File | Description | instructions |
+| -----| ------------| -----|
+| rest_api.py | Interactions with aperturedb using python's requests | ``python rest_api.py``|
+| rest_api.js | Interactions with aperturedb using javascript with axios | Is included in index.html |
+| index.html | A web page that renders from responses from aperturedb | Tested on chrome |

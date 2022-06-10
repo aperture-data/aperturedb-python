@@ -4,14 +4,14 @@ import argparse
 import json
 import os
 
-URL = "http://" + dbinfo.DB_HOST + '/api'
+URL = "https://" + dbinfo.DB_HOST  + '/api'
 
 VERIFY_SSL = False
 
 
 def parse_auth(res):
 
-    res = json.loads(json.loads(res)["json"])
+    res = json.loads(res)["json"]
     print(json.dumps(res, indent=4, sort_keys=False))
 
     session_token = res[0]["Authenticate"]["session_token"]
@@ -31,7 +31,7 @@ def auth():
     # Authenticate
     response = requests.post(URL,
                              files = [
-                                 ('json_query', (None, json.dumps(query)))],
+                                 ('query', (None, json.dumps(query)))],
                              verify= VERIFY_SSL)
 
     # print(response.status_code)
@@ -43,7 +43,7 @@ def auth():
 def query_api(query, st, files_upload=[]):
 
     files = [
-        ('json_query', (None, json.dumps(query))),
+        ('query', (None, json.dumps(query))),
     ]
 
     for file in files_upload:
@@ -58,7 +58,7 @@ def query_api(query, st, files_upload=[]):
     # Parse response:
     try:
         json_response = json.loads(response.text)
-        response      = json.loads(json_response["json"])
+        response      = json_response["json"]
         blobs         = json_response["blobs"]
     except:
         print("Error with response:")
