@@ -1,5 +1,6 @@
 import pandas as pd
 import logging
+from aperturedb.Subscriptable import Subscriptable
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +10,7 @@ PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
 
-class CSVParser():
+class CSVParser(Subscriptable):
     """**ApertureDB General CSV Parser for Loaders.**
     ...
     """
@@ -77,18 +78,6 @@ class CSVParser():
             query[self.command]["if_not_found"] = constraints
 
         return query
-
-    def __getitem__(self, subscript):
-        if isinstance(subscript, slice):
-            start = subscript.start if subscript.start else 0
-            stop = subscript.stop if subscript.stop else len(self)
-            step = subscript.step if subscript.step else 1
-            return [self.getitem(i) for i in range(start, stop, step)]
-        else:
-            return self.getitem(subscript)
-
-    def getitem(self, subscript):
-        Exception("getitem not implemented")
 
     def validate(self):
 
