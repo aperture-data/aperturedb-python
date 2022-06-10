@@ -3,6 +3,7 @@
 set -u
 set -e
 
+sudo apt update -y && sudo apt upgrade -y
 pip3 install --upgrade pip
 (cd .. && pip3 install .)
 
