@@ -3,6 +3,7 @@
 set -u
 set -e
 
+pip3 install --upgrade pip
 (cd .. && pip3 install .)
 
 sudo rm -rf aperturedb/db
