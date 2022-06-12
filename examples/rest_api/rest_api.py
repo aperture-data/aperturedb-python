@@ -6,7 +6,7 @@ import os
 
 URL = "https://" + dbinfo.DB_HOST  + '/api'
 
-VERIFY_SSL = False
+VERIFY_SSL = True
 
 
 def parse_auth(res):
@@ -30,9 +30,8 @@ def auth():
 
     # Authenticate
     response = requests.post(URL,
-                             files = [
-                                 ('query', (None, json.dumps(query)))],
-                             verify= VERIFY_SSL)
+                             files = [('query', (None, json.dumps(query)))],
+                             verify = VERIFY_SSL)
 
     # print(response.status_code)
     # print(response.text)
@@ -53,7 +52,8 @@ def query_api(query, st, files_upload=[]):
 
     response = requests.post(URL,
                              headers = {'Authorization': "Bearer " + st},
-                             files   = files)
+                             files   = files,
+                             verify  = VERIFY_SSL)
 
     # Parse response:
     try:
@@ -84,7 +84,7 @@ def add_image_by_id(st, id):
     query = [{
         "AddImage": {
             "properties": {
-                "id": id
+                "rest_api_example_id": id
             }
         }
     }]
@@ -137,11 +137,12 @@ def main(params):
     r, blobs = list_images(session_token)
     print("Response:")
     print(json.dumps(r, indent=4, sort_keys=False))
+    img_id = r[0]["FindImage"]["entities"][0]["_uniqueid"]
 
     # ----------------------
     print("-" * 80)
     print("Find image by id:")
-    r, blobs = get_image_by_id(session_token, 1122609)
+    r, blobs = get_image_by_id(session_token, img_id)
 
     print("Response:")
     print(json.dumps(r, indent=4, sort_keys=False))
@@ -167,7 +168,7 @@ def main(params):
 def get_args():
     obj = argparse.ArgumentParser()
 
-    obj.add_argument('-verify_ssl',  type=bool, default=False)
+    obj.add_argument('-verify_ssl',  type=bool, default=True)
 
     params = obj.parse_args()
 

@@ -104,7 +104,13 @@ run_requests = () => {
 
 const addImage = (event) => {
     event.preventDefault();
-    query = [{"AddImage": {}}];
+    query = [{
+        "AddImage": {
+            "properties": {
+                "rest_api_example_id": 123456789
+            }
+        }
+    }];
     const file = document.getElementById("fileupload").files[0]
     request(query = query, blobs = [file], (data)=>{
         response = data["json"];
