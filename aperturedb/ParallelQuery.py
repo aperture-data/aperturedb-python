@@ -56,20 +56,20 @@ class ParallelQuery(Parallelizer.Parallelizer):
         if not self.dry_run:
             r, b = db.query(q, blobs)
             if not db.last_query_ok():
+                if self.has_response_handler:
+                    # We could potentially always call this handler function
+                    # and let the user deal with the error cases.
+
+                    cmds_per_query = math.ceil(len(r) / self.batchsize)
+                    for i in range(self.batchsize):
+                        start = i * cmds_per_query
+                        end = start + cmds_per_query
+                        self.call_response_handler(
+                            r[start:end], b[start:end])
+            else:
                 # Transaction failed entirely.
                 logger.error(f"Failed query = {q} with response = {r}")
                 self.error_counter += 1
-
-            if self.has_response_handler:
-                # We could potentially always call this handler function
-                # and let the user deal with the error cases.
-
-                cmds_per_query = math.ceil(len(r) / self.batchsize)
-                for i in range(self.batchsize):
-                    start = i * cmds_per_query
-                    end = start + cmds_per_query
-                    self.call_response_handler(
-                        r[start:end], b[start:end])
 
             if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
                 logger.warning(
