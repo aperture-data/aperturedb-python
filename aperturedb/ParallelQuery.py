@@ -23,12 +23,6 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         self.responses = []
 
-        self.has_response_handler = False
-
-    def install_response_handler(self):
-
-        self.has_response_handler = True
-
     def generate_batch(self, data):
         """
             Here we flatten the individual queries to run them as
@@ -55,8 +49,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if not self.dry_run:
             r, b = db.query(q, blobs)
-            if not db.last_query_ok():
-                if self.has_response_handler:
+            if db.last_query_ok():
+                if hasattr(self, "response_handler") and callable(self.response_handler):
                     # We could potentially always call this handler function
                     # and let the user deal with the error cases.
 
