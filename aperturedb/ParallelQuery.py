@@ -49,8 +49,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if not self.dry_run:
             r, b = db.query(q, blobs)
+            logger.info(f"Query={q}")
+            logger.info(f"Response={r}")
+
             if db.last_query_ok():
-                if hasattr(self, "response_handler") and callable(self.response_handler):
+                if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
                     # We could potentially always call this handler function
                     # and let the user deal with the error cases.
 
