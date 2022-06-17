@@ -326,14 +326,22 @@ class Utils(object):
 
         pb = ProgressBar.ProgressBar()
 
-        find = "Find" + cmd
-        dele = "Delete" + cmd
+        if class_name.startswith("_"):  # Case for _Image, _Video, etc
+
+            find = "Find"   + class_name.split("_")[-1]
+            dele = "Delete" + class_name.split("_")[-1]
+            with_class = False
+
+        else:
+            find = "Find" + cmd
+            dele = "Delete" + cmd
+            with_class = True
+
         while count > 0:
 
             q = [{
                 find: {
                     "_ref": 1,
-                    "with_class": class_name,
                     "results": {
                         "limit": batch_size
                     }
@@ -343,6 +351,9 @@ class Utils(object):
                     "ref": 1
                 }
             }]
+
+            if with_class:
+                q[0][find]["with_class"] = class_name
 
             res, _ = self.connector.query(q)
 
