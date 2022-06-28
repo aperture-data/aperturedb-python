@@ -1,3 +1,4 @@
+import sys
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
