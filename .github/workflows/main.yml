@@ -4,9 +4,11 @@ name: main
 
 # Controls when the action will run.
 on:
-  pull_request:
+  # Triggers the workflow on push or pull request events
+  # but only for the develop, master, and release branches
+  push:
     branches:
-      - develop
+      - main
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -34,33 +36,31 @@ jobs:
 
       - name: Run Tests
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
+          pip3 install ipython torch torchvision boto3
           cd test
           bash run_test.sh
 
-  build_and_deploy_docs:
-
-    # The type of runner that the job will run on Ubuntu 18.04 (latest)
-    runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be
-    # executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE,
-      # so your job can access it
-      - uses: actions/checkout@v2
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASS }}
-
-      - name: Build and push docker
+      - name: Build Notebook Docker
         run: |
-          cd docs/docker
-          bash build.sh ${GITHUB_REF##*/}
-          bash push_images.sh ${GITHUB_REF##*/}
+          cd docker
+          bash build_images.sh
+
+      - name: Publish to PyPi
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          pip3 install twine
+          bash publish.sh
+
+      - name: Tag release version
+        run: './tag.sh'
+        shell: bash
+      
+      - name: GitHub Release
+        run: 'TOKEN=${{ secrets.GITHUBPAT }} ./github-release.sh'
+        shell: bash
