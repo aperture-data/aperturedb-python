@@ -72,7 +72,7 @@ fi
 # Set default repo if repo var is not set
 if [ -n ${DOCKER_REPOSITORY+x} ]
 then
-    DOCKER_REPOSITORY=ailegion
+    DOCKER_REPOSITORY=aperturedata
 fi
 echo "Repository: $DOCKER_REPOSITORY"
 
