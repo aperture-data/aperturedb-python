@@ -56,11 +56,11 @@ jobs:
         run: |
           pip3 install twine
           bash publish.sh
-      
-      - name: GitHub Release
-        run: './github-release.sh'
-        shell: bash
 
       - name: Tag release version
         run: './tag.sh'
+        shell: bash
+      
+      - name: GitHub Release
+        run: 'TOKEN=${{ secrets.GITHUBPAT }} ./github-release.sh'
         shell: bash
