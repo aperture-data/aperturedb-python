@@ -22,7 +22,7 @@ RUN    pip3 install numpy \
 RUN jupyter notebook --generate-config \
     && echo "c.NotebookApp.password='sha1:669c99384897:b5742e955addfc2ad3ce8c8faad4a92d55b0b55c' ">> /root/.jupyter/jupyter_notebook_config.py
 
-COPY scripts/start.sh /start.sh
+COPY docker/notebook/scripts/start.sh /start.sh
 RUN  chmod 755 /start.sh
 
 # Add Tini. Tini operates as a process subreaper for jupyter.
