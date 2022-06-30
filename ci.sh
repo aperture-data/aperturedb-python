@@ -90,9 +90,10 @@ build_notebook_image(){
 # Build docks image
 build_docs_image(){
     echo "Preping docs image"
-    mkdir -p docs/docker/build/docs
+    mkdir -p docs/docker/build/{docs,examples}
     cp -r ./{setup.py,README.md,aperturedb} docs/docker/build
     cp -r ./docs/{*.*,Makefile,_static} docs/docker/build/docs
+    find examples/ -name *.ipynb | xargs -i cp {} docs/docker/build/examples
     DOCKS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-docs${IMAGE_EXTENSION_WITH_VERSION}
     echo "Building image $DOCKS_IMAGE"
     docker build -t $DOCKS_IMAGE -f docs/docker/Dockerfile .
