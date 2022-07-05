@@ -8,8 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 class ParallelQuery(Parallelizer.Parallelizer):
-
-    """**Parallel and Batch Querier for ApertureDB**"""
+    """
+    **Parallel and Batch Querier for ApertureDB**
+    This class provides the abstraction for partitioning data into batches,
+    so that they may be processed using different threads.
+    """
 
     def __init__(self, db, dry_run=False):
 
@@ -33,13 +36,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         return q, blobs
 
-    def call_response_handler(self, r, b):
-
+    def call_response_handler(self, q, blobs, r, b):
         try:
-            self.generator.response_handler(r, b)
+            self.response_handler(q, blobs, r, b)
         except BaseException as e:
-            print("handler error:", r)
-            print(e)
+            logger.exception(e)
 
     def do_batch(self, db, data):
 
@@ -53,16 +54,16 @@ class ParallelQuery(Parallelizer.Parallelizer):
             logger.info(f"Response={r}")
 
             if db.last_query_ok():
-                if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
+                logger.info(f"Response_handler={self.response_handler}")
+                if callable(self.response_handler):
                     # We could potentially always call this handler function
                     # and let the user deal with the error cases.
-
-                    cmds_per_query = math.ceil(len(r) / self.batchsize)
-                    for i in range(self.batchsize):
-                        start = i * cmds_per_query
-                        end = start + cmds_per_query
+                    for i, _ in enumerate(q):
                         self.call_response_handler(
-                            r[start:end], b[start:end])
+                            q[i],
+                            blobs[i] if len(blobs) > i else None,
+                            r[i],
+                            b[i] if len(b) > i else None)
             else:
                 # Transaction failed entirely.
                 logger.error(f"Failed query = {q} with response = {r}")

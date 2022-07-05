@@ -1,6 +1,7 @@
 import numpy as np
 
-from test_Base import TestBase
+from .test_Base import TestBase
+import dbinfo
 
 from aperturedb import DescriptorDataCSV, Utils
 from aperturedb.ImageDataCSV import ImageDataCSV
@@ -14,10 +15,11 @@ from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 
 import logging
+import pytest
 logger = logging.getLogger(__name__)
 
 
-def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
+def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1, response_handler=None):
     file_data_pair = {
         "./input/persons.adb.csv": EntityDataCSV,
         "./input/images.adb.csv": ImageDataCSV,
@@ -39,11 +41,12 @@ def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
     if self.stats:
         print("\n")
 
-    loader = ParallelLoader(self.db)
+    loader = ParallelLoader(self.db,
+                            response_handler=response_handler)
     loader.ingest(data, batchsize=self.batchsize,
                   numthreads=self.numthreads,
                   stats=self.stats)
-    self.assertEqual(loader.error_counter, 0)
+    assert loader.error_counter == 0
     return data
 
 
@@ -184,3 +187,41 @@ class TestURILoader(TestBase):
         data = insert_data_from_csv(
             self, in_csv_file = "./input/http_images.adb.csv")
         self.assertEqual(len(data), dbutils.count_images() - count_before)
+
+# This is a parameterized test which runs multiple parmas.
+# In the current config, it expands into 3 test cases.
+# The reponse handler had a bug that it'd call the user defined
+# handler for the batchsize no. of times, even if the batch does
+# have complete number of elements.
+# Run this test with batch size as 99, and 1, 99, and 100 elements.
+
+
+@pytest.mark.parametrize("images_count", [(1), (99), (100)])
+class TestResponseHandler():
+    stats = True
+    batchsize = 99
+    numthreads = 31
+
+    def _process_responses(self, request, input_blob, response, output_blob):
+        self.requests.append(request)
+        self.responses.append(response)
+
+    def test_response_handler(self, images_count):
+        logger.warning(f"{images_count}")
+        self.db = dbinfo.create_connection()
+        dbutils = Utils.Utils(self.db)
+        logger.debug(f"Cleaning existing data")
+
+        assert dbutils.remove_entities("_BoundingBox") == True
+        assert dbutils.remove_entities("_Image") == True
+        self.requests = []
+        self.responses = []
+
+        images = insert_data_from_csv(
+            self, in_csv_file="./input/images.adb.csv",
+            rec_count=images_count, response_handler=self._process_responses)
+        assert len(images) == images_count
+        logger.info(self.responses)
+        assert len(self.responses) == images_count
+        logger.info(self.requests)
+        assert len(self.requests) == images_count
