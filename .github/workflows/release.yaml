@@ -43,6 +43,27 @@ jobs:
           pip3 install ipython torch torchvision boto3
           cd test
           bash run_test.sh
+  
+  build_and_deploy_docs:
+
+    # The type of runner that the job will run on Ubuntu 18.04 (latest)
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be
+    # executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE,
+      # so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
 
       - name: Build Notebook Docker
         run: './ci.sh'
