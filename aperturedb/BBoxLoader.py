@@ -61,11 +61,8 @@ class BBoxGeneratorCSV(CSVParser.CSVParser):
             "height": int(self.df.loc[idx, HEADER_HEIGHT]),
         }
 
-        val = self.df.loc[idx, self.img_key]
-
-        if val != "":
-            data[IMG_KEY_PROP] = self.img_key
-            data[IMG_KEY_VAL]  = val
+        data[IMG_KEY_PROP] = self.img_key
+        data[IMG_KEY_VAL]  = self.df.loc[idx, self.img_key]
 
         properties  = self.parse_properties(self.df, idx)
         constraints = self.parse_constraints(self.df, idx)
@@ -130,31 +127,31 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
 
         q = []
 
-        ref_counter = 1
+        ref_counter = 0
+        img_map = {}
         for data in bbox_data:
 
-            # TODO we could reuse image references within the batch
-            # instead of creating a new find for every image.
-            img_ref = ref_counter
-            ref_counter += 1
-            fi = {
-                "FindImage": {
-                    "_ref": img_ref,
+            img_id = data[IMG_KEY_VAL]
+            if img_id not in img_map:
+                ref_counter += 1
+                img_map[img_id] = ref_counter
+                fi = {
+                    "FindImage": {
+                        "_ref": ref_counter,
+                    }
                 }
-            }
 
-            if IMG_KEY_PROP in data:
                 key = data[IMG_KEY_PROP]
                 val = data[IMG_KEY_VAL]
                 constraints = {}
                 constraints[key] = ["==", val]
                 fi["FindImage"]["constraints"] = constraints
 
-            q.append(fi)
+                q.append(fi)
 
             ai = {
                 "AddBoundingBox": {
-                    "image": img_ref,
+                    "image_ref": img_map[img_id],
                     "rectangle": {
                         "x":      data["x"],
                         "y":      data["y"],
