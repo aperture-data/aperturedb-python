@@ -9,6 +9,7 @@ POLYGON_FIELDS  = {
     "_label": "label",
 }
 
+
 class PolygonDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB Polygon Data.**
@@ -109,6 +110,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
         self.header = list(self.df.columns.values)
 
         if len(self.header) < 2:
-            raise Exception("Error with CSV file: must have at least two columns")
+            raise Exception(
+                "Error with CSV file: must have at least two columns")
         if self.header[-1] != HEADER_POLYGONS:
             raise Exception("Error with CSV file field: " + HEADER_POLYGONS)
