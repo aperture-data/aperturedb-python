@@ -79,13 +79,6 @@ class CSVParser(Subscriptable):
 
         return query
 
-    # def getitem(self, idx, batch_context):
-    #     raise Exception("To be implemented in subclass")
-
-    def generate_batch(self, start, stop, step=1):
-        batch_context = {}
-        return [self.getitem(i,batch_context) for i in range(start, stop, step)]
-
     def validate(self):
 
         Exception("Validation not implemented!")
