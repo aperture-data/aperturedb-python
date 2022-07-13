@@ -51,7 +51,7 @@ class VideoDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.command = "AddVideo"
 
-    def getitem(self, idx):
+    def getitem(self, idx, ctx):
         filename   = self.df.loc[idx, HEADER_PATH]
         video_ok, video = self.load_video(filename)
 

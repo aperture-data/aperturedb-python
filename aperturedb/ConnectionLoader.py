@@ -51,7 +51,7 @@ class ConnectionGeneratorCSV(CSVParser.CSVParser):
         self.dst_class   = self.header[2].split("@")[0]
         self.dst_key     = self.header[2].split("@")[1]
 
-    def getitem(self, idx):
+    def getitem(self, idx, ctx):
 
         data = {
             "class":      self.df.loc[idx, CONNECTION_CLASS],

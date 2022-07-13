@@ -65,7 +65,7 @@ class DescriptorGeneratorCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[3:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-    def getitem(self, idx):
+    def getitem(self, idx, ctx):
 
         filename = self.df.loc[idx, HEADER_PATH]
         index    = self.df.loc[idx, HEADER_INDEX]

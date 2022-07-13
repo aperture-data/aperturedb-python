@@ -49,7 +49,7 @@ class EntityDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.command = "AddEntity"
 
-    def getitem(self, idx):
+    def getitem(self, idx, ctx):
         eclass = self.df.loc[idx, ENTITY_CLASS]
         q = []
         ae = self._basic_command(idx,

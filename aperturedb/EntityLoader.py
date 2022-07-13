@@ -34,7 +34,7 @@ class EntityGeneratorCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[1:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-    def getitem(self, idx):
+    def getitem(self, idx, ctx):
 
         data = {}
         data["class"] = self.df.loc[idx, ENTITY_CLASS]
