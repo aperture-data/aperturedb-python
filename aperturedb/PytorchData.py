@@ -1,12 +1,13 @@
 from typing import List, Tuple
 from torch.utils.data import Dataset
+from aperturedb.Subscriptable import Subscriptable
 
 
-class PytorchData(object):
+class PytorchData(Subscriptable):
     def __init__(self, dataset: Dataset) -> None:
         self.loaded_dataset = [t for t in dataset]
 
-    def __getitem__(self, idx: int):
+    def getitem(self, idx: int):
         return self.generate_query(idx)
 
     def __len__(self):

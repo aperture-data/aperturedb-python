@@ -21,7 +21,7 @@ def generate_person_csv(multiplier):
     persons  = list(product(names, lastnames))
 
     entity   = ["Person" for x in range(len(persons))]
-    ids      = [int(1000000000 * random.random()) for i in range(len(persons))]
+    ids      = random.sample(range(1000000000), len(persons))
     age      = [int(100 * random.random()) for i in range(len(persons))]
     height   = [float(200 * random.random()) for i in range(len(persons))]
     dog      = [x > 100 for x in height]
@@ -60,7 +60,7 @@ def generate_blobs_csv():
         blobfile.close()
 
     entity   = ["segmentation" for x in range(len(blobs))]
-    ids      = [int(1000000000 * random.random()) for i in range(len(blobs))]
+    ids      = random.sample(range(1000000000), len(blobs))
 
     df = pd.DataFrame(blobs, columns=['filename', 'license'])
     df                  = df.reindex(["filename", "license"], axis=1)
@@ -84,7 +84,7 @@ def generate_images_csv(multiplier):
 
     images  = list(product(imgs, license))
 
-    ids      = [int(1000000000 * random.random()) for i in range(len(images))]
+    ids      = random.sample(range(1000000000), len(images))
     age      = [int(100 * random.random()) for i in range(len(images))]
     height   = [float(200 * random.random()) for i in range(len(images))]
     dog      = [x > 100 for x in height]
@@ -109,7 +109,7 @@ def generate_http_images_csv(ip_file_csv):
 
     images    = pd.read_csv(ip_file_csv, sep=",", header=None)
 
-    ids      = [int(1000000000 * random.random()) for i in range(len(images))]
+    ids      = random.sample(range(1000000000), len(images))
     age      = [int(100 * random.random()) for i in range(len(images))]
     height   = [float(200 * random.random()) for i in range(len(images))]
     license  = [x for x in range(len(images))]
@@ -133,7 +133,7 @@ def generate_s3_images_csv(ip_file_csv):
 
     images    = pd.read_csv(ip_file_csv, sep=",", header=None)
 
-    ids      = [int(1000000000 * random.random()) for i in range(len(images))]
+    ids      = random.sample(range(1000000000), len(images))
     age      = [int(100 * random.random()) for i in range(len(images))]
     height   = [float(200 * random.random()) for i in range(len(images))]
     license  = [x for x in range(len(images))]

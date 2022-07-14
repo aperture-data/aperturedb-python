@@ -43,6 +43,7 @@ class Parallelizer:
         self.batchsize  = batchsize
         self.numthreads = numthreads
         self.stats      = stats
+        self.generator = generator
         self.total_actions = len(generator)
 
         start_time = time.time()

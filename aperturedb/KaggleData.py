@@ -4,9 +4,10 @@ import os
 import pandas as pd
 from kaggle.api.kaggle_api_extended import KaggleApi
 import zipfile
+from aperturedb.Subscriptable import Subscriptable
 
 
-class KaggleData(object):
+class KaggleData(Subscriptable):
     """
     **Class to wrap around a Dataset retrieved from kaggle**
 
@@ -133,14 +134,7 @@ class KaggleData(object):
         self.collection = self.generate_index(
             workdir, self.records_count).to_dict('records')
 
-    def __getitem__(self, subscript):
-        if isinstance(subscript, slice):
-            start = subscript.start if subscript.start else 0
-            stop = subscript.stop if subscript.stop else len(self)
-            step = subscript.step if subscript.step else 1
-            return [self.generate_query(i) for i in range(start, stop, step)]
-        if subscript >= len(self.collection):
-            raise StopIteration
+    def getitem(self, subscript):
         return self.generate_query(subscript)
 
     def __len__(self):

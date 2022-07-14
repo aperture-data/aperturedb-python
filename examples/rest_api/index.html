@@ -1,0 +1,15 @@
+<html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js" integrity="sha512-odNmoc1XJy5x1TMVMdC7EMs3IVdItLPlCeL5vSUPN2llYKMJ2eByTTAIiiuqLg+GdNr9hF6z81p27DArRFKT7A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="rest_api.js" ></script>
+    </head>
+    <body onload="run_requests()">
+        <pre id="output"></pre>
+        <h6>AddImage. Select a file to continue</h6>
+        <form id="addimage" enctype="multipart/form-data">
+            <input id="fileupload" name="blob" type="file" />
+            <input type="submit" value="submit" id="submit" />
+
+        </form>
+    </body>
+</html>
