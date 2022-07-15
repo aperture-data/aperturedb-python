@@ -77,9 +77,10 @@ class Images(object):
 
         self.db_connector = db
 
-        self.images        = {}
-        self.images_ids    = []
-        self.images_bboxes = {}
+        self.images          = {}
+        self.images_ids      = []
+        self.images_bboxes   = {}
+        self.images_polygons = {}
 
         self.constraints = None
         self.operations  = None
@@ -139,11 +140,11 @@ class Images(object):
             uniqueid = self.images_ids[idx]
             self.images[str(uniqueid)] = imgs[i]
 
-    def __get_bounding_boxes_polygons(self, index):
+    def __retrieve_polygons(self, index):
 
-        self.__retrieve_bounding_boxes(index)
-
-        ret_poly = []
+        if index > len(self.images_ids):
+            print("Index error when retrieving polygons")
+            return
 
         uniqueid = self.images_ids[index]
 
@@ -156,61 +157,34 @@ class Images(object):
                 "blobs": False,
             }
         }, {
-            "FindBlob": {
-                "is_connected_to": {
-                    "ref": 1
-                },
-                "constraints": {
-                    "type": ["==", "segmentation"]
-                },
-                "blobs": True,
+            "FindPolygon": {
+                "image_ref": 1,
+                "bounds": True,
+                "vertices": True,
+                "labels": True,
             }
         }]
 
-        res, polygons = self.db_connector.query(query)
+        try:
+            res, _ = self.db_connector.query(query)
 
-        ret_poly.append(polygons)
+            polygons = []
+            bounds   = []
+            tags     = []
+            for poly in res[1]["FindPolygon"]["entities"]:
+                bounds.append(poly["_bounds"])
+                tags.append(poly["_label"])
+                polygons.append(poly["_vertices"])
 
-        uniqueid_str = str(uniqueid)
-        self.images_bboxes[uniqueid_str]["polygons"] = polygons
+            uniqueid_str = str(uniqueid)
+            self.images_polygons[uniqueid_str] = {
+                "bounds": bounds,
+                "polygons": polygons,
+                "tags": tags,
+            }
 
-        return polygons
-
-    def __display_segmentation(self, index):
-
-        polygons = self.__get_bounding_boxes_polygons(index)
-
-        image = self.get_image_by_index(index)
-
-        img_stringIO = BytesIO(image)
-        I = io.imread(img_stringIO)
-
-        fig1, ax1 = plt.subplots()
-        plt.imshow(I)
-        plt.axis('off')
-
-        for poly in polygons:
-
-            sample = np.frombuffer(poly, dtype=np.float32)
-
-            c = (np.random.random((1, 3)) * 0.6 + 0.4).tolist()[0]
-            color = []
-            color.append(c)
-
-            polygon_points = []
-            poly = np.array(sample).reshape((int(len(sample) / 2), 2))
-            polygon_points.append(Polygon(poly))
-
-            ax = plt.gca()
-            ax.set_autoscale_on(False)
-
-            p = PatchCollection(
-                polygon_points, facecolor=color, linewidths=0, alpha=0.4)
-            ax.add_collection(p)
-
-            p = PatchCollection(polygon_points, facecolor='none',
-                                edgecolors=color, linewidths=2)
-            ax.add_collection(p)
+        except:
+            print(self.db_connector.get_last_response_str())
 
     def __retrieve_bounding_boxes(self, index):
 
@@ -237,6 +211,7 @@ class Images(object):
                 "blobs": False,
                 "coordinates": True,
                 "labels": True,
+                "bounds": True,
             }
         }]
 
@@ -313,6 +288,7 @@ class Images(object):
         self.images = {}
         self.images_ids = []
         self.images_bboxes = {}
+        self.images_polygons = {}
 
         query = {"FindImage": {}}
 
@@ -404,7 +380,64 @@ class Images(object):
 
         return imgs_return
 
-    def display(self, show_bboxes=False, show_segmentation=False, limit=None):
+    def __draw_text_with_shadow(self, image, text, origin, color, shadow_radius=3, shadow_color=(0,0,0)):
+        shadow_orgs = [
+            (origin[0]-shadow_radius, origin[1]-shadow_radius),
+            (origin[0]+shadow_radius, origin[1]-shadow_radius),
+            (origin[0]+shadow_radius, origin[1]+shadow_radius),
+            (origin[0]-shadow_radius, origin[1]+shadow_radius),
+        ]
+
+        for org in shadow_orgs:
+            cv2.putText(image, text, origin, cv2.FONT_HERSHEY_SIMPLEX, 0.75, shadow_color, shadow_radius, cv2.LINE_AA)
+
+        cv2.putText(image, text, origin, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
+
+
+    def __draw_bbox_and_tag(self, image, bbox, tag):
+        RED = (0, 0, 255)
+
+        left   = bbox["x"]
+        top    = bbox["y"]
+        right  = bbox["x"] + bbox["width"]
+        bottom = bbox["y"] + bbox["height"]
+        cv2.rectangle(image, (left, top), (right, bottom), RED, 2)
+
+        y = top - 15 if top - 15 > 15 else top + 15
+
+        self.__draw_text_with_shadow(image, tag, (left, y), RED)
+
+    def __random_color(self):
+        return (np.random.random((1, 3)) * 155 + 100).tolist()[0]
+
+    def __draw_polygon_and_tag(self, image, polygon, tag, bounds, shift=8):
+
+        color = self.__random_color()
+
+        as_shift_int = lambda v : int(v * (1 << shift))
+        FILL_ALPHA = 0.4
+
+        for verts in polygon:
+            shift_verts = [[as_shift_int(v) for v in vert] for vert in verts]
+            np_verts = np.array(shift_verts, np.int32)
+            fill = image.copy()
+            cv2.fillPoly(fill, [np_verts], color, cv2.LINE_4, shift)
+            cv2.addWeighted(fill, FILL_ALPHA, image, 1 - FILL_ALPHA, 0, image)
+            cv2.polylines(image, [np_verts], True, color, 2, cv2.LINE_4, shift)
+
+        left   = bounds["x"]
+        top    = bounds["y"]
+        right  = bounds["x"] + bounds["width"]
+        FONT_WIDTH = 10
+        FONT_HEIGHT = 16
+
+        y = top - FONT_HEIGHT
+        x = (left + right - (FONT_WIDTH * len(tag))) // 2
+        org = (max(x,0), max(y,FONT_HEIGHT))
+
+        self.__draw_text_with_shadow(image, tag, org, color)
+
+    def display(self, show_bboxes=False, show_polygons=False, limit=None):
 
         if not limit:
             limit = self.display_limit
@@ -435,35 +468,24 @@ class Images(object):
                 # rgb   = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
                 # Draw a rectangle around the faces
-                counter = 0
-                for coords in bboxes:
-                    left   = coords["x"]
-                    top    = coords["y"]
-                    right  = coords["x"] + coords["width"]
-                    bottom = coords["y"] + coords["height"]
-                    cv2.rectangle(image, (left, top), (right, bottom),
-                                  (0, 255, 0), 2)
+                for bi in range(len(bboxes)):
+                    self.__draw_bbox_and_tag(image, bboxes[bi], tags[bi])
 
-                    y = top - 15 if top - 15 > 15 else top + 15
+            if show_polygons:
+                if not str(uniqueid) in self.images_polygons:
+                    self.__retrieve_polygons(i)
 
-                    cv2.putText(image, tags[counter], (left, y),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
-                    counter += 1
+                bounds = self.images_polygons[uniqueid]["bounds"]
+                polygons = self.images_polygons[uniqueid]["polygons"]
+                tags = self.images_polygons[uniqueid]["tags"]
 
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                for pi in range(len(polygons)):
+                    self.__draw_polygon_and_tag(image, polygons[pi], tags[pi], bounds[pi])
 
-                fig1, ax1 = plt.subplots()
-                plt.imshow(image), plt.axis("off")
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-            elif show_segmentation:
-                self.__display_segmentation(i)
-
-            else:
-
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-                fig1, ax1 = plt.subplots()
-                plt.imshow(image), plt.axis("off")
+            fig1, ax1 = plt.subplots()
+            plt.imshow(image), plt.axis("off")
 
     def get_props_names(self):
 
