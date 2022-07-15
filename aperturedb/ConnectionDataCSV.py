@@ -77,7 +77,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
 
         try:
 
-            ref_src = 2 * idx + 1
+            ref_src = (2 * idx) % 10000 + 1
             fe_a = {
                 "FindEntity": {
                     "_ref": ref_src,
@@ -90,7 +90,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
                 "==", src_value]
             q.append(fe_a)
 
-            ref_dst = 2 * idx + 2
+            ref_dst = ref_src + 1
             fe_b = {
                 "FindEntity": {
                     "_ref": ref_dst,
