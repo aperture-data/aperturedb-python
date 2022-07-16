@@ -464,8 +464,27 @@ class Images(object):
 
         self.__draw_text_with_shadow(image, tag, (left, y), RED)
 
-    def __random_color(self):
-        return (np.random.random((1, 3)) * 155 + 100).tolist()[0]
+    def __random_color(self, value=1.0, saturation=0.51):
+        i_max = int(np.random.random() * 3)
+        i_mid = (i_max + int(np.random.random() * 2) + 1) % 3
+        v_max = int(255 * value)
+        v_min = int(v_max * saturation)
+        v_mid = int(v_min + int(np.random.random() * (v_max - v_min)))
+        color = [v_min, v_min, v_min]
+        color[i_max] = v_max
+        color[i_mid] = v_mid
+        return tuple(color)
+
+    def __contrasting_color(self, color, saturation=0.51):
+        contrast = lambda v : 1 if v < 128 else 0
+        cont = (contrast(color[0]), contrast(color[1]), contrast(color[2]))
+        n_hi = cont[0] + cont[1] + cont[2]
+        if not n_hi:
+            return (0,0,0)
+        n_lo = 3 - n_hi
+        coeff = 255 * n_hi / ((n_lo * saturation) + n_hi)
+        desaturate = lambda v : int(coeff) if v else int(saturation * coeff)
+        return (desaturate(cont[0]), desaturate(cont[1]), desaturate(cont[2]))
 
     def __draw_polygon(self, image, polygon, color, fill_alpha=0.4, thickness=2, shift=8):
 
