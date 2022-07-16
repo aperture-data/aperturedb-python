@@ -40,6 +40,10 @@ class Constraints(object):
 
         self.constraints[key] = ["<", value]
 
+    def is_in(self, key, val_array):
+
+        self.constraints[key] = ["in", val_array]
+
 
 class Operations(object):
 
@@ -81,6 +85,8 @@ class Images(object):
         self.images_ids      = []
         self.images_bboxes   = {}
         self.images_polygons = {}
+
+        self.overlays = []
 
         self.constraints = None
         self.operations  = None
@@ -140,7 +146,7 @@ class Images(object):
             uniqueid = self.images_ids[idx]
             self.images[str(uniqueid)] = imgs[i]
 
-    def __retrieve_polygons(self, index):
+    def __retrieve_polygons(self, index, in_uids=None, in_tags=None):
 
         if index > len(self.images_ids):
             print("Index error when retrieving polygons")
@@ -162,6 +168,7 @@ class Images(object):
                 "bounds": True,
                 "vertices": True,
                 "labels": True,
+                "uniqueids": True,
             }
         }]
 
@@ -172,8 +179,17 @@ class Images(object):
             bounds   = []
             tags     = []
             for poly in res[1]["FindPolygon"]["entities"]:
+                tag = poly["_label"]
+                if in_uids is not None:
+                    uid = poly["_uniqueid"]
+                    if uid not in in_uids:
+                        continue
+                    if in_tags is not None:
+                        poly_idx = in_uids.index(uid)
+                        tag = in_tags[poly_idx]
+
+                tags.append(tag)
                 bounds.append(poly["_bounds"])
-                tags.append(poly["_label"])
                 polygons.append(poly["_vertices"])
 
             uniqueid_str = str(uniqueid)
@@ -278,7 +294,7 @@ class Images(object):
 
     # A new search will throw away the results of any previous search
 
-    def search(self, constraints=None, operations=None, format=None, limit=None):
+    def search(self, constraints=None, operations=None, format=None, limit=None, sort=None):
 
         self.constraints = constraints
         self.operations  = operations
@@ -289,6 +305,8 @@ class Images(object):
         self.images_ids = []
         self.images_bboxes = {}
         self.images_polygons = {}
+
+        self.overlays = []
 
         query = {"FindImage": {}}
 
@@ -302,6 +320,9 @@ class Images(object):
 
         if limit:
             query["FindImage"]["results"]["limit"] = limit
+
+        if sort:
+            query["FindImage"]["results"]["sort"] = sort
 
         query["FindImage"]["results"]["list"] = []
         query["FindImage"]["results"]["list"].append(self.img_id_prop)
@@ -317,9 +338,26 @@ class Images(object):
             for ent in entities:
                 self.images_ids.append(ent[self.img_id_prop])
         except:
-            print("Error with search")
+            print("Error with search: {}".format(response))
 
         self.search_result = response
+
+    def search_by_id(self, ids, id_key="id"):
+        const = Constraints()
+        const.is_in(id_key, ids)
+        img_sort = {
+            "key": id_key,
+            "sequence": ids,
+        }
+        self.search(constraints=const, sort=img_sort)
+
+    def add_overlay(self, polygons, color=None):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "polygons": polygons,
+            "color": color,
+        })
 
     def get_similar_images(self, set_name, n_neighbors):
 
@@ -410,20 +448,23 @@ class Images(object):
     def __random_color(self):
         return (np.random.random((1, 3)) * 155 + 100).tolist()[0]
 
-    def __draw_polygon_and_tag(self, image, polygon, tag, bounds, shift=8):
-
-        color = self.__random_color()
+    def __draw_polygon(self, image, polygon, color, fill_alpha=0.4, shift=8):
 
         as_shift_int = lambda v : int(v * (1 << shift))
-        FILL_ALPHA = 0.4
 
         for verts in polygon:
             shift_verts = [[as_shift_int(v) for v in vert] for vert in verts]
             np_verts = np.array(shift_verts, np.int32)
             fill = image.copy()
             cv2.fillPoly(fill, [np_verts], color, cv2.LINE_4, shift)
-            cv2.addWeighted(fill, FILL_ALPHA, image, 1 - FILL_ALPHA, 0, image)
+            cv2.addWeighted(fill, fill_alpha, image, 1 - fill_alpha, 0, image)
             cv2.polylines(image, [np_verts], True, color, 2, cv2.LINE_4, shift)
+
+    def __draw_polygon_and_tag(self, image, polygon, tag, bounds):
+
+        color = self.__random_color()
+
+        self.__draw_polygon(image, polygon, color)
 
         left   = bounds["x"]
         top    = bounds["y"]
@@ -433,11 +474,11 @@ class Images(object):
 
         y = top - FONT_HEIGHT
         x = (left + right - (FONT_WIDTH * len(tag))) // 2
-        org = (max(x,0), max(y,FONT_HEIGHT))
+        org = (max(x,0), max(y,2*FONT_HEIGHT))
 
         self.__draw_text_with_shadow(image, tag, org, color)
 
-    def display(self, show_bboxes=False, show_polygons=False, limit=None):
+    def display(self, show_bboxes=False, show_polygons=False, limit=None, polygon_uids=None, polygon_tags=None):
 
         if not limit:
             limit = self.display_limit
@@ -457,6 +498,9 @@ class Images(object):
             nparr = np.frombuffer(image, dtype=np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+            for ovr in self.overlays:
+                self.__draw_polygon(image, ovr["polygons"], ovr["color"])
+
             if show_bboxes:
                 if not str(uniqueid) in self.images_bboxes:
                     self.__retrieve_bounding_boxes(i)
@@ -473,7 +517,7 @@ class Images(object):
 
             if show_polygons:
                 if not str(uniqueid) in self.images_polygons:
-                    self.__retrieve_polygons(i)
+                    self.__retrieve_polygons(i, polygon_uids, polygon_tags)
 
                 bounds = self.images_polygons[uniqueid]["bounds"]
                 polygons = self.images_polygons[uniqueid]["polygons"]
