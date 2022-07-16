@@ -351,12 +351,30 @@ class Images(object):
         }
         self.search(constraints=const, sort=img_sort)
 
-    def add_overlay(self, polygons, color=None):
+    def add_polygon_overlay(self, polygons, color=None, alpha=0.4):
         if not color:
             color = self.__random_color()
         self.overlays.append({
             "polygons": polygons,
             "color": color,
+            "alpha": alpha
+        })
+
+    def add_bbox_overlay(self, polygons, color=None):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "bbox": polygons,
+            "color": color,
+        })
+
+    def add_text_overlay(self, text, origin, color=None):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "text": text,
+            "color": color,
+            "origin": origin,
         })
 
     def get_similar_images(self, set_name, n_neighbors):
@@ -418,28 +436,29 @@ class Images(object):
 
         return imgs_return
 
-    def __draw_text_with_shadow(self, image, text, origin, color, shadow_radius=3, shadow_color=(0,0,0)):
-        shadow_orgs = [
-            (origin[0]-shadow_radius, origin[1]-shadow_radius),
-            (origin[0]+shadow_radius, origin[1]-shadow_radius),
-            (origin[0]+shadow_radius, origin[1]+shadow_radius),
-            (origin[0]-shadow_radius, origin[1]+shadow_radius),
-        ]
+    def __draw_text_with_shadow(self, image, text, origin, color, typeface=cv2.FONT_HERSHEY_SIMPLEX, scale=0.75, thickness=2, shadow_color=None, shadow_radius=4):
+        if not shadow_color:
+            shadow_color = self.__contrasting_color(color)
 
-        for org in shadow_orgs:
-            cv2.putText(image, text, origin, cv2.FONT_HERSHEY_SIMPLEX, 0.75, shadow_color, shadow_radius, cv2.LINE_AA)
+        cv2.putText(image, text, origin, typeface, scale, shadow_color, thickness + shadow_radius, cv2.LINE_AA)
 
-        cv2.putText(image, text, origin, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
+        cv2.putText(image, text, origin, typeface, scale, color, thickness, cv2.LINE_AA)
 
-
-    def __draw_bbox_and_tag(self, image, bbox, tag):
-        RED = (0, 0, 255)
+    def __draw_bbox(self, image, bbox, color, thickness=2):
 
         left   = bbox["x"]
         top    = bbox["y"]
         right  = bbox["x"] + bbox["width"]
         bottom = bbox["y"] + bbox["height"]
-        cv2.rectangle(image, (left, top), (right, bottom), RED, 2)
+        cv2.rectangle(image, (left, top), (right, bottom), color, thickness)
+
+    def __draw_bbox_and_tag(self, image, bbox, tag):
+        RED = (0, 0, 255)
+
+        self.__draw_bbox(image, bbox, RED)
+
+        left   = bbox["x"]
+        top    = bbox["y"]
 
         y = top - 15 if top - 15 > 15 else top + 15
 
@@ -448,7 +467,7 @@ class Images(object):
     def __random_color(self):
         return (np.random.random((1, 3)) * 155 + 100).tolist()[0]
 
-    def __draw_polygon(self, image, polygon, color, fill_alpha=0.4, shift=8):
+    def __draw_polygon(self, image, polygon, color, fill_alpha=0.4, thickness=2, shift=8):
 
         as_shift_int = lambda v : int(v * (1 << shift))
 
@@ -458,7 +477,7 @@ class Images(object):
             fill = image.copy()
             cv2.fillPoly(fill, [np_verts], color, cv2.LINE_4, shift)
             cv2.addWeighted(fill, fill_alpha, image, 1 - fill_alpha, 0, image)
-            cv2.polylines(image, [np_verts], True, color, 2, cv2.LINE_4, shift)
+            cv2.polylines(image, [np_verts], True, color, thickness, cv2.LINE_4, shift)
 
     def __draw_polygon_and_tag(self, image, polygon, tag, bounds):
 
@@ -499,7 +518,12 @@ class Images(object):
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
             for ovr in self.overlays:
-                self.__draw_polygon(image, ovr["polygons"], ovr["color"])
+                if "polygons" in ovr:
+                    self.__draw_polygon(image, ovr["polygons"], ovr["color"], ovr["alpha"])
+                elif "bbox" in ovr:
+                    self.__draw_bbox(image, ovr["bbox"], ovr["color"])
+                elif "text" in ovr:
+                    self.__draw_text_with_shadow(image, ovr["text"], ovr["origin"], ovr["color"])
 
             if show_bboxes:
                 if not str(uniqueid) in self.images_bboxes:
@@ -507,9 +531,6 @@ class Images(object):
 
                 bboxes = self.images_bboxes[uniqueid]["bboxes"]
                 tags   = self.images_bboxes[uniqueid]["tags"]
-
-                # image = cv2.resize(image, (0,0), fx=1.0,fy=1.0)
-                # rgb   = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
                 # Draw a rectangle around the faces
                 for bi in range(len(bboxes)):
