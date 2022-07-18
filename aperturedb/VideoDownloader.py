@@ -6,7 +6,7 @@ from os import path
 import cv2
 import numpy as np
 
-from aperturedb import ParallelLoader
+from aperturedb import Parallelizer
 from aperturedb import CSVParser
 from aperturedb import ProgressBar
 
@@ -61,11 +61,11 @@ class VideoDownloaderCSV(CSVParser.CSVParser):
             self.has_filename = True
 
 
-class VideoDownloader(ParallelLoader.ParallelLoader):
+class VideoDownloader(Parallelizer.Parallelizer):
 
-    def __init__(self, db, dry_run=False):
+    def __init__(self, ):
 
-        super().__init__(db, dry_run=dry_run)
+        super().__init__()
 
         self.type = "video"
 
@@ -122,9 +122,6 @@ class VideoDownloader(ParallelLoader.ParallelLoader):
 
     def worker(self, thid, generator, start, end):
 
-        if thid == 0 and self.stats:
-            pb = ProgressBar.ProgressBar("download_progress.txt")
-
         for i in range(start, end):
 
             url, filename = generator[i]
@@ -132,10 +129,8 @@ class VideoDownloader(ParallelLoader.ParallelLoader):
             self.download_video(url, filename)
 
             if thid == 0 and self.stats:
-                pb.update((i - start) / (end - start))
+                self.pb.update((i - start) / (end - start))
 
-        if thid == 0 and self.stats:
-            pb.update(1)
 
     def print_stats(self):
 
@@ -147,8 +142,8 @@ class VideoDownloader(ParallelLoader.ParallelLoader):
         print("Avg download throughput (videos/s)):",
               1 / np.mean(times) * self.numthreads)
 
-        print("Total time(s):", self.ingestion_time)
+        print("Total time(s):", self.total_actions_time)
         print("Overall throughput (videos/s):",
-              self.total_elements / self.ingestion_time)
+              self.total_actions / self.total_actions_time)
         print("Total errors encountered:", self.error_counter)
         print("=============================================")
