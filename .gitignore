@@ -144,3 +144,4 @@ kaggleds/
 examples/*/kaggleds/
 docs/*/*.svg
 test/aperturedb/logs
+examples/*/node_modules

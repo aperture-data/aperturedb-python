@@ -1,4 +1,6 @@
 import numpy as np
+import copy
+from collections import Counter
 
 import logging
 logger = logging.getLogger(__name__)
@@ -71,7 +73,7 @@ class TestEntityLoader():
 
             total_descriptors += len(data)
             self.assertEqual(total_descriptors,
-                             utils.count_entities("_Descriptor"))
+                             dbutils.count_entities("_Descriptor"))
 
     def test_BlobLoader(self, db, utils, insert_data_from_csv):
         # Assert that we have a clean slate to begin with.

@@ -3,13 +3,41 @@ from aperturedb import Parallelizer
 import numpy as np
 import json
 import logging
-import math
 
 
 from aperturedb.DaskManager import DaskManager
 
 
 logger = logging.getLogger(__name__)
+
+
+def execute_batch(q, blobs, db, call_response_handler=None, cpq=1, bpq=0):
+    result = 0
+    logger.info(f"Query={q}")
+    logger.info(f"Blobs={blobs}")
+    r, b = db.query(q, blobs)
+    logger.info(f"Response={r}")
+    rbpq = len(q) // cpq
+    if db.last_query_ok():
+        if call_response_handler is not None:
+            for i, _ in enumerate(q):
+                call_response_handler(
+                    q[i:cpq],
+                    blobs[i:bpq] if len(blobs) > i else None,
+                    r[i:cpq],
+                    b[i:rbpq] if len(b) > i else None)
+
+    else:
+        # Transaction failed entirely.
+        logger.error(f"Failed query = {q} with response = {r}")
+        result = 1
+        # self.error_counter += 1
+    if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
+        logger.warning(
+            f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
+        result = 2
+
+    return result, r, b
 
 
 class ParallelQuery(Parallelizer.Parallelizer):
@@ -81,6 +109,15 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
 
         q, blobs = self.generate_batch(data)
+
+        if execute_batch(
+                q,
+                blobs,
+                db,
+                self.call_response_handler if self.response_handler else None,
+                self.commands_per_query,
+                self.blobs_per_query)[0] == 1:
+            self.error_counter += 1
 
         query_time = 0
 

@@ -216,8 +216,8 @@ class Images(object):
                     fpq_res["list"] = []
                 fpq_res["list"].append(key)
 
-        try:
-            res, _ = self.db_connector.query(query)
+        uniqueid_str = str(uniqueid)
+        self.images_bboxes[uniqueid_str]["polygons"] = polygons
 
             polygons = []
             bounds   = []

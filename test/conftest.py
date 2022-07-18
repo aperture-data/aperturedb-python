@@ -8,6 +8,8 @@ from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.ImageDataCSV import ImageDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
+from aperturedb.Constraints import Constraints
+from aperturedb.Entities import Entities
 from aperturedb.Utils import Utils
 
 import dbinfo
@@ -74,3 +76,13 @@ def utils(db):
 @pytest.fixture()
 def images(insert_data_from_csv):
     return insert_data_from_csv("./input/images.adb.csv")
+
+
+@pytest.fixture(scope="class")
+def retired_persons(db, insert_data_from_csv):
+    loaded = insert_data_from_csv("./input/persons.adb.csv")
+    constraints = Constraints()
+    constraints.greaterequal("age", 60)
+    retired_persons = Entities.retrieve(
+        db, with_class="Person", constraints=constraints)
+    return retired_persons

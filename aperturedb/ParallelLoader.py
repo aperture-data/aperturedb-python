@@ -1,7 +1,3 @@
-import math
-import time
-from threading import Thread
-
 from aperturedb import ParallelQuery
 
 import numpy as np
@@ -20,10 +16,10 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         super().__init__(db, dry_run=dry_run)
         self.type = "element"
 
-    def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
+    def ingest(self, data, batchsize=1, numthreads=4, stats=False):
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
-        self.query(generator, batchsize, numthreads, stats)
+        self.query(data, batchsize, numthreads, stats)
 
     def print_stats(self):
 

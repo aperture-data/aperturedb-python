@@ -34,8 +34,11 @@ class Parallelizer:
         self.total_actions_time = 0
         self.error_counter  = 0
 
-        if self.pb_file:
-            self.pb = ProgressBar.ProgressBar(self.pb_file)
+        self.commands_per_query = 1
+        self.blobs_per_query = 0
+
+        if progress_to_file:
+            self.pb = ProgressBar.ProgressBar(progress_to_file)
         else:
             self.pb = ProgressBar.ProgressBar()
 
@@ -56,11 +59,12 @@ class Parallelizer:
             elements_per_thread = self.total_actions
             self.numthreads = 1
         else:
-            elements_per_thread = math.ceil(
-                self.total_actions / self.numthreads)
+            # elements_per_thread = math.ceil(
+            #     self.total_actions / (self.numthreads * self.batchsize))
+            elements_per_thread = batchsize
 
         thread_arr = []
-        for i in range(self.numthreads):
+        for i in range(math.ceil(self.total_actions / self.batchsize)):
             idx_start = i * elements_per_thread
             idx_end   = min(idx_start + elements_per_thread,
                             self.total_actions)
