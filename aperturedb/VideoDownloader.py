@@ -81,7 +81,7 @@ class VideoDownloader(Parallelizer.Parallelizer):
             if a.isOpened() == False:
                 print("Video present but error reading it:", url)
                 return False
-        except:
+        except BaseException:
             print("Video present but error decoding:", url)
             return False
 
@@ -110,7 +110,7 @@ class VideoDownloader(Parallelizer.Parallelizer):
                     print("Downloaded Video size error:", url)
                     os.remove(filename)
                     self.error_counter += 1
-            except:
+            except BaseException:
                 print("Downloaded Video cannot be decoded:", url)
                 os.remove(filename)
                 self.error_counter += 1
@@ -130,7 +130,6 @@ class VideoDownloader(Parallelizer.Parallelizer):
 
             if thid == 0 and self.stats:
                 self.pb.update((i - start) / (end - start))
-
 
     def print_stats(self):
 
