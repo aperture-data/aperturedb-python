@@ -2,12 +2,14 @@ from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
 import logging
 
+from aperturedb.Utils import Utils
+
 logger = logging.getLogger(__file__)
 
 
 class TestDataWizardEntities():
-    def test_get_persons(self, loader, db):
-        loaded = loader(self, "./input/persons.adb.csv")
+    def test_get_persons(self, insert_data_from_csv, db):
+        loaded = insert_data_from_csv(in_csv_file="./input/persons.adb.csv")
         all_persons = Entities.retrieve(db, with_class="Person")
         assert len(all_persons) == len(loaded)
         too_young = all_persons.filter(lambda p: p["age"] < 18)
@@ -33,3 +35,10 @@ class TestDataWizardEntities():
         logger.info(f"\n{df}")
         ages = df['age']
         assert ages[ages >= 60].count() == len(df)
+
+    def test_update_properties(self, retired_persons, utils: Utils):
+        risk_factors = [{
+            "risk_factor": (p["age"] - 60 // 10)
+        } for p in retired_persons]
+        retired_persons.update_properties(risk_factors)
+        utils.remove_entities(class_name="Person")

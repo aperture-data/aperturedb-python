@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import List
 
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Constraints import Constraints
@@ -51,3 +52,6 @@ class Entities(Subscriptable):
 
     def display(self) -> pd.DataFrame:
         return pd.json_normalize(self.response)
+
+    def update_properties(self, extra_properties: List[dict]) -> bool:
+        pass
