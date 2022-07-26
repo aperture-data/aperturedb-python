@@ -69,28 +69,24 @@ class BBoxDataCSV(CSVParser.CSVParser):
         self.img_key = self.header[0]
         self.command = "AddBoundingBox"
 
-    def getitem(self, idx, ctx):
+    def getitem(self, idx):
 
         q = []
 
-        if "img_id_to_ref" not in ctx:
-            ctx["img_id_to_ref"] = {}
-        img_map = ctx["img_id_to_ref"]
-
         img_id = self.df.loc[idx, self.img_key]
-        if img_id not in img_map:
-            img_ref = len(img_map) + 1
-            img_map[img_id] = img_ref
 
-            fi = {
-                "FindImage": {
-                    "_ref": img_ref,
-                    "constraints": {
-                        self.img_key: ["==", img_id],
-                    },
+        img_ref = (idx % 10000) + 1
+
+        fi = {
+            "FindImage": {
+                "_ref": img_ref,
+                "constraints": {
+                    self.img_key: ["==", img_id],
                 },
-            }
-            q.append(fi)
+                "blobs": False,
+            },
+        }
+        q.append(fi)
 
         box_data_headers = [HEADER_X_POS,
                             HEADER_Y_POS, HEADER_WIDTH, HEADER_HEIGHT]
@@ -98,7 +94,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
         rect_attrs = ["x", "y", "width", "height"]
         custom_fields = {
-            "image_ref": img_map[img_id],
+            "image_ref": img_ref,
             "rectangle": {
                 attr: val for attr, val in zip(rect_attrs, box_data)
             },

@@ -67,7 +67,7 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         self.n_download_retries = n_download_retries
 
     # TODO: we can add support for slicing here.
-    def getitem(self, idx, ctx):
+    def getitem(self, idx):
 
         data = {}
 

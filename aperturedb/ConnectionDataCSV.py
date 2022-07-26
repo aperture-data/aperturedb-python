@@ -69,7 +69,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
         self.dst_key     = self.header[2].split("@")[1]
         self.command     = "AddConnection"
 
-    def getitem(self, idx, ctx):
+    def getitem(self, idx):
         src_value = self.df.loc[idx, self.header[1]]
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]

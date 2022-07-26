@@ -39,7 +39,7 @@ class DescriptorSetGeneratorCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[4:]
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-    def getitem(self, idx, ctx):
+    def getitem(self, idx):
 
         # Metrics/Engine can be of the form:
         #       "IP", or

@@ -81,7 +81,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.command = "AddDescriptor"
 
-    def getitem(self, idx, ctx):
+    def getitem(self, idx):
 
         filename = self.df.loc[idx, HEADER_PATH]
         index    = self.df.loc[idx, HEADER_INDEX]

@@ -88,7 +88,7 @@ class ImageDataCSV(CSVParser.CSVParser):
         self.n_download_retries = n_download_retries
         self.command = "AddImage"
 
-    def getitem(self, idx, ctx):
+    def getitem(self, idx):
         image_path = self.df.loc[idx, self.source_type]
         img_ok, img = self.source_loader[self.source_type](image_path)
 

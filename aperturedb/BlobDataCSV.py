@@ -57,7 +57,7 @@ class BlobDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
         self.command = "AddBlob"
 
-    def getitem(self, idx, ctx):
+    def getitem(self, idx):
         filename = self.df.loc[idx, BLOB_PATH]
 
         blob_ok, blob = self.load_blob(filename)
