@@ -482,9 +482,11 @@ class Images(object):
         if not shadow_color:
             shadow_color = self.__contrasting_color(color)
 
-        cv2.putText(image, text, origin, typeface, scale, shadow_color, thickness + shadow_radius, cv2.LINE_AA)
+        cv2.putText(image, text, origin, typeface, scale,
+                    shadow_color, thickness + shadow_radius, cv2.LINE_AA)
 
-        cv2.putText(image, text, origin, typeface, scale, color, thickness, cv2.LINE_AA)
+        cv2.putText(image, text, origin, typeface,
+                    scale, color, thickness, cv2.LINE_AA)
 
     def __draw_bbox(self, image, bbox, color, thickness=2):
 
@@ -523,19 +525,19 @@ class Images(object):
         return tuple(color)
 
     def __contrasting_color(self, color, saturation=0.51):
-        contrast = lambda v : 1 if v < 128 else 0
+        def contrast(v): return 1 if v < 128 else 0
         cont = (contrast(color[0]), contrast(color[1]), contrast(color[2]))
         n_hi = cont[0] + cont[1] + cont[2]
         if not n_hi:
-            return (0,0,0)
+            return (0, 0, 0)
         n_lo = 3 - n_hi
         coeff = 255 * n_hi / ((n_lo * saturation) + n_hi)
-        desaturate = lambda v : int(coeff) if v else int(saturation * coeff)
+        def desaturate(v): return int(coeff) if v else int(saturation * coeff)
         return (desaturate(cont[0]), desaturate(cont[1]), desaturate(cont[2]))
 
     def __draw_polygon(self, image, polygon, color, fill_alpha=0.4, thickness=2, shift=8):
 
-        as_shift_int = lambda v : int(v * (1 << shift))
+        def as_shift_int(v): return int(v * (1 << shift))
 
         for verts in polygon:
             shift_verts = [[as_shift_int(v) for v in vert] for vert in verts]
@@ -543,7 +545,8 @@ class Images(object):
             fill = image.copy()
             cv2.fillPoly(fill, [np_verts], color, cv2.LINE_4, shift)
             cv2.addWeighted(fill, fill_alpha, image, 1 - fill_alpha, 0, image)
-            cv2.polylines(image, [np_verts], True, color, thickness, cv2.LINE_4, shift)
+            cv2.polylines(image, [np_verts], True, color,
+                          thickness, cv2.LINE_4, shift)
 
     def __draw_polygon_and_tag(self, image, polygon, tag, bounds, deferred_tags):
 
@@ -560,7 +563,7 @@ class Images(object):
 
             y = top - FONT_HEIGHT
             x = (left + right - (FONT_WIDTH * len(tag))) // 2
-            org = (max(x,0), max(y,2*FONT_HEIGHT))
+            org = (max(x, 0), max(y, 2 * FONT_HEIGHT))
 
             deferred_tags.append({
                 "text": tag,
@@ -605,29 +608,34 @@ class Images(object):
 
                 # Draw a rectangle around the faces
                 for bi in range(len(bboxes)):
-                    self.__draw_bbox_and_tag(image, bboxes[bi], tags[bi], deferred_tags)
+                    self.__draw_bbox_and_tag(
+                        image, bboxes[bi], tags[bi], deferred_tags)
 
             if show_polygons:
                 if str(uniqueid) not in self.images_polygons:
-                    self.__retrieve_polygons(i, polygon_constraints, polygon_tag_key, polygon_tag_format)
+                    self.__retrieve_polygons(
+                        i, polygon_constraints, polygon_tag_key, polygon_tag_format)
 
                 bounds = self.images_polygons[uniqueid]["bounds"]
                 polygons = self.images_polygons[uniqueid]["polygons"]
                 tags = self.images_polygons[uniqueid]["tags"]
 
                 for pi in range(len(polygons)):
-                    self.__draw_polygon_and_tag(image, polygons[pi], tags[pi] if pi < len(tags) else None, bounds[pi], deferred_tags)
+                    self.__draw_polygon_and_tag(image, polygons[pi], tags[pi] if pi < len(
+                        tags) else None, bounds[pi], deferred_tags)
 
             for ovr in self.overlays:
                 if "polygons" in ovr:
-                    self.__draw_polygon(image, ovr["polygons"], ovr["color"], ovr["alpha"])
+                    self.__draw_polygon(
+                        image, ovr["polygons"], ovr["color"], ovr["alpha"])
                 elif "bbox" in ovr:
                     self.__draw_bbox(image, ovr["bbox"], ovr["color"])
                 elif "text" in ovr:
                     deferred_tags.append(ovr)
 
             for tag in deferred_tags:
-                self.__draw_text_with_shadow(image, tag["text"], tag["origin"], tag["color"])
+                self.__draw_text_with_shadow(
+                    image, tag["text"], tag["origin"], tag["color"])
 
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 

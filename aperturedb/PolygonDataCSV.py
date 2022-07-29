@@ -76,7 +76,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
         img_id = self.df.loc[idx, self.img_key]
 
-        img_ref = (idx%10000)+1
+        img_ref = (idx % 10000) + 1
         fi = {
             "FindImage": {
                 "_ref": img_ref,
