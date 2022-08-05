@@ -79,7 +79,8 @@ def images(insert_data_from_csv):
 
 
 @pytest.fixture(scope="class")
-def retired_persons(db, insert_data_from_csv):
+def retired_persons(db, insert_data_from_csv, utils):
+    utils.remove_entities(class_name="Person")
     loaded = insert_data_from_csv("./input/persons.adb.csv")
     constraints = Constraints()
     constraints.greaterequal("age", 60)

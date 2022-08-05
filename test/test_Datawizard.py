@@ -1,6 +1,7 @@
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
 import logging
+from aperturedb.Images import Images
 
 from aperturedb.Utils import Utils
 
@@ -31,7 +32,7 @@ class TestDataWizardEntities():
 
     def test_get_persons_display(self, retired_persons):
         logger.info(f"Retired persons count = {len(retired_persons)}")
-        df = retired_persons.display()
+        df = retired_persons.inspect()
         logger.info(f"\n{df}")
         ages = df['age']
         assert ages[ages >= 60].count() == len(df)
@@ -41,4 +42,14 @@ class TestDataWizardEntities():
             "risk_factor": (p["age"] - 60 // 10)
         } for p in retired_persons]
         retired_persons.update_properties(risk_factors)
-        utils.remove_entities(class_name="Person")
+        df = retired_persons.inspect()
+        logger.info(f"\n{df}")
+
+
+class TestDataWizardImages():
+    def test_get_images(self, insert_data_from_csv, db):
+        loaded = insert_data_from_csv("./input/images.adb.csv", rec_count=10)
+        images = Images.retrieve(db, limit=10)
+        # images = Entities.retrieve(db, with_class="_Image")
+        logger.info(f"\n{images.inspect()}")
+        assert images != None
