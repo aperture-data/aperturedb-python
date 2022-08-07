@@ -140,6 +140,7 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
             fi = {
                 "FindImage": {
                     "_ref": img_ref,
+                    "blobs": False,
                 }
             }
 
