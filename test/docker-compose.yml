@@ -2,7 +2,8 @@ version: '3'
 
 services:
   aperturedb:
-    image: aperturedata/aperturedb
+    #image: aperturedata/aperturedb
+    image: aperturedata/aperturedb:vpolygon-persist
     volumes:
       - ./aperturedb:/aperturedb
     ports:

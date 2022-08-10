@@ -579,96 +579,25 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
 from aperturedb import Utils
+from aperturedb.Entities import Entities
+from aperturedb.Connector import Connector
+from aperturedb.Constraints import Constraints
+from aperturedb.Operations import Operations
 
 
-class Constraints(object):
+class Images(Entities):
+    db_object = "Image"
 
-    def __init__(self):
-
-        self.constraints = {}
-
-    def equal(self, key, value):
-
-        self.constraints[key] = ["==", value]
-
-    def greaterequal(self, key, value):
-
-        self.constraints[key] = [">=", value]
-
-    def greater(self, key, value):
-
-        self.constraints[key] = [">", value]
-
-    def lessequal(self, key, value):
-
-        self.constraints[key] = ["<=", value]
-
-    def less(self, key, value):
-
-        self.constraints[key] = ["<", value]
-
-    def is_in(self, key, val_array):
-
-        self.constraints[key] = ["in", val_array]
-
-    def check(self, entity):
-        for key, op in self.constraints.items():
-            if key not in entity:
-                return False
-            if op[0] == "==":
-                if not entity[key] == op[1]:
-                    return False
-            elif op[0] == ">=":
-                if not entity[key] >= op[1]:
-                    return False
-            elif op[0] == ">":
-                if not entity[key] > op[1]:
-                    return False
-            elif op[0] == "<=":
-                if not entity[key] <= op[1]:
-                    return False
-            elif op[0] == "<":
-                if not entity[key] < op[1]:
-                    return False
-            elif op[0] == "in":
-                if not entity[key] in op[1]:
-                    return False
-            else:
-                raise Exception("invalid constraint operation: " + op[0])
-        return True
-
-
-class Operations(object):
-
-    def __init__(self):
-
-        self.operations_arr = []
-
-    def get_operations_arr(self):
-        return self.operations_arr
-
-    def resize(self, width, height):
-
-        op = {
-            "type": "resize",
-            "width":  width,
-            "height": height,
-        }
-
-        self.operations_arr.append(op)
-
-    def rotate(self, angle, resize=False):
-
-        op = {
-            "type": "rotate",
-            "angle": angle,
-            "resize": resize,
-        }
-
-        self.operations_arr.append(op)
-
-
-class Images(object):
+    @classmethod
+    def retrieve(cls,
+                 db: Connector,
+                 constraints: Constraints = None,
+                 limit: int = -1
+                 ) -> Images:
+        images = Images(db=db)
+        # import pdb;pdb.set_trace()
+        images.search(constraints=constraints, limit=limit)
+        return images
 
     def __init__(self, db, batch_size=100):
 
@@ -767,46 +696,36 @@ class Images(object):
 
         ret_poly.append(polygons)
 
-        uniqueid_str = str(uniqueid)
-        self.images_bboxes[uniqueid_str]["polygons"] = polygons
+        try:
+            res, _ = self.db_connector.query(query)
 
-        return polygons
+            polygons = []
+            bounds   = []
+            tags     = []
+            polys = res[1]["FindPolygon"]["entities"]
+            for poly in polys:
+                if tag_key and tag_format:
+                    tag = tag_format.format(poly[tag_key])
+                    tags.append(tag)
+                bounds.append(poly["_bounds"])
+                polygons.append(poly["_vertices"])
 
-    def __display_segmentation(self, index):
+            self.images_polygons[str(uniqueid)] = {
+                "bounds": bounds,
+                "polygons": polygons,
+                "tags": tags,
+            }
 
-        polygons = self.__get_bounding_boxes_polygons(index)
-
-        image = self.get_image_by_index(index)
-
-        img_stringIO = BytesIO(image)
-        I = io.imread(img_stringIO)
-
-        fig1, ax1 = plt.subplots()
-        plt.imshow(I)
-        plt.axis('off')
-
-        for poly in polygons:
-
-            sample = np.frombuffer(poly, dtype=np.float32)
-
-            c = (np.random.random((1, 3)) * 0.6 + 0.4).tolist()[0]
-            color = []
-            color.append(c)
-
-            polygon_points = []
-            poly = np.array(sample).reshape((int(len(sample) / 2), 2))
-            polygon_points.append(Polygon(poly))
-
-            ax = plt.gca()
-            ax.set_autoscale_on(False)
-
-            p = PatchCollection(
-                polygon_points, facecolor=color, linewidths=0, alpha=0.4)
-            ax.add_collection(p)
-
-            p = PatchCollection(polygon_points, facecolor='none',
-                                edgecolors=color, linewidths=2)
-            ax.add_collection(p)
+        except:
+            # pass
+            # print("failed to retrieve polygons")
+            self.images_polygons[str(uniqueid)] = {
+                "bounds": [],
+                "polygons": [],
+                "tags": []
+            }
+            # print(query)
+            # print(self.db_connector.get_last_response_str())
 
     def __retrieve_bounding_boxes(self, index):
 
@@ -897,6 +816,17 @@ class Images(object):
             print("Cannot retrieve requested bboxes")
 
         return bboxes
+
+    def pre_process(self) -> None:
+        # self.img_id_prop = "id"
+        # try:
+        #     for ent in self.response:
+        #         self.images_ids.append(ent[self.img_id_prop])
+        # except Exception as e:
+        #     raise e
+
+        img_ids = [img["id"] for img in self.response]
+        self.search_by_id(img_ids)
 
     # A new search will throw away the results of any previous search
 
