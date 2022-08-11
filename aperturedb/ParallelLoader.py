@@ -13,35 +13,11 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     """
     **Parallel and Batch Loader for ApertureDB**
 
-    It also provides a way for specifying a user defined function to handle the
-    responses of each of the queries executed. This function can be used to process
-    the responses from each of the corresponding queries of a batch in :class:`~aperturedb.Parallelizer.Parallelizer`.
-    It will be called once per batch, and it needs to have 4 parameters:
-
-    - requests
-
-    - input_blobs
-
-    - responses
-
-    - output_blobs
-
-    Example usage:
-
-    .. code-block:: python
-
-        def process_responses(requests, input_blobs, responses, output_blobs):
-            self.requests.extend(requests)
-            self.responses.extend(responses)
-
-        loader = ParallelLoader(self.db,
-                            response_handler=process_responses)
 
     """
 
     def __init__(self, db, dry_run=False, response_handler=None):
         super().__init__(db, dry_run=dry_run)
-        self.response_handler = response_handler
         self.type = "element"
 
     def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
