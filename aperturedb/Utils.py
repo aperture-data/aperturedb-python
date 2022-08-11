@@ -533,3 +533,52 @@ class Utils(object):
             raise e
 
         return total
+
+    def remove_all_objects(self):
+
+        cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
+
+        # There is no DeleteDescriptor, but when the sets are removed
+        # all the descriptors are also removed.
+        queries = [
+            [{"DeleteDescriptorSet": cmd}],
+            # [{"DeleteDescriptor": cmd}],
+            [{"DeleteBoundingBox": cmd}],
+            [{"DeleteVideo": cmd}],
+            [{"DeleteImage": cmd}],
+            [{"DeleteBlob": cmd}],
+            [{"DeleteEntity": cmd}],
+        ]
+
+        try:
+            for q in queries:
+                response, _ = self.connector.query(q)
+                if not self.connector.last_query_ok():
+                    logger.error(self.connector.get_last_response_str())
+                    return False
+
+            response, _ = self.connector.query(
+                [{"GetSchema": {"refresh": True}}])
+
+            if not self.connector.last_query_ok():
+                logger.error(self.connector.get_last_response_str())
+                return False
+
+            entities    = response[0]["GetSchema"]["entities"]
+            connections = response[0]["GetSchema"]["connections"]
+
+            if entities is not None:
+                logger.error("Entities not removed completely")
+                logger.error(self.connector.get_last_response_str())
+                return False
+
+            if connections is not None:
+                logger.error("Connections not removed completely")
+                logger.error(self.connector.get_last_response_str())
+                return False
+
+        except BaseException as e:
+            logger.error(self.connector.get_last_response_str())
+            raise e
+
+        return True
