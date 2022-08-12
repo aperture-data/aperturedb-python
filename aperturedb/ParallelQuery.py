@@ -8,8 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 class ParallelQuery(Parallelizer.Parallelizer):
-
-    """**Parallel and Batch Querier for ApertureDB**"""
+    """
+    **Parallel and Batch Querier for ApertureDB**
+    This class provides the abstraction for partitioning data into batches,
+    so that they may be processed using different threads.
+    """
 
     def __init__(self, db, dry_run=False):
 
@@ -23,6 +26,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         self.responses = []
 
+        self.commands_per_query = 1
+        self.blobs_per_query = 0
+
     def generate_batch(self, data):
         """
             Here we flatten the individual queries to run them as
@@ -33,15 +39,41 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         return q, blobs
 
-    def call_response_handler(self, r, b):
-
+    def call_response_handler(self, q, blobs, r, b):
         try:
-            self.generator.response_handler(r, b)
+            self.generator.response_handler(q, blobs, r, b)
         except BaseException as e:
-            print("handler error:", r)
-            print(e)
+            logger.exception(e)
 
     def do_batch(self, db, data):
+        """
+        It also provides a way for invoking a user defined function to handle the
+        responses of each of the queries executed. This function can be used to process
+        the responses from each of the corresponding queries in :class:`~aperturedb.Parallelizer.Parallelizer`.
+        It will be called once per query, and it needs to have 4 parameters:
+
+        - requests
+
+        - input_blobs
+
+        - responses
+
+        - output_blobs
+
+        Example usage:
+
+        .. code-block:: python
+
+            class MyQueries(QueryGenerator):
+                def process_responses(requests, input_blobs, responses, output_blobs):
+                    self.requests.extend(requests)
+                    self.responses.extend(responses)
+
+            loader = ParallelLoader(self.db)
+            generator = MyQueries()
+            loader.ingest(generator)
+
+        """
 
         q, blobs = self.generate_batch(data)
 
@@ -54,15 +86,39 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             if db.last_query_ok():
                 if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
+                    logger.info(
+                        f"Response_handler={self.generator.response_handler}")
                     # We could potentially always call this handler function
                     # and let the user deal with the error cases.
+                    blobs_returned = 0
+                    for i in range(math.ceil(len(q) / self.commands_per_query)):
+                        start = i * self.commands_per_query
+                        end = start + self.commands_per_query
 
-                    cmds_per_query = math.ceil(len(r) / self.batchsize)
-                    for i in range(self.batchsize):
-                        start = i * cmds_per_query
-                        end = start + cmds_per_query
+                        blobs_start = i * self.blobs_per_query
+                        blobs_end = blobs_start + self.blobs_per_query
+
+                        b_count = 0
+                        for req, resp in zip(q[start:end], r[start:end]):
+                            for k in req:
+                                # Ref to https://docs.aperturedata.io/parameters/blobs.html
+                                blobs_where_default_true = \
+                                    k in ["FindImage", "FindBlob", "FindBlobs"] and (
+                                        "blobs" not in req[k] or req[k]["blobs"])
+                                blobs_where_default_false = \
+                                    k in [
+                                        "FindDescriptors", "FindBoundingBoxes"] and "blobs" in req[k] and req[k]["blobs"]
+                                if blobs_where_default_true or blobs_where_default_false:
+                                    count = resp[k]["returned"]
+                                    b_count += count
+
                         self.call_response_handler(
-                            r[start:end], b[start:end])
+                            q[start:end],
+                            blobs[blobs_start:blobs_end],
+                            r[start:end],
+                            b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
+                        blobs_returned += b_count
+
             else:
                 # Transaction failed entirely.
                 logger.error(f"Failed query = {q} with response = {r}")
@@ -103,7 +159,30 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.pb.update((i + 1) / total_batches)
 
     def query(self, generator, batchsize=1, numthreads=4, stats=False):
+        """
+        This function takes as input the data to be executed in specified number of threads.
+        The generator yields a tuple : (array of commands, array of blobs)
 
+        Args:
+            generator (_type_): _description_
+            batchsize (int, optional): _description_. Defaults to 1.
+            numthreads (int, optional): _description_. Defaults to 4.
+            stats (bool, optional): _description_. Defaults to False.
+        """
+        if len(generator) > 0:
+            if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
+                # if len(generator[0]) > 0:
+                # Not applicable to old style loaders.
+                self.commands_per_query = min(len(generator[0][0]), batchsize)
+                if len(generator[0][1]):
+                    self.blobs_per_query = len(generator[0][1])
+            else:
+                logger.error(
+                    f"Could not determine query structure from:\n{generator[0]}")
+                logger.error(type(generator[0]))
+        logger.info(
+            f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}"
+        )
         self.run(generator, batchsize, numthreads, stats)
 
     def print_stats(self):

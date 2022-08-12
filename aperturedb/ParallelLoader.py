@@ -10,12 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class ParallelLoader(ParallelQuery.ParallelQuery):
-    """**Parallel and Batch Loader for ApertureDB**"""
+    """
+    **Parallel and Batch Loader for ApertureDB**
+
+
+    """
 
     def __init__(self, db, dry_run=False):
-
         super().__init__(db, dry_run=dry_run)
-
         self.type = "element"
 
     def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
