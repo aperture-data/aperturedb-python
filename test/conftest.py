@@ -23,7 +23,7 @@ def db():
 
 @pytest.fixture(scope="module")
 def insert_data_from_csv(db):
-    def insert_data_from_csv(in_csv_file, rec_count=-1, response_handler=None):
+    def insert_data_from_csv(in_csv_file, rec_count=-1):
         file_data_pair = {
             "./input/persons.adb.csv": EntityDataCSV,
             "./input/images.adb.csv": ImageDataCSV,
@@ -42,7 +42,7 @@ def insert_data_from_csv(db):
         if rec_count != -1:
             data = data[:rec_count]
 
-        loader = ParallelLoader(db, response_handler=response_handler)
+        loader = ParallelLoader(db)
         loader.ingest(data, batchsize=99,
                       numthreads=31,
                       stats=True)

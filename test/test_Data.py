@@ -19,7 +19,7 @@ import pytest
 logger = logging.getLogger(__name__)
 
 
-def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1, response_handler=None):
+def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
     file_data_pair = {
         "./input/persons.adb.csv": EntityDataCSV,
         "./input/images.adb.csv": ImageDataCSV,
@@ -41,8 +41,7 @@ def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1, response_han
     if self.stats:
         print("\n")
 
-    loader = ParallelLoader(self.db,
-                            response_handler=response_handler)
+    loader = ParallelLoader(self.db)
     loader.ingest(data, batchsize=self.batchsize,
                   numthreads=self.numthreads,
                   stats=self.stats)

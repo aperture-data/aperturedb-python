@@ -5,7 +5,6 @@ from aperturedb.EntityDataCSV import EntityDataCSV
 from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.ParallelQuery import ParallelQuery
 from aperturedb.Subscriptable import Subscriptable
-from aperturedb.Utils import Utils
 import math
 
 logger = logging.getLogger(__name__)

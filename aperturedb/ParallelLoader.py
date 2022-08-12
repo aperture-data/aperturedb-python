@@ -16,7 +16,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
     """
 
-    def __init__(self, db, dry_run=False, response_handler=None):
+    def __init__(self, db, dry_run=False):
         super().__init__(db, dry_run=dry_run)
         self.type = "element"
 

@@ -49,8 +49,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
         It also provides a way for invoking a user defined function to handle the
         responses of each of the queries executed. This function can be used to process
-        the responses from each of the corresponding queries of a batch in :class:`~aperturedb.Parallelizer.Parallelizer`.
-        It will be called once per batch, and it needs to have 4 parameters:
+        the responses from each of the corresponding queries in :class:`~aperturedb.Parallelizer.Parallelizer`.
+        It will be called once per query, and it needs to have 4 parameters:
 
         - requests
 
