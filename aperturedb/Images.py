@@ -579,10 +579,11 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
 from aperturedb import Utils
-from aperturedb.Entities import Entities
+from aperturedb.Entities import Entities, Query
 from aperturedb.Connector import Connector
 from aperturedb.Constraints import Constraints
 from aperturedb.Operations import Operations
+from aperturedb.ParallelQuery import execute_batch
 
 
 class Images(Entities):
@@ -591,15 +592,16 @@ class Images(Entities):
     @classmethod
     def retrieve(cls,
                  db: Connector,
-                 constraints: Constraints = None,
-                 limit: int = -1
+                 spec: Query,
+                 connected_to: Query = None
                  ) -> Images:
-        images = Images(db=db)
-        # import pdb;pdb.set_trace()
-        images.search(constraints=constraints, limit=limit)
+        query = connected_to.query().extend(spec.query())
+        res, r, b = execute_batch(query, [], db, None)
+        images = Images(db, response=r)
         return images
 
-    def __init__(self, db, batch_size=100):
+    def __init__(self, db, batch_size=100, response=None):
+        super().__init__(db, response)
 
         self.db_connector = db
 

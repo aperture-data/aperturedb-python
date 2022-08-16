@@ -112,45 +112,6 @@ class Entities(Subscriptable):
     update_command = f"Update{db_object}"
 
     @classmethod
-    def spec(cls,
-             constraints: Constraints = None,
-             with_class: str = "",
-             limit: int = -1,
-             sort: Sort = None,
-             list: List[str] = None) -> dict:
-        """REMOVE
-
-        Returns:
-            _type_: _description_
-        """
-        print(
-            f"constraints={constraints}, limit={limit}, sort={sort}, list={list}")
-
-        results_section = "results"
-        query = {
-            cls.find_command: {
-                results_section: {
-
-                }
-            }
-        }
-        if cls.db_object == "Entity":
-            query[cls.find_command]["with_class"] = with_class
-        if limit != -1:
-            query[cls.find_command][results_section]["limit"] = limit
-        if sort:
-            query[cls.find_command][results_section]["sort"] = sort._sort
-        if list is not None and len(list) > 0:
-            query[cls.find_command][results_section]["list"] = list
-        else:
-            query[cls.find_command][results_section]["all_properties"] = True
-
-        if constraints:
-            query[cls.find_command]["constraints"] = constraints.constraints
-
-        return query
-
-    @classmethod
     def retrieve(cls,
                  db: Connector,
                  spec: Query
