@@ -1,9 +1,6 @@
 import math
 import time
 from threading import Thread
-
-import numpy as np
-
 from aperturedb import ProgressBar
 
 
@@ -37,8 +34,8 @@ class Parallelizer:
         self.commands_per_query = 1
         self.blobs_per_query = 0
 
-        if progress_to_file:
-            self.pb = ProgressBar.ProgressBar(progress_to_file)
+        if self.pb_file:
+            self.pb = ProgressBar.ProgressBar(self.pb_file)
         else:
             self.pb = ProgressBar.ProgressBar()
 

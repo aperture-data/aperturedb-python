@@ -176,7 +176,7 @@ class Entities(Subscriptable):
                     self.find_command: {
                         "_ref": 1,
                         "constraints": {
-                            "_uniqueid": ["==", int(entity["_uniqueid"])]
+                            "_uniqueid": ["==", entity["_uniqueid"]]
                         },
                         "results": {
                             "blobs": False
@@ -202,7 +202,7 @@ class Entities(Subscriptable):
                         "_ref": 1,
                         "unique": True,
                         "constraints": {
-                            "_uniqueid": ["==", int(entity["_uniqueid"])]
+                            "id": ["==", int(entity["id"])]
                         }
                     }
                 }, {

@@ -3,6 +3,7 @@ from aperturedb import Parallelizer
 import numpy as np
 import json
 import logging
+import math
 
 
 from aperturedb.DaskManager import DaskManager
@@ -110,14 +111,14 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         q, blobs = self.generate_batch(data)
 
-        if execute_batch(
-                q,
-                blobs,
-                db,
-                self.call_response_handler if self.response_handler else None,
-                self.commands_per_query,
-                self.blobs_per_query)[0] == 1:
-            self.error_counter += 1
+        # if execute_batch(
+        #         q,
+        #         blobs,
+        #         db,
+        #         self.call_response_handler if self.response_handler else None,
+        #         self.commands_per_query,
+        #         self.blobs_per_query)[0] == 1:
+        #     self.error_counter += 1
 
         query_time = 0
 
