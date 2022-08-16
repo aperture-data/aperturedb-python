@@ -155,7 +155,7 @@ class BBoxLoader(ParallelLoader.ParallelLoader):
 
             ai = {
                 "AddBoundingBox": {
-                    "image": img_ref,
+                    "image_ref": img_ref,
                     "rectangle": {
                         "x":      data["x"],
                         "y":      data["y"],

@@ -40,6 +40,36 @@ class Constraints(object):
 
         self.constraints[key] = ["<", value]
 
+    def is_in(self, key, val_array):
+
+        self.constraints[key] = ["in", val_array]
+
+    def check(self, entity):
+        for key, op in self.constraints.items():
+            if key not in entity:
+                return False
+            if op[0] == "==":
+                if not entity[key] == op[1]:
+                    return False
+            elif op[0] == ">=":
+                if not entity[key] >= op[1]:
+                    return False
+            elif op[0] == ">":
+                if not entity[key] > op[1]:
+                    return False
+            elif op[0] == "<=":
+                if not entity[key] <= op[1]:
+                    return False
+            elif op[0] == "<":
+                if not entity[key] < op[1]:
+                    return False
+            elif op[0] == "in":
+                if not entity[key] in op[1]:
+                    return False
+            else:
+                raise Exception("invalid constraint operation: " + op[0])
+        return True
+
 
 class Operations(object):
 
@@ -77,9 +107,12 @@ class Images(object):
 
         self.db_connector = db
 
-        self.images        = {}
-        self.images_ids    = []
-        self.images_bboxes = {}
+        self.images          = {}
+        self.images_ids      = []
+        self.images_bboxes   = {}
+        self.images_polygons = {}
+
+        self.overlays = []
 
         self.constraints = None
         self.operations  = None
@@ -139,11 +172,11 @@ class Images(object):
             uniqueid = self.images_ids[idx]
             self.images[str(uniqueid)] = imgs[i]
 
-    def __get_bounding_boxes_polygons(self, index):
+    def __retrieve_polygons(self, index, constraints, tag_key, tag_format):
 
-        self.__retrieve_bounding_boxes(index)
-
-        ret_poly = []
+        if index > len(self.images_ids):
+            print("Index error when retrieving polygons")
+            return
 
         uniqueid = self.images_ids[index]
 
@@ -156,61 +189,57 @@ class Images(object):
                 "blobs": False,
             }
         }, {
-            "FindBlob": {
-                "is_connected_to": {
-                    "ref": 1
-                },
-                "constraints": {
-                    "type": ["==", "segmentation"]
-                },
-                "blobs": True,
+            "FindPolygon": {
+                "image_ref": 1,
+                "bounds": True,
+                "vertices": True,
             }
         }]
 
-        res, polygons = self.db_connector.query(query)
+        fpq = query[1]["FindPolygon"]
+        if constraints and constraints.constraints:
+            fpq["constraints"] = constraints.constraints
 
-        ret_poly.append(polygons)
+        keys_to_add = [tag_key]
+        for key in keys_to_add:
+            if key == "_label":
+                fpq["labels"] = True
+            elif key == "_uniqueid":
+                fpq["uniqueids"] = True
+            elif key == "_area":
+                fpq["areas"] = True
+            else:
+                if "results" not in fpq:
+                    fpq["results"] = {}
+                fpq_res = fpq["results"]
+                if "list" not in fpq_res:
+                    fpq_res["list"] = []
+                fpq_res["list"].append(key)
 
-        uniqueid_str = str(uniqueid)
-        self.images_bboxes[uniqueid_str]["polygons"] = polygons
+        try:
+            res, _ = self.db_connector.query(query)
 
-        return polygons
+            polygons = []
+            bounds   = []
+            tags     = []
+            polys = res[1]["FindPolygon"]["entities"]
+            for poly in polys:
+                if tag_key and tag_format:
+                    tag = tag_format.format(poly[tag_key])
+                    tags.append(tag)
+                bounds.append(poly["_bounds"])
+                polygons.append(poly["_vertices"])
 
-    def __display_segmentation(self, index):
+            self.images_polygons[str(uniqueid)] = {
+                "bounds": bounds,
+                "polygons": polygons,
+                "tags": tags,
+            }
 
-        polygons = self.__get_bounding_boxes_polygons(index)
-
-        image = self.get_image_by_index(index)
-
-        img_stringIO = BytesIO(image)
-        I = io.imread(img_stringIO)
-
-        fig1, ax1 = plt.subplots()
-        plt.imshow(I)
-        plt.axis('off')
-
-        for poly in polygons:
-
-            sample = np.frombuffer(poly, dtype=np.float32)
-
-            c = (np.random.random((1, 3)) * 0.6 + 0.4).tolist()[0]
-            color = []
-            color.append(c)
-
-            polygon_points = []
-            poly = np.array(sample).reshape((int(len(sample) / 2), 2))
-            polygon_points.append(Polygon(poly))
-
-            ax = plt.gca()
-            ax.set_autoscale_on(False)
-
-            p = PatchCollection(
-                polygon_points, facecolor=color, linewidths=0, alpha=0.4)
-            ax.add_collection(p)
-
-            p = PatchCollection(polygon_points, facecolor='none',
-                                edgecolors=color, linewidths=2)
-            ax.add_collection(p)
+        except:
+            print("failed to retrieve polygons")
+            print(query)
+            print(self.db_connector.get_last_response_str())
 
     def __retrieve_bounding_boxes(self, index):
 
@@ -232,11 +261,12 @@ class Images(object):
             }
         }, {
             "FindBoundingBox": {
-                "image": 1,
+                "image_ref": 1,
                 "_ref": 2,
                 "blobs": False,
                 "coordinates": True,
                 "labels": True,
+                "bounds": True,
             }
         }]
 
@@ -303,7 +333,7 @@ class Images(object):
 
     # A new search will throw away the results of any previous search
 
-    def search(self, constraints=None, operations=None, format=None, limit=None):
+    def search(self, constraints=None, operations=None, format=None, limit=None, sort=None):
 
         self.constraints = constraints
         self.operations  = operations
@@ -313,6 +343,9 @@ class Images(object):
         self.images = {}
         self.images_ids = []
         self.images_bboxes = {}
+        self.images_polygons = {}
+
+        self.overlays = []
 
         query = {"FindImage": {}}
 
@@ -326,6 +359,9 @@ class Images(object):
 
         if limit:
             query["FindImage"]["results"]["limit"] = limit
+
+        if sort:
+            query["FindImage"]["results"]["sort"] = sort
 
         query["FindImage"]["results"]["list"] = []
         query["FindImage"]["results"]["list"].append(self.img_id_prop)
@@ -341,9 +377,47 @@ class Images(object):
             for ent in entities:
                 self.images_ids.append(ent[self.img_id_prop])
         except:
-            print("Error with search")
+            print("Error with search: {}".format(response))
 
         self.search_result = response
+
+    def search_by_id(self, ids, id_key="id"):
+        const = Constraints()
+        const.is_in(id_key, ids)
+        img_sort = {
+            "key": id_key,
+            "sequence": ids,
+        }
+        self.search(constraints=const, sort=img_sort)
+
+    def add_polygon_overlay(self, polygons, color=None, alpha=0.4):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "polygons": polygons,
+            "color": color,
+            "alpha": alpha
+        })
+
+    def add_bbox_overlay(self, polygons, color=None):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "bbox": polygons,
+            "color": color,
+        })
+
+    def add_text_overlay(self, text, origin, color=None):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "text": text,
+            "color": color,
+            "origin": origin,
+        })
+
+    def clear_overlays(self):
+        self.overlays = []
 
     def get_similar_images(self, set_name, n_neighbors):
 
@@ -404,12 +478,112 @@ class Images(object):
 
         return imgs_return
 
-    def display(self, show_bboxes=False, show_segmentation=False, limit=None):
+    def __draw_text_with_shadow(self, image, text, origin, color, typeface=cv2.FONT_HERSHEY_SIMPLEX, scale=0.75, thickness=2, shadow_color=None, shadow_radius=4):
+        if not shadow_color:
+            shadow_color = self.__contrasting_color(color)
+
+        cv2.putText(image, text, origin, typeface, scale,
+                    shadow_color, thickness + shadow_radius, cv2.LINE_AA)
+
+        cv2.putText(image, text, origin, typeface,
+                    scale, color, thickness, cv2.LINE_AA)
+
+    def __draw_bbox(self, image, bbox, color, thickness=2):
+
+        left   = bbox["x"]
+        top    = bbox["y"]
+        right  = bbox["x"] + bbox["width"]
+        bottom = bbox["y"] + bbox["height"]
+        cv2.rectangle(image, (left, top), (right, bottom), color, thickness)
+
+    def __draw_bbox_and_tag(self, image, bbox, tag, deferred_tags):
+        RED = (0, 0, 255)
+
+        self.__draw_bbox(image, bbox, RED)
+
+        if tag:
+            left   = bbox["x"]
+            top    = bbox["y"]
+
+            y = top - 15 if top - 15 > 15 else top + 15
+
+            deferred_tags.append({
+                "text": tag,
+                "origin": (left, y),
+                "color": RED
+            })
+
+    def __random_color(self, value=1.0, saturation=0.51):
+        i_max = int(np.random.random() * 3)
+        i_mid = (i_max + int(np.random.random() * 2) + 1) % 3
+        v_max = int(255 * value)
+        v_min = int(v_max * saturation)
+        v_mid = int(v_min + int(np.random.random() * (v_max - v_min)))
+        color = [v_min, v_min, v_min]
+        color[i_max] = v_max
+        color[i_mid] = v_mid
+        return tuple(color)
+
+    def __contrasting_color(self, color, saturation=0.51):
+        def contrast(v): return 1 if v < 128 else 0
+        cont = (contrast(color[0]), contrast(color[1]), contrast(color[2]))
+        n_hi = cont[0] + cont[1] + cont[2]
+        if not n_hi:
+            return (0, 0, 0)
+        n_lo = 3 - n_hi
+        coeff = 255 * n_hi / ((n_lo * saturation) + n_hi)
+        def desaturate(v): return int(coeff) if v else int(saturation * coeff)
+        return (desaturate(cont[0]), desaturate(cont[1]), desaturate(cont[2]))
+
+    def __draw_polygon(self, image, polygon, color, fill_alpha=0.4, thickness=2, shift=8):
+
+        def as_shift_int(v): return int(v * (1 << shift))
+
+        for verts in polygon:
+            shift_verts = [[as_shift_int(v) for v in vert] for vert in verts]
+            np_verts = np.array(shift_verts, np.int32)
+            fill = image.copy()
+            cv2.fillPoly(fill, [np_verts], color, cv2.LINE_4, shift)
+            cv2.addWeighted(fill, fill_alpha, image, 1 - fill_alpha, 0, image)
+            cv2.polylines(image, [np_verts], True, color,
+                          thickness, cv2.LINE_4, shift)
+
+    def __draw_polygon_and_tag(self, image, polygon, tag, bounds, deferred_tags):
+
+        color = self.__random_color()
+
+        self.__draw_polygon(image, polygon, color)
+
+        if tag:
+            left   = bounds["x"]
+            top    = bounds["y"]
+            right  = bounds["x"] + bounds["width"]
+            FONT_WIDTH = 10
+            FONT_HEIGHT = 16
+
+            y = top - FONT_HEIGHT
+            x = (left + right - (FONT_WIDTH * len(tag))) // 2
+            org = (max(x, 0), max(y, 2 * FONT_HEIGHT))
+
+            deferred_tags.append({
+                "text": tag,
+                "origin": org,
+                "color": color
+            })
+
+    def display(self, show_bboxes=False, show_polygons=False, limit=None, polygon_constraints=None, polygon_tag_key="_label", polygon_tag_format="{}"):
 
         if not limit:
             limit = self.display_limit
             if self.display_limit < len(self.images_ids):
                 print("Showing only first", limit, "results.")
+
+        if polygon_constraints:
+            show_polygons = True
+            self.images_polygons = {}
+            if "_uniqueid" in polygon_constraints.constraints.keys():
+                print("WARNING: don't use '_uniqueid' in polygon_constraints")
+                print("see https://github.com/aperture-data/athena/issues/532")
 
         for i in range(len(self.images_ids)):
 
@@ -424,6 +598,7 @@ class Images(object):
             nparr = np.frombuffer(image, dtype=np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
+            deferred_tags = []
             if show_bboxes:
                 if not str(uniqueid) in self.images_bboxes:
                     self.__retrieve_bounding_boxes(i)
@@ -431,39 +606,41 @@ class Images(object):
                 bboxes = self.images_bboxes[uniqueid]["bboxes"]
                 tags   = self.images_bboxes[uniqueid]["tags"]
 
-                # image = cv2.resize(image, (0,0), fx=1.0,fy=1.0)
-                # rgb   = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
                 # Draw a rectangle around the faces
-                counter = 0
-                for coords in bboxes:
-                    left   = coords["x"]
-                    top    = coords["y"]
-                    right  = coords["x"] + coords["width"]
-                    bottom = coords["y"] + coords["height"]
-                    cv2.rectangle(image, (left, top), (right, bottom),
-                                  (0, 255, 0), 2)
+                for bi in range(len(bboxes)):
+                    self.__draw_bbox_and_tag(
+                        image, bboxes[bi], tags[bi], deferred_tags)
 
-                    y = top - 15 if top - 15 > 15 else top + 15
+            if show_polygons:
+                if str(uniqueid) not in self.images_polygons:
+                    self.__retrieve_polygons(
+                        i, polygon_constraints, polygon_tag_key, polygon_tag_format)
 
-                    cv2.putText(image, tags[counter], (left, y),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
-                    counter += 1
+                bounds = self.images_polygons[uniqueid]["bounds"]
+                polygons = self.images_polygons[uniqueid]["polygons"]
+                tags = self.images_polygons[uniqueid]["tags"]
 
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                for pi in range(len(polygons)):
+                    self.__draw_polygon_and_tag(image, polygons[pi], tags[pi] if pi < len(
+                        tags) else None, bounds[pi], deferred_tags)
 
-                fig1, ax1 = plt.subplots()
-                plt.imshow(image), plt.axis("off")
+            for ovr in self.overlays:
+                if "polygons" in ovr:
+                    self.__draw_polygon(
+                        image, ovr["polygons"], ovr["color"], ovr["alpha"])
+                elif "bbox" in ovr:
+                    self.__draw_bbox(image, ovr["bbox"], ovr["color"])
+                elif "text" in ovr:
+                    deferred_tags.append(ovr)
 
-            elif show_segmentation:
-                self.__display_segmentation(i)
+            for tag in deferred_tags:
+                self.__draw_text_with_shadow(
+                    image, tag["text"], tag["origin"], tag["color"])
 
-            else:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-                fig1, ax1 = plt.subplots()
-                plt.imshow(image), plt.axis("off")
+            fig1, ax1 = plt.subplots()
+            plt.imshow(image), plt.axis("off")
 
     def get_props_names(self):
 

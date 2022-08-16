@@ -19,17 +19,23 @@ class Parallelizer:
 
     def __init__(self, progress_to_file=""):
 
+        self.pb_file = progress_to_file
+
+        self._reset()
+
+    def _reset(self, batchsize=1, numthreads=1):
+
         # Default Values
-        self.batchsize  = 1
-        self.numthreads = 1
+        self.batchsize  = batchsize
+        self.numthreads = numthreads
 
         self.total_actions = 0
         self.times_arr = []
         self.total_actions_time = 0
         self.error_counter  = 0
 
-        if progress_to_file:
-            self.pb = ProgressBar.ProgressBar(progress_to_file)
+        if self.pb_file:
+            self.pb = ProgressBar.ProgressBar(self.pb_file)
         else:
             self.pb = ProgressBar.ProgressBar()
 
@@ -39,9 +45,7 @@ class Parallelizer:
 
     def run(self, generator, batchsize, numthreads, stats):
 
-        self.times_arr  = []
-        self.batchsize  = batchsize
-        self.numthreads = numthreads
+        self._reset(batchsize, numthreads)
         self.stats      = stats
         self.generator = generator
         self.total_actions = len(generator)
