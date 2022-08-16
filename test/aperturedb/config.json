@@ -11,5 +11,6 @@
 
     "kvgd_db_size": 204800,
 
-    "more-info": "ApertureDB Server"
+    "more-info": "ApertureDB Server",
+    "kvgd_db_size": 204800
 }
