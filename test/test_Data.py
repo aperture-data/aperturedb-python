@@ -1,6 +1,7 @@
 import numpy as np
 
-from test_Base import TestBase
+from .test_Base import TestBase
+import dbinfo
 
 from aperturedb import DescriptorDataCSV, Utils
 from aperturedb.ImageDataCSV import ImageDataCSV
@@ -14,6 +15,7 @@ from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 
 import logging
+import pytest
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +45,7 @@ def insert_data_from_csv(self: TestBase, in_csv_file, rec_count=-1):
     loader.ingest(data, batchsize=self.batchsize,
                   numthreads=self.numthreads,
                   stats=self.stats)
-    self.assertEqual(loader.error_counter, 0)
+    assert loader.error_counter == 0
     return data
 
 

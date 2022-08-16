@@ -198,40 +198,47 @@ class Connector(object):
         if sys.platform.startswith('linux'):
             self.conn.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 1)
 
-        self.conn.connect((self.host, self.port))
+        try:
+            self.conn.connect((self.host, self.port))
 
-        # Handshake with server to negotiate protocol
+            # Handshake with server to negotiate protocol
 
-        protocol = 2 if self.use_ssl else 1
+            protocol = 2 if self.use_ssl else 1
 
-        hello_msg = struct.pack('@II', PROTOCOL_VERSION, protocol)
+            hello_msg = struct.pack('@II', PROTOCOL_VERSION, protocol)
 
-        # Send desire protocol
-        self._send_msg(hello_msg)
+            # Send desire protocol
+            self._send_msg(hello_msg)
 
-        # Receive response from server
-        response = self._recv_msg()
+            # Receive response from server
+            response = self._recv_msg()
 
-        version, server_protocol = struct.unpack('@II', response)
+            version, server_protocol = struct.unpack('@II', response)
 
-        if version != PROTOCOL_VERSION:
-            logger.warning("Protocol version differ from server")
+            if version != PROTOCOL_VERSION:
+                logger.warning("Protocol version differ from server")
 
-        if server_protocol != protocol:
+            if server_protocol != protocol:
+                self.conn.close()
+                self.connected = False
+                raise Exception(
+                    "Server did not accept protocol. Aborting Connection.")
+
+            if self.use_ssl:
+
+                # Server is ok with SSL, we switch over SSL.
+                self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                self.context.check_hostname = False
+                # TODO, we need to add support for local certificates
+                # For now, we let the server send us the certificate
+                self.context.verify_mode = ssl.VerifyMode.CERT_NONE
+                self.conn = self.context.wrap_socket(self.conn)
+
+        except BaseException as e:
+            logger.error(f"Error connecting to server: {str(e)}")
             self.conn.close()
             self.connected = False
-            raise Exception(
-                "Server did not accept protocol. Aborting Connection.")
-
-        if self.use_ssl:
-
-            # Server is ok with SSL, we switch over SSL.
-            self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-            self.context.check_hostname = False
-            # TODO, we need to add support for local certificates
-            # For now, we let the server send us the certificate
-            self.context.verify_mode = ssl.VerifyMode.CERT_NONE
-            self.conn = self.context.wrap_socket(self.conn)
+            raise ConnectionError("Failed to connect to ApertureDB")
 
         self.connected = True
 

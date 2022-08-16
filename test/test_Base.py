@@ -1,33 +1,30 @@
 import time
-import unittest
-
 import dbinfo
-
+import unittest
 from aperturedb import Connector
 
 
 class TestBase(unittest.TestCase):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    @classmethod
+    def setUpClass(cls):
+        # import pdb;pdb.set_trace()
         # ApertureDB Server Info
-        self.db_host  = dbinfo.DB_HOST
-        self.db_port  = dbinfo.DB_PORT
-        self.user     = dbinfo.DB_USER
-        self.password = dbinfo.DB_PASSWORD
+        cls.db_host  = dbinfo.DB_HOST
+        cls.db_port  = dbinfo.DB_PORT
+        cls.user     = dbinfo.DB_USER
+        cls.password = dbinfo.DB_PASSWORD
 
         # Config params
-        self.batchsize  = 99
-        self.numthreads = 31
-        self.stats      = False
+        cls.batchsize  = 99
+        cls.numthreads = 31
+        cls.stats      = False
 
         db_up = False
         attempts = 0
         while(not db_up):
             try:
-                db = Connector.Connector(self.db_host, self.db_port,
-                                         user=self.user, password=self.password)
+                db = Connector.Connector(cls.db_host, cls.db_port,
+                                         user=cls.user, password=cls.password)
                 db_up = True
                 if (attempts > 0):
                     print("Connection to ApertureDB successful.")

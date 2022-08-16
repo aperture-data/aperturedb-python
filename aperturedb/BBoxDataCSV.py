@@ -71,33 +71,30 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
     def getitem(self, idx):
 
-        val = self.df.loc[idx, self.img_key]
+        q = []
+
+        img_id = self.df.loc[idx, self.img_key]
+
+        img_ref = (idx % 10000) + 1
+
+        fi = {
+            "FindImage": {
+                "_ref": img_ref,
+                "constraints": {
+                    self.img_key: ["==", img_id],
+                },
+                "blobs": False,
+            },
+        }
+        q.append(fi)
+
         box_data_headers = [HEADER_X_POS,
                             HEADER_Y_POS, HEADER_WIDTH, HEADER_HEIGHT]
         box_data = [int(self.df.loc[idx, h]) for h in box_data_headers]
 
-        q = []
-
-        ref_counter = idx + 1
-        # TODO we could reuse image references within the batch
-        # instead of creating a new find for every image.
-        img_ref = ref_counter
-        fi = {
-            "FindImage": {
-                "_ref": img_ref,
-            }
-        }
-
-        key = self.img_key
-        val = val
-        constraints = {}
-        constraints[key] = ["==", val]
-        fi["FindImage"]["constraints"] = constraints
-        q.append(fi)
-
         rect_attrs = ["x", "y", "width", "height"]
         custom_fields = {
-            "image": img_ref,
+            "image_ref": img_ref,
             "rectangle": {
                 attr: val for attr, val in zip(rect_attrs, box_data)
             },
