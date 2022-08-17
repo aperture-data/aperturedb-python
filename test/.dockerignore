@@ -1,0 +1,7 @@
+aperturedb/
+input/
+output/
+notebooks/
+kaggleds/
+__pycache__/
+.pytest_cache/

@@ -43,6 +43,10 @@ jobs:
           pip3 install ipython torch torchvision boto3
           cd test
           bash run_test.sh
+      - name: Build coverage report
+        run: |
+          cd test
+          ONLY_DEFINES=1 bash coverage.sh
   
   build_and_deploy_docs:
 
