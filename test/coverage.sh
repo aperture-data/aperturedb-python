@@ -13,7 +13,7 @@ build_coverage_image(){
     if [ -z ${NO_PUSH+x} ]
     then
         docker push $COV_IMAGE
-    fi 
+    fi
 }
 
 build_coverage_image
@@ -21,6 +21,6 @@ build_coverage_image
 ECR_REPO_NAME=aperturedb-python-coverage
 COV_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
 ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
-    
+
 
 push_aws_ecr $COV_IMAGE $ECR_NAME $ECR_REPO_NAME

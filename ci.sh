@@ -113,7 +113,7 @@ push_aws_ecr(){
     docker tag $SRC_IMAGE \
         684446431133.dkr.ecr.$REGION.amazonaws.com/$DST_IMAGE
     aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin 684446431133.dkr.ecr.$REGION.amazonaws.com
-    
+
     aws ecr create-repository --repository-name $ECR_REPO_NAME --region us-west-2  || true
 
     docker push 684446431133.dkr.ecr.$REGION.amazonaws.com/$DST_IMAGE
@@ -129,11 +129,14 @@ then
     # Trigger build docs image
     build_docs_image
 
-    ECR_REPO_NAME=aperturedb-python-docs
-    DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
-    ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
-    
-    push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME 
+    if [ -z ${NO_PUSH+x} ]
+    then
+        ECR_REPO_NAME=aperturedb-python-docs
+        DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
+        ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
+
+        push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
+    fi
 fi
 
 
