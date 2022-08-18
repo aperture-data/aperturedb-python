@@ -65,8 +65,3 @@ jobs:
       - name: Build and push docker
         run: 'NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
         shell: bash
-      - uses: actions-hub/kubectl@master
-        env:
-          KUBE_CONFIG: ${{ secrets.KUBECONFIG_MICROK8S }}
-        with:
-          args: apply -f deploy/

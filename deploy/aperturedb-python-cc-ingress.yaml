@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: aperturedb-python-docs-ingress
+  name: aperturedb-python-coverage-ingress
   namespace: sta
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
@@ -10,16 +10,16 @@ metadata:
 spec:
   tls:
     - hosts:
-        - python.docs.test.aperturedata.io
-      secretName: docs-wildcard-tls
+        - python.coverage.test.aperturedata.io
+      secretName: coverage-wildcard-tls
   rules:
-    - host: python.docs.test.aperturedata.io
+    - host: python.coverage.test.aperturedata.io
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: aperturedb-python-docs
+                name: aperturedb-python-coverage
                 port:
                   name: http
