@@ -265,8 +265,7 @@ class Images(object):
                 "_ref": 2,
                 "blobs": False,
                 "coordinates": True,
-                "labels": True,
-                "bounds": True,
+                "labels": True
             }
         }]
 
@@ -286,6 +285,7 @@ class Images(object):
 
         except:
             print(self.db_connector.get_last_response_str())
+            raise
 
     def total_results(self):
 
