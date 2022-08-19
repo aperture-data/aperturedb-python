@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
           - name: aperturedb-python-coverage
-            image: 684446431133.dkr.ecr.us-west-2.amazonaws.com/aperturedb-python-coverage
+            image: 684446431133.dkr.ecr.us-west-2.amazonaws.com/aperturedb-python-coverage:$VERSION
             ports:
               - containerPort: 80
             resources: {}

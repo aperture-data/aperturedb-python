@@ -90,6 +90,9 @@ jobs:
       - name: GitHub Release
         run: 'TOKEN=${{ secrets.GITHUBPAT }} ./github-release.sh'
         shell: bash
+      - name: Set release version
+        run: './configure_deployment.sh'
+        shell: bash
       - uses: actions-hub/kubectl@master
         env:
           KUBE_CONFIG: ${{ secrets.KUBECONFIG_MICROK8S }}
