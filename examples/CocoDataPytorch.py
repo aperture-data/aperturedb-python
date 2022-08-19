@@ -41,7 +41,7 @@ class CocoDataPytorch(PytorchData):
                 bbox = meta_info["bbox"]
                 q.append({
                     "AddBoundingBox": {
-                        "image": 1,
+                        "image_ref": 1,
                         "rectangle": {
                             "x": int(bbox[0]),
                             "y": int(bbox[1]),
