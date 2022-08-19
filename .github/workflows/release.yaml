@@ -66,5 +66,5 @@ jobs:
           password: ${{ secrets.DOCKER_PASS }}
 
       - name: Build Notebook Docker
-        run: './ci.sh'
+        run: 'NO_PUSH=1 ./ci.sh'
         shell: bash
