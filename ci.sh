@@ -94,17 +94,49 @@ build_docs_image(){
     cp -r ./{setup.py,README.md,aperturedb} docs/docker/build
     cp -r ./docs/{*.*,Makefile,_static} docs/docker/build/docs
     find examples/ -name *.ipynb | xargs -i cp {} docs/docker/build/examples
-    DOCKS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-docs${IMAGE_EXTENSION_WITH_VERSION}
-    echo "Building image $DOCKS_IMAGE"
-    docker build -t $DOCKS_IMAGE -f docs/docker/Dockerfile .
+    DOCS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-docs${IMAGE_EXTENSION_WITH_VERSION}
+    echo "Building image $DOCS_IMAGE"
+    docker build -t $DOCS_IMAGE -f docs/docker/Dockerfile .
     if [ -z ${NO_PUSH+x} ]
     then
-        docker push $DOCKS_IMAGE
+        docker push $DOCS_IMAGE
     fi
 }
 
-# Trigger build notebook image
-build_notebook_image
 
-# Trigger build docs image
-build_docs_image
+push_aws_ecr(){
+    SRC_IMAGE=$1
+    DST_IMAGE=$2
+    ECR_REPO_NAME=$3
+    REGION=us-west-2
+    PREFIX="aperturedata/"
+    docker tag $SRC_IMAGE \
+        684446431133.dkr.ecr.$REGION.amazonaws.com/$DST_IMAGE
+    aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin 684446431133.dkr.ecr.$REGION.amazonaws.com
+
+    aws ecr create-repository --repository-name $ECR_REPO_NAME --region us-west-2  || true
+
+    docker push 684446431133.dkr.ecr.$REGION.amazonaws.com/$DST_IMAGE
+}
+
+
+# Execute only if ONLY_DEFINES is not set
+if [ -z ${ONLY_DEFINES+x} ]
+then
+    # Trigger build notebook image
+    build_notebook_image
+
+    # Trigger build docs image
+    build_docs_image
+
+    if [ -z ${NO_PUSH+x} ]
+    then
+        ECR_REPO_NAME=aperturedb-python-docs
+        DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
+        ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
+
+        push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
+    fi
+fi
+
+

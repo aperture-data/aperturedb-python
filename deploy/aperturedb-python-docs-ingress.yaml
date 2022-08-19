@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aperturedb-python-docs-ingress
+  namespace: sta
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    kubernetes.io/ingress.class: public
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+    - hosts:
+        - python.docs.test.aperturedata.io
+      secretName: docs-wildcard-tls
+  rules:
+    - host: python.docs.test.aperturedata.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aperturedb-python-docs
+                port:
+                  name: http

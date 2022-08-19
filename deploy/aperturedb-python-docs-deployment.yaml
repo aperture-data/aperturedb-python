@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: aperturedb-python-docs
+  name: aperturedb-python-docs
+  namespace: sta
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: aperturedb-python-docs
+  template:
+    metadata:
+      labels:
+        service: aperturedb-python-docs
+    spec:
+      containers:
+          - name: aperturedb-python-docs
+            image: 684446431133.dkr.ecr.us-west-2.amazonaws.com/aperturedb-python-docs
+            ports:
+              - containerPort: 80
+            resources: {}
+      restartPolicy: Always
