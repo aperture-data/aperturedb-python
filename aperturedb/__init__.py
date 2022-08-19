@@ -5,7 +5,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 
 # set log level
 logger.setLevel(logging.DEBUG)
