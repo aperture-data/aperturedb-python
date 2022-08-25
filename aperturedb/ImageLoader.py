@@ -8,6 +8,12 @@ import cv2
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
+import sys
+import gcsfs
+sys.path.insert(1, "/home/pxp8ppn/ApertureDB_pipeline/")
+import utilities.constants as constants
+
+
 HEADER_PATH   = "filename"
 HEADER_URL    = "url"
 HEADER_S3_URL = "s3_url"
@@ -15,6 +21,8 @@ PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
+PROJECT_NAME = "GCS_PROJECT_NAME"
+CREDENTIALS = "GCS_CREDENTIALS"
 
 class ImageGeneratorCSV(CSVParser.CSVParser):
     """**ApertureDB Image Data generator.**
@@ -104,21 +112,29 @@ class ImageGeneratorCSV(CSVParser.CSVParser):
         return data
 
     def load_image(self, filename):
+        fs = gcsfs.GCSFileSystem(
+            project=constants.PROJECT_NAME, token=constants.CREDENTIALS
+        )
+       
         if self.check_image:
+          
             try:
-                a = cv2.imread(filename)
-                if a.size <= 0:
+                a = fs.size(filename)
+               
+                if a <= 0:
+                    
                     print("IMAGE SIZE ERROR:", filename)
-                    return false, None
+                    return False, None
             except:
+              
                 print("IMAGE ERROR:", filename)
-
+       
         try:
-            fd = open(filename, "rb")
-            buff = fd.read()
-            fd.close()
+            with fs.open(filename, "rb") as f:
+                buff = f.read()
             return True, buff
         except:
+           
             print("IMAGE ERROR:", filename)
         return False, None
 
