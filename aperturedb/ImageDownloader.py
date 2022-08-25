@@ -1,7 +1,9 @@
+import sys
+import gcsfs
+
 import time
 import requests
 import os
-import logging
 from os import path
 
 import cv2
@@ -13,7 +15,10 @@ from aperturedb import CSVParser
 HEADER_PATH = "filename"
 HEADER_URL  = "url"
 
-logger = logging.getLogger(__name__)
+
+PROJECT_NAME = "GCS_PROJECT_NAME"
+CREDENTIALS = "GCS_CREDENTIALS"
+bucket = "GCS_STORAGE_CLIENT_FOR_SAVING_IMAGES"
 
 
 class ImageDownloaderCSV(CSVParser.CSVParser):
@@ -75,18 +80,20 @@ class ImageDownloader(Parallelizer.Parallelizer):
         self.n_download_retries = n_download_retries
 
     def check_if_image_is_ok(self, filename, url):
+        fs = gcsfs.GCSFileSystem(
+            project=PROJECT_NAME, token=CREDENTIALS
+        )
 
-        if not os.path.exists(filename):
+        if not fs.exists(filename):
             return False
 
         try:
-            a = cv2.imread(filename)
-            if a.size <= 0:
-                logger.warning("Image present but error reading it:", url)
+            a = fs.size(filename)
+            if a <= 0:
+                print("Image present but error reading it:", url)
                 return False
-        except Exception as e:
-            logger.error("Image present but error decoding:", url)
-            logger.exception(e)
+        except:
+            print("Image present but error decoding:", url)
             return False
 
         return True
@@ -94,15 +101,20 @@ class ImageDownloader(Parallelizer.Parallelizer):
     def download_image(self, url, filename):
 
         start = time.time()
+        fs = gcsfs.GCSFileSystem(
+            project=PROJECT_NAME, token=CREDENTIALS
+        )
 
         if self.check_img and self.check_if_image_is_ok(filename, url):
             self.images_already_downloaded += 1
             self.times_arr.append(time.time() - start)
             return
 
-        folder = os.path.dirname(filename)
-        if not os.path.exists(folder):
-            os.makedirs(folder, exist_ok=True)
+        folder = os.path.dirname(filename) + "/"
+
+        # Create folder if doesn't exists already.
+        if not fs.isdir(folder):
+            fs.makedirs(folder, exist_ok=True)
 
         retries = 0
         while True:
@@ -112,28 +124,32 @@ class ImageDownloader(Parallelizer.Parallelizer):
             else:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("Retrying object:", url)
+                print("WARNING: Retrying object:", url)
                 retries += 1
                 time.sleep(2)
 
-        if imgdata.ok:
-            fd = open(filename, "wb")
-            fd.write(imgdata.content)
-            fd.close()
+        # This extra content check is to remove synthetic images. This images have .jpeg extension
+        # but they are not actual jpeg images. These images fail to upload to the aperture db and hence
+        # cause the whole upload batch to fail
+        if imgdata.ok and imgdata.headers.get("content-type") != "image/jpeg":
+            print("This image is not a valid jpeg image: ", filename)
 
+        if imgdata.ok and imgdata.headers.get("content-type") == "image/jpeg":
+
+            with fs.open(filename, "wb") as file:
+                file.write(imgdata.content)
             try:
-                a = cv2.imread(filename)
-                if a.size <= 0:
-                    logger.error("Downloaded image size error:", url)
+                file_size = fs.size(filename)
+                if file_size <= 0:
+                    print("Downloaded image size error:", url)
                     os.remove(filename)
                     self.error_counter += 1
-            except Exception as e:
-                logger.error("Downloaded image cannot be decoded:", url)
-                logger.exception(e)
+            except:
+                print("Downloaded image cannot be decoded:", url)
                 os.remove(filename)
                 self.error_counter += 1
         else:
-            logger.error("URL not found:", url)
+            print("URL not found:", url)
             self.error_counter += 1
 
         self.times_arr.append(time.time() - start)
