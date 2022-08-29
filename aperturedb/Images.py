@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Dict
 import cv2
 import math
 import numpy as np
@@ -6,24 +7,57 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from aperturedb import Utils
-from aperturedb.Entities import Entities, Query
+from aperturedb.Entities import Entities, EntityType, Query
 from aperturedb.Connector import Connector
 from aperturedb.Constraints import Constraints
-from aperturedb.ParallelQuery import execute_batch
 
 
 class Images(Entities):
-    db_object = "Image"
+    db_object = "_Image"
 
     @classmethod
     def retrieve(cls,
                  db: Connector,
                  spec: Query,
-                 connected_to: Query = None
+                 with_adjacent: Dict[str, Query] = None,
                  ) -> Images:
-        query = connected_to.query().extend(spec.query())
-        res, r, b = execute_batch(query, [], db, None)
-        images = Images(db, response=r)
+        spec.with_class = cls.db_object
+        # query = spec.query()
+        fs = None
+        count = 0
+        for k, v in with_adjacent.items():
+            if fs is None:
+                fs = v
+            else:
+                fs = fs.connected_to(v)
+            count += 1
+            # query.extend(value.query())
+        # query.extend(spec.query())
+        # query = spec.query()
+        fs = fs.connected_to(spec)
+
+        # res, r, b = execute_batch(query, [], db, None)
+        # images = Images(db, response=r[1])
+        results = Entities.retrieve(db=db, spec=fs)
+        # A Polygon is only connected to 1 image, and our query is filtered with
+        # meta info from polygon, so connect the right image to the polygon
+        # That being said, the ordering should be same as that of the first command in the query
+        images = results[-1]
+
+        adjacent = {}
+        for k, v in with_adjacent.items():
+            adjacent[k] = images.get_connected_entities(
+                pk="id",
+                type=EntityType(v.with_class),
+                constraints=v.constraints)
+
+        def decorator(index):
+            item = {}
+            for k, v in adjacent.items():
+                item[k] = v[index]
+            return item
+
+        images.decorator = decorator
         return images
 
     def __init__(self, db, batch_size=100, response=None):
@@ -33,6 +67,7 @@ class Images(Entities):
 
         self.images          = {}
         self.images_ids      = []
+        self.image_sizes     = []
         self.images_bboxes   = {}
         self.images_polygons = {}
 
@@ -51,6 +86,7 @@ class Images(Entities):
 
         self.img_id_prop     = "_uniqueid"
         self.bbox_label_prop = "_label"
+        self.get_image = True
 
     def __retrieve_batch(self, index):
         '''
@@ -169,7 +205,8 @@ class Images(Entities):
 
     def __retrieve_bounding_boxes(self, index):
 
-        self.images_bboxes = {}
+        if self.images_bboxes is None:
+            self.images_bboxes = {}
 
         if index > len(self.images_ids):
             print("Index error when retrieving bounding boxes")
@@ -247,13 +284,14 @@ class Images(Entities):
 
     def get_bboxes_by_index(self, index):
 
-        if not self.images_bboxes:
+        if not self.images_bboxes or not str(self.images_ids[index]) in self.images_bboxes:
             self.__retrieve_bounding_boxes(index)
 
         try:
             bboxes = self.images_bboxes[str(self.images_ids[index])]
-        except:
+        except Exception as e:
             print("Cannot retrieve requested bboxes")
+            print(e)
 
         return bboxes
 
@@ -278,6 +316,7 @@ class Images(Entities):
 
         self.images = {}
         self.images_ids = []
+        self.images_sizes = []
         self.images_bboxes = {}
         self.images_polygons = {}
 
@@ -301,6 +340,7 @@ class Images(Entities):
 
         query["FindImage"]["results"]["list"] = []
         query["FindImage"]["results"]["list"].append(self.img_id_prop)
+        # query["FindImage"]["results"]["list"].append("image_size")
 
         # Only retrieve images when needed
         query["FindImage"]["blobs"] = False
@@ -312,6 +352,7 @@ class Images(Entities):
 
             for ent in entities:
                 self.images_ids.append(ent[self.img_id_prop])
+                # self.images_sizes.append(int(ent["image_size"]))
         except:
             print("Error with search: {}".format(response))
 

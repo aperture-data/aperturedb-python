@@ -7,6 +7,8 @@ from aperturedb.Connector import Connector
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Sort import Sort
 import pandas as pd
+from PIL import Image
+import numpy as np
 
 from enum import Enum
 
@@ -144,12 +146,24 @@ class Entities(Subscriptable):
         self.db = db
         self.response = response
         self.type = type
+        self.decorator = None
+        self.get_image = False
 
     def pre_process(self) -> None:
         pass
 
     def getitem(self, idx):
-        return self.response[idx]
+        item = self.response[idx]
+        if self.decorator is not None:
+            for k, v in self.decorator(idx).items():
+                item[k] = v
+        if self.get_image == True:
+            buffer = self.get_image_by_index(idx)
+            if buffer is not None:
+                # nparr = np.frombuffer(buffer, dtype=np.uint8)
+                item['thumbnail'] = Image.fromarray(
+                    self.get_np_image_by_index(idx))
+        return item
 
     def __len__(self):
         return len(self.response)
@@ -167,7 +181,7 @@ class Entities(Subscriptable):
         return Entities(sorted(self.response, key=key))
 
     def inspect(self) -> pd.DataFrame:
-        return pd.json_normalize(self.response)
+        return pd.json_normalize([item for item in self])
 
     def update_properties(self, extra_properties: List[dict]) -> bool:
         for entity, properties in zip(self, extra_properties):
@@ -193,7 +207,17 @@ class Entities(Subscriptable):
             print(r)
             return None
 
-    def get_connected_entities(self, type: EntityType, constraints: Constraints = None) -> List[Entities]:
+    def get_connected_entities(self, pk: str, type: EntityType, constraints: Constraints = None) -> List[Entities]:
+        """Gets all entities clustered around items of the collection
+
+        Args:
+            pk (str): _description_
+            type (EntityType): _description_
+            constraints (Constraints, optional): _description_. Defaults to None.
+
+        Returns:
+            List[Entities]: _description_
+        """
         result = []
         for entity in self:
             query = [
@@ -202,7 +226,7 @@ class Entities(Subscriptable):
                         "_ref": 1,
                         "unique": True,
                         "constraints": {
-                            "id": ["==", int(entity["id"])]
+                            pk: ["==", int(entity[pk])]
                         }
                     }
                 }, {
