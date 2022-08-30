@@ -1,111 +1,17 @@
 from __future__ import annotations
+import base64
+from io import BytesIO
 from typing import List
+from aperturedb.Query import Query, EntityType
 
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Constraints import Constraints
 from aperturedb.Connector import Connector
 from aperturedb.ParallelQuery import execute_batch
-from aperturedb.Sort import Sort
 import pandas as pd
 from PIL import Image
-import numpy as np
-
-from enum import Enum
-
-
-class EntityType(Enum):
-    CUSTOM = ""
-    IMAGE = "_Image"
-    POLYGON = "_Polygon"
-
-
-class Query():
-    db_object = "Entity"
-    find_command = f"Find{db_object}"
-    update_command = f"Update{db_object}"
-    next = None
-
-    def connected_to(self,
-                     spec: Query,
-                     adj_to: int = 0) -> Query:
-        spec.adj_to = self.adj_to + 1 if adj_to == 0 else adj_to
-        self.next = spec
-        return self
-
-    def commands(self, v=""):
-        chain = []
-        p = self
-        while p is not None:
-            chain.append(getattr(p, v))
-            p = p.next
-        return chain
-
-    @classmethod
-    def spec(cls,
-             constraints: Constraints = None,
-             with_class: EntityType = EntityType.CUSTOM,
-             custom_class_name: str = "",
-             limit: int = -1,
-             sort: Sort = None,
-             list: List[str] = None
-             ) -> Query:
-        return Query(
-            constraints=constraints,
-            with_class=custom_class_name if with_class == EntityType.CUSTOM else with_class.value,
-            limit=limit,
-            sort = sort,
-            list = list
-        )
-
-    def __init__(self,
-                 constraints: Constraints = None,
-                 with_class: str = "",
-                 limit: int = -1,
-                 sort: Sort = None,
-                 list: List[str] = None,
-                 adj_to: int = 0):
-        self.constraints = constraints
-        self.with_class = with_class
-        self.limit = limit
-        self.sort = sort
-        self.list = list
-        self.adj_to = adj_to + 1
-
-    def query(self) -> List[dict]:
-        # print(
-        #     f"constraints={self.constraints}, limit={self.limit}, sort={self.sort}, list={self.list}")
-
-        results_section = "results"
-        cmd = {
-            self.find_command: {
-                "_ref": self.adj_to,
-                results_section: {
-
-                }
-            }
-        }
-        if self.db_object == "Entity":
-            cmd[self.find_command]["with_class"] = self.with_class
-        if self.limit != -1:
-            cmd[self.find_command][results_section]["limit"] = self.limit
-        if self.sort:
-            cmd[self.find_command][results_section]["sort"] = self.sort._sort
-        if self.list is not None and len(self.list) > 0:
-            cmd[self.find_command][results_section]["list"] = self.list
-        else:
-            cmd[self.find_command][results_section]["all_properties"] = True
-
-        if self.constraints:
-            cmd[self.find_command]["constraints"] = self.constraints.constraints
-
-        query = [cmd]
-        if self.next:
-            next_commands = self.next.query()
-            next_commands[0][self.next.find_command]["is_connected_to"] = {
-                "ref": self.adj_to
-            }
-            query.extend(next_commands)
-        return query
+from ipywidgets import widgets
+from IPython.display import display, HTML
 
 
 class Entities(Subscriptable):
@@ -118,7 +24,8 @@ class Entities(Subscriptable):
                  db: Connector,
                  spec: Query
                  ) -> List[Entities]:
-        cls.known_entities = load_entities_registry()
+        cls.known_entities = load_entities_registry(
+            custom_entities=spec.commands(v="with_class"))
         cls.db = db
         query = spec.query()
         print(f"query={query}")
@@ -130,7 +37,7 @@ class Entities(Subscriptable):
             try:
                 # entities = known_entities[wc](resp[req]['entities'])
                 entities = cls.known_entities[wc](
-                    db=db, response=resp[req]['entities'])
+                    db=db, response=resp[req]['entities'], type=wc)
                 # entities.response = resp[req]['entities']
                 # print(resp[req]['entities'])
                 # entities.pre_process()
@@ -155,7 +62,7 @@ class Entities(Subscriptable):
     def getitem(self, idx):
         item = self.response[idx]
         if self.decorator is not None:
-            for k, v in self.decorator(idx).items():
+            for k, v in self.decorator(idx, self.adjacent).items():
                 item[k] = v
         if self.get_image == True:
             buffer = self.get_image_by_index(idx)
@@ -172,16 +79,39 @@ class Entities(Subscriptable):
         return self.known_entities[self.type](db=self.db, response=list(filter(predicate, self.response)), type=self.type)
 
     def __add__(self, other: Entities) -> Entities:
-        return Entities(self.response + other.response)
+        return Entities(response = self.response + other.response, type=self.type)
 
     def __sub__(self, other: Entities) -> Entities:
-        return Entities([x for x in self.response if x not in other.response])
+        return Entities(response = [x for x in self.response if x not in other.response], type=self.type)
 
     def sort(self, key) -> Entities:
-        return Entities(sorted(self.response, key=key))
+        return Entities(response = sorted(self.response, key=key), type=self.type)
 
-    def inspect(self) -> pd.DataFrame:
-        return pd.json_normalize([item for item in self])
+    def inspect(self, get_visual = False) -> pd.DataFrame:
+        self.get_image = get_visual
+        if not get_visual:
+            return pd.json_normalize([item for item in self])
+        else:
+            # EXPERIMENTAL
+            op = widgets.Output()
+
+            def widget_interaction(c):
+                def image_base64(im):
+                    with BytesIO() as buffer:
+                        im.save(buffer, 'jpeg')
+                        return base64.b64encode(buffer.getvalue()).decode()
+
+                def image_formatter(im):
+                    return f'<img width={c["new"]} src="data:image/jpeg;base64,{image_base64(im)}">'
+
+                with op:
+                    op.clear_output()
+                    display(HTML(self.inspect().to_html(
+                        formatters={'thumbnail': image_formatter}, escape=False)))
+
+            sizer = widgets.IntSlider(min=1, max=400, value=100)
+            sizer.observe(widget_interaction, 'value')
+            return sizer, op
 
     def update_properties(self, extra_properties: List[dict]) -> bool:
         for entity, properties in zip(self, extra_properties):
@@ -208,7 +138,8 @@ class Entities(Subscriptable):
             return None
 
     def get_connected_entities(self, pk: str, type: EntityType, constraints: Constraints = None) -> List[Entities]:
-        """Gets all entities clustered around items of the collection
+        """
+        Gets all entities adjacent to and clustered around items of the collection
 
         Args:
             pk (str): _description_
@@ -249,7 +180,7 @@ class Entities(Subscriptable):
         return result
 
 
-def load_entities_registry():
+def load_entities_registry(custom_entities: List[str] = None) -> dict:
     from aperturedb.Polygons import Polygons
     from aperturedb.Images import Images
 
@@ -257,4 +188,7 @@ def load_entities_registry():
         EntityType.POLYGON.value: Polygons,
         EntityType.IMAGE.value: Images
     }
+    for entity in set(custom_entities):
+        if entity not in known_entities:
+            known_entities[entity] = Entities
     return known_entities

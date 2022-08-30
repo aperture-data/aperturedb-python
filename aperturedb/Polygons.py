@@ -1,9 +1,7 @@
 from __future__ import annotations
-from typing import List
 from aperturedb.Connector import Connector
-from aperturedb.Constraints import Constraints
-from aperturedb.Entities import Entities, Query
-from aperturedb.Sort import Sort
+from aperturedb.Entities import Entities
+from aperturedb.Query import Query
 from aperturedb.ParallelQuery import execute_batch
 
 
@@ -13,8 +11,7 @@ class Polygons(Entities):
     @classmethod
     def retrieve(cls,
                  db: Connector,
-                 spec: Query
-                 ) -> Polygons:
+                 spec: Query) -> Polygons:
         spec.with_class = cls.db_object
         polygons = Entities.retrieve(
             db=db,
@@ -22,6 +19,18 @@ class Polygons(Entities):
         return polygons
 
     def intersection(self, other: Polygons, threshold: float) -> Polygons:
+        """
+        Find a set of polygons that intersect with another set of polygons.
+        The threhold is user specified and is used to determine if two polygons
+        sufficiently overlap to be considered intersecting.
+
+        Args:
+            other (Polygons): Set of polygons to intersect with.
+            threshold (float): The threshold for determining if two polygons are sufficiently intersecting.
+
+        Returns:
+            Polygons: uniqued set of polygons that intersect with the other set of polygons.
+        """
         result = set()
         for p1 in self:
             for p2 in other:

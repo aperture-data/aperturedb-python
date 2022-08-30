@@ -15,52 +15,58 @@ from aperturedb.Constraints import Constraints
 class Images(Entities):
     db_object = "_Image"
 
+    # This needs to be defined so that the application can access the adjacent items,
+    # with every item of this iterable.
+    @classmethod
+    def __decorator(cls, index, adjacent):
+        item = {}
+        for k, v in adjacent.items():
+            item[k] = v[index]
+        return item
+
     @classmethod
     def retrieve(cls,
                  db: Connector,
                  spec: Query,
-                 with_adjacent: Dict[str, Query] = None,
-                 ) -> Images:
+                 with_adjacent: Dict[str, Query] = None) -> Images:
         spec.with_class = cls.db_object
-        # query = spec.query()
+        # Sice adjacent items are usually a way to filter the results,
+        # the native query is constructed in the reverse order, with
+        # first filtering out the relavant itmes based on adjacent items.
         fs = None
         count = 0
-        for k, v in with_adjacent.items():
-            if fs is None:
-                fs = v
-            else:
-                fs = fs.connected_to(v)
-            count += 1
-            # query.extend(value.query())
-        # query.extend(spec.query())
-        # query = spec.query()
-        fs = fs.connected_to(spec)
+        if with_adjacent:
+            for k, v in with_adjacent.items():
+                if fs is None:
+                    fs = v
+                else:
+                    fs = fs.connected_to(v)
+                count += 1
+            # Eventually, connecy the specification of Images to the specification of the adjacent items.
+            fs = fs.connected_to(spec)
+        else:
+            fs = spec
 
-        # res, r, b = execute_batch(query, [], db, None)
-        # images = Images(db, response=r[1])
         results = Entities.retrieve(db=db, spec=fs)
+
         # A Polygon is only connected to 1 image, and our query is filtered with
         # meta info from polygon, so connect the right image to the polygon
         # That being said, the ordering should be same as that of the first command in the query
         images = results[-1]
 
         adjacent = {}
-        for k, v in with_adjacent.items():
-            adjacent[k] = images.get_connected_entities(
-                pk="id",
-                type=EntityType(v.with_class),
-                constraints=v.constraints)
+        if with_adjacent:
+            for k, v in with_adjacent.items():
+                adjacent[k] = images.get_connected_entities(
+                    pk="id",
+                    type=EntityType(v.with_class),
+                    constraints=v.constraints)
 
-        def decorator(index):
-            item = {}
-            for k, v in adjacent.items():
-                item[k] = v[index]
-            return item
-
-        images.decorator = decorator
+            images.decorator = cls.__decorator
+            images.adjacent = adjacent
         return images
 
-    def __init__(self, db, batch_size=100, response=None):
+    def __init__(self, db, batch_size=100, response=None, **kwargs):
         super().__init__(db, response)
 
         self.db_connector = db
@@ -79,6 +85,8 @@ class Images(Entities):
         self.limit       = None
 
         self.search_result = None
+
+        self.adjacent = {}
 
         self.batch_size = batch_size
         self.total_cached_images = 0
@@ -296,17 +304,10 @@ class Images(Entities):
         return bboxes
 
     def pre_process(self) -> None:
-        # self.img_id_prop = "id"
-        # try:
-        #     for ent in self.response:
-        #         self.images_ids.append(ent[self.img_id_prop])
-        # except Exception as e:
-        #     raise e
-
         img_ids = [img["id"] for img in self.response]
         self.search_by_id(img_ids)
-    # A new search will throw away the results of any previous search
 
+    # A new search will throw away the results of any previous search
     def search(self, constraints=None, operations=None, format=None, limit=None, sort=None):
 
         self.constraints = constraints

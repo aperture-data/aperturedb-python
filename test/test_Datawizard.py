@@ -1,8 +1,8 @@
-from aperturedb.Constraints import Constraints
-from aperturedb.Entities import Entities
 import logging
-from aperturedb.Images import Images
 
+from aperturedb.Entities import Entities
+from aperturedb.Images import Images
+from aperturedb.Query import EntityType, Query
 from aperturedb.Utils import Utils
 
 logger = logging.getLogger(__file__)
@@ -11,7 +11,8 @@ logger = logging.getLogger(__file__)
 class TestDataWizardEntities():
     def test_get_persons(self, insert_data_from_csv, db):
         loaded = insert_data_from_csv(in_csv_file="./input/persons.adb.csv")
-        all_persons = Entities.retrieve(db, with_class="Person")
+        all_persons = Entities.retrieve(db,
+                                        spec=Query.spec(with_class=EntityType.CUSTOM, custom_class_name="Person"))[0]
         assert len(all_persons) == len(loaded)
         too_young = all_persons.filter(lambda p: p["age"] < 18)
         too_old = all_persons.filter(lambda p: p["age"] > 60)
@@ -49,7 +50,6 @@ class TestDataWizardEntities():
 class TestDataWizardImages():
     def test_get_images(self, insert_data_from_csv, db):
         loaded = insert_data_from_csv("./input/images.adb.csv", rec_count=10)
-        images = Images.retrieve(db, limit=10)
-        # images = Entities.retrieve(db, with_class="_Image")
+        images = Images.retrieve(db, Query.spec(limit=10))
         logger.info(f"\n{images.inspect()}")
         assert images != None

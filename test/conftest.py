@@ -10,6 +10,7 @@ from aperturedb.ImageDataCSV import ImageDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
+from aperturedb.Query import Query
 from aperturedb.Utils import Utils
 
 import dbinfo
@@ -84,6 +85,6 @@ def retired_persons(db, insert_data_from_csv, utils):
     loaded = insert_data_from_csv("./input/persons.adb.csv")
     constraints = Constraints()
     constraints.greaterequal("age", 60)
-    retired_persons = Entities.retrieve(
-        db, with_class="Person", constraints=constraints)
+    retired_persons = Entities.retrieve(db,
+                                        spec=Query.spec(custom_class_name="Person", constraints=constraints))[0]
     return retired_persons
