@@ -55,3 +55,8 @@ def insert_data_from_csv(db):
 @pytest.fixture(scope="module")
 def utils(db):
     return Utils(db)
+
+
+@pytest.fixture()
+def images(insert_data_from_csv):
+    return insert_data_from_csv("./input/images.adb.csv")

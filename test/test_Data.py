@@ -1,7 +1,6 @@
 import numpy as np
 
 from .test_Base import TestBase
-import dbinfo
 
 from aperturedb import DescriptorDataCSV, Utils
 from aperturedb.ImageDataCSV import ImageDataCSV
@@ -15,7 +14,6 @@ from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 
 import logging
-import pytest
 logger = logging.getLogger(__name__)
 
 
