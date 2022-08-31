@@ -109,7 +109,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-adb-python/
 
 # Spyder project settings
 .spyderproject
@@ -145,5 +144,3 @@ kaggleds/
 examples/*/kaggleds/
 docs/*/*.svg
 test/aperturedb/logs
-examples/*/node_modules
-adb-python/

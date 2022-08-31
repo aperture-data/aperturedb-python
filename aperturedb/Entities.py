@@ -15,6 +15,12 @@ from IPython.display import display, HTML
 
 
 class Entities(Subscriptable):
+    """
+    This class is the common class to query any entity from apertureDB.
+    The specialized subclasses, which provide a more userfriendly interface, are:
+    :class:`~aperturedb.Entities.Images`
+    :class:`~aperturedb.Entities.Polygons`
+    """
     db_object = "Entity"
     find_command = f"Find{db_object}"
     update_command = f"Update{db_object}"
@@ -24,6 +30,20 @@ class Entities(Subscriptable):
                  db: Connector,
                  spec: Query
                  ) -> List[Entities]:
+        """
+        Using the Entities.retrieve method, is a simpple layer, with typical native queries converted
+        using :class:`~aperturedb.Query.Query`
+
+        Args:
+            db (Connector): _description_
+            spec (Query): _description_
+
+        Raises:
+            e: _description_
+
+        Returns:
+            List[Entities]: _description_
+        """
         cls.known_entities = load_entities_registry(
             custom_entities=spec.command_properties(prop="with_class"))
         cls.db = db
@@ -32,18 +52,14 @@ class Entities(Subscriptable):
 
         query = spec.query()
         print(f"query={query}")
-        res, r, b = execute_batch(query, [], db, None)
+        res, r, b = execute_batch(query, [], db)
         if res > 0:
             print(f"resp={r}")
         results = []
         for wc, req, resp in zip(spec.command_properties(prop="with_class"), spec.command_properties(prop="find_command"), r):
             try:
-                # entities = known_entities[wc](resp[req]['entities'])
                 entities = cls.known_entities[wc](
                     db=db, response=resp[req]['entities'], type=wc)
-                # entities.response = resp[req]['entities']
-                # print(resp[req]['entities'])
-                # entities.pre_process()
                 results.append(entities)
             except Exception as e:
                 print(e)
@@ -58,9 +74,6 @@ class Entities(Subscriptable):
         self.type = type
         self.decorator = None
         self.get_image = False
-
-    def pre_process(self) -> None:
-        pass
 
     def getitem(self, idx):
         item = self.response[idx]
@@ -136,7 +149,7 @@ class Entities(Subscriptable):
                     }
                 }
             ]
-            res, r, b = execute_batch(query, [], self.db, None)
+            res, r, b = execute_batch(query, [], self.db)
             print(r)
             return None
 
@@ -176,7 +189,7 @@ class Entities(Subscriptable):
                     }
                 }
             ]
-            res, r, b = execute_batch(query, [], self.db, None)
+            res, r, b = execute_batch(query, [], self.db)
 
             result.append(self.known_entities[type.value](
                 db=self.db, response=r[1]["FindEntity"]["entities"], type=type.value))

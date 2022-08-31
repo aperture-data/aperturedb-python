@@ -212,7 +212,7 @@ class Images(Entities):
             }
 
     def __retrieve_bounding_boxes(self, index):
-
+        # We should fetch all bounding boxes incrementally.
         if self.images_bboxes is None:
             self.images_bboxes = {}
 
@@ -291,8 +291,8 @@ class Images(Entities):
         return image
 
     def get_bboxes_by_index(self, index):
-
         if not self.images_bboxes or not str(self.images_ids[index]) in self.images_bboxes:
+            # Fetch when not present in the map.
             self.__retrieve_bounding_boxes(index)
 
         try:
@@ -302,10 +302,6 @@ class Images(Entities):
             print(e)
 
         return bboxes
-
-    def pre_process(self) -> None:
-        img_ids = [img["id"] for img in self.response]
-        self.search_by_id(img_ids)
 
     # A new search will throw away the results of any previous search
     def search(self, constraints=None, operations=None, format=None, limit=None, sort=None):

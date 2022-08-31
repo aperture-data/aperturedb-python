@@ -57,7 +57,7 @@ class Polygons(Entities):
                         }
                     }
                 ]
-                res, r, b = execute_batch(query, [], self.db, None)
+                res, r, b = execute_batch(query, [], self.db)
                 if r[2]["RegionIoU"]["IoU"][0][0] > threshold:
                     result.add(int(p1["ann_id"]))
                     result.add(int(p2["ann_id"]))
