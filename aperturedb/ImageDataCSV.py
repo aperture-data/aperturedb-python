@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 HEADER_PATH   = "filename"
 HEADER_URL    = "url"
 HEADER_S3_URL = "s3_url"
+HEADER_GS_URL = "gs_url"
 PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
@@ -37,6 +38,10 @@ class ImageDataCSV(CSVParser.CSVParser):
             OR
 
             ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
             ...
 
     Example csv file::
@@ -63,6 +68,10 @@ class ImageDataCSV(CSVParser.CSVParser):
     """
 
     def __init__(self, filename, check_image=True, n_download_retries=3):
+        self.loaders = [self.load_image, self.load_url,
+                        self.load_s3_url, self.load_gs_url]
+        self.source_types = [HEADER_PATH,
+                             HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
 
         super().__init__(filename)
 
@@ -76,13 +85,12 @@ class ImageDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
         self.source_type      = self.header[0]
-        loaders = [self.load_image, self.load_url, self.load_s3_url]
-        source_types = [HEADER_PATH, HEADER_URL, HEADER_S3_URL]
-        if self.source_type not in source_types:
+
+        if self.source_type not in self.source_types:
             logger.error("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
         self.source_loader    = {
-            st: sl for st, sl in zip(source_types, loaders)
+            st: sl for st, sl in zip(self.source_types, self.loaders)
         }
 
         self.n_download_retries = n_download_retries
@@ -189,10 +197,36 @@ class ImageDataCSV(CSVParser.CSVParser):
         logger.error("S3 ERROR:", s3_url)
         return False, None
 
+    def load_gs_url(self, gs_url):
+        retries = 0
+        from google.cloud import storage
+        client = storage.Client()
+        while True:
+            try:
+                bucket_name = gs_url.split("/")[2]
+                object_name = gs_url.split("gs://" + bucket_name + "/")[-1]
+
+                blob = client.bucket(bucket_name).blob(
+                    object_name).download_as_bytes()
+                imgbuffer = np.frombuffer(blob, dtype='uint8')
+                if self.check_image and not self.check_image_buffer(imgbuffer):
+                    logger.error("IMAGE ERROR: ", gs_url)
+                    return False, None
+                return True, blob
+            except:
+                if retries >= self.n_download_retries:
+                    break
+                logger.warning("WARNING: Retrying object:", gs_url)
+                retries += 1
+                time.sleep(2)
+
+        logger.error("GS ERROR:", gs_url)
+        return False, None
+
     def validate(self):
 
         self.header = list(self.df.columns.values)
 
-        if self.header[0] not in [HEADER_PATH, HEADER_URL, HEADER_S3_URL]:
+        if self.header[0] not in self.source_types:
             raise Exception(
-                "Error with CSV file field: filename. Must be first field")
+                f"Error with CSV file field: {self.header[0]}. Must be first field")
