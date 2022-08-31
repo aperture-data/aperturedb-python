@@ -8,9 +8,18 @@ from aperturedb.Sort import Sort
 
 
 class EntityType(Enum):
+    """
+    Based on : https://docs.aperturedata.io/API-Description.html
+
+    """
     CUSTOM = ""
     IMAGE = "_Image"
     POLYGON = "_Polygon"
+    BOUNDING_BOX = "_BoundingBox"
+    VIDEO = "_Video"
+    BLOB = "_Blob"
+    DESCRIPTOR = "_Descriptor"
+    DESCRIPTORSET = "_DescriptorSet"
 
 
 class Query():
@@ -40,11 +49,20 @@ class Query():
         self.next = spec
         return self
 
-    def commands(self, v=""):
+    def command_properties(self, prop: str = "") -> List[str]:
+        """
+        Helper function to get the properties of all commands the query.
+
+        Args:
+            v (str, optional): _description_. Defaults to "".
+
+        Returns:
+            List[str]: Properties from commands in the order they should be executed.
+        """
         chain = []
         p = self
         while p is not None:
-            chain.append(getattr(p, v))
+            chain.append(getattr(p, prop))
             p = p.next
         return chain
 

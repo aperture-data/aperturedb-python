@@ -25,15 +25,18 @@ class Entities(Subscriptable):
                  spec: Query
                  ) -> List[Entities]:
         cls.known_entities = load_entities_registry(
-            custom_entities=spec.commands(v="with_class"))
+            custom_entities=spec.command_properties(prop="with_class"))
         cls.db = db
+        if cls.db_object != "Entity":
+            spec.with_class = cls.db_object
+
         query = spec.query()
         print(f"query={query}")
         res, r, b = execute_batch(query, [], db, None)
         if res > 0:
             print(f"resp={r}")
         results = []
-        for wc, req, resp in zip(spec.commands(v="with_class"), spec.commands(v="find_command"), r):
+        for wc, req, resp in zip(spec.command_properties(prop="with_class"), spec.command_properties(prop="find_command"), r):
             try:
                 # entities = known_entities[wc](resp[req]['entities'])
                 entities = cls.known_entities[wc](
@@ -183,10 +186,16 @@ class Entities(Subscriptable):
 def load_entities_registry(custom_entities: List[str] = None) -> dict:
     from aperturedb.Polygons import Polygons
     from aperturedb.Images import Images
+    from aperturedb.Blobs import Blobs
+    from aperturedb.BoundingBoxes import BoundingBoxes
+    from aperturedb.Videos import Videos
 
     known_entities = {
         EntityType.POLYGON.value: Polygons,
-        EntityType.IMAGE.value: Images
+        EntityType.IMAGE.value: Images,
+        EntityType.VIDEO.value: Videos,
+        EntityType.BOUNDING_BOX.value: BoundingBoxes,
+        EntityType.BLOB.value: Blobs
     }
     for entity in set(custom_entities):
         if entity not in known_entities:

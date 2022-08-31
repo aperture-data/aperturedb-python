@@ -12,11 +12,10 @@ class Polygons(Entities):
     def retrieve(cls,
                  db: Connector,
                  spec: Query) -> Polygons:
-        spec.with_class = cls.db_object
         polygons = Entities.retrieve(
             db=db,
             spec=spec)
-        return polygons
+        return polygons[-1]
 
     def intersection(self, other: Polygons, threshold: float) -> Polygons:
         """

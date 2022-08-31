@@ -1,5 +1,6 @@
 import logging
-
+from aperturedb.Blobs import Blobs
+from aperturedb.BoundingBoxes import BoundingBoxes
 from aperturedb.Entities import Entities
 from aperturedb.Images import Images
 from aperturedb.Query import EntityType, Query
@@ -51,5 +52,27 @@ class TestDataWizardImages():
     def test_get_images(self, insert_data_from_csv, db):
         loaded = insert_data_from_csv("./input/images.adb.csv", rec_count=10)
         images = Images.retrieve(db, Query.spec(limit=10))
+        assert isinstance(
+            images, Images), f"{type(images)} is not an instance of Images"
         logger.info(f"\n{images.inspect()}")
         assert images != None
+
+
+class TestDataWizardBlobs():
+    def test_get_blobs(self, insert_data_from_csv, db):
+        loaded = insert_data_from_csv("./input/blobs.adb.csv", rec_count=10)
+        blobs = Blobs.retrieve(db, Query.spec(limit=10))
+        assert isinstance(
+            blobs, Blobs), f"blobs is not an instance of Blobs = {blobs}"
+        logger.info(f"\n{blobs.inspect()}")
+        assert blobs != None
+
+
+class TestDataWizardBoundingBoxes():
+    def test_get_bounding_boxes(self, insert_data_from_csv, db):
+        loaded = insert_data_from_csv("./input/bboxes.adb.csv", rec_count=10)
+        bboxes = BoundingBoxes.retrieve(db, Query.spec(limit=10))
+        assert isinstance(
+            bboxes, BoundingBoxes), f"bboxes is not an instance of BoundingBoxes = {bboxes}"
+        logger.info(f"\n{bboxes.inspect()}")
+        assert bboxes != None
