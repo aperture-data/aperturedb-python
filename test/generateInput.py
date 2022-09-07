@@ -153,6 +153,30 @@ def generate_s3_images_csv(ip_file_csv):
     return df
 
 
+def generate_gs_images_csv(ip_file_csv):
+
+    images    = pd.read_csv(ip_file_csv, sep=",", header=None)
+
+    ids      = random.sample(range(1000000000), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    license  = [x for x in range(len(images))]
+
+    df = pd.DataFrame()
+    df['gs_url']   = images
+    df["id"]       = ids
+    df['license']  = license
+    df["age"]      = age
+    df["height"]   = height
+    df["constraint_id"] = ids
+
+    df = df.sort_values("id")
+
+    df.to_csv("input/gs_images.adb.csv", index=False)
+
+    return df
+
+
 def generate_connections_csv(persons, images):
 
     connections  = list(product(images["id"][::100], persons["id"][::100]))
@@ -281,6 +305,7 @@ def main(params):
     images  = generate_images_csv(int(params.multiplier / 2))
     s3_imgs = generate_http_images_csv("input/sample_http_urls.csv")
     s3_imgs = generate_s3_images_csv("input/sample_s3_urls.csv")
+    generate_gs_images_csv("input/sample_gs_urls")
     connect = generate_connections_csv(persons, images)
     bboxes  = generate_bboxes_csv(images)
     bboxes_constraints = generate_bboxes_constraints_csv(images)
