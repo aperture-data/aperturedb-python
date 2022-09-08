@@ -613,9 +613,12 @@ class Images(object):
                     self.__retrieve_polygons(
                         i, polygon_constraints, polygon_tag_key, polygon_tag_format)
 
-                bounds = self.images_polygons[uniqueid]["bounds"] if uniqueid in self.images_polygons else []
-                polygons = self.images_polygons[uniqueid]["polygons"] if uniqueid in self.images_polygons else []
-                tags = self.images_polygons[uniqueid]["tags"] if uniqueid in self.images_polygons else []
+                bounds = self.images_polygons[uniqueid]["bounds"] if uniqueid in self.images_polygons else [
+                ]
+                polygons = self.images_polygons[uniqueid]["polygons"] if uniqueid in self.images_polygons else [
+                ]
+                tags = self.images_polygons[uniqueid]["tags"] if uniqueid in self.images_polygons else [
+                ]
 
                 for pi in range(len(polygons)):
                     self.__draw_polygon_and_tag(image, polygons[pi], tags[pi] if pi < len(
