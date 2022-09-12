@@ -24,7 +24,7 @@ class EntityType(Enum):
 
 class Query():
     """
-    This is the underlying class to generate a query using python code.    
+    This is the underlying class to generate a query using python code.
     """
     db_object = "Entity"
     find_command = f"Find{db_object}"
