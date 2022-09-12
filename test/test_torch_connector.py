@@ -1,52 +1,41 @@
 import time
-import unittest
 import os
+import logging
 
 import torch
 import torch.distributed as dist
-
-from test_Base import TestBase
-
-from aperturedb import Connector, Utils
 from aperturedb import Images
 from aperturedb import PyTorchDataset
 
+logger = logging.getLogger(__name__)
 
-class TestTorchDatasets(TestBase):
 
-    '''
-        These tests need to be run after the Loaders, because it uses
-        data inserted by the loaders.
-        TODO: We should change this so that we do not depend on them
-    '''
+class TestTorchDatasets():
+    def validate_dataset(self, dataset):
+        start = time.time()
 
-    def test_omConstraints(self):
+        # Iterate over dataset.
+        for img in dataset:
+            if len(img[0]) < 0:
+                logger.error("Empty image?")
+                assert True == False
 
-        db = self.create_connection()
+        logger.info("\n")
+        logger.info("Throughput (imgs/s):",
+                    len(dataset) / (time.time() - start))
 
+    def test_omConstraints(self, db, utils, images):
+        assert len(images) > 0
         const = Images.Constraints()
         const.greaterequal("age", 0)
         dataset = PyTorchDataset.ApertureDBDatasetConstraints(
             db, constraints=const)
 
-        dbutils = Utils.Utils(db)
-        self.assertEqual(len(dataset), dbutils.count_images())
+        assert len(dataset) == utils.count_images()
+        self.validate_dataset(dataset)
 
-        start = time.time()
-
-        # Iterate over dataset.
-        for img in dataset:
-            if len(img[0]) < 0:
-                print("Empty image?")
-                self.assertEqual(True, False)
-
-        print("\n")
-        print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
-
-    def test_nativeContraints(self):
-
-        db = self.create_connection()
-
+    def test_nativeContraints(self, db, utils, images):
+        assert len(images) > 0
         query = [{
             "FindImage": {
                 "constraints": {
@@ -68,24 +57,10 @@ class TestTorchDatasets(TestBase):
         dataset = PyTorchDataset.ApertureDBDataset(
             db, query, label_prop="license")
 
-        dbutils = Utils.Utils(db)
-        self.assertEqual(len(dataset), dbutils.count_images())
+        assert len(dataset) == utils.count_images()
+        self.validate_dataset(dataset)
 
-        start = time.time()
-
-        # Iterate over dataset.
-        for img in dataset:
-            if len(img[0]) < 0:
-                print("Empty image?")
-                self.assertEqual(True, False)
-
-        print("\n")
-        print("Throughput (imgs/s):", len(dataset) / (time.time() - start))
-
-    def test_datasetWithMultiprocessing(self):
-
-        db = self.create_connection()
-
+    def test_datasetWithMultiprocessing(self, db, utils, images):
         query = [{
             "FindImage": {
                 "constraints": {
@@ -107,21 +82,8 @@ class TestTorchDatasets(TestBase):
         dataset = PyTorchDataset.ApertureDBDataset(
             db, query, label_prop="license")
 
-        dbutils = Utils.Utils(db)
-        self.assertEqual(len(dataset), dbutils.count_images())
-
-        start = time.time()
-
-        # Iterate over dataset.
-        for img in dataset:
-            if len(img[0]) < 0:
-                print("Empty image?")
-                self.assertEqual(True, False)
-
-        print("\n")
-        print("Sequential Throughput (imgs/s):",
-              len(dataset) / (time.time() - start))
-
+        assert len(dataset) == utils.count_images()
+        self.validate_dataset(dataset)
         # Distributed Data Loader Setup
 
         # Needed for init_process_group
@@ -140,17 +102,7 @@ class TestTorchDatasets(TestBase):
             drop_last=True,
         )
 
-        start = time.time()
-
-        # Iterate over dataset.
-        for img in data_loader:
-            if len(img[0]) < 0:
-                print("Empty image?")
-                self.assertEqual(True, False)
-
-        print("Distributed Data Loader Sequential Throughput (imgs/s):",
-              len(dataset) / (time.time() - start))
-
+        self.validate_dataset(data_loader)
         # === Distributed Data Loader Shuffler
 
         # This will generate a random sampler, which will make the use
@@ -167,13 +119,4 @@ class TestTorchDatasets(TestBase):
             drop_last=True,
         )
 
-        start = time.time()
-
-        # Iterate over dataset.
-        for img in data_loader:
-            if len(img[0]) < 0:
-                print("Empty image?")
-                self.assertEqual(True, False)
-
-        print("Distributed Data Loader Shuffle Throughput (imgs/s):",
-              len(dataset) / (time.time() - start))
+        self.validate_dataset(data_loader)

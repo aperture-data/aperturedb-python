@@ -35,7 +35,8 @@ def insert_data_from_csv(db):
             "./input/setB.adb.csv": DescriptorDataCSV,
             "./input/s3_images.adb.csv": ImageDataCSV,
             "./input/http_images.adb.csv": ImageDataCSV,
-            './input/bboxes-constraints.adb.csv': BBoxDataCSV
+            "./input/bboxes-constraints.adb.csv": BBoxDataCSV,
+            "./input/gs_images.adb.csv": ImageDataCSV
         }
 
         data = file_data_pair[in_csv_file](in_csv_file)
@@ -55,3 +56,8 @@ def insert_data_from_csv(db):
 @pytest.fixture(scope="module")
 def utils(db):
     return Utils(db)
+
+
+@pytest.fixture()
+def images(insert_data_from_csv):
+    return insert_data_from_csv("./input/images.adb.csv")

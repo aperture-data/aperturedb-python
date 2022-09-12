@@ -149,7 +149,7 @@ class Images(object):
             find = {
                 "FindImage": {
                     "constraints": {
-                        "_uniqueid": ["==", self.images_ids[idx]]
+                        self.img_id_prop: ["==", self.images_ids[idx]]
                     },
                 }
             }
@@ -184,7 +184,7 @@ class Images(object):
             "FindImage": {
                 "_ref": 1,
                 "constraints": {
-                    "_uniqueid": ["==", uniqueid]
+                    self.img_id_prop: ["==", uniqueid]
                 },
                 "blobs": False,
             }
@@ -255,7 +255,7 @@ class Images(object):
             "FindImage": {
                 "_ref": 1,
                 "constraints": {
-                    "_uniqueid": ["==", uniqueid]
+                    self.img_id_prop: ["==", uniqueid]
                 },
                 "blobs": False,
             }
@@ -381,12 +381,12 @@ class Images(object):
 
         self.search_result = response
 
-    def search_by_id(self, ids, id_key="id"):
+    def search_by_property(self, prop_key, prop_values):
         const = Constraints()
-        const.is_in(id_key, ids)
+        const.is_in(prop_key, prop_values)
         img_sort = {
-            "key": id_key,
-            "sequence": ids,
+            "key": prop_key,
+            "sequence": prop_values,
         }
         self.search(constraints=const, sort=img_sort)
 
@@ -429,7 +429,7 @@ class Images(object):
                 "FindImage": {
                     "_ref": 1,
                     "constraints": {
-                        "_uniqueid":  ["==", uniqueid]
+                        self.img_id_prop:  ["==", uniqueid]
                     },
                     "blobs": False,
                 }
@@ -460,7 +460,7 @@ class Images(object):
                         "ref": 1,
                     },
                     "results": {
-                        "list": ["_uniqueid"]
+                        "list": [self.img_id_prop]
                     }
                 }
             }]
@@ -581,9 +581,6 @@ class Images(object):
         if polygon_constraints:
             show_polygons = True
             self.images_polygons = {}
-            if "_uniqueid" in polygon_constraints.constraints.keys():
-                print("WARNING: don't use '_uniqueid' in polygon_constraints")
-                print("see https://github.com/aperture-data/athena/issues/532")
 
         for i in range(len(self.images_ids)):
 
@@ -616,9 +613,12 @@ class Images(object):
                     self.__retrieve_polygons(
                         i, polygon_constraints, polygon_tag_key, polygon_tag_format)
 
-                bounds = self.images_polygons[uniqueid]["bounds"]
-                polygons = self.images_polygons[uniqueid]["polygons"]
-                tags = self.images_polygons[uniqueid]["tags"]
+                bounds = self.images_polygons[uniqueid]["bounds"] if uniqueid in self.images_polygons else [
+                ]
+                polygons = self.images_polygons[uniqueid]["polygons"] if uniqueid in self.images_polygons else [
+                ]
+                tags = self.images_polygons[uniqueid]["tags"] if uniqueid in self.images_polygons else [
+                ]
 
                 for pi in range(len(polygons)):
                     self.__draw_polygon_and_tag(image, polygons[pi], tags[pi] if pi < len(
@@ -670,7 +670,7 @@ class Images(object):
                     "FindImage": {
                         "_ref": 1,
                         "constraints": {
-                            "_uniqueid": ["==", uniqueid]
+                            self.img_id_prop: ["==", uniqueid]
                         },
                         "blobs": False,
                         "results": {
