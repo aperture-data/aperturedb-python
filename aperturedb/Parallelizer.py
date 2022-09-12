@@ -1,17 +1,16 @@
 import math
 import time
 from threading import Thread
+
+
 from aperturedb import ProgressBar
 
 
 class Parallelizer:
     """**Generic Parallelizer**
-
     A parallelizer converts a series of operations to be executed and partitions it into
     batches, to be execued by multiple threads of execution.
-
     .. image:: /_static/parallelizer.svg
-
     """
 
     def __init__(self, progress_to_file=""):
@@ -30,9 +29,6 @@ class Parallelizer:
         self.times_arr = []
         self.total_actions_time = 0
         self.error_counter  = 0
-
-        self.commands_per_query = 1
-        self.blobs_per_query = 0
 
         if self.pb_file:
             self.pb = ProgressBar.ProgressBar(self.pb_file)
@@ -56,12 +52,11 @@ class Parallelizer:
             elements_per_thread = self.total_actions
             self.numthreads = 1
         else:
-            # elements_per_thread = math.ceil(
-            #     self.total_actions / (self.numthreads * self.batchsize))
-            elements_per_thread = batchsize
+            elements_per_thread = math.ceil(
+                self.total_actions / self.numthreads)
 
         thread_arr = []
-        for i in range(math.ceil(self.total_actions / self.batchsize)):
+        for i in range(self.numthreads):
             idx_start = i * elements_per_thread
             idx_end   = min(idx_start + elements_per_thread,
                             self.total_actions)

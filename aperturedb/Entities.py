@@ -171,7 +171,7 @@ class Entities(Subscriptable):
                 {
                     self.find_command: {
                         "_ref": 1,
-                        "unique": True,
+                        "unique": False,
                         "constraints": {
                             pk: ["==", int(entity[pk])]
                         }
@@ -190,7 +190,6 @@ class Entities(Subscriptable):
                 }
             ]
             res, r, b = execute_batch(query, [], self.db)
-
             result.append(self.known_entities[type.value](
                 db=self.db, response=r[1]["FindEntity"]["entities"], type=type.value))
         return result
