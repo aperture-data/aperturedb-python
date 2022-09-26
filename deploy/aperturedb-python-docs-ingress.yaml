@@ -10,10 +10,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - python.docs.test.aperturedata.io
+        - python.docs.stage.aperturedata.io
       secretName: docs-wildcard-tls
   rules:
-    - host: python.docs.test.aperturedata.io
+    - host: python.docs.stage.aperturedata.io
       http:
         paths:
           - path: /

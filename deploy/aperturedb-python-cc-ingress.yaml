@@ -10,10 +10,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - python.coverage.test.aperturedata.io
+        - python.coverage.stage.aperturedata.io
       secretName: coverage-wildcard-tls
   rules:
-    - host: python.coverage.test.aperturedata.io
+    - host: python.coverage.stage.aperturedata.io
       http:
         paths:
           - path: /
