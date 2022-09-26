@@ -116,6 +116,6 @@ jobs:
         shell: bash
       - uses: actions-hub/kubectl@master
         env:
-          KUBE_CONFIG: ${{ secrets.KUBECONFIG_MICROK8S }}
+          KUBE_CONFIG: ${{ secrets.KUBECONFIG_STAGE }}
         with:
           args: apply -f deploy/
