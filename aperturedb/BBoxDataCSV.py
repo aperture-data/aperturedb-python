@@ -57,9 +57,9 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, df=None):
 
-        super().__init__(filename)
+        super().__init__(filename, df=df)
 
         self.props_keys       = [x for x in self.header[5:]
                                  if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
@@ -70,6 +70,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
         self.command = "AddBoundingBox"
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
 
         q = []
 

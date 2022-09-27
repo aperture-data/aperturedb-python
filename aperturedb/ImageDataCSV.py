@@ -67,13 +67,13 @@ class ImageDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3):
+    def __init__(self, filename, check_image=True, n_download_retries=3, df=None):
         self.loaders = [self.load_image, self.load_url,
                         self.load_s3_url, self.load_gs_url]
         self.source_types = [HEADER_PATH,
                              HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
 
-        super().__init__(filename)
+        super().__init__(filename, df=df)
 
         self.check_image = check_image
 
@@ -97,6 +97,7 @@ class ImageDataCSV(CSVParser.CSVParser):
         self.command = "AddImage"
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         image_path = self.df.loc[idx, self.source_type]
         img_ok, img = self.source_loader[self.source_type](image_path)
 

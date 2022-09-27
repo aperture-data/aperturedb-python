@@ -39,9 +39,9 @@ class EntityDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, df=None):
 
-        super().__init__(filename)
+        super().__init__(filename, df=df)
 
         self.props_keys       = [x for x in self.header[1:]
                                  if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
@@ -50,6 +50,7 @@ class EntityDataCSV(CSVParser.CSVParser):
         self.command = "AddEntity"
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         eclass = self.df.loc[idx, ENTITY_CLASS]
         q = []
         ae = self._basic_command(idx,
@@ -61,8 +62,5 @@ class EntityDataCSV(CSVParser.CSVParser):
         return q, []
 
     def validate(self):
-
-        self.header = list(self.df.columns.values)
-
         if self.header[0] != ENTITY_CLASS:
             raise Exception("Error with CSV file field: " + ENTITY_CLASS)

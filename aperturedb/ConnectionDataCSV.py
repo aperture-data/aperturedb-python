@@ -53,9 +53,9 @@ class ConnectionDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, df=None):
 
-        super().__init__(filename)
+        super().__init__(filename, df=df)
 
         self.props_keys       = [x for x in self.header[3:]
                                  if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
@@ -71,6 +71,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
         self.command     = "AddConnection"
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         src_value = self.df.loc[idx, self.header[1]]
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]

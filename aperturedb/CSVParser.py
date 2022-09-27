@@ -15,18 +15,18 @@ class CSVParser(Subscriptable):
     ...
     """
 
-    def __init__(self, filename):
-
-        self.df = pd.read_csv(filename)
-
-        self.validate()
+    def __init__(self, filename, df=None):
+        if df is None:
+            self.df = pd.read_csv(filename)
+        else:
+            self.df = df
 
         if len(self.df) == 0:
             logger.error("Dataframe empty. Is the CSV file ok?")
 
         self.df = self.df.astype('object')
-
         self.header = list(self.df.columns.values)
+        self.validate()
 
     def __len__(self):
 
