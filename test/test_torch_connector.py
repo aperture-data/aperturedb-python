@@ -60,7 +60,7 @@ class TestTorchDatasets():
         assert len(dataset) == utils.count_images()
         self.validate_dataset(dataset)
 
-    def test_datasetWithMultiprocessing(self, db, utils, images):
+    def test_datasetWithMultiprocessing(self, db, utils):
         query = [{
             "FindImage": {
                 "constraints": {
