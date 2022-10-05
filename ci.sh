@@ -84,7 +84,7 @@ build_notebook_image(){
     docker build -t $NOTEBOOK_IMAGE -t $LATEST_IMAGE -f docker/notebook/Dockerfile .
     if [ -z ${NO_PUSH+x} ]
     then
-        docker push --all-tags $NOTEBOOK_IMAGE
+        docker push --all-tags $DOCKER_REPOSITORY/aperturedb-notebook
     fi
 }
 
@@ -101,7 +101,7 @@ build_docs_image(){
     docker build -t $DOCS_IMAGE -f docs/docker/Dockerfile .
     if [ -z ${NO_PUSH+x} ]
     then
-        docker push --all-tags $DOCS_IMAGE
+        docker push $DOCS_IMAGE
     fi
 }
 
