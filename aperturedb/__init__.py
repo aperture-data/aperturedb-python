@@ -34,7 +34,8 @@ try:
     latest_version = json.loads(requests.get(
         "https://pypi.org/pypi/aperturedb/json").text)["info"]["version"]
 except Exception as e:
-    logger.warning(f"Failed to get latest version: {e}")
+    logger.warning(
+        f"Failed to get latest version: {e}. You are using version {__version__}")
     latest_version = None
 if __version__ != latest_version:
     logger.warning(
