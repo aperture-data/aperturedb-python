@@ -12,7 +12,7 @@ __version__ = "0.3.1"
 # set log level
 logger.setLevel(logging.DEBUG)
 formatter    = logging.Formatter(
-    "%(asctime)s : %(levelname)s : %(name)s : %(lineno)d : %(message)s")
+    "%(asctime)s : %(levelname)s : %(name)s : %(thread)d : %(lineno)d : %(message)s")
 
 log_file_level = logging.getLevelName(os.getenv("LOG_FILE_LEVEL", "WARN"))
 log_console_level = logging.getLevelName(
