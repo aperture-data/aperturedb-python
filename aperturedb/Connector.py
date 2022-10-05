@@ -24,9 +24,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-
+from __future__ import annotations
 from . import queryMessage_pb2
 import sys
+import traceback
 import os
 import socket
 import struct
@@ -35,12 +36,18 @@ import json
 import ssl
 import logging
 
+from threading import Lock
+from types import SimpleNamespace
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
 
 PROTOCOL_VERSION = 1
+
+
+class UnauthorizedException(Exception):
+    pass
 
 
 @dataclass
@@ -55,7 +62,8 @@ class Session():
     def valid(self) -> bool:
         session_age = time.time() - self.session_started
 
-        if session_age > self.session_token_ttl:
+        # This triggers refresh if the session is about to expire.
+        if session_age > self.session_token_ttl - os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10):
             return False
 
         return True
@@ -81,8 +89,7 @@ class Connector(object):
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
-                 session=None,
-                 use_ssl=True):
+                 use_ssl=True, shared_data=None):
 
         self.use_ssl = use_ssl
 
@@ -93,17 +100,18 @@ class Connector(object):
         self.last_response   = ''
         self.last_query_time = 0
 
-        self.session = None
-
         self._connect()
 
-        if session:
-            self.session = session
-        else:
+        if shared_data is None:
+            self.shared_data = SimpleNamespace()
+            self.shared_data.session = None
+            self.shared_data.lock = Lock()
             try:
                 self._authenticate(user, password, token)
             except Exception as e:
                 raise Exception("Authentication failed:", str(e))
+        else:
+            self.shared_data = shared_data
 
     def __del__(self):
 
@@ -152,39 +160,44 @@ class Connector(object):
         if session_info["status"] != 0:
             raise Exception(session_info["info"])
 
-        self.session = Session(session_info["session_token"],
-                               session_info["refresh_token"],
-                               session_info["session_token_expires_in"],
-                               session_info["refresh_token_expires_in"],
-                               )
+        self.shared_data.session = Session(session_info["session_token"],
+                                           session_info["refresh_token"],
+                                           session_info["session_token_expires_in"],
+                                           session_info["refresh_token_expires_in"],
+                                           time.time()
+                                           )
 
     def _check_session_status(self):
-
-        if not self.session:
+        if not self.shared_data.session:
             return
 
-        if not self.session.valid():
-            self._refresh_token()
+        if not self.shared_data.session.valid():
+            with self.shared_data.lock:
+                self._refresh_token()
 
     def _refresh_token(self):
-
         query = [{
             "RefreshToken": {
-                "refresh_token": self.session.refresh_token
+                "refresh_token": self.shared_data.session.refresh_token
             }
         }]
 
         response, _ = self._query(query, [])
 
-        session_info = response[0]["RefreshToken"]
-        if session_info["status"] != 0:
-            raise Exception(session_info["info"])
+        logger.info(f"Refresh token response: \r\n{response}")
+        if isinstance(response, list):
+            session_info = response[0]["RefreshToken"]
+            if session_info["status"] != 0:
+                raise UnauthorizedException(response)
 
-        self.session = Session(session_info["session_token"],
-                               session_info["refresh_token"],
-                               session_info["session_token_expires_in"],
-                               session_info["refresh_token_expires_in"],
-                               )
+            self.shared_data.session = Session(session_info["session_token"],
+                                               session_info["refresh_token"],
+                                               session_info["session_token_expires_in"],
+                                               session_info["refresh_token_expires_in"],
+                                               time.time()
+                                               )
+        else:
+            raise UnauthorizedException(response)
 
     def _connect(self):
 
@@ -258,8 +271,8 @@ class Connector(object):
         query_msg.json = query_str
 
         # Set Auth token, only when not authenticated before
-        if self.session:
-            query_msg.token = self.session.session_token
+        if self.shared_data.session:
+            query_msg.token = self.shared_data.session.session_token
 
         for blob in blob_array:
             query_msg.blobs.append(blob)
@@ -280,21 +293,53 @@ class Connector(object):
         return (self.last_response, response_blob_array)
 
     def query(self, q, blobs=[]):
+        """
+        Query the database with a query string or a json object.
+        First it checks if the session is valid, if not, it refreshes the token.
+        Then it sends the query to the server and returns the response.
 
-        self._check_session_status()
+        Args:
+            q (json): native query to be sent
+            blobs (list, optional): Blobs if needed with the query. Defaults to [].
 
+        Raises:
+            ConnectionError: Fatal error, connection to server lost
+
+        Returns:
+            _type_: _description_
+        """
+        self._renew_session()
         try:
             start = time.time()
             self.response, self.blobs = self._query(q, blobs)
+            if not isinstance(self.response, list) and self.response["info"] == "Not Authenticated!":
+                # The case where session is valid, but expires while query is sent.
+                # Hope is that the query send won't be longer than the session ttl.
+                logger.warn(
+                    f"Session expired while query was sent. Retrying... \r\n{traceback.format_stack(limit=5)}")
+                self._renew_session()
+                start = time.time()
+                self.response, self.blobs = self._query(q, blobs)
             self.last_query_time = time.time() - start
             return self.response, self.blobs
         except BaseException as e:
-            print(e)
+            logger.critical(e)
             raise ConnectionError("ApertureDB disconnected")
 
-    def create_new_connection(self):
+    def _renew_session(self):
+        count = 0
+        while count < 3:
+            try:
+                self._check_session_status()
+                break
+            except UnauthorizedException as e:
+                logger.warn(
+                    f"[Attempt {count + 1} of 3] Failed to refresh token. Details: \r\n{traceback.format_exc(limit=5)}")
+                time.sleep(1)
+                count += 1
 
-        return Connector(self.host, self.port, session=self.session)
+    def create_new_connection(self) -> Connector:
+        return Connector(self.host, self.port, shared_data=self.shared_data)
 
     def get_last_response_str(self):
 

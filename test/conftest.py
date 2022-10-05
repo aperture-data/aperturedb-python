@@ -13,7 +13,7 @@ from aperturedb.Utils import Utils
 import dbinfo
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def db():
     return Connector(
         port=dbinfo.DB_PORT,
@@ -21,7 +21,7 @@ def db():
         password=dbinfo.DB_PASSWORD)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def insert_data_from_csv(db):
     def insert_data_from_csv(in_csv_file, rec_count=-1):
         file_data_pair = {
@@ -53,7 +53,7 @@ def insert_data_from_csv(db):
     return insert_data_from_csv
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def utils(db):
     return Utils(db)
 

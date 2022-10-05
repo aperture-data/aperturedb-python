@@ -20,14 +20,14 @@ class TestSession(TestBase):
         try:
             db = self.create_connection()
             # force session token expiry
-            db.session.session_token_ttl = 1
+            db.shared_data.session.session_token_ttl = 1
             logging.debug("Connected? {0}".format(
                 "yes" if db.connected else "no"))
             logging.debug(
                 "Session valid? {0}".format(
-                    "yes" if db.session.valid() else "no"))
+                    "yes" if db.shared_data.session.valid() else "no"))
             logging.debug("Valid length: {0}".format(
-                db.session.session_token_ttl))
+                db.shared_data.session.session_token_ttl))
             time.sleep(2)
             query = [{
                 "FindImage": {
@@ -38,6 +38,7 @@ class TestSession(TestBase):
             }]
             responses, blobs = db.query(query)
             logging.debug(responses)
-            self.assertTrue(db.session.valid(), "Failed to renew Session")
+            self.assertTrue(db.shared_data.session.valid(),
+                            "Failed to renew Session")
         except Exception:
             self.fail("Failed to renew Session")
