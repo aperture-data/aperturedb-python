@@ -2,6 +2,8 @@
 import logging
 import datetime
 import os
+import json
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -27,3 +29,16 @@ error_console_handler = logging.StreamHandler()
 error_console_handler.setLevel(log_console_level)
 error_console_handler.setFormatter(formatter)
 logger.addHandler(error_console_handler)
+
+try:
+    latest_version = json.loads(requests.get(
+        "https://pypi.org/pypi/aperturedb/json").text)["info"]["version"]
+except Exception as e:
+    logger.warning(
+        f"Failed to get latest version: {e}. You are using version {__version__}")
+    latest_version = None
+if __version__ != latest_version:
+    logger.warning(
+        f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
+    print(
+        f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
