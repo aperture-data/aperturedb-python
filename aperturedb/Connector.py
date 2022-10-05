@@ -172,7 +172,8 @@ class Connector(object):
             return
 
         if not self.shared_data.session.valid():
-            self._refresh_token()
+            with self.shared_data.lock:
+                self._refresh_token()
 
     def _refresh_token(self):
         query = [{
@@ -189,13 +190,12 @@ class Connector(object):
             if session_info["status"] != 0:
                 raise UnauthorizedException(response)
 
-            with self.shared_data.lock:
-                self.shared_data.session = Session(session_info["session_token"],
-                                                   session_info["refresh_token"],
-                                                   session_info["session_token_expires_in"],
-                                                   session_info["refresh_token_expires_in"],
-                                                   time.time()
-                                                   )
+            self.shared_data.session = Session(session_info["session_token"],
+                                               session_info["refresh_token"],
+                                               session_info["session_token_expires_in"],
+                                               session_info["refresh_token_expires_in"],
+                                               time.time()
+                                               )
         else:
             raise UnauthorizedException(response)
 
