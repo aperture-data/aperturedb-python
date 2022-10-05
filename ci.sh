@@ -65,7 +65,7 @@ IMAGE_EXTENSION_WITH_VERSION="-${BRANCH_NAME}:v${BUILD_VERSION}"
 if [ $BRANCH_NAME == 'master' ] || [ $BRANCH_NAME == 'main' ]
 then
     # when merging to master remove branch name
-    IMAGE_EXTENSION_WITH_VERSION=":v${APP_VERSION}"
+    IMAGE_EXTENSION_WITH_VERSION=":v${BUILD_VERSION}"
     IMAGE_EXTENSION_LATEST=":latest"
 fi
 
@@ -79,11 +79,12 @@ echo "Repository: $DOCKER_REPOSITORY"
 # Build notebook image
 build_notebook_image(){
     NOTEBOOK_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_WITH_VERSION}
+    LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
     echo "Building image $NOTEBOOK_IMAGE"
-    docker build -t $NOTEBOOK_IMAGE -f docker/notebook/Dockerfile .
+    docker build -t $NOTEBOOK_IMAGE -t $LATEST_IMAGE -f docker/notebook/Dockerfile .
     if [ -z ${NO_PUSH+x} ]
     then
-        docker push $NOTEBOOK_IMAGE
+        docker push --all-tags $NOTEBOOK_IMAGE
     fi
 }
 
@@ -95,11 +96,12 @@ build_docs_image(){
     cp -r ./docs/{*.*,Makefile,_static} docs/docker/build/docs
     find examples/ -name *.ipynb | xargs -i cp {} docs/docker/build/examples
     DOCS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-docs${IMAGE_EXTENSION_WITH_VERSION}
+    LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-docs${IMAGE_EXTENSION_LATEST}
     echo "Building image $DOCS_IMAGE"
     docker build -t $DOCS_IMAGE -f docs/docker/Dockerfile .
     if [ -z ${NO_PUSH+x} ]
     then
-        docker push $DOCS_IMAGE
+        docker push --all-tags $DOCS_IMAGE
     fi
 }
 
