@@ -29,7 +29,7 @@ update_version() {
     fi
     echo "Updating version $BUILD_VERSION to $VERSION_BUMP"
     # Replace version in __init__.py
-    printf '%s\n' "%s/__version__.*/__version__ = \"$VERSION_BUMP\"/g" 'x' | ex aperturedb/__init__.py
+    printf '%s\n' "%s/__version__ = .*/__version__ = \"$VERSION_BUMP\"/g" 'x' | ex aperturedb/__init__.py
     printf '%s\n' "%s/version=.*/version=\"$VERSION_BUMP\",/g" 'x' | ex setup.py
 
     # Commit and push version bump
