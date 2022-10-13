@@ -80,6 +80,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
         fi = {
             "FindImage": {
                 "_ref": img_ref,
+                "unique": True,
                 "constraints": {
                     self.img_key: ["==", img_id],
                 },
