@@ -83,6 +83,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
                 "FindEntity": {
                     "_ref": ref_src,
                     "with_class": self.src_class,
+                    "unique": True,
                 }
             }
 
@@ -96,6 +97,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
                 "FindEntity": {
                     "_ref": ref_dst,
                     "with_class": self.dst_class,
+                    "unique": True,
                 }
             }
 
