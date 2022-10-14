@@ -28,7 +28,6 @@ def execute_batch(q, blobs, db,
     """
     result = 0
     logger.debug(f"Query={q}")
-    logger.debug(f"Blobs={blobs}")
     r, b = db.query(q, blobs)
     logger.debug(f"Response={r}")
 
