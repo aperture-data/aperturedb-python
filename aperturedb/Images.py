@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict
+from typing import Dict, Tuple
 import cv2
 import math
 import numpy as np
@@ -10,6 +10,11 @@ from aperturedb import Utils
 from aperturedb.Entities import Entities, EntityType, Query
 from aperturedb.Connector import Connector
 from aperturedb.Constraints import Constraints
+from ipywidgets import widgets
+from IPython.display import display, HTML
+import base64
+from io import BytesIO
+from PIL import Image
 
 
 class Images(Entities):
@@ -65,6 +70,37 @@ class Images(Entities):
             images.decorator = cls.__decorator
             images.adjacent = adjacent
         return images
+
+    def inspect(self) -> Tuple[widgets.IntSlider, widgets.Output]:
+        op = widgets.Output()
+
+        def widget_interaction(c):
+            def image_base64(im):
+                with BytesIO() as buffer:
+                    im.save(buffer, 'jpeg')
+                    return base64.b64encode(buffer.getvalue()).decode()
+
+            def image_formatter(im):
+                return f'<img width={c["new"]} src="data:image/jpeg;base64,{image_base64(im)}">'
+            with op:
+                op.clear_output()
+                display(HTML(super(Images, self).inspect().to_html(
+                    formatters={'thumbnail': image_formatter}, escape=False)))
+        sizer = widgets.IntSlider(min=1, max=400, value=100)
+        sizer.observe(widget_interaction, 'value')
+        return sizer, op
+
+    def getitem(self, idx):
+        item = super().getitem(idx)
+        if self.get_image == True:
+            buffer = self.get_image_by_index(idx)
+            if buffer is not None:
+                # nparr = np.frombuffer(buffer, dtype=np.uint8)
+                item['thumbnail'] = Image.fromarray(
+                    self.get_np_image_by_index(idx))
+        return item
+
+    # DW interface ends
 
     def __init__(self, db, batch_size=100, response=None, **kwargs):
         super().__init__(db, response)
@@ -265,7 +301,7 @@ class Images(Entities):
     def get_image_by_index(self, index):
 
         if index >= len(self.images_ids):
-            print("Index is incorrect")
+            # print("Index is incorrect")
             return
 
         uniqueid = self.images_ids[index]

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 
 
@@ -15,29 +16,29 @@ class Constraints(object):
             }
         }
 
-    def equal(self, key, value):
-
+    def equal(self, key, value) -> Constraints:
         self.constraints[self._conjunction][key] = ["==", value]
+        return self
 
-    def greaterequal(self, key, value):
-
+    def greaterequal(self, key, value) -> Constraints:
         self.constraints[self._conjunction][key] = [">=", value]
+        return self
 
-    def greater(self, key, value):
-
+    def greater(self, key, value) -> Constraints:
         self.constraints[self._conjunction][key] = [">", value]
+        return self
 
-    def lessequal(self, key, value):
-
+    def lessequal(self, key, value) -> Constraints:
         self.constraints[self._conjunction][key] = ["<=", value]
+        return self
 
-    def less(self, key, value):
-
+    def less(self, key, value) -> Constraints:
         self.constraints[self._conjunction][key] = ["<", value]
+        return self
 
-    def is_in(self, key, val_array):
-
+    def is_in(self, key, val_array) -> Constraints:
         self.constraints[self._conjunction][key] = ["in", val_array]
+        return self
 
     def check(self, entity):
         for key, op in self.constraints.items():
