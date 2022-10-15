@@ -16,7 +16,7 @@ from aperturedb.Utils import Utils
 import dbinfo
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def db():
     return Connector(
         port=dbinfo.DB_PORT,
@@ -69,12 +69,12 @@ def insert_data_from_csv(db, request):
     return insert_data_from_csv
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def utils(db):
     return Utils(db)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="class")
 def images(insert_data_from_csv):
     return insert_data_from_csv("./input/images.adb.csv")
 
