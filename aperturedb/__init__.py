@@ -7,7 +7,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 
 # set log level
 logger.setLevel(logging.DEBUG)
