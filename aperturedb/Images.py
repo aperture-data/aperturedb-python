@@ -47,7 +47,7 @@ class Images(Entities):
                 else:
                     fs = fs.connected_to(v)
                 count += 1
-            # Eventually, connecy the specification of Images to the specification of the adjacent items.
+            # Eventually, connect the specification of Images to the specification of the adjacent items.
             fs = fs.connected_to(spec)
         else:
             fs = spec
@@ -63,7 +63,6 @@ class Images(Entities):
         if with_adjacent:
             for k, v in with_adjacent.items():
                 adjacent[k] = images.get_connected_entities(
-                    pk="id",
                     type=EntityType(v.with_class),
                     constraints=v.constraints)
 
@@ -71,23 +70,33 @@ class Images(Entities):
             images.adjacent = adjacent
         return images
 
-    def inspect(self) -> Tuple[widgets.IntSlider, widgets.Output]:
-        op = widgets.Output()
-
-        def widget_interaction(c):
-            def image_base64(im):
-                with BytesIO() as buffer:
-                    im.save(buffer, 'jpeg')
-                    return base64.b64encode(buffer.getvalue()).decode()
-
-            def image_formatter(im):
-                return f'<img width={c["new"]} src="data:image/jpeg;base64,{image_base64(im)}">'
-            with op:
-                op.clear_output()
-                display(HTML(super(Images, self).inspect().to_html(
-                    formatters={'thumbnail': image_formatter}, escape=False)))
+    def inspect(self, use_thumbnails=True) -> Tuple[widgets.IntSlider, widgets.Output]:
+        df = super(Images, self).inspect()
         sizer = widgets.IntSlider(min=1, max=400, value=100)
-        sizer.observe(widget_interaction, 'value')
+        if use_thumbnails:
+            op = widgets.Output()
+
+            def widget_interaction(c):
+                def image_base64(im):
+                    with BytesIO() as buffer:
+                        im.save(buffer, 'jpeg')
+                        return base64.b64encode(buffer.getvalue()).decode()
+
+                def image_formatter(im):
+                    return f'<img width={c["new"]} src="data:image/jpeg;base64,{image_base64(im)}" >'
+                with op:
+                    op.clear_output()
+
+                    display(HTML("<div style='max-width: 100%; overflow: auto;'>" +
+                                 df.to_html(
+                                     formatters={'thumbnail': image_formatter}, escape=False)
+                                 + "</div>")
+                            )
+            sizer.observe(widget_interaction, 'value')
+        else:
+            sizer = None
+            op = df
+
         return sizer, op
 
     def getitem(self, idx):

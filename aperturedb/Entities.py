@@ -120,7 +120,7 @@ class Entities(Subscriptable):
             print(r)
             return None
 
-    def get_connected_entities(self, pk: str, type: EntityType, constraints: Constraints = None) -> List[Entities]:
+    def get_connected_entities(self,  type: EntityType, constraints: Constraints = None) -> List[Entities]:
         """
         Gets all entities adjacent to and clustered around items of the collection
 
@@ -140,7 +140,7 @@ class Entities(Subscriptable):
                         "_ref": 1,
                         "unique": False,
                         "constraints": {
-                            pk: ["==", int(entity[pk])]
+                            "_uniqueid": ["==", entity["_uniqueid"]]
                         }
                     }
                 }, {
