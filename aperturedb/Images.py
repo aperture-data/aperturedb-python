@@ -453,12 +453,14 @@ class Images(object):
                     "blobs":     False,
                     "distances": True,
                     "ids":       True,
+                    "uniqueids": True,
                 }
             }, {
                 "FindImage": {
                     "is_connected_to": {
                         "ref": 1,
                     },
+                    "group_by_source": True,
                     "results": {
                         "list": [self.img_id_prop]
                     }
@@ -468,12 +470,22 @@ class Images(object):
             response, blobs = self.db_connector.query(query, blobs)
 
             try:
-                entities = response[1]["FindImage"]["entities"]
+                descriptors = response[0]["FindDescriptor"]["entities"]
+                ordered_descs_ids = [x["_uniqueid"] for x in descriptors]
 
-                for ent in entities[1:]:
-                    imgs_return.images_ids.append(ent[self.img_id_prop])
+                # Images are not sorted by distance, so we need to sort them
+                # That's why we use "group_by_source":
+                # To have a mapping between descriptors and associated images.
+                imgs_map = response[1]["FindImage"]["entities"]
 
-            except:
+                for desc_id in ordered_descs_ids:
+                    img_info = imgs_map[desc_id][0]
+                    # We could assert here that there is only one image per descriptor.
+                    imgs_return.images_ids.append(img_info[self.img_id_prop])
+
+            except Exception as e:
+                print("Error with search: {}".format(response))
+                print(e)
                 print("Error with similarity search")
 
         return imgs_return
