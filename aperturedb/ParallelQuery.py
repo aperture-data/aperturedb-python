@@ -123,7 +123,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 # Transaction failed entirely.
                 logger.error(f"Failed query = {q} with response = {r}")
                 self.error_counter += 1
-
+            if isinstance(r, dict) and db.last_response['status'] != 0:
+                logger.error(f"Failed query = {q} with response = {r}")
+                self.error_counter += 1
             if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
                 logger.warning(
                     f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")

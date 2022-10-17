@@ -66,7 +66,8 @@ class ConnectionDataCSV(CSVParser.CSVParser):
         self.src_class   = self.header[1].split("@")[0]
         self.src_key     = self.header[1].split("@")[1]
         self.dst_class   = self.header[2].split("@")[0]
-        self.dst_key     = self.header[2].split("@")[1]
+        # Pandas appends a .n to the column name if there is a duplicate
+        self.dst_key     = self.header[2].split("@")[1].split(".")[0]
         self.command     = "AddConnection"
 
     def getitem(self, idx):
@@ -82,6 +83,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
                 "FindEntity": {
                     "_ref": ref_src,
                     "with_class": self.src_class,
+                    "unique": True,
                 }
             }
 
@@ -95,6 +97,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
                 "FindEntity": {
                     "_ref": ref_dst,
                     "with_class": self.dst_class,
+                    "unique": True,
                 }
             }
 
