@@ -432,6 +432,10 @@ class Utils(object):
                 logger.error(self.connector.get_last_response_str())
                 return False
 
+            if self.verbose:
+                print(
+                    f"Delete transaction of {batch_size} elements took: {self.connector.last_query_time()}")
+
             count -= batch_size
 
             if self.verbose:
@@ -459,6 +463,10 @@ class Utils(object):
             logger.error(self.connector.get_last_response_str())
             return False
 
+        if self.verbose:
+            print(
+                f"Delete transaction took: {self.connector.last_query_time()}")
+
         return True
 
     def remove_connections(self, class_name, batched=False, batch_size=10000):
@@ -480,6 +488,10 @@ class Utils(object):
         if not self.connector.last_query_ok():
             logger.error(self.connector.get_last_response_str())
             return False
+
+        if self.verbose:
+            print(
+                f"Delete transaction took: {self.connector.last_query_time()}")
 
         return True
 
