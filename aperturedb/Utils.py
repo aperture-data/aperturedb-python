@@ -439,13 +439,49 @@ class Utils(object):
 
         return True
 
-    def remove_entities(self, class_name, batch_size=1000):
+    def remove_entities(self, class_name, batched=False, batch_size=10000):
 
-        return self._remove_objects("entities", class_name, batch_size)
+        # We used to batch because removing a large number of object did not work ok.
+        # Now it seems to work ok, so we don't batch anymore.
+        # We keep the option in case we need to batch, but not default.
+        if batched:
+            return self._remove_objects("entities", class_name, batch_size)
 
-    def remove_connections(self, class_name, batch_size=1000):
+        query = [{
+            "DeleteEntity": {
+                "with_class": class_name
+            }
+        }]
 
-        return self._remove_objects("connections", class_name, batch_size)
+        self.connector.query(query)
+
+        if not self.connector.last_query_ok():
+            logger.error(self.connector.get_last_response_str())
+            return False
+
+        return True
+
+    def remove_connections(self, class_name, batched=False, batch_size=10000):
+
+        # We used to batch because removing a large number of object did not work ok.
+        # Now it seems to work ok, so we don't batch anymore.
+        # We keep the option in case we need to batch, but not default.
+        if batched:
+            return self._remove_objects("connections", class_name, batch_size)
+
+        query = [{
+            "DeleteConnection": {
+                "with_class": class_name
+            }
+        }]
+
+        self.connector.query(query)
+
+        if not self.connector.last_query_ok():
+            logger.error(self.connector.get_last_response_str())
+            return False
+
+        return True
 
     def remove_all_descriptorsets(self):
 
