@@ -432,9 +432,8 @@ class Utils(object):
                 logger.error(self.connector.get_last_response_str())
                 return False
 
-            if self.verbose:
-                print(
-                    f"Delete transaction of {batch_size} elements took: {self.connector.last_query_time()}")
+            self.print(
+                f"Delete transaction of {batch_size} elements took: {self.connector.get_last_query_time()}")
 
             count -= batch_size
 
@@ -457,15 +456,20 @@ class Utils(object):
             }
         }]
 
-        self.connector.query(query)
+        r, _ = self.connector.query(query)
 
         if not self.connector.last_query_ok():
             logger.error(self.connector.get_last_response_str())
             return False
 
-        if self.verbose:
-            print(
-                f"Delete transaction took: {self.connector.last_query_time()}")
+        try:
+            count = r[0]["DeleteEntities"]["count"]
+            self.print(f"Deleted {count} entities")
+            self.print(
+                f"Delete transaction took: {self.connector.get_last_query_time()}")
+        except:
+            logger.error("Could not get count of deleted entities")
+            return False
 
         return True
 
@@ -483,15 +487,20 @@ class Utils(object):
             }
         }]
 
-        self.connector.query(query)
+        r, _ = self.connector.query(query)
 
         if not self.connector.last_query_ok():
             logger.error(self.connector.get_last_response_str())
             return False
 
-        if self.verbose:
-            print(
-                f"Delete transaction took: {self.connector.last_query_time()}")
+        try:
+            count = r[0]["DeleteConnection"]["count"]
+            self.print(f"Deleted {count} connections")
+            self.print(
+                f"Delete transaction took: {self.connector.get_last_query_time()}")
+        except:
+            logger.error("Could not get count of deleted connections")
+            return False
 
         return True
 

@@ -78,7 +78,7 @@ class ConnectionDataCSV(CSVParser.CSVParser):
 
         try:
 
-            ref_src = (2 * idx) % 10000 + 1
+            ref_src = (2 * idx) % 100000 + 1
             fe_a = {
                 "FindEntity": {
                     "_ref": ref_src,
