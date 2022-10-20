@@ -57,17 +57,17 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, df=None):
+    def __init__(self, filename, df=None, use_dask=False):
 
-        super().__init__(filename, df=df)
+        super().__init__(filename, df=df, use_dask=use_dask)
+        if not use_dask:
+            self.props_keys       = [x for x in self.header[5:]
+                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.constraints_keys = [x for x in self.header[5:]
+                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-        self.props_keys       = [x for x in self.header[5:]
-                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.constraints_keys = [x for x in self.header[5:]
-                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-
-        self.img_key = self.header[0]
-        self.command = "AddBoundingBox"
+            self.img_key = self.header[0]
+            self.command = "AddBoundingBox"
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

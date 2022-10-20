@@ -30,7 +30,10 @@ class Subscriptable():
                 [self.getitem(i) for i in range(start, stop, step)],
                 self.response_handler if hasattr(self, "response_handler") else None)
         else:
-            return self.getitem(subscript)
+            if subscript < len(self):
+                return self.getitem(subscript)
+            else:
+                raise StopIteration()
 
     def getitem(self, subscript):
         raise Exception("To be implemented in subclass")

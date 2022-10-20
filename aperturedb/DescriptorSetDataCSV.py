@@ -45,22 +45,22 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
         the distance would be L2.
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, df=None, use_dask=False):
 
-        super().__init__(filename)
-
-        self.props_keys       = [x for x in self.header[4:]
-                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.constraints_keys = [x for x in self.header[4:]
-                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.command = "AddDescriptorSet"
+        super().__init__(filename, df=df, use_dask=use_dask)
+        if not use_dask:
+            self.props_keys       = [x for x in self.header[4:]
+                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.constraints_keys = [x for x in self.header[4:]
+                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.command = "AddDescriptorSet"
 
     def getitem(self, idx):
 
         # Metrics/Engine can be of the form:
         #       "IP", or
         #       ["IP" ...]
-
+        idx = self.df.index.start + idx
         metrics = self.df.loc[idx, HEADER_METRIC]
         metrics = metrics if "[" not in metrics else ast.literal_eval(metrics)
         engines = self.df.loc[idx, HEADER_ENGINE]

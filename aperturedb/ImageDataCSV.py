@@ -67,34 +67,35 @@ class ImageDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3, df=None):
+    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         self.loaders = [self.load_image, self.load_url,
                         self.load_s3_url, self.load_gs_url]
         self.source_types = [HEADER_PATH,
                              HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
 
-        super().__init__(filename, df=df)
+        super().__init__(filename, df=df, use_dask=use_dask)
 
         self.check_image = check_image
+        if not use_dask:
+            self.format_given     = IMG_FORMAT in self.header
+            self.props_keys       = [x for x in self.header[1:]
+                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.props_keys       = [
+                x for x in self.props_keys if x != IMG_FORMAT]
+            self.constraints_keys = [x for x in self.header[1:]
+                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-        self.format_given     = IMG_FORMAT in self.header
-        self.props_keys       = [x for x in self.header[1:]
-                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.props_keys       = [x for x in self.props_keys if x != IMG_FORMAT]
-        self.constraints_keys = [x for x in self.header[1:]
-                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.source_type      = self.header[0]
 
-        self.source_type      = self.header[0]
+            if self.source_type not in self.source_types:
+                logger.error("Source not recognized: " + self.source_type)
+                raise Exception("Error loading image: " + filename)
+            self.source_loader    = {
+                st: sl for st, sl in zip(self.source_types, self.loaders)
+            }
 
-        if self.source_type not in self.source_types:
-            logger.error("Source not recognized: " + self.source_type)
-            raise Exception("Error loading image: " + filename)
-        self.source_loader    = {
-            st: sl for st, sl in zip(self.source_types, self.loaders)
-        }
-
-        self.n_download_retries = n_download_retries
-        self.command = "AddImage"
+            self.n_download_retries = n_download_retries
+            self.command = "AddImage"
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

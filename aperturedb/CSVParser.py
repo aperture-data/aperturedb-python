@@ -1,6 +1,10 @@
 import pandas as pd
 import logging
 from aperturedb.Subscriptable import Subscriptable
+from dask import dataframe
+import os
+import multiprocessing as mp
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +19,23 @@ class CSVParser(Subscriptable):
     ...
     """
 
-    def __init__(self, filename, df=None):
-        if df is None:
-            self.df = pd.read_csv(filename)
+    def __init__(self, filename, df=None, use_dask=False):
+        self.use_dask = use_dask
+        self.filename = filename
+
+        if not use_dask:
+            if df is None:
+                self.df = pd.read_csv(filename)
+            else:
+                self.df = df
         else:
-            self.df = df
+            # 10 is just a number for now.
+            # It'll impact the number of partitions, and memory usage.
+            # TODO: tune this for the best performance.
+            cores_used = int(0.9 * mp.cpu_count())
+            self.df = dataframe.read_csv(
+                self.filename,
+                blocksize = os.path.getsize(self.filename) // (cores_used * 10))
 
         if len(self.df) == 0:
             logger.error("Dataframe empty. Is the CSV file ok?")

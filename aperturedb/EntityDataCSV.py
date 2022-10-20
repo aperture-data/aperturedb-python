@@ -39,15 +39,14 @@ class EntityDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, df=None):
-
-        super().__init__(filename, df=df)
-
-        self.props_keys       = [x for x in self.header[1:]
-                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.constraints_keys = [x for x in self.header[1:]
-                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.command = "AddEntity"
+    def __init__(self, filename, df=None, use_dask=False):
+        super().__init__(filename, df=df, use_dask=use_dask)
+        if not use_dask:
+            self.props_keys       = [x for x in self.header[1:]
+                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.constraints_keys = [x for x in self.header[1:]
+                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.command = "AddEntity"
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

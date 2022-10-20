@@ -21,9 +21,19 @@ def db():
         password=dbinfo.DB_PASSWORD)
 
 
+def pytest_generate_tests(metafunc):
+    if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
+            ["test.test_Data"]:
+        metafunc.parametrize("insert_data_from_csv", [
+                             True, False], indirect=True)
+
+
 @pytest.fixture()
-def insert_data_from_csv(db):
+def insert_data_from_csv(db, request):
     def insert_data_from_csv(in_csv_file, rec_count=-1):
+        if rec_count > 0 and rec_count < 80:
+            request.param = False
+            print("Not enough records to test parallel loader. Using serial loader.")
         file_data_pair = {
             "./input/persons.adb.csv": EntityDataCSV,
             "./input/images.adb.csv": ImageDataCSV,
@@ -38,15 +48,18 @@ def insert_data_from_csv(db):
             "./input/bboxes-constraints.adb.csv": BBoxDataCSV,
             "./input/gs_images.adb.csv": ImageDataCSV
         }
-
-        data = file_data_pair[in_csv_file](in_csv_file)
+        use_dask = False
+        if hasattr(request, "param"):
+            use_dask = request.param
+        data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask)
         if rec_count != -1:
             data = data[:rec_count]
 
         loader = ParallelLoader(db)
         loader.ingest(data, batchsize=99,
-                      numthreads=31,
-                      stats=True)
+                      numthreads=8,
+                      stats=True,
+                      )
         assert loader.error_counter == 0
         return data
 
