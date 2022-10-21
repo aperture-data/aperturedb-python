@@ -463,7 +463,7 @@ class Utils(object):
             return False
 
         try:
-            count = r[0]["DeleteEntities"]["count"]
+            count = r[0]["DeleteEntity"]["count"]
             self.print(f"Deleted {count} entities")
             self.print(
                 f"Delete transaction took: {self.connector.get_last_query_time()}")
