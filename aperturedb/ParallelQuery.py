@@ -81,6 +81,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if not self.dry_run:
             r, b = db.query(q, blobs)
+            query_time = db.get_last_query_time()
+
             logger.info(f"Query={q}")
             logger.info(f"Response={r}")
 
@@ -124,14 +126,14 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 logger.warn(f"Failed query = {q} with response = {r}")
                 logger.error(f"Query failed. Response = {r}")
                 self.error_counter += 1
+
             if isinstance(r, dict) and db.last_response['status'] != 0:
                 logger.warn(f"Failed query = {q} with response = {r}")
                 logger.error(f"Query failed. Response = {r}")
-                self.error_counter += 1
+
             if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
                 logger.warning(
                     f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
-            query_time = db.get_last_query_time()
         else:
             query_time = 1
 
@@ -195,25 +197,27 @@ class ParallelQuery(Parallelizer.Parallelizer):
         total_queries_exec = len(times)
 
         print("============ ApertureDB Parallel Query Stats ============")
-        print("Total time (s):", self.total_actions_time)
-        print("Total queries executed:", total_queries_exec)
+        print(f"Total time (s): {self.total_actions_time}")
+        print(f"Total queries executed: {total_queries_exec}")
 
         if total_queries_exec == 0:
             print("All queries failed!")
 
         else:
-            print("Avg Query time (s):", np.mean(times))
-            print("Query time std:", np.std(times))
-            print("Avg Query Throughput (q/s)):",
-                  1 / np.mean(times) * self.numthreads)
+            mean = np.mean(times)
+            std  = np.std(times)
+            tp = 1 / mean * self.numthreads
 
-            msg = "(" + self.type + "/s):"
-            print("Overall throughput", msg,
-                  self.total_actions / self.total_actions_time)
+            print(f"Avg Query time (s): {mean}")
+            print(f"Query time std: {std}")
+            print(f"Avg Query Throughput (q/s): {tp}")
+
+            i_tp = self.total_actions / self.total_actions_time
+            print(f"Overall insertion throughput ({self.type}/s): {i_tp}")
 
             if self.error_counter > 0:
-                print("Total errors encountered:", self.error_counter)
-                print("Errors (%):", 100 *
-                      self.error_counter / total_queries_exec)
+                err_perc = 100 * self.error_counter / total_queries_exec
+                print(f"Total errors encountered: {self.error_counter}")
+                print(f"Errors (%): {err_perc}")
 
         print("=========================================================")

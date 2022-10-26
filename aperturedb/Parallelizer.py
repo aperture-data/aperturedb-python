@@ -46,7 +46,7 @@ class Parallelizer:
     def run(self, generator, batchsize, numthreads, stats):
 
         self._reset(batchsize, numthreads)
-        self.stats      = stats
+        self.stats = stats
         self.generator = generator
         self.total_actions = len(generator)
 
