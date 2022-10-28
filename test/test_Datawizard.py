@@ -1,10 +1,10 @@
 import logging
 from aperturedb.Blobs import Blobs
 from aperturedb.BoundingBoxes import BoundingBoxes
+from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
 from aperturedb.Images import Images
 from aperturedb.Query import EntityType, Query
-from aperturedb.Utils import Utils
 
 logger = logging.getLogger(__file__)
 
@@ -13,7 +13,7 @@ class TestDataWizardEntities():
     def test_get_persons(self, insert_data_from_csv, db):
         loaded = insert_data_from_csv(in_csv_file="./input/persons.adb.csv")
         all_persons = Entities.retrieve(db,
-                                        spec=Query.spec(with_class=EntityType.CUSTOM, custom_class_name="Person"))[0]
+                                        spec=Query.spec(with_class="Person"))[0]
         assert len(all_persons) == len(loaded)
         too_young = all_persons.filter(lambda p: p["age"] < 18)
         too_old = all_persons.filter(lambda p: p["age"] > 60)
@@ -39,13 +39,19 @@ class TestDataWizardEntities():
         ages = df['age']
         assert ages[ages >= 60].count() == len(df)
 
-    def test_update_properties(self, retired_persons, utils: Utils):
+    def test_update_properties(self, db, retired_persons):
         risk_factors = [{
-            "risk_factor": (p["age"] - 60 // 10)
+            "risk_factor": (p["age"] - 60) // 10
         } for p in retired_persons]
         retired_persons.update_properties(risk_factors)
         df = retired_persons.inspect()
         logger.info(f"\n{df}")
+        persons = Entities.retrieve(db,
+                                    spec=Query.spec(with_class="Person",
+                                                    constraints=Constraints().greaterequal("age", 60)))[0]
+
+        assert len(persons) == len(retired_persons)
+        assert all(p["risk_factor"] == (p["age"] - 60) // 10 for p in persons)
 
 
 class TestDataWizardImages():

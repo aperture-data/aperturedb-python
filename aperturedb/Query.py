@@ -69,8 +69,7 @@ class Query():
     @classmethod
     def spec(cls,
              constraints: Constraints = None,
-             with_class: EntityType = EntityType.CUSTOM,
-             custom_class_name: str = "",
+             with_class: str = "",
              limit: int = -1,
              sort: Sort = None,
              list: List[str] = None
@@ -82,7 +81,6 @@ class Query():
         Args:
             constraints (Constraints, optional): https://docs.aperturedata.io/parameters/constraints.html . Defaults to None.
             with_class (EntityType, optional): _description_. Defaults to EntityType.CUSTOM.
-            custom_class_name (str, optional): _description_. Defaults to "".
             limit (int, optional): _description_. Defaults to -1.
             sort (Sort, optional): _description_. Defaults to None.
             list (List[str], optional): _description_. Defaults to None.
@@ -92,7 +90,7 @@ class Query():
         """
         return Query(
             constraints=constraints,
-            with_class=custom_class_name if with_class == EntityType.CUSTOM else with_class.value,
+            with_class=with_class,
             limit=limit,
             sort = sort,
             list = list

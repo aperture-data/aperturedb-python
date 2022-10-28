@@ -104,9 +104,6 @@ class Entities(Subscriptable):
                         "_ref": 1,
                         "constraints": {
                             "_uniqueid": ["==", entity["_uniqueid"]]
-                        },
-                        "results": {
-                            "blobs": False
                         }
                     }
                 }, {
@@ -117,8 +114,6 @@ class Entities(Subscriptable):
                 }
             ]
             res, r, b = execute_batch(query, [], self.db)
-            print(r)
-            return None
 
     def get_connected_entities(self,  type: EntityType, constraints: Constraints = None) -> List[Entities]:
         """
