@@ -52,9 +52,9 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, df=None):
 
-        super().__init__(filename)
+        super().__init__(filename, df=df)
 
         self.props_keys = []
         self.constraints_keys = []
@@ -71,6 +71,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
         self.command = "AddPolygon"
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
 
         q = []
 

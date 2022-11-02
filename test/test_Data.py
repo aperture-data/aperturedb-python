@@ -14,12 +14,15 @@ class TestEntityLoader():
         if not condition:
             raise AssertionError("Condition not true")
 
-    def test_Loader(self, utils, insert_data_from_csv):
-        classes = ["_Image", "_Descriptor", "Person", "_BoundingBox"]
+    def remove_entities(self, utils, classes):
         for c in classes:
             # Assert that we have a clean slate to begin with.
             self.assertEqual(utils.remove_entities(c), True)
             self.assertEqual(utils.count_entities(c), 0)
+
+    def test_Loader(self, utils, insert_data_from_csv):
+        classes = ["_Image", "_Descriptor", "Person", "_BoundingBox"]
+        self.remove_entities(utils, classes)
 
         results = [utils.create_entity_index(
             e, "id", "integer") for e in classes]
@@ -44,6 +47,9 @@ class TestEntityLoader():
         self.assertEqual(len(data), utils.count_bboxes())
 
     def test_LoaderDescriptorsImages(self, utils, insert_data_from_csv):
+        classes = ["_Image", "_Descriptor", "_DescriptorSet"]
+        self.remove_entities(utils, classes)
+
         # Insert Images, images may be there already, and that case should
         # be handled correctly by contraints
         data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
@@ -117,17 +123,17 @@ class TestURILoader():
                 "Expected {}, got {}".format(expected, actual))
 
     def test_S3Loader(self, utils, insert_data_from_csv):
-        count_before = utils.count_images()
+        self.assertEqual(utils.remove_entities("_Image"), True)
         data = insert_data_from_csv(in_csv_file = "./input/s3_images.adb.csv")
-        self.assertEqual(len(data), utils.count_images() - count_before)
+        self.assertEqual(len(data), utils.count_images())
 
     def test_HttpImageLoader(self, utils, insert_data_from_csv):
-        count_before = utils.count_images()
+        self.assertEqual(utils.remove_entities("_Image"), True)
         data = insert_data_from_csv(
             in_csv_file = "./input/http_images.adb.csv")
-        self.assertEqual(len(data), utils.count_images() - count_before)
+        self.assertEqual(len(data), utils.count_images())
 
     def test_GSImageLoader(self, utils, insert_data_from_csv):
-        count_before = utils.count_images()
+        self.assertEqual(utils.remove_entities("_Image"), True)
         data = insert_data_from_csv(in_csv_file = "./input/gs_images.adb.csv")
-        self.assertEqual(len(data), utils.count_images() - count_before)
+        self.assertEqual(len(data), utils.count_images())

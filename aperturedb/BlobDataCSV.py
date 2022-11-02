@@ -47,19 +47,19 @@ class BlobDataCSV(CSVParser.CSVParser):
         id would be only inserted if it does not already exist in the database.
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, df=None, use_dask=False):
 
-        super().__init__(filename)
-
-        self.props_keys       = [x for x in self.header[1:]
-                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX) and x != BLOB_PATH]
-        self.constraints_keys = [x for x in self.header[1:]
-                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.command = "AddBlob"
+        super().__init__(filename, df=df, use_dask=use_dask)
+        if not use_dask:
+            self.props_keys       = [x for x in self.header[1:]
+                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX) and x != BLOB_PATH]
+            self.constraints_keys = [x for x in self.header[1:]
+                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.command = "AddBlob"
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         filename = self.df.loc[idx, BLOB_PATH]
-
         blob_ok, blob = self.load_blob(filename)
         if not blob_ok:
             logger.error("Error loading blob: " + filename)

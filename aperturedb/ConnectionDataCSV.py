@@ -53,24 +53,24 @@ class ConnectionDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, df=None, use_dask=False):
+        super().__init__(filename, df=df, use_dask=use_dask)
+        if not use_dask:
+            self.props_keys       = [x for x in self.header[3:]
+                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-        super().__init__(filename)
+            self.constraints_keys = [x for x in self.header[3:]
+                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
 
-        self.props_keys       = [x for x in self.header[3:]
-                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-
-        self.constraints_keys = [x for x in self.header[3:]
-                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-
-        self.src_class   = self.header[1].split("@")[0]
-        self.src_key     = self.header[1].split("@")[1]
-        self.dst_class   = self.header[2].split("@")[0]
-        # Pandas appends a .n to the column name if there is a duplicate
-        self.dst_key     = self.header[2].split("@")[1].split(".")[0]
-        self.command     = "AddConnection"
+            self.src_class   = self.header[1].split("@")[0]
+            self.src_key     = self.header[1].split("@")[1]
+            self.dst_class   = self.header[2].split("@")[0]
+            # Pandas appends a .n to the column name if there is a duplicate
+            self.dst_key     = self.header[2].split("@")[1].split(".")[0]
+            self.command     = "AddConnection"
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         src_value = self.df.loc[idx, self.header[1]]
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]
