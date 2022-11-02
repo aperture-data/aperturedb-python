@@ -49,6 +49,10 @@ class DaskManager:
 
             return metrics
 
+        # The -1 magic number is to use as many 90% of the cores (1 worker per core).
+        # This can be overridden by the user.
+        # Create a pool of workers.
+        # TODO: see if the same pool can be reused for multiple tasks.
         workers = self.__num_workers if self.__num_workers != \
             -1 else int(0.9 * mp.cpu_count())
         with LocalCluster(n_workers=workers) as cluster, Client(cluster) as client:
