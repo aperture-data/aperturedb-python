@@ -1,6 +1,3 @@
-import math
-import time
-from threading import Thread
 
 from aperturedb import ParallelQuery
 
@@ -40,13 +37,18 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             mean = np.mean(times)
             std  = np.std(times)
             tp = 1 / mean * self.numthreads
+            suceeded_queries = sum([stat["suceeded_queries"]
+                                   for stat in self.actual_stats])
+            suceeded_commands = sum([stat["suceeded_commands"]
+                                    for stat in self.actual_stats])
 
             print(f"Avg Query time (s): {mean}")
             print(f"Query time std: {std}")
             print(f"Avg Query Throughput (q/s): {tp}")
 
             i_tp = self.total_actions / self.total_actions_time
-            print(f"Overall insertion throughput ({self.type}/s): {i_tp}")
+            print(
+                f"Overall insertion throughput ({self.type}/s): {i_tp if self.error_counter == 0 else 'NaN'}")
 
             if self.error_counter > 0:
                 err_perc = 100 * self.error_counter / total_queries_exec
@@ -55,6 +57,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
             # TODO this does not take into account that the last
             # batch may be smaller than batchsize
-            inserted_elements = self.total_actions - self.error_counter * self.batchsize
-            print("Total inserted elements:", inserted_elements)
+            # inserted_elements = self.total_actions - self.error_counter * self.batchsize
+            print(f"Total inserted elements: {suceeded_queries}")
+            print(f"Total successful commands: {suceeded_commands}")
         print("=================================================")

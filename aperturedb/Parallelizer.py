@@ -33,6 +33,7 @@ class Parallelizer:
         self.times_arr = []
         self.total_actions_time = 0
         self.error_counter  = 0
+        self.actual_stats = []
 
         if self.pb_file:
             self.pb = ProgressBar.ProgressBar(self.pb_file)

@@ -85,6 +85,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             logger.info(f"Query={q}")
             logger.info(f"Response={r}")
+            worker_stats = {}
 
             if db.last_query_ok():
                 if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
@@ -120,25 +121,32 @@ class ParallelQuery(Parallelizer.Parallelizer):
                             r[start:end],
                             b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
                         blobs_returned += b_count
+                worker_stats["suceeded_commands"] = len(q)
+                worker_stats["suceeded_queries"] = len(data)
 
             else:
                 # Transaction failed entirely.
-                logger.warn(f"Failed query = {q} with response = {r}")
+                logger.warning(f"Failed query = {q} with response = {r}")
                 logger.error(f"Query failed. Response = {r}")
                 self.error_counter += 1
+                worker_stats["suceeded_queries"] = 0
+                worker_stats["suceeded_commands"] = 0
 
             if isinstance(r, dict) and db.last_response['status'] != 0:
-                logger.warn(f"Failed query = {q} with response = {r}")
+                logger.warning(f"Failed query = {q} with response = {r}")
                 logger.error(f"Query failed. Response = {r}")
 
             if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
                 logger.warning(
                     f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
+                worker_stats["suceeded_commands"] = sum(
+                    [v['status'] == 0 for i in r for k, v in i.items()])
         else:
             query_time = 1
 
         # append is thread-safe
         self.times_arr.append(query_time)
+        self.actual_stats.append(worker_stats)
 
     def worker(self, thid, generator, start, end):
 
@@ -213,7 +221,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
             print(f"Avg Query Throughput (q/s): {tp}")
 
             i_tp = self.total_actions / self.total_actions_time
-            print(f"Overall insertion throughput ({self.type}/s): {i_tp}")
+            # print(f"Overall insertion throughput ({self.type}/s): {i_tp}")
+            print(
+                f"Overall insertion throughput ({self.type}/s): {i_tp if self.error_counter == 0 else 'NaN'}")
 
             if self.error_counter > 0:
                 err_perc = 100 * self.error_counter / total_queries_exec
