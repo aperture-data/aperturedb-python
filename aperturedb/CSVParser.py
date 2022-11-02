@@ -25,7 +25,7 @@ class CSVParser(Subscriptable):
     **ApertureDB General CSV Parser for Loaders.**
     This operates in 2 modes:
     - **Normal Mode**: This is the default mode. It reads the CSV file into a Pandas DataFrame.
-    - **Dask Mode**: This mode is used when the CSV file is too big to fit in memory, or multiprocessing is desired. 
+    - **Dask Mode**: This mode is used when the CSV file is too big to fit in memory, or multiprocessing is desired.
         It reads the CSV file into a Dask DataFrame.
         In Dask mode the CSV file is read in chunks, and the operations are performed on each chunk.
         The tricky bit is that the chunck size is not known till the loader is created, so the processing happens when ingest is called.
