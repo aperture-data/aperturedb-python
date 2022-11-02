@@ -1,8 +1,13 @@
+from __future__ import annotations
 from aperturedb import Parallelizer
 import numpy as np
 import json
 import logging
 import math
+
+
+from aperturedb.DaskManager import DaskManager
+
 
 logger = logging.getLogger(__name__)
 
@@ -121,10 +126,12 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             else:
                 # Transaction failed entirely.
-                logger.error(f"Failed query = {q} with response = {r}")
+                logger.warn(f"Failed query = {q} with response = {r}")
+                logger.error(f"Query failed. Response = {r}")
                 self.error_counter += 1
             if isinstance(r, dict) and db.last_response['status'] != 0:
-                logger.error(f"Failed query = {q} with response = {r}")
+                logger.warn(f"Failed query = {q} with response = {r}")
+                logger.error(f"Query failed. Response = {r}")
                 self.error_counter += 1
             if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
                 logger.warning(
@@ -137,7 +144,6 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.times_arr.append(query_time)
 
     def worker(self, thid, generator, start, end):
-
         # A new connection will be created for each thread
         db = self.db.create_new_connection()
 
@@ -166,26 +172,43 @@ class ParallelQuery(Parallelizer.Parallelizer):
         The generator yields a tuple : (array of commands, array of blobs)
 
         Args:
-            generator (_type_): _description_
-            batchsize (int, optional): _description_. Defaults to 1.
-            numthreads (int, optional): _description_. Defaults to 4.
-            stats (bool, optional): _description_. Defaults to False.
+            generator (_type_): The class that generates the queries to be executed.
+            batchsize (int, optional): Nummber of queries per transaction. Defaults to 1.
+            numthreads (int, optional): Number of parallel workers. Defaults to 4.
+            stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
-        if len(generator) > 0:
-            if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
-                # if len(generator[0]) > 0:
-                # Not applicable to old style loaders.
-                self.commands_per_query = min(len(generator[0][0]), batchsize)
-                if len(generator[0][1]):
-                    self.blobs_per_query = len(generator[0][1])
-            else:
-                logger.error(
-                    f"Could not determine query structure from:\n{generator[0]}")
-                logger.error(type(generator[0]))
-        logger.info(
-            f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}"
-        )
-        self.run(generator, batchsize, numthreads, stats)
+
+        if hasattr(generator, "use_dask") and generator.use_dask:
+            self._reset(batchsize=batchsize, numthreads=numthreads)
+            daskmanager = DaskManager(num_workers=numthreads)
+
+            results, self.total_actions_time = daskmanager.run(
+                self.db, generator, batchsize, stats=stats)
+            for result in results:
+                if result is not None:
+                    self.times_arr.extend(result.times_arr)
+                    self.error_counter += result.error_counter
+            self.total_actions = len(generator.df)
+
+            if stats:
+                self.print_stats()
+        else:
+            if len(generator) > 0:
+                if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
+                    # if len(generator[0]) > 0:
+                    # Not applicable to old style loaders.
+                    self.commands_per_query = min(
+                        len(generator[0][0]), batchsize)
+                    if len(generator[0][1]):
+                        self.blobs_per_query = len(generator[0][1])
+                else:
+                    logger.error(
+                        f"Could not determine query structure from:\n{generator[0]}")
+                    logger.error(type(generator[0]))
+            logger.info(
+                f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}"
+            )
+            self.run(generator, batchsize, numthreads, stats)
 
     def print_stats(self):
 

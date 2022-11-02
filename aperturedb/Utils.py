@@ -432,6 +432,9 @@ class Utils(object):
                 logger.error(self.connector.get_last_response_str())
                 return False
 
+            self.print(
+                f"Delete transaction of {batch_size} elements took: {self.connector.get_last_query_time()}")
+
             count -= batch_size
 
             if self.verbose:
@@ -439,13 +442,67 @@ class Utils(object):
 
         return True
 
-    def remove_entities(self, class_name, batch_size=1000):
+    def remove_entities(self, class_name, batched=False, batch_size=10000):
 
-        return self._remove_objects("entities", class_name, batch_size)
+        # We used to batch because removing a large number of object did not work ok.
+        # Now it seems to work ok, so we don't batch anymore.
+        # We keep the option in case we need to batch, but not default.
+        if batched:
+            return self._remove_objects("entities", class_name, batch_size)
 
-    def remove_connections(self, class_name, batch_size=1000):
+        query = [{
+            "DeleteEntity": {
+                "with_class": class_name
+            }
+        }]
 
-        return self._remove_objects("connections", class_name, batch_size)
+        r, _ = self.connector.query(query)
+
+        if not self.connector.last_query_ok():
+            logger.error(self.connector.get_last_response_str())
+            return False
+
+        try:
+            count = r[0]["DeleteEntity"]["count"]
+            self.print(f"Deleted {count} entities")
+            self.print(
+                f"Delete transaction took: {self.connector.get_last_query_time()}")
+        except:
+            logger.error("Could not get count of deleted entities")
+            return False
+
+        return True
+
+    def remove_connections(self, class_name, batched=False, batch_size=10000):
+
+        # We used to batch because removing a large number of object did not work ok.
+        # Now it seems to work ok, so we don't batch anymore.
+        # We keep the option in case we need to batch, but not default.
+        if batched:
+            return self._remove_objects("connections", class_name, batch_size)
+
+        query = [{
+            "DeleteConnection": {
+                "with_class": class_name
+            }
+        }]
+
+        r, _ = self.connector.query(query)
+
+        if not self.connector.last_query_ok():
+            logger.error(self.connector.get_last_response_str())
+            return False
+
+        try:
+            count = r[0]["DeleteConnection"]["count"]
+            self.print(f"Deleted {count} connections")
+            self.print(
+                f"Delete transaction took: {self.connector.get_last_query_time()}")
+        except:
+            logger.error("Could not get count of deleted connections")
+            return False
+
+        return True
 
     def remove_all_descriptorsets(self):
 

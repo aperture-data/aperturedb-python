@@ -68,21 +68,20 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, df=None, use_dask=False):
 
-        super().__init__(filename)
-
+        super().__init__(filename, df=df, use_dask=use_dask)
         self.npy_arrays = {}
         self.has_label = False
-
-        self.props_keys       = [x for x in self.header[3:]
-                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.constraints_keys = [x for x in self.header[3:]
-                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
-        self.command = "AddDescriptor"
+        if not use_dask:
+            self.props_keys       = [x for x in self.header[3:]
+                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.constraints_keys = [x for x in self.header[3:]
+                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+            self.command = "AddDescriptor"
 
     def getitem(self, idx):
-
+        idx = self.df.index.start + idx
         filename = self.df.loc[idx, HEADER_PATH]
         index    = self.df.loc[idx, HEADER_INDEX]
         desc_set = self.df.loc[idx, HEADER_SET]

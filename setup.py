@@ -5,10 +5,11 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aperturedb",
-    version="0.3.3",
+    version="0.3.4",
     description="ApertureDB Client Module",
     install_requires=['protobuf>=3.20.0', 'scikit-image', 'image', 'requests', 'boto3',
-                      'opencv-python', 'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage'],
+                      'opencv-python', 'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
+                      'dask[complete]'],
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/aperture-data/aperturedb-python",
