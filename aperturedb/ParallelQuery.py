@@ -51,7 +51,7 @@ def execute_batch(q, blobs, db,
                                 "blobs" not in req[k] or req[k]["blobs"])
                         blobs_where_default_false = \
                             k in [
-                                "FindDescriptors", "FindBoundingBoxes"] and "blobs" in req[k] and req[k]["blobs"]
+                                "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
                         if blobs_where_default_true or blobs_where_default_false:
                             count = resp[k]["returned"]
                             b_count += count
