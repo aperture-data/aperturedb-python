@@ -16,7 +16,7 @@ from aperturedb.Utils import Utils
 import dbinfo
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def db():
     return Connector(
         port=dbinfo.DB_PORT,
@@ -69,17 +69,17 @@ def insert_data_from_csv(db, request):
     return insert_data_from_csv
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def utils(db):
     return Utils(db)
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def images(insert_data_from_csv):
     return insert_data_from_csv("./input/images.adb.csv")
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture()
 def retired_persons(db, insert_data_from_csv, utils):
     utils.remove_entities(class_name="Person")
     loaded = insert_data_from_csv("./input/persons.adb.csv")
