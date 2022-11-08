@@ -221,7 +221,6 @@ class ParallelQuery(Parallelizer.Parallelizer):
             print(f"Avg Query Throughput (q/s): {tp}")
 
             i_tp = self.total_actions / self.total_actions_time
-            # print(f"Overall insertion throughput ({self.type}/s): {i_tp}")
             print(
                 f"Overall insertion throughput ({self.type}/s): {i_tp if self.error_counter == 0 else 'NaN'}")
 
