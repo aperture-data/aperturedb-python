@@ -57,7 +57,6 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
             # TODO this does not take into account that the last
             # batch may be smaller than batchsize
-            # inserted_elements = self.total_actions - self.error_counter * self.batchsize
             print(f"Total inserted elements: {suceeded_queries}")
             print(f"Total successful commands: {suceeded_commands}")
         print("=================================================")
