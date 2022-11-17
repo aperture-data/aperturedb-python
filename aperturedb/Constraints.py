@@ -20,6 +20,10 @@ class Constraints(object):
         self.constraints[self._conjunction][key] = ["==", value]
         return self
 
+    def notequal(self, key, value) -> Constraints:
+        self.constraints[self._conjunction][key] = ["!=", value]
+        return self
+
     def greaterequal(self, key, value) -> Constraints:
         self.constraints[self._conjunction][key] = [">=", value]
         return self

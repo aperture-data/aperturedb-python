@@ -73,7 +73,8 @@ class Query():
              limit: int = -1,
              sort: Sort = None,
              list: List[str] = None,
-             group_by_src: bool = False
+             group_by_src: bool = False,
+             blobs: bool = False
              ) -> Query:
         """
         The specification for a command to be used in a query.
@@ -95,6 +96,7 @@ class Query():
             limit=limit,
             sort = sort,
             list = list,
+            blobs=blobs,
             group_by_src = group_by_src
         )
 
@@ -105,6 +107,7 @@ class Query():
                  sort: Sort = None,
                  list: List[str] = None,
                  group_by_src: bool = False,
+                 blobs: bool = False,
                  adj_to: int = 0):
         self.constraints = constraints
         self.with_class = with_class
@@ -112,6 +115,7 @@ class Query():
         self.sort = sort
         self.list = list
         self.group_by_src = group_by_src
+        self.blobs = blobs
         self.adj_to = adj_to + 1
 
     def query(self) -> List[dict]:

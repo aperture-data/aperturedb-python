@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List
+from typing import Any, Dict, List, Union
 from aperturedb.Query import Query, EntityType
 
 from aperturedb.Subscriptable import Subscriptable
@@ -23,7 +23,8 @@ class Entities(Subscriptable):
     @classmethod
     def retrieve(cls,
                  db: Connector,
-                 spec: Query
+                 spec: Query,
+                 with_adjacent: Dict[str, Query] = None
                  ) -> List[Entities]:
         """
         Using the Entities.retrieve method, is a simpple layer, with typical native queries converted
@@ -39,11 +40,31 @@ class Entities(Subscriptable):
         Returns:
             List[Entities]: _description_
         """
+
+        # Sice adjacent items are usually a way to filter the results,
+        # the native query is constructed in the reverse order, with
+        # first filtering out the relavant itmes based on adjacent items.
+        fs = None
+        count = 0
+        if with_adjacent:
+            for k, v in with_adjacent.items():
+                if fs is None:
+                    fs = v
+                else:
+                    fs = fs.connected_to(v)
+                count += 1
+            # Eventually, connect the specification of Images to the specification of the adjacent items.
+            fs = fs.connected_to(spec)
+        else:
+            fs = spec
+
+        spec = fs
+
         cls.known_entities = load_entities_registry(
             custom_entities=spec.command_properties(prop="with_class"))
         cls.db = db
-        if cls.db_object != "Entity":
-            spec.with_class = cls.db_object
+        # if cls.db_object != "Entity":
+        #     spec.with_class = cls.db_object
 
         query = spec.query()
         print(f"query={query}")
@@ -66,7 +87,30 @@ class Entities(Subscriptable):
                 print(e)
                 print(cls.known_entities)
                 raise e
+
+        cls.__postprocess__(entities=results[-1], with_adjacent=with_adjacent)
         return results
+
+    # This needs to be defined so that the application can access the adjacent items,
+    # with every item of this iterable.
+    @classmethod
+    def __decorator(cls, index, adjacent):
+        item = {}
+        for k, v in adjacent.items():
+            item[k] = v[index]
+        return item
+
+    @classmethod
+    def __postprocess__(cls, entities: Entities, with_adjacent: object = None):
+        adjacent = {}
+        if with_adjacent:
+            for k, v in with_adjacent.items():
+                adjacent[k] = entities.get_connected_entities(
+                    etype=v.with_class,
+                    constraints=v.constraints)
+
+            entities.decorator = cls.__decorator
+            entities.adjacent = adjacent
 
     def __init__(self, db: Connector = None, response: dict = None, type: str = None) -> None:
         super().__init__()
@@ -116,7 +160,7 @@ class Entities(Subscriptable):
             ]
             res, r, b = execute_batch(query, [], self.db)
 
-    def get_connected_entities(self,  type: EntityType, constraints: Constraints = None) -> List[Entities]:
+    def get_connected_entities(self,  etype: Union[EntityType, str], constraints: Constraints = None) -> List[Entities]:
         """
         Gets all entities adjacent to and clustered around items of the collection
 
@@ -129,6 +173,7 @@ class Entities(Subscriptable):
             List[Entities]: _description_
         """
         result = []
+        entity_class = etype.value if isinstance(etype, EntityType) else etype
         for entity in self:
             query = [
                 {
@@ -144,7 +189,7 @@ class Entities(Subscriptable):
                         "is_connected_to": {
                             "ref": 1
                         },
-                        "with_class": type.value,
+                        "with_class": entity_class,
                         "constraints": constraints.constraints,
                         "results": {
                             "all_properties": True
@@ -153,9 +198,30 @@ class Entities(Subscriptable):
                 }
             ]
             res, r, b = execute_batch(query, [], self.db)
-            result.append(self.known_entities[type.value](
-                db=self.db, response=r[1]["FindEntity"]["entities"], type=type.value))
+            cl = Entities
+            if entity_class in self.known_entities:
+                cl = self.known_entities[entity_class]
+            result.append(cl(
+                db=self.db, response=r[1]["FindEntity"]["entities"], type=entity_class))
         return result
+
+    def get_blob(self, entity) -> Any:
+        query = [
+            {
+                "FindVideo": {
+                    "constraints": {
+                        "_uniqueid": ["==", entity["_uniqueid"]]
+                    },
+                    "blobs": True,
+                    "uniqueids": True,
+                    "results": {
+                        "count": True
+                    }
+                }
+            }
+        ]
+        res, r, b = execute_batch(query, [], self.db)
+        return b[0]
 
 
 def load_entities_registry(custom_entities: List[str] = None) -> dict:
@@ -170,7 +236,7 @@ def load_entities_registry(custom_entities: List[str] = None) -> dict:
         EntityType.IMAGE.value: Images,
         EntityType.VIDEO.value: Videos,
         EntityType.BOUNDING_BOX.value: BoundingBoxes,
-        EntityType.BLOB.value: Blobs
+        EntityType.BLOB.value: Blobs,
     }
     for entity in set(custom_entities):
         if entity not in known_entities:
