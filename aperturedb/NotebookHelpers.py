@@ -1,12 +1,38 @@
 import os
+from typing import List
 import cv2
 import numpy as np
 
 from PIL import Image
 from IPython.display import Video
 from IPython.display import display as ds
+from IPython.display import HTML
+from base64 import b64encode
+
 
 DESTINATION_FOLDER = "results"
+BOX_TEMPORAL_WINDOW = 10
+
+
+class Rectangle:
+    def __init__(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+
+class BoundingBox:
+    def __init__(self, r: Rectangle = None, label: str = None) -> None:
+        self.r = r
+        self.label = label
+
+
+class TemporalBoundingBox:
+    def __init__(self, bb: BoundingBox = None, start_frame: int = 0, end_frame = 0) -> None:
+        self.bb = bb
+        self.start_frame = start_frame
+        self.end_frame = end_frame
 
 
 def check_folder(folder):
@@ -60,7 +86,7 @@ def draw_bboxes(image, boxes=[], tags=[], save=False):
         cv2.imwrite(img_file, cv_image)
 
 
-def display_video_mp4(blob):
+def display_video_mp4(blob, show=True):
 
     check_folder(DESTINATION_FOLDER)
 
@@ -69,4 +95,64 @@ def display_video_mp4(blob):
     fd.write(blob)
     fd.close()
 
-    ds(Video(name, embed=True))
+    if show:
+        ds(Video(name, embed=True))
+
+
+def annotate_video(blob, boxes=[], tags=[], bboxes: List[TemporalBoundingBox] = []):
+    display_video_mp4(blob, show=False)
+    name = DESTINATION_FOLDER + "/" + "video_tmp.mp4"
+    cap = cv2.VideoCapture(name)
+    if cap.isOpened():
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        res = (int(width), int(height))
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')  # codec
+
+        out = cv2.VideoWriter(os.path.join(
+            DESTINATION_FOLDER, 'output.mp4'), fourcc, 20.0, res)
+        frame = None
+        count = 0
+        while True:
+            try:
+                is_success, frame = cap.read()
+                filtered = list(filter(lambda x: abs(
+                    x.start_frame - count) < BOX_TEMPORAL_WINDOW or
+                    abs(x.end_frame - count) < BOX_TEMPORAL_WINDOW, bboxes))
+                if len(filtered) > 0:
+                    start = (filtered[0].bb.r.x, filtered[0].bb.r.y)
+                    end = (filtered[0].bb.r.x + filtered[0].bb.r.width,
+                           filtered[0].bb.r.y + filtered[0].bb.r.height)
+                    color = (255, 255, 255)
+                    thickness = 2
+                    annotated = cv2.rectangle(
+                        frame, start, end, color, thickness)
+                else:
+                    annotated = frame
+            except cv2.error as e:
+                print(e)
+                break
+
+            if not is_success:
+                break
+
+            out.write(annotated)
+            count += 1
+
+        out.release()
+    else:
+        print("Unable to open cap")
+
+
+def display_annotated_video(blob, boxes=[], tags=[], bboxes: List[TemporalBoundingBox] = []):
+    """
+    Returns a HTML representation with a column filled
+    with video entities.
+    """
+    annotate_video(blob, boxes, tags, bboxes)
+    video_path = os.path.join(DESTINATION_FOLDER, 'output.mp4')
+    mp4 = open(video_path, "rb").read()
+    data_url = "data:video/mp4;base64," + b64encode(mp4).decode()
+    return f"""<div style='max-width: 100%; overflow: auto;'><video width=400 controls>
+        <source src="{data_url}" type="video/mp4">
+    </video></div>"""
