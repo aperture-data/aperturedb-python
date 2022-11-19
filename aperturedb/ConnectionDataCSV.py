@@ -71,18 +71,18 @@ class ConnectionDataCSV(CSVParser.CSVParser):
             self.dst_key     = self.header[2].split("@")[1].split(".")[0]
             self.command     = "AddConnection"
 
-        self.src_cmd = "FindEntity"
-        self.dst_cmd = "FindEntity"
+            self.src_cmd = "FindEntity"
+            self.dst_cmd = "FindEntity"
 
-        if self.src_class[0] == "_":
-            if self.src_class[1:] not in self.adb_object_types:
-                raise Exception("Invalid object type: " + self.src_class)
-            self.src_cmd = "Find" + self.src_class[1:]
+            if self.src_class[0] == "_":
+                if self.src_class[1:] not in self.adb_object_types:
+                    raise Exception("Invalid object type: " + self.src_class)
+                self.src_cmd = "Find" + self.src_class[1:]
 
-        if self.dst_class[0] == "_":
-            if self.dst_class[1:] not in self.adb_object_types:
-                raise Exception("Invalid object type: " + self.dst_class)
-            self.dst_cmd = "Find" + self.dst_class[1:]
+            if self.dst_class[0] == "_":
+                if self.dst_class[1:] not in self.adb_object_types:
+                    raise Exception("Invalid object type: " + self.dst_class)
+                self.dst_cmd = "Find" + self.dst_class[1:]
 
     def getitem(self, idx):
         src_value = self.df.loc[idx, self.header[1]]
