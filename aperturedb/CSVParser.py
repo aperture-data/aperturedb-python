@@ -56,6 +56,10 @@ class CSVParser(Subscriptable):
         self.header = list(self.df.columns.values)
         self.validate()
 
+        self.adb_object_types = ["Entity", "Connection", "Image", "Descriptor",
+                                 "Video", "BoundingBox", "Polygon", "DescriptorSet",
+                                 "Frame"]
+
     def __len__(self):
 
         return len(self.df.index)

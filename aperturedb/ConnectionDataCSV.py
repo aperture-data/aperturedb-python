@@ -53,24 +53,37 @@ class ConnectionDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
-        super().__init__(filename, df=df, use_dask=use_dask)
-        if not use_dask:
-            self.props_keys       = [x for x in self.header[3:]
-                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+    def __init__(self, filename):
 
-            self.constraints_keys = [x for x in self.header[3:]
-                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+        super().__init__(filename)
 
-            self.src_class   = self.header[1].split("@")[0]
-            self.src_key     = self.header[1].split("@")[1]
-            self.dst_class   = self.header[2].split("@")[0]
-            # Pandas appends a .n to the column name if there is a duplicate
-            self.dst_key     = self.header[2].split("@")[1].split(".")[0]
-            self.command     = "AddConnection"
+        self.props_keys       = [x for x in self.header[3:]
+                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+
+        self.constraints_keys = [x for x in self.header[3:]
+                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+
+        self.src_class   = self.header[1].split("@")[0]
+        self.src_key     = self.header[1].split("@")[1]
+        self.dst_class   = self.header[2].split("@")[0]
+        # Pandas appends a .n to the column name if there is a duplicate
+        self.dst_key     = self.header[2].split("@")[1].split(".")[0]
+        self.command     = "AddConnection"
+
+        self.src_cmd = "FindEntity"
+        self.dst_cmd = "FindEntity"
+
+        if self.src_class[0] == "_":
+            if self.src_class[1:] not in self.adb_object_types:
+                raise Exception("Invalid object type: " + self.src_class)
+            self.src_cmd = "Find" + self.src_class[1:]
+
+        if self.dst_class[0] == "_":
+            if self.dst_class[1:] not in self.adb_object_types:
+                raise Exception("Invalid object type: " + self.dst_class)
+            self.dst_cmd = "Find" + self.dst_class[1:]
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx
         src_value = self.df.loc[idx, self.header[1]]
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]
@@ -79,32 +92,34 @@ class ConnectionDataCSV(CSVParser.CSVParser):
         try:
 
             ref_src = (2 * idx) % 100000 + 1
-            fe_a = {
-                "FindEntity": {
-                    "_ref": ref_src,
-                    "with_class": self.src_class,
-                    "unique": True,
+
+            cmd_params = {
+                "_ref": ref_src,
+                "unique": True,
+                "constraints": {
+                    self.src_key: ["==", src_value]
                 }
             }
 
-            fe_a["FindEntity"]["constraints"] = {}
-            fe_a["FindEntity"]["constraints"][self.src_key] = [
-                "==", src_value]
-            q.append(fe_a)
+            if self.src_cmd == "FindEntity":
+                cmd_params["with_class"] = self.src_class
+
+            q.append({self.src_cmd: cmd_params})
 
             ref_dst = ref_src + 1
-            fe_b = {
-                "FindEntity": {
-                    "_ref": ref_dst,
-                    "with_class": self.dst_class,
-                    "unique": True,
+
+            cmd_params = {
+                "_ref": ref_src,
+                "unique": True,
+                "constraints": {
+                    self.src_key: ["==", src_value]
                 }
             }
 
-            fe_b["FindEntity"]["constraints"] = {}
-            fe_b["FindEntity"]["constraints"][self.dst_key] = [
-                "==", dst_value]
-            q.append(fe_b)
+            if self.dst_cmd == "FindEntity":
+                cmd_params["with_class"] = self.dst_class
+
+            q.append({self.dst_cmd: cmd_params})
 
             ae = self._basic_command(idx,
                                      custom_fields={
