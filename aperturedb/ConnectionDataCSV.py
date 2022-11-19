@@ -109,10 +109,10 @@ class ConnectionDataCSV(CSVParser.CSVParser):
             ref_dst = ref_src + 1
 
             cmd_params = {
-                "_ref": ref_src,
+                "_ref": ref_dst,
                 "unique": True,
                 "constraints": {
-                    self.src_key: ["==", src_value]
+                    self.dst_key: ["==", dst_value]
                 }
             }
 
