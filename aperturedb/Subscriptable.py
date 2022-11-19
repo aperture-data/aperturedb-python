@@ -24,6 +24,7 @@ class Subscriptable():
     def __getitem__(self, subscript):
         if isinstance(subscript, slice):
             start = subscript.start if subscript.start else 0
+            start = len(self) + start if start < 0 else start
             stop = subscript.stop if subscript.stop else len(self)
             step = subscript.step if subscript.step else 1
             return Wrapper(
@@ -37,3 +38,15 @@ class Subscriptable():
 
     def getitem(self, subscript):
         raise Exception("To be implemented in subclass")
+
+    def __iter__(self):
+        self.ind = 0
+        return self
+
+    def __next__(self):
+        if self.ind >= len(self):
+            raise StopIteration
+        else:
+            r = self.getitem(self.ind)
+            self.ind += 1
+            return r

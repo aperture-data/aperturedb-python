@@ -1,114 +1,122 @@
-import os
+from __future__ import annotations
+from typing import Dict, Tuple, Union
 import cv2
 import math
 import numpy as np
-from PIL import Image
-from IPython.display import display
-from io import BytesIO
 
-import skimage.io as io
 import matplotlib.pyplot as plt
-from matplotlib.collections import PatchCollection
-from matplotlib.patches import Polygon
 
 from aperturedb import Utils
+from aperturedb.Entities import Entities, EntityType, Query
+from aperturedb.Connector import Connector
+from aperturedb.Constraints import Constraints
+from ipywidgets import widgets
+from IPython.display import display, HTML
+import base64
+from io import BytesIO
+from PIL import Image
+from pandas import DataFrame
 
 
-class Constraints(object):
+class Images(Entities):
+    db_object = "_Image"
 
-    def __init__(self):
+    # This needs to be defined so that the application can access the adjacent items,
+    # with every item of this iterable.
+    @classmethod
+    def __decorator(cls, index, adjacent):
+        item = {}
+        for k, v in adjacent.items():
+            item[k] = v[index]
+        return item
 
-        self.constraints = {}
+    @classmethod
+    def retrieve(cls,
+                 db: Connector,
+                 spec: Query,
+                 with_adjacent: Dict[str, Query] = None) -> Images:
+        spec.with_class = cls.db_object
+        # Sice adjacent items are usually a way to filter the results,
+        # the native query is constructed in the reverse order, with
+        # first filtering out the relavant itmes based on adjacent items.
+        fs = None
+        count = 0
+        if with_adjacent:
+            for k, v in with_adjacent.items():
+                if fs is None:
+                    fs = v
+                else:
+                    fs = fs.connected_to(v)
+                count += 1
+            # Eventually, connect the specification of Images to the specification of the adjacent items.
+            fs = fs.connected_to(spec)
+        else:
+            fs = spec
 
-    def equal(self, key, value):
+        results = Entities.retrieve(db=db, spec=fs)
 
-        self.constraints[key] = ["==", value]
+        # A Polygon is only connected to 1 image, and our query is filtered with
+        # meta info from polygon, so connect the right image to the polygon
+        # That being said, the ordering should be same as that of the first command in the query
+        images = results[-1]
 
-    def greaterequal(self, key, value):
+        adjacent = {}
+        if with_adjacent:
+            for k, v in with_adjacent.items():
+                adjacent[k] = images.get_connected_entities(
+                    type=EntityType(v.with_class),
+                    constraints=v.constraints)
 
-        self.constraints[key] = [">=", value]
+            images.decorator = cls.__decorator
+            images.adjacent = adjacent
+        return images
 
-    def greater(self, key, value):
+    def inspect(self, use_thumbnails=True) -> Union[Tuple[widgets.IntSlider, widgets.Output], DataFrame]:
+        df = super(Images, self).inspect()
+        if use_thumbnails:
+            sizer = widgets.IntSlider(min=1, max=400, value=100)
+            op = widgets.Output()
 
-        self.constraints[key] = [">", value]
+            def widget_interaction(c):
+                def image_base64(im):
+                    with BytesIO() as buffer:
+                        im.save(buffer, 'jpeg')
+                        return base64.b64encode(buffer.getvalue()).decode()
 
-    def lessequal(self, key, value):
+                def image_formatter(im):
+                    return f'<img width={c["new"]} style="max-width: 400px" src="data:image/jpeg;base64,{image_base64(im)}" >'
+                with op:
+                    op.clear_output()
+                    display(HTML("<div style='max-width: 100%; overflow: auto;'>" +
+                                 df.to_html(
+                                     formatters={'thumbnail': image_formatter}, escape=False)
+                                 + "</div>")
+                            )
+            sizer.observe(widget_interaction, 'value')
+            return sizer, op
 
-        self.constraints[key] = ["<=", value]
+        return df
 
-    def less(self, key, value):
+    def getitem(self, idx):
+        item = super().getitem(idx)
+        if self.get_image == True:
+            buffer = self.get_image_by_index(idx)
+            if buffer is not None:
+                # nparr = np.frombuffer(buffer, dtype=np.uint8)
+                item['thumbnail'] = Image.fromarray(
+                    self.get_np_image_by_index(idx))
+        return item
 
-        self.constraints[key] = ["<", value]
+    # DW interface ends
 
-    def is_in(self, key, val_array):
-
-        self.constraints[key] = ["in", val_array]
-
-    def check(self, entity):
-        for key, op in self.constraints.items():
-            if key not in entity:
-                return False
-            if op[0] == "==":
-                if not entity[key] == op[1]:
-                    return False
-            elif op[0] == ">=":
-                if not entity[key] >= op[1]:
-                    return False
-            elif op[0] == ">":
-                if not entity[key] > op[1]:
-                    return False
-            elif op[0] == "<=":
-                if not entity[key] <= op[1]:
-                    return False
-            elif op[0] == "<":
-                if not entity[key] < op[1]:
-                    return False
-            elif op[0] == "in":
-                if not entity[key] in op[1]:
-                    return False
-            else:
-                raise Exception("invalid constraint operation: " + op[0])
-        return True
-
-
-class Operations(object):
-
-    def __init__(self):
-
-        self.operations_arr = []
-
-    def get_operations_arr(self):
-        return self.operations_arr
-
-    def resize(self, width, height):
-
-        op = {
-            "type": "resize",
-            "width":  width,
-            "height": height,
-        }
-
-        self.operations_arr.append(op)
-
-    def rotate(self, angle, resize=False):
-
-        op = {
-            "type": "rotate",
-            "angle": angle,
-            "resize": resize,
-        }
-
-        self.operations_arr.append(op)
-
-
-class Images(object):
-
-    def __init__(self, db, batch_size=100):
+    def __init__(self, db, batch_size=100, response=None, **kwargs):
+        super().__init__(db, response)
 
         self.db_connector = db
 
         self.images          = {}
         self.images_ids      = []
+        self.image_sizes     = []
         self.images_bboxes   = {}
         self.images_polygons = {}
 
@@ -121,12 +129,15 @@ class Images(object):
 
         self.search_result = None
 
+        self.adjacent = {}
+
         self.batch_size = batch_size
         self.total_cached_images = 0
         self.display_limit = 20
 
         self.img_id_prop     = "_uniqueid"
         self.bbox_label_prop = "_label"
+        self.get_image = True
 
     def __retrieve_batch(self, index):
         '''
@@ -237,13 +248,16 @@ class Images(object):
             }
 
         except:
-            print("failed to retrieve polygons")
-            print(query)
-            print(self.db_connector.get_last_response_str())
+            self.images_polygons[str(uniqueid)] = {
+                "bounds": [],
+                "polygons": [],
+                "tags": []
+            }
 
     def __retrieve_bounding_boxes(self, index):
-
-        self.images_bboxes = {}
+        # We should fetch all bounding boxes incrementally.
+        if self.images_bboxes is None:
+            self.images_bboxes = {}
 
         if index > len(self.images_ids):
             print("Index error when retrieving bounding boxes")
@@ -320,19 +334,19 @@ class Images(object):
         return image
 
     def get_bboxes_by_index(self, index):
-
-        if not self.images_bboxes:
+        if not self.images_bboxes or not str(self.images_ids[index]) in self.images_bboxes:
+            # Fetch when not present in the map.
             self.__retrieve_bounding_boxes(index)
 
         try:
             bboxes = self.images_bboxes[str(self.images_ids[index])]
-        except:
+        except Exception as e:
             print("Cannot retrieve requested bboxes")
+            print(e)
 
         return bboxes
 
     # A new search will throw away the results of any previous search
-
     def search(self, constraints=None, operations=None, format=None, limit=None, sort=None):
 
         self.constraints = constraints
@@ -342,6 +356,7 @@ class Images(object):
 
         self.images = {}
         self.images_ids = []
+        self.images_sizes = []
         self.images_bboxes = {}
         self.images_polygons = {}
 

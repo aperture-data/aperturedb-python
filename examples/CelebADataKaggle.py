@@ -13,7 +13,9 @@ class CelebADataKaggle(KaggleData):
         self.records_count = kwargs["records_count"]
         self.embedding_generator = kwargs["embedding_generator"]
         self.search_set_name = kwargs["search_set_name"]
-        self.records_count = kwargs["records_count"]
+        self.add_blob_size_metadata = False
+        if "add_blob_size_metadata" in kwargs:
+            self.add_blob_size_metadata = kwargs["add_blob_size_metadata"]
         super().__init__(dataset_ref = "jessicali9530/celeba-dataset",
                          records_count=self.records_count)
 
@@ -51,7 +53,7 @@ class CelebADataKaggle(KaggleData):
             }, {
                 "AddBoundingBox": {
                     "_ref": 2,
-                    "image": 1,
+                    "image_ref": 1,
                     "rectangle": {
                         "x": p["x_1"],
                         "y": p["y_1"],
@@ -69,6 +71,7 @@ class CelebADataKaggle(KaggleData):
             }
         ]
         q[0]["AddImage"]["properties"]["keypoints"] = f"10 {p['lefteye_x']} {p['lefteye_y']} {p['righteye_x']} {p['righteye_y']} {p['nose_x']} {p['nose_y']} {p['leftmouth_x']} {p['leftmouth_y']} {p['rightmouth_x']} {p['rightmouth_y']}"
+
         image_file_name = os.path.join(
             self.workdir,
             'img_align_celeba/img_align_celeba',
@@ -76,4 +79,7 @@ class CelebADataKaggle(KaggleData):
         blob = open(image_file_name, "rb").read()
         embedding = self.embedding_generator(Image.open(image_file_name))
         serialized = embedding.cpu().detach().numpy().tobytes()
+        if self.add_blob_size_metadata:
+            # This is for use with the FUSE api
+            q[0]["AddImage"]["properties"]["image_size"] = len(blob)
         return q, [blob, serialized]
