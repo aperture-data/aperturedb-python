@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 import cv2
 import math
 import numpy as np
@@ -15,6 +15,7 @@ from IPython.display import display, HTML
 import base64
 from io import BytesIO
 from PIL import Image
+from pandas import DataFrame
 
 
 class Images(Entities):
@@ -70,10 +71,10 @@ class Images(Entities):
             images.adjacent = adjacent
         return images
 
-    def inspect(self, use_thumbnails=True) -> Tuple[widgets.IntSlider, widgets.Output]:
+    def inspect(self, use_thumbnails=True) -> Union[Tuple[widgets.IntSlider, widgets.Output], DataFrame]:
         df = super(Images, self).inspect()
-        sizer = widgets.IntSlider(min=1, max=400, value=100)
         if use_thumbnails:
+            sizer = widgets.IntSlider(min=1, max=400, value=100)
             op = widgets.Output()
 
             def widget_interaction(c):
@@ -83,21 +84,18 @@ class Images(Entities):
                         return base64.b64encode(buffer.getvalue()).decode()
 
                 def image_formatter(im):
-                    return f'<img width={c["new"]} src="data:image/jpeg;base64,{image_base64(im)}" >'
+                    return f'<img width={c["new"]} style="max-width: 400px" src="data:image/jpeg;base64,{image_base64(im)}" >'
                 with op:
                     op.clear_output()
-
                     display(HTML("<div style='max-width: 100%; overflow: auto;'>" +
                                  df.to_html(
                                      formatters={'thumbnail': image_formatter}, escape=False)
                                  + "</div>")
                             )
             sizer.observe(widget_interaction, 'value')
-        else:
-            sizer = None
-            op = df
+            return sizer, op
 
-        return sizer, op
+        return df
 
     def getitem(self, idx):
         item = super().getitem(idx)
@@ -310,7 +308,7 @@ class Images(Entities):
     def get_image_by_index(self, index):
 
         if index >= len(self.images_ids):
-            # print("Index is incorrect")
+            print("Index is incorrect")
             return
 
         uniqueid = self.images_ids[index]
@@ -382,7 +380,6 @@ class Images(Entities):
 
         query["FindImage"]["results"]["list"] = []
         query["FindImage"]["results"]["list"].append(self.img_id_prop)
-        # query["FindImage"]["results"]["list"].append("image_size")
 
         # Only retrieve images when needed
         query["FindImage"]["blobs"] = False
@@ -394,7 +391,6 @@ class Images(Entities):
 
             for ent in entities:
                 self.images_ids.append(ent[self.img_id_prop])
-                # self.images_sizes.append(int(ent["image_size"]))
         except:
             print("Error with search: {}".format(response))
 

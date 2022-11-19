@@ -47,7 +47,7 @@ def execute_batch(q, blobs, db,
                     for k in req:
                         # Ref to https://docs.aperturedata.io/parameters/blobs.html
                         blobs_where_default_true = \
-                            k in ["FindImage", "FindBlob", "FindBlobs"] and (
+                            k in ["FindImage", "FindBlob"] and (
                                 "blobs" not in req[k] or req[k]["blobs"])
                         blobs_where_default_false = \
                             k in [

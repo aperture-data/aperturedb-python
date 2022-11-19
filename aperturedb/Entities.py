@@ -52,9 +52,15 @@ class Entities(Subscriptable):
             print(f"resp={r}")
         results = []
         for wc, req, resp in zip(spec.command_properties(prop="with_class"), spec.command_properties(prop="find_command"), r):
+            subresponse = resp[req]['entities']
+            if not isinstance(subresponse, list):
+                flattened = []
+                for previtem in results[-1]:
+                    flattened.extend(subresponse[previtem["_uniqueid"]])
+                subresponse = flattened
             try:
                 entities = cls.known_entities[wc](
-                    db=db, response=resp[req]['entities'], type=wc)
+                    db=db, response=subresponse, type=wc)
                 results.append(entities)
             except Exception as e:
                 print(e)
@@ -100,15 +106,10 @@ class Entities(Subscriptable):
         for entity, properties in zip(self, extra_properties):
             query = [
                 {
-                    self.find_command: {
-                        "_ref": 1,
+                    self.update_command: {
                         "constraints": {
                             "_uniqueid": ["==", entity["_uniqueid"]]
-                        }
-                    }
-                }, {
-                    self.update_command: {
-                        "ref": 1,
+                        },
                         "properties": properties
                     }
                 }

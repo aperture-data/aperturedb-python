@@ -21,7 +21,7 @@ def main(params):
     print(len(dataset))
 
     loader = ParallelLoader.ParallelLoader(dbinfo.create_connector())
-    loader.ingest(dataset, stats=True, numthreads=1, batchsize=1)
+    loader.ingest(dataset, stats=True)
 
 
 def get_args():

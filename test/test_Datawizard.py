@@ -62,6 +62,7 @@ class TestDataWizardImages():
             images, Images), f"{type(images)} is not an instance of Images"
         logger.info(f"\n{images.inspect()}")
         assert images != None
+        assert len(images) <= 10
 
 
 class TestDataWizardBlobs():
@@ -72,6 +73,7 @@ class TestDataWizardBlobs():
             blobs, Blobs), f"blobs is not an instance of Blobs = {blobs}"
         logger.info(f"\n{blobs.inspect()}")
         assert blobs != None
+        assert len(blobs) <= 10
 
 
 class TestDataWizardBoundingBoxes():
@@ -82,3 +84,4 @@ class TestDataWizardBoundingBoxes():
             bboxes, BoundingBoxes), f"bboxes is not an instance of BoundingBoxes = {bboxes}"
         logger.info(f"\n{bboxes.inspect()}")
         assert bboxes != None
+        assert len(bboxes) <= 10

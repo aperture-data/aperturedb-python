@@ -72,7 +72,8 @@ class Query():
              with_class: str = "",
              limit: int = -1,
              sort: Sort = None,
-             list: List[str] = None
+             list: List[str] = None,
+             group_by_src: bool = False
              ) -> Query:
         """
         The specification for a command to be used in a query.
@@ -93,7 +94,8 @@ class Query():
             with_class=with_class,
             limit=limit,
             sort = sort,
-            list = list
+            list = list,
+            group_by_src = group_by_src
         )
 
     def __init__(self,
@@ -102,12 +104,14 @@ class Query():
                  limit: int = -1,
                  sort: Sort = None,
                  list: List[str] = None,
+                 group_by_src: bool = False,
                  adj_to: int = 0):
         self.constraints = constraints
         self.with_class = with_class
         self.limit = limit
         self.sort = sort
         self.list = list
+        self.group_by_src = group_by_src
         self.adj_to = adj_to + 1
 
     def query(self) -> List[dict]:
@@ -130,6 +134,7 @@ class Query():
             cmd[self.find_command][results_section]["list"] = self.list
         else:
             cmd[self.find_command][results_section]["all_properties"] = True
+        cmd[self.find_command][results_section]["group_by_source"] = self.group_by_src
 
         if self.constraints:
             cmd[self.find_command]["constraints"] = self.constraints.constraints
