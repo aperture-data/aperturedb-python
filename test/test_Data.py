@@ -25,7 +25,7 @@ class TestEntityLoader():
         self.remove_entities(utils, classes)
 
         results = [utils.create_entity_index(
-            e, "id", "integer") for e in classes]
+            e, "id") for e in classes]
         self.assertTrue(all(results))
 
         # Insert Person Nodes

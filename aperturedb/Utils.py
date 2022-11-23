@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import logging
+import json
 
 from aperturedb.Connector import Connector
 from aperturedb import ProgressBar
@@ -73,14 +74,81 @@ class Utils(object):
 
         return schema
 
-    def _create_index(self, index_type, class_name, property_key, property_type):
+    def _object_summary(self, name, object):
+
+        total_elements = object["matched"]
+
+        print(f"{name.ljust(20)}")
+        if "src" in object:
+            print(f"  {object['src']} ====> {object['dst']}")
+
+        print(f"  Total elements: {total_elements}")
+
+        p = object["properties"]
+
+        if p is None:
+            return
+
+        max = 0
+        for k in p:
+            max = len(k) if max < len(k) else max
+        max += 1
+
+        for k in p:
+            i = w = " "
+            i = "I" if p[k][1] else i
+
+            # Warning if there are some properties not present in all elements
+            w = "!" if p[k][0] != total_elements else w
+            # Warning if there is a property with "id" in the name not indexes
+            w = "!" if "id" in k and not p[k][1] else w
+            print(f"{i} {w} {p[k][2].ljust(8)} |"
+                  f" {k.ljust(max)} | {p[k][0]} "
+                  f"({int(p[k][0]/total_elements*100.0)}%)")
+
+    def summary(self):
+
+        r = self.get_schema()
+        s = json.loads(self.status())[0]["GetStatus"]
+        version = s["version"]
+        status  = s["status"]
+        info    = s["info"]
+
+        total_entities    = r["entities"]["returned"]
+        total_connections = r["entities"]["returned"]
+
+        entities_classes = [c for c in r["entities"]["classes"]]
+        connections_classes = [c for c in r["connections"]["classes"]]
+
+        total_images = self.count_images()
+
+        print(f"================== Summary ==================")
+        print(f"Database: {self.connector.host}")
+        print(f"Version: {version}")
+        print(f"Status:  {status}")
+        print(f"Info:    {info}")
+        print(f"Total entities types:    {total_entities}")
+        print(f"Total connections types: {total_connections}")
+        print(f"Total images:            {total_images}")
+        # print(f"Entity Classes: {entities_classes}")
+        print(f"------------------ Entities -----------------")
+        for c in entities_classes:
+            self._object_summary(c, r["entities"]["classes"][c])
+
+        print(f"---------------- Connections ----------------")
+        # print(f"Connection Classes: {connections_classes}")
+        for c in connections_classes:
+            self._object_summary(c, r["connections"]["classes"][c])
+
+        print(f"=============================================")
+
+    def _create_index(self, index_type, class_name, property_key):
 
         q = [{
             "CreateIndex": {
                 "index_type":    index_type,
                 "class":         class_name,
                 "property_key":  property_key,
-                "property_type": property_type
             }
         }]
 
@@ -116,15 +184,21 @@ class Utils(object):
 
         return True
 
-    def create_entity_index(self, class_name, property_key, property_type):
+    def create_entity_index(self, class_name, property_key, property_type=None):
 
-        return self._create_index("entity", class_name,
-                                  property_key, property_type)
+        logger.warning(f"create_entity_index ignores 'property_type'")
+        logger.warning(f"'property_type' will be deprecated in the future")
+        logger.warning(f"Please remove 'property_type' parameter")
 
-    def create_connection_index(self, class_name, property_key, property_type):
+        return self._create_index("entity", class_name, property_key)
 
-        return self._create_index("connection", class_name,
-                                  property_key, property_type)
+    def create_connection_index(self, class_name, property_key, property_type=None):
+
+        logger.warning(f"create_connection_index ignores 'property_type'")
+        logger.warning(f"'property_type' will be deprecated in the future")
+        logger.warning(f"Please remove 'property_type' parameter")
+
+        return self._create_index("connection", class_name, property_key)
 
     def remove_entity_index(self, class_name, property_key):
 
@@ -604,6 +678,7 @@ class Utils(object):
             [{"DeleteVideo": cmd}],
             [{"DeleteImage": cmd}],
             [{"DeleteBlob": cmd}],
+            [{"DeletePolygon": cmd}],
             [{"DeleteEntity": cmd}],
         ]
 
