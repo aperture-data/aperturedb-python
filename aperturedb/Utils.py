@@ -130,13 +130,11 @@ class Utils(object):
         print(f"Total entities types:    {total_entities}")
         print(f"Total connections types: {total_connections}")
         print(f"Total images:            {total_images}")
-        # print(f"Entity Classes: {entities_classes}")
         print(f"------------------ Entities -----------------")
         for c in entities_classes:
             self._object_summary(c, r["entities"]["classes"][c])
 
         print(f"---------------- Connections ----------------")
-        # print(f"Connection Classes: {connections_classes}")
         for c in connections_classes:
             self._object_summary(c, r["connections"]["classes"][c])
 
