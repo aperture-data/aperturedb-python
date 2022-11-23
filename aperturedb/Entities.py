@@ -72,7 +72,11 @@ class Entities(Subscriptable):
         if res > 0:
             print(f"resp={r}")
         results = []
-        for wc, req, resp in zip(spec.command_properties(prop="with_class"), spec.command_properties(prop="find_command"), r):
+        for wc, req, blobs, resp in zip(
+                spec.command_properties(prop="with_class"),
+                spec.command_properties(prop="find_command"),
+                spec.command_properties(prop="blobs"),
+                r):
             subresponse = resp[req]['entities']
             if not isinstance(subresponse, list):
                 flattened = []
@@ -82,6 +86,7 @@ class Entities(Subscriptable):
             try:
                 entities = cls.known_entities[wc](
                     db=db, response=subresponse, type=wc)
+                entities.blobs = blobs
                 results.append(entities)
             except Exception as e:
                 print(e)
