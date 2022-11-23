@@ -21,7 +21,6 @@ class Videos(Entities):
 
         videos = super().retrieve(
             db, spec=spec, with_adjacent=with_adjacent)[-1]
-        videos.blobs = spec.blobs
 
         return videos
 
