@@ -195,8 +195,6 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if thid == 0 and self.stats:
                 self.pb.update((i + 1) / total_batches)
 
-        self.pb.update(1)
-
     def query(self, generator, batchsize=1, numthreads=4, stats=False):
         """
         This function takes as input the data to be executed in specified number of threads.
