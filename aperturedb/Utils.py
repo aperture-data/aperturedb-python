@@ -184,17 +184,19 @@ class Utils(object):
 
     def create_entity_index(self, class_name, property_key, property_type=None):
 
-        logger.warning(f"create_entity_index ignores 'property_type'")
-        logger.warning(f"'property_type' will be deprecated in the future")
-        logger.warning(f"Please remove 'property_type' parameter")
+        if property_type is not None:
+            logger.warning(f"create_entity_index ignores 'property_type'")
+            logger.warning(f"'property_type' will be deprecated in the future")
+            logger.warning(f"Please remove 'property_type' parameter")
 
         return self._create_index("entity", class_name, property_key)
 
     def create_connection_index(self, class_name, property_key, property_type=None):
 
-        logger.warning(f"create_connection_index ignores 'property_type'")
-        logger.warning(f"'property_type' will be deprecated in the future")
-        logger.warning(f"Please remove 'property_type' parameter")
+        if property_type is not None:
+            logger.warning(f"create_connection_index ignores 'property_type'")
+            logger.warning(f"'property_type' will be deprecated in the future")
+            logger.warning(f"Please remove 'property_type' parameter")
 
         return self._create_index("connection", class_name, property_key)
 

@@ -195,6 +195,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if thid == 0 and self.stats:
                 self.pb.update((i + 1) / total_batches)
 
+        self.pb.update(1)
+
     def query(self, generator, batchsize=1, numthreads=4, stats=False):
         """
         This function takes as input the data to be executed in specified number of threads.
@@ -224,7 +226,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if len(generator) > 0:
                 if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
                     # if len(generator[0]) > 0:
-                    # Not applicable to old style loaders.
+                    #
+                    #  Not applicable to old style loaders.
                     self.commands_per_query = min(
                         len(generator[0][0]), batchsize)
                     if len(generator[0][1]):
