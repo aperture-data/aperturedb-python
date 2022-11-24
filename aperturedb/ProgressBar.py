@@ -115,6 +115,9 @@ class ProgressBar(object):
 
     def update(self, progress):
 
+        if self.done:
+            return
+
         self.compute_stats(progress)
 
         if self.file:
