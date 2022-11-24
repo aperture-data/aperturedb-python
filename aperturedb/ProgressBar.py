@@ -50,8 +50,8 @@ class ProgressBar(object):
 
     def updatescreen(self):
 
-        print('\r', end=" ")
-        print(self.msg(), end=" ", flush=True)
+        print('\r', end="")
+        print(self.msg(), end="", flush=True)
 
     def compute_stats(self, progress):
 
