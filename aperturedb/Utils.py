@@ -51,14 +51,23 @@ class Utils(object):
 
     def print_schema(self, refresh=False):
 
-        self.get_schema(refresh=refresh)
+        if refresh:
+            logger.warning("get_schema: refresh no longer needed.")
+            logger.warning("get_schema: refresh will be deprecated.")
+            logger.warning("Please remove 'refresh' parameter.")
+
+        self.get_schema()
         self.connector.print_last_response()
 
     def get_schema(self, refresh=False):
 
+        if refresh:
+            logger.warning("get_schema: refresh no longer needed.")
+            logger.warning("get_schema: refresh will be deprecated.")
+            logger.warning("Please remove 'refresh' parameter.")
+
         query = [{
             "GetSchema": {
-                "refresh": refresh,
             }
         }]
 
@@ -618,9 +627,7 @@ class Utils(object):
         if type not in ["entities", "connections"]:
             raise ValueError("Type must be either 'entities' or 'connections'")
 
-        # TODO we should probably set refresh=True so we always
-        # check the latest state, but it may take a long time to complete.
-        schema = self.get_schema(refresh=False)
+        schema = self.get_schema()
 
         try:
             indexed_props = schema[type]["classes"][class_name]["properties"]
