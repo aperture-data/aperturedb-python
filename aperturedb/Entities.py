@@ -148,7 +148,7 @@ class Entities(Subscriptable):
     def sort(self, key) -> Entities:
         return Entities(response = sorted(self.response, key=key), type=self.type)
 
-    def inspect(self) -> pd.DataFrame:
+    def inspect(self, **kwargs) -> pd.DataFrame:
         return pd.json_normalize([item for item in self])
 
     def update_properties(self, extra_properties: List[dict]) -> bool:
