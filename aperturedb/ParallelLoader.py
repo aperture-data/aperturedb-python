@@ -30,17 +30,18 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         print(f"Total time (s): {self.total_actions_time}")
         print(f"Total queries executed: {total_queries_exec}")
 
-        if total_queries_exec == 0:
+        suceeded_queries = sum([stat["suceeded_queries"]
+                                for stat in self.actual_stats])
+        suceeded_commands = sum([stat["suceeded_commands"]
+                                for stat in self.actual_stats])
+
+        if suceeded_queries == 0:
             print("All queries failed!")
 
         else:
             mean = np.mean(times)
             std  = np.std(times)
             tp = 1 / mean * self.numthreads
-            suceeded_queries = sum([stat["suceeded_queries"]
-                                   for stat in self.actual_stats])
-            suceeded_commands = sum([stat["suceeded_commands"]
-                                    for stat in self.actual_stats])
 
             print(f"Avg Query time (s): {mean}")
             print(f"Query time std: {std}")

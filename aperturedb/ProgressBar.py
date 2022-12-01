@@ -50,8 +50,8 @@ class ProgressBar(object):
 
     def updatescreen(self):
 
-        print('\r', end=" ")
-        print(self.msg(), end=" ", flush=True)
+        print('\r', end="")
+        print(self.msg(), end="", flush=True)
 
     def compute_stats(self, progress):
 
@@ -114,6 +114,9 @@ class ProgressBar(object):
             self.progress_time = self.progress_time[-(self.use_last):]
 
     def update(self, progress):
+
+        if self.done:
+            return
 
         self.compute_stats(progress)
 
