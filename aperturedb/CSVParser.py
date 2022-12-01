@@ -9,7 +9,7 @@ import multiprocessing as mp
 logger = logging.getLogger(__name__)
 
 ENTITY_CLASS      = "EntityClass"
-CONTRAINTS_PREFIX = "constraint_"
+CONSTRAINTS_PREFIX = "constraint_"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
@@ -86,7 +86,7 @@ class CSVParser(Subscriptable):
                     constraints[prop] = [
                         "==", {"_date": self.df.loc[idx, key]}]
                 else:
-                    prop = key[len(CONTRAINTS_PREFIX):]  # remove "prefix
+                    prop = key[len(CONSTRAINTS_PREFIX):]  # remove "prefix
                     constraints[prop] = ["==", self.df.loc[idx, key]]
 
         return constraints

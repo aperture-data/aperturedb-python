@@ -1,6 +1,3 @@
-import os
-import sys
-import time
 import logging
 
 from aperturedb.Connector import Connector

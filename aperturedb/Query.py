@@ -7,19 +7,41 @@ from aperturedb.Constraints import Constraints
 from aperturedb.Sort import Sort
 
 
-class EntityType(Enum):
+class ObjectType(Enum):
     """
     Based on : https://docs.aperturedata.io/API-Description.html
 
     """
-    CUSTOM = ""
-    IMAGE = "_Image"
-    POLYGON = "_Polygon"
-    BOUNDING_BOX = "_BoundingBox"
-    VIDEO = "_Video"
     BLOB = "_Blob"
+    BOUNDING_BOX = "_BoundingBox"
+    CONNECTION = "_Connection"
     DESCRIPTOR = "_Descriptor"
     DESCRIPTORSET = "_DescriptorSet"
+    ENTITY = "_Entity"
+    FRAME = "_Frame"
+    IMAGE = "_Image"
+    POLYGON = "_Polygon"
+    VIDEO = "_Video"
+
+
+class QueryBuilder():
+    @classmethod
+    def find_command(self, oclass: str, params: dict) -> dict:
+        command = {
+            "FindEntity": params
+        }
+        members = [m.value for m in ObjectType]
+        if oclass.startswith("_"):
+            if oclass in members:
+                command = {
+                    f"Find{oclass[1:]}": params
+                }
+            else:
+                raise Exception(
+                    f"Invalid Object type. Should not begin with _, exceept for {members}")
+        else:
+            params["with_class"] = oclass
+        return command
 
 
 class Query():
@@ -82,7 +104,7 @@ class Query():
 
         Args:
             constraints (Constraints, optional): https://docs.aperturedata.io/parameters/constraints.html . Defaults to None.
-            with_class (EntityType, optional): _description_. Defaults to EntityType.CUSTOM.
+            with_class (ObjectType, optional): _description_. Defaults to ObjectType.CUSTOM.
             limit (int, optional): _description_. Defaults to -1.
             sort (Sort, optional): _description_. Defaults to None.
             list (List[str], optional): _description_. Defaults to None.

@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from aperturedb import Utils
-from aperturedb.Entities import Entities, EntityType, Query
+from aperturedb.Entities import Entities, ObjectType, Query
 from aperturedb.Connector import Connector
 from aperturedb.Constraints import Constraints
 from ipywidgets import widgets
