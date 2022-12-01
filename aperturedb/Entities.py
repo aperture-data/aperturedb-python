@@ -41,9 +41,9 @@ class Entities(Subscriptable):
             List[Entities]: _description_
         """
 
-        # Sice adjacent items are usually a way to filter the results,
+        # Since adjacent items are usually a way to filter the results,
         # the native query is constructed in the reverse order, with
-        # first filtering out the relavant itmes based on adjacent items.
+        # first filtering out the relevant itmes based on adjacent items.
         fs = None
         count = 0
         if with_adjacent:
@@ -63,8 +63,6 @@ class Entities(Subscriptable):
         cls.known_entities = load_entities_registry(
             custom_entities=spec.command_properties(prop="with_class"))
         cls.db = db
-        # if cls.db_object != "Entity":
-        #     spec.with_class = cls.db_object
 
         query = spec.query()
         print(f"query={query}")
@@ -87,6 +85,8 @@ class Entities(Subscriptable):
                 entities = cls.known_entities[wc](
                     db=db, response=subresponse, type=wc)
                 entities.blobs = blobs
+                if wc[0] == "_":
+                    entities.find_command = f"Find{wc[1:]}"
                 results.append(entities)
             except Exception as e:
                 print(e)
@@ -211,9 +211,12 @@ class Entities(Subscriptable):
         return result
 
     def get_blob(self, entity) -> Any:
+        """
+        Helper to get blobs for FindImage, FindVideo and FindBlob commands.
+        """
         query = [
             {
-                "FindVideo": {
+                self.find_command: {
                     "constraints": {
                         "_uniqueid": ["==", entity["_uniqueid"]]
                     },
