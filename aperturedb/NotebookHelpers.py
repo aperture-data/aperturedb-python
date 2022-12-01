@@ -86,22 +86,21 @@ def draw_bboxes(image, boxes=[], tags=[], save=False):
         cv2.imwrite(img_file, cv_image)
 
 
-def display_video_mp4(blob, show=True):
-
+def save_video(blob, name):
     check_folder(DESTINATION_FOLDER)
+    with open(name, 'wb') as fd:
+        fd.write(blob)
 
+
+def display_video_mp4(blob):
     name = DESTINATION_FOLDER + "/" + "video_tmp.mp4"
-    fd = open(name, 'wb')
-    fd.write(blob)
-    fd.close()
-
-    if show:
-        ds(Video(name, embed=True))
+    save_video(blob, name)
+    ds(Video(name, embed=True))
 
 
 def annotate_video(blob, boxes=[], tags=[], bboxes: List[TemporalBoundingBox] = []):
-    display_video_mp4(blob, show=False)
     name = DESTINATION_FOLDER + "/" + "video_tmp.mp4"
+    save_video(blob, name)
     cap = cv2.VideoCapture(name)
     if cap.isOpened():
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))

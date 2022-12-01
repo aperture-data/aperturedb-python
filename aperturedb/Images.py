@@ -16,6 +16,8 @@ import base64
 from io import BytesIO
 from PIL import Image
 from pandas import DataFrame
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Images(Entities):
@@ -69,7 +71,6 @@ class Images(Entities):
         if self.get_image == True:
             buffer = self.get_image_by_index(idx)
             if buffer is not None:
-                # nparr = np.frombuffer(buffer, dtype=np.uint8)
                 item['thumbnail'] = Image.fromarray(
                     self.get_np_image_by_index(idx))
         return item
@@ -275,7 +276,7 @@ class Images(Entities):
     def get_image_by_index(self, index):
 
         if index >= len(self.images_ids):
-            print("Index is incorrect")
+            logger.info("Index is incorrect")
             return
 
         uniqueid = self.images_ids[index]
