@@ -46,9 +46,9 @@ class BBoxGeneratorCSV(CSVParser.CSVParser):
         super().__init__(filename)
 
         self.props_keys       = [x for x in self.header[5:]
-                                 if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+                                 if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.constraints_keys = [x for x in self.header[5:]
-                                 if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+                                 if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
 
         self.img_key = self.header[0]
 

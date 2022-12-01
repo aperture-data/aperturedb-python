@@ -75,9 +75,9 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         self.has_label = False
         if not use_dask:
             self.props_keys       = [x for x in self.header[3:]
-                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.constraints_keys = [x for x in self.header[3:]
-                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.command = "AddDescriptor"
 
     def getitem(self, idx):

@@ -4,7 +4,7 @@ from aperturedb.BoundingBoxes import BoundingBoxes
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
 from aperturedb.Images import Images
-from aperturedb.Query import EntityType, Query
+from aperturedb.Query import ObjectType, Query
 
 logger = logging.getLogger(__file__)
 

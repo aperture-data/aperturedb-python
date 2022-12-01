@@ -50,9 +50,9 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
         super().__init__(filename, df=df, use_dask=use_dask)
         if not use_dask:
             self.props_keys       = [x for x in self.header[4:]
-                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.constraints_keys = [x for x in self.header[4:]
-                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.command = "AddDescriptorSet"
 
     def getitem(self, idx):
