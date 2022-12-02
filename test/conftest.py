@@ -8,6 +8,9 @@ from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.ImageDataCSV import ImageDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
+from aperturedb.Constraints import Constraints
+from aperturedb.Entities import Entities
+from aperturedb.Query import Query
 from aperturedb.Utils import Utils
 
 import dbinfo
@@ -25,7 +28,7 @@ def pytest_generate_tests(metafunc):
     if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
-                             True, False], indirect=True)
+                             True, False], indirect=True, ids=["with_dask", "without_dask"])
 
 
 @pytest.fixture()
@@ -74,3 +77,14 @@ def utils(db):
 @pytest.fixture()
 def images(insert_data_from_csv):
     return insert_data_from_csv("./input/images.adb.csv")
+
+
+@pytest.fixture()
+def retired_persons(db, insert_data_from_csv, utils):
+    utils.remove_entities(class_name="Person")
+    loaded = insert_data_from_csv("./input/persons.adb.csv")
+    constraints = Constraints()
+    constraints.greaterequal("age", 60)
+    retired_persons = Entities.retrieve(db,
+                                        spec=Query.spec(with_class="Person", constraints=constraints))[0]
+    return retired_persons

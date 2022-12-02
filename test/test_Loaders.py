@@ -23,9 +23,9 @@ class TestEntityLoader(TestBase):
         db = self.create_connection()
         dbutils = Utils.Utils(db)
 
-        dbutils.create_entity_index("_Image",      "id", "integer")
-        dbutils.create_entity_index("_Descriptor", "id", "integer")
-        dbutils.create_entity_index("Person",      "id", "integer")
+        dbutils.create_entity_index("_Image",      "id")
+        dbutils.create_entity_index("_Descriptor", "id")
+        dbutils.create_entity_index("Person",      "id")
 
         # Insert Person Nodes
         in_csv_file = "./input/persons.adb.csv"

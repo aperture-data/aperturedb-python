@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Callable
 from aperturedb import Parallelizer
 import numpy as np
 import json
@@ -10,6 +11,73 @@ from aperturedb.DaskManager import DaskManager
 
 
 logger = logging.getLogger(__name__)
+
+
+def execute_batch(q, blobs, db,
+                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0):
+    """
+    Execute a batch of queries, doing useful logging around it.
+    Calls the response handler if provided.
+    This should be used (without the parallel machinery) istead of db.query to keep the
+    response handling consistent, better logging, etc.
+
+    Returns:
+        - 0 : if all commands succeeded
+        - 1 : if there was -1 in the response
+        - 2 : For any other code.
+    """
+    result = 0
+    logger.debug(f"Query={q}")
+    r, b = db.query(q, blobs)
+    logger.debug(f"Response={r}")
+
+    if db.last_query_ok():
+        if response_handler is not None:
+            # We could potentially always call this handler function
+            # and let the user deal with the error cases.
+            blobs_returned = 0
+            for i in range(math.ceil(len(q) / commands_per_query)):
+                start = i * commands_per_query
+                end = start + commands_per_query
+                blobs_start = i * blobs_per_query
+                blobs_end = blobs_start + blobs_per_query
+
+                b_count = 0
+                for req, resp in zip(q[start:end], r[start:end]):
+                    for k in req:
+                        # Ref to https://docs.aperturedata.io/parameters/blobs.html
+                        blobs_where_default_true = \
+                            k in ["FindImage", "FindBlob"] and (
+                                "blobs" not in req[k] or req[k]["blobs"])
+                        blobs_where_default_false = \
+                            k in [
+                                "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
+                        if blobs_where_default_true or blobs_where_default_false:
+                            count = resp[k]["returned"]
+                            b_count += count
+
+                try:
+                    response_handler(
+                        q[start:end],
+                        blobs[blobs_start:blobs_end],
+                        r[start:end],
+                        b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
+                except BaseException as e:
+                    logger.exception(e)
+                blobs_returned += b_count
+    else:
+        # Transaction failed entirely.
+        logger.error(f"Failed query = {q} with response = {r}")
+        result = 1
+    if isinstance(r, dict) and db.last_response['status'] != 0:
+        logger.error(f"Failed query = {q} with response = {r}")
+        result = 1
+    if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
+        logger.warning(
+            f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
+        result = 2
+
+    return result, r, b
 
 
 class ParallelQuery(Parallelizer.Parallelizer):
@@ -56,92 +124,53 @@ class ParallelQuery(Parallelizer.Parallelizer):
         responses of each of the queries executed. This function can be used to process
         the responses from each of the corresponding queries in :class:`~aperturedb.Parallelizer.Parallelizer`.
         It will be called once per query, and it needs to have 4 parameters:
-
         - requests
-
         - input_blobs
-
         - responses
-
         - output_blobs
-
         Example usage:
-
         .. code-block:: python
-
             class MyQueries(QueryGenerator):
                 def process_responses(requests, input_blobs, responses, output_blobs):
                     self.requests.extend(requests)
                     self.responses.extend(responses)
-
             loader = ParallelLoader(self.db)
             generator = MyQueries()
             loader.ingest(generator)
-
         """
 
         q, blobs = self.generate_batch(data)
 
         query_time = 0
-
+        worker_stats = {}
         if not self.dry_run:
-            r, b = db.query(q, blobs)
-            logger.info(f"Query={q}")
-            logger.info(f"Response={r}")
-
-            if db.last_query_ok():
-                if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
-                    logger.info(
-                        f"Response_handler={self.generator.response_handler}")
-                    # We could potentially always call this handler function
-                    # and let the user deal with the error cases.
-                    blobs_returned = 0
-                    for i in range(math.ceil(len(q) / self.commands_per_query)):
-                        start = i * self.commands_per_query
-                        end = start + self.commands_per_query
-
-                        blobs_start = i * self.blobs_per_query
-                        blobs_end = blobs_start + self.blobs_per_query
-
-                        b_count = 0
-                        for req, resp in zip(q[start:end], r[start:end]):
-                            for k in req:
-                                # Ref to https://docs.aperturedata.io/parameters/blobs.html
-                                blobs_where_default_true = \
-                                    k in ["FindImage", "FindBlob", "FindBlobs"] and (
-                                        "blobs" not in req[k] or req[k]["blobs"])
-                                blobs_where_default_false = \
-                                    k in [
-                                        "FindDescriptors", "FindBoundingBoxes"] and "blobs" in req[k] and req[k]["blobs"]
-                                if blobs_where_default_true or blobs_where_default_false:
-                                    count = resp[k]["returned"]
-                                    b_count += count
-
-                        self.call_response_handler(
-                            q[start:end],
-                            blobs[blobs_start:blobs_end],
-                            r[start:end],
-                            b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
-                        blobs_returned += b_count
-
-            else:
-                # Transaction failed entirely.
-                logger.warn(f"Failed query = {q} with response = {r}")
-                logger.error(f"Query failed. Response = {r}")
+            response_handler = None
+            if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
+                response_handler = self.generator.response_handler
+            result, r, b = execute_batch(
+                q, blobs, db, response_handler, self.commands_per_query, self.blobs_per_query)
+            if result == 0:
+                query_time = db.get_last_query_time()
+                worker_stats["suceeded_commands"] = len(q)
+                worker_stats["suceeded_queries"] = len(data)
+            elif result == 1:
                 self.error_counter += 1
-            if isinstance(r, dict) and db.last_response['status'] != 0:
-                logger.warn(f"Failed query = {q} with response = {r}")
-                logger.error(f"Query failed. Response = {r}")
-                self.error_counter += 1
-            if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
-                logger.warning(
-                    f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
-            query_time = db.get_last_query_time()
+                worker_stats["suceeded_queries"] = 0
+                worker_stats["suceeded_commands"] = 0
+            elif result == 2:
+                worker_stats["suceeded_commands"] = sum(
+                    [v['status'] == 0 for i in r for k, v in i.items()])
+                sq = 0
+                for i in range(0, len(r), self.commands_per_query):
+                    if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in j.items()]):
+                        sq += 1
+                worker_stats["suceeded_queries"] = sq
         else:
             query_time = 1
 
         # append is thread-safe
         self.times_arr.append(query_time)
+        self.actual_stats.append(worker_stats)
 
     def worker(self, thid, generator, start, end):
         # A new connection will be created for each thread
@@ -170,7 +199,6 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)
-
         Args:
             generator (_type_): The class that generates the queries to be executed.
             batchsize (int, optional): Nummber of queries per transaction. Defaults to 1.
@@ -196,7 +224,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if len(generator) > 0:
                 if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
                     # if len(generator[0]) > 0:
-                    # Not applicable to old style loaders.
+                    #
+                    #  Not applicable to old style loaders.
                     self.commands_per_query = min(
                         len(generator[0][0]), batchsize)
                     if len(generator[0][1]):
@@ -216,25 +245,28 @@ class ParallelQuery(Parallelizer.Parallelizer):
         total_queries_exec = len(times)
 
         print("============ ApertureDB Parallel Query Stats ============")
-        print("Total time (s):", self.total_actions_time)
-        print("Total queries executed:", total_queries_exec)
+        print(f"Total time (s): {self.total_actions_time}")
+        print(f"Total queries executed: {total_queries_exec}")
 
         if total_queries_exec == 0:
             print("All queries failed!")
 
         else:
-            print("Avg Query time (s):", np.mean(times))
-            print("Query time std:", np.std(times))
-            print("Avg Query Throughput (q/s)):",
-                  1 / np.mean(times) * self.numthreads)
+            mean = np.mean(times)
+            std  = np.std(times)
+            tp = 1 / mean * self.numthreads
 
-            msg = "(" + self.type + "/s):"
-            print("Overall throughput", msg,
-                  self.total_actions / self.total_actions_time)
+            print(f"Avg Query time (s): {mean}")
+            print(f"Query time std: {std}")
+            print(f"Avg Query Throughput (q/s): {tp}")
+
+            i_tp = self.total_actions / self.total_actions_time
+            print(
+                f"Overall insertion throughput ({self.type}/s): {i_tp if self.error_counter == 0 else 'NaN'}")
 
             if self.error_counter > 0:
-                print("Total errors encountered:", self.error_counter)
-                print("Errors (%):", 100 *
-                      self.error_counter / total_queries_exec)
+                err_perc = 100 * self.error_counter / total_queries_exec
+                print(f"Total errors encountered: {self.error_counter}")
+                print(f"Errors (%): {err_perc}")
 
         print("=========================================================")

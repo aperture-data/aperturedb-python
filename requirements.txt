@@ -3,7 +3,7 @@ autopep8
 pre-commit
 torch
 torchvision
-boto3
+boto3==1.26.8
 nbconvert
 ipython
 kaggle

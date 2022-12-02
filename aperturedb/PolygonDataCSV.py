@@ -62,7 +62,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
         for key in self.header[1:-1]:
             if key in POLYGON_FIELDS.keys():
                 self.polygon_keys.append(key)
-            elif key.startswith(CSVParser.CONTRAINTS_PREFIX):
+            elif key.startswith(CSVParser.CONSTRAINTS_PREFIX):
                 self.constraints_keys.append(key)
             else:
                 self.props_keys.append(key)
