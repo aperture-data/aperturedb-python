@@ -16,19 +16,12 @@ import base64
 from io import BytesIO
 from PIL import Image
 from pandas import DataFrame
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Images(Entities):
     db_object = "_Image"
-
-    # This needs to be defined so that the application can access the adjacent items,
-    # with every item of this iterable.
-    @classmethod
-    def __decorator(cls, index, adjacent):
-        item = {}
-        for k, v in adjacent.items():
-            item[k] = v[index]
-        return item
 
     @classmethod
     def retrieve(cls,
@@ -36,39 +29,15 @@ class Images(Entities):
                  spec: Query,
                  with_adjacent: Dict[str, Query] = None) -> Images:
         spec.with_class = cls.db_object
-        # Sice adjacent items are usually a way to filter the results,
-        # the native query is constructed in the reverse order, with
-        # first filtering out the relavant itmes based on adjacent items.
-        fs = None
-        count = 0
-        if with_adjacent:
-            for k, v in with_adjacent.items():
-                if fs is None:
-                    fs = v
-                else:
-                    fs = fs.connected_to(v)
-                count += 1
-            # Eventually, connect the specification of Images to the specification of the adjacent items.
-            fs = fs.connected_to(spec)
-        else:
-            fs = spec
 
-        results = Entities.retrieve(db=db, spec=fs)
+        results = Entities.retrieve(
+            db=db, spec=spec, with_adjacent=with_adjacent)
 
         # A Polygon is only connected to 1 image, and our query is filtered with
         # meta info from polygon, so connect the right image to the polygon
         # That being said, the ordering should be same as that of the first command in the query
         images = results[-1]
 
-        adjacent = {}
-        if with_adjacent:
-            for k, v in with_adjacent.items():
-                adjacent[k] = images.get_connected_entities(
-                    type=EntityType(v.with_class),
-                    constraints=v.constraints)
-
-            images.decorator = cls.__decorator
-            images.adjacent = adjacent
         return images
 
     def inspect(self, use_thumbnails=True) -> Union[Tuple[widgets.IntSlider, widgets.Output], DataFrame]:
@@ -102,7 +71,6 @@ class Images(Entities):
         if self.get_image == True:
             buffer = self.get_image_by_index(idx)
             if buffer is not None:
-                # nparr = np.frombuffer(buffer, dtype=np.uint8)
                 item['thumbnail'] = Image.fromarray(
                     self.get_np_image_by_index(idx))
         return item
@@ -308,7 +276,7 @@ class Images(Entities):
     def get_image_by_index(self, index):
 
         if index >= len(self.images_ids):
-            print("Index is incorrect")
+            logger.info("Index is incorrect")
             return
 
         uniqueid = self.images_ids[index]

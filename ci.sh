@@ -79,6 +79,8 @@ echo "Repository: $DOCKER_REPOSITORY"
 # Build notebook image
 build_notebook_image(){
     NOTEBOOK_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_WITH_VERSION}
+    mkdir -p docker/notebook/aperturedata
+    cp -r aperturedb setup.py README.md docker/notebook/aperturedata
     LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
     echo "Building image $NOTEBOOK_IMAGE"
     docker build -t $NOTEBOOK_IMAGE -t $LATEST_IMAGE -f docker/notebook/Dockerfile .
