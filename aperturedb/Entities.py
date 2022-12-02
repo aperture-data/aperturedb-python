@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import List
-from aperturedb.Query import Query, EntityType
+from typing import Any, Dict, List, Union
+from aperturedb.Query import Query, ObjectType
 
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Constraints import Constraints
@@ -116,13 +116,13 @@ class Entities(Subscriptable):
             ]
             res, r, b = execute_batch(query, [], self.db)
 
-    def get_connected_entities(self,  type: EntityType, constraints: Constraints = None) -> List[Entities]:
+    def get_connected_entities(self,  etype: Union[ObjectType, str], constraints: Constraints = None) -> List[Entities]:
         """
         Gets all entities adjacent to and clustered around items of the collection
 
         Args:
             pk (str): _description_
-            type (EntityType): _description_
+            type (ObjectType): _description_
             constraints (Constraints, optional): _description_. Defaults to None.
 
         Returns:
@@ -166,11 +166,11 @@ def load_entities_registry(custom_entities: List[str] = None) -> dict:
     from aperturedb.Videos import Videos
 
     known_entities = {
-        EntityType.POLYGON.value: Polygons,
-        EntityType.IMAGE.value: Images,
-        EntityType.VIDEO.value: Videos,
-        EntityType.BOUNDING_BOX.value: BoundingBoxes,
-        EntityType.BLOB.value: Blobs
+        ObjectType.POLYGON.value: Polygons,
+        ObjectType.IMAGE.value: Images,
+        ObjectType.VIDEO.value: Videos,
+        ObjectType.BOUNDING_BOX.value: BoundingBoxes,
+        ObjectType.BLOB.value: Blobs,
     }
     for entity in set(custom_entities):
         if entity not in known_entities:

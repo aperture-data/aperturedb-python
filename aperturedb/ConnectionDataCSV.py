@@ -1,5 +1,6 @@
 import logging
-from aperturedb import CSVParser
+from aperturedb.CSVParser import CSVParser, CONSTRAINTS_PREFIX
+from aperturedb.Query import QueryBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -8,7 +9,7 @@ PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
 
-class ConnectionDataCSV(CSVParser.CSVParser):
+class ConnectionDataCSV(CSVParser):
     """**ApertureDB Connection Data.**
 
     This class loads the Connection Data which is present in a csv file,
@@ -57,10 +58,10 @@ class ConnectionDataCSV(CSVParser.CSVParser):
         super().__init__(filename, df=df, use_dask=use_dask)
         if not use_dask:
             self.props_keys       = [x for x in self.header[3:]
-                                     if not x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+                                     if not x.startswith(CONSTRAINTS_PREFIX)]
 
             self.constraints_keys = [x for x in self.header[3:]
-                                     if x.startswith(CSVParser.CONTRAINTS_PREFIX)]
+                                     if x.startswith(CONSTRAINTS_PREFIX)]
 
             self.src_class   = self.header[1].split("@")[0]
             self.src_key     = self.header[1].split("@")[1]
@@ -77,34 +78,25 @@ class ConnectionDataCSV(CSVParser.CSVParser):
         q = []
 
         try:
-
             ref_src = (2 * idx) % 100000 + 1
-            fe_a = {
-                "FindEntity": {
-                    "_ref": ref_src,
-                    "with_class": self.src_class,
-                    "unique": True,
+            cmd_params = {
+                "_ref": ref_src,
+                "unique": True,
+                "constraints": {
+                    self.src_key: ["==", src_value]
                 }
             }
-
-            fe_a["FindEntity"]["constraints"] = {}
-            fe_a["FindEntity"]["constraints"][self.src_key] = [
-                "==", src_value]
-            q.append(fe_a)
+            q.append(QueryBuilder.find_command(self.src_class, cmd_params))
 
             ref_dst = ref_src + 1
-            fe_b = {
-                "FindEntity": {
-                    "_ref": ref_dst,
-                    "with_class": self.dst_class,
-                    "unique": True,
+            cmd_params = {
+                "_ref": ref_dst,
+                "unique": True,
+                "constraints": {
+                    self.dst_key: ["==", dst_value]
                 }
             }
-
-            fe_b["FindEntity"]["constraints"] = {}
-            fe_b["FindEntity"]["constraints"][self.dst_key] = [
-                "==", dst_value]
-            q.append(fe_b)
+            q.append(QueryBuilder.find_command(self.dst_class, cmd_params))
 
             ae = self._basic_command(idx,
                                      custom_fields={

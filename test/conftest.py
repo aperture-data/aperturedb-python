@@ -28,7 +28,7 @@ def pytest_generate_tests(metafunc):
     if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
-                             True, False], indirect=True)
+                             True, False], indirect=True, ids=["with_dask", "without_dask"])
 
 
 @pytest.fixture()
