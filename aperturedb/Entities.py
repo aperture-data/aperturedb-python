@@ -178,7 +178,7 @@ class Entities(Subscriptable):
             List[Entities]: _description_
         """
         result = []
-        entity_class = etype.value if isinstance(etype, EntityType) else etype
+        entity_class = etype.value if isinstance(etype, ObjectType) else etype
         for entity in self:
             query = [
                 {
