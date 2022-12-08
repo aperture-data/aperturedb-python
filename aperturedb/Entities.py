@@ -21,11 +21,11 @@ class Entities(Subscriptable):
     update_command = f"Update{db_object}"
 
     @classmethod
-    def retrieve(cls,
-                 db: Connector,
-                 spec: Query,
-                 with_adjacent: Dict[str, Query] = None
-                 ) -> List[Entities]:
+    def retrieve_entities(cls,
+                          db: Connector,
+                          spec: Query,
+                          with_adjacent: Dict[str, Query] = None
+                          ) -> List[Entities]:
         """
         Using the Entities.retrieve method, is a simpple layer, with typical native queries converted
         using :class:`~aperturedb.Query.Query`
@@ -85,8 +85,8 @@ class Entities(Subscriptable):
                 entities = cls.known_entities[wc](
                     db=db, response=subresponse, type=wc)
                 entities.blobs = blobs
-                if wc[0] == "_":
-                    entities.find_command = f"Find{wc[1:]}"
+                # if wc[0] == "_":
+                #     entities.find_command = f"Find{wc[1:]}"
                 results.append(entities)
             except Exception as e:
                 print(e)
@@ -96,8 +96,26 @@ class Entities(Subscriptable):
         cls.__postprocess__(entities=results[-1], with_adjacent=with_adjacent)
         return results
 
+    @classmethod
+    def retrieve(cls,
+                 db: Connector,
+                 spec: Query,
+                 with_adjacent: Dict[str, Query] = None) -> Entities:
+        spec.db_object = cls.db_object
+
+        results = Entities.retrieve_entities(
+            db=db, spec=spec, with_adjacent=with_adjacent)
+
+        # A Polygon is only connected to 1 image, and our query is filtered with
+        # meta info from polygon, so connect the right image to the polygon
+        # That being said, the ordering should be same as that of the first command in the query
+        images = results[-1]
+
+        return images
+
     # This needs to be defined so that the application can access the adjacent items,
     # with every item of this iterable.
+
     @classmethod
     def __decorator(cls, index, adjacent):
         item = {}

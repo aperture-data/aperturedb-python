@@ -86,5 +86,5 @@ def retired_persons(db, insert_data_from_csv, utils):
     constraints = Constraints()
     constraints.greaterequal("age", 60)
     retired_persons = Entities.retrieve(db,
-                                        spec=Query.spec(with_class="Person", constraints=constraints))[0]
+                                        spec=Query.spec(with_class="Person", constraints=constraints))
     return retired_persons

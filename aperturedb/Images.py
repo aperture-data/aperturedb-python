@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Tuple, Union
+from typing import Tuple, Union
 import cv2
 import math
 import numpy as np
@@ -7,8 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from aperturedb import Utils
-from aperturedb.Entities import Entities, ObjectType, Query
-from aperturedb.Connector import Connector
+from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
 from ipywidgets import widgets
 from IPython.display import display, HTML
@@ -22,23 +21,6 @@ logger = logging.getLogger(__name__)
 
 class Images(Entities):
     db_object = "_Image"
-
-    @classmethod
-    def retrieve(cls,
-                 db: Connector,
-                 spec: Query,
-                 with_adjacent: Dict[str, Query] = None) -> Images:
-        spec.with_class = cls.db_object
-
-        results = Entities.retrieve(
-            db=db, spec=spec, with_adjacent=with_adjacent)
-
-        # A Polygon is only connected to 1 image, and our query is filtered with
-        # meta info from polygon, so connect the right image to the polygon
-        # That being said, the ordering should be same as that of the first command in the query
-        images = results[-1]
-
-        return images
 
     def inspect(self, use_thumbnails=True) -> Union[Tuple[widgets.IntSlider, widgets.Output], DataFrame]:
         df = super(Images, self).inspect()

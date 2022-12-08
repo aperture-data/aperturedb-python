@@ -13,7 +13,7 @@ class TestDataWizardEntities():
     def test_get_persons(self, insert_data_from_csv, db):
         loaded = insert_data_from_csv(in_csv_file="./input/persons.adb.csv")
         all_persons = Entities.retrieve(db,
-                                        spec=Query.spec(with_class="Person"))[0]
+                                        spec=Query.spec(with_class="Person"))
         assert len(all_persons) == len(loaded)
         too_young = all_persons.filter(lambda p: p["age"] < 18)
         too_old = all_persons.filter(lambda p: p["age"] > 60)
@@ -48,7 +48,7 @@ class TestDataWizardEntities():
         logger.info(f"\n{df}")
         persons = Entities.retrieve(db,
                                     spec=Query.spec(with_class="Person",
-                                                    constraints=Constraints().greaterequal("age", 60)))[0]
+                                                    constraints=Constraints().greaterequal("age", 60)))
 
         assert len(persons) == len(retired_persons)
         assert all(p["risk_factor"] == (p["age"] - 60) // 10 for p in persons)
