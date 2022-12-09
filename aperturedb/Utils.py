@@ -686,17 +686,19 @@ class Utils(object):
 
         cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
 
-        # There is no DeleteDescriptor, but when the sets are removed
-        # all the descriptors are also removed.
         queries = [
-            [{"DeleteDescriptorSet": cmd}],
-            # [{"DeleteDescriptor": cmd}],
-            [{"DeleteBoundingBox": cmd}],
-            [{"DeleteVideo": cmd}],
-            [{"DeleteImage": cmd}],
-            [{"DeleteBlob": cmd}],
-            [{"DeletePolygon": cmd}],
             [{"DeleteEntity": cmd}],
+            [{"DeleteImage": cmd}],
+            [{"DeleteVideo": cmd}],
+            [{"DeleteBlob": cmd}],
+            # DeleteDescriptorSet also deletes the descriptors
+            [{"DeleteDescriptorSet": cmd}],
+
+            # All the following should be deleted automatically once the
+            # related objects are deleted.
+            # We keep them here until ApertureDB fixes the issue.
+            [{"DeleteBoundingBox": cmd}],
+            [{"DeletePolygon": cmd}],
             [{"DeleteFrame": cmd}],
         ]
 

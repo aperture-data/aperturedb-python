@@ -12,7 +12,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v3
       with:
-        python-version: '3.8.10'
+        python-version: '3.10'
     - uses: pre-commit/action@v2.0.3
     - uses: actions/checkout@v2
     - uses: luisremis/find-trailing-whitespace@master
