@@ -696,7 +696,7 @@ class Utils(object):
 
             # All the following should be deleted automatically once the
             # related objects are deleted.
-            # We keep them here until ApertureDB fixes the issue.
+            # We keep them here until ApertureDB fully implements this.
             [{"DeleteBoundingBox": cmd}],
             [{"DeletePolygon": cmd}],
             [{"DeleteFrame": cmd}],
