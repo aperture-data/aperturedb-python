@@ -315,7 +315,7 @@ class Connector(object):
             if not isinstance(self.response, list) and self.response["info"] == "Not Authenticated!":
                 # The case where session is valid, but expires while query is sent.
                 # Hope is that the query send won't be longer than the session ttl.
-                logger.warn(
+                logger.warning(
                     f"Session expired while query was sent. Retrying... \r\n{traceback.format_stack(limit=5)}")
                 self._renew_session()
                 start = time.time()
@@ -333,7 +333,7 @@ class Connector(object):
                 self._check_session_status()
                 break
             except UnauthorizedException as e:
-                logger.warn(
+                logger.warning(
                     f"[Attempt {count + 1} of 3] Failed to refresh token. Details: \r\n{traceback.format_exc(limit=5)}")
                 time.sleep(1)
                 count += 1
