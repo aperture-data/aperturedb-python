@@ -63,7 +63,7 @@ class Session():
         session_age = time.time() - self.session_started
 
         # This triggers refresh if the session is about to expire.
-        if session_age > self.session_token_ttl - os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10):
+        if session_age > self.session_token_ttl - int(os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10)):
             return False
 
         return True
