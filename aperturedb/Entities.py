@@ -6,6 +6,7 @@ from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Constraints import Constraints
 from aperturedb.Connector import Connector
 from aperturedb.ParallelQuery import execute_batch
+from aperturedb.Query import QueryBuilder
 import pandas as pd
 
 
@@ -196,27 +197,28 @@ class Entities(Subscriptable):
         result = []
         entity_class = etype.value if isinstance(etype, ObjectType) else etype
         for entity in self:
-            query = [
-                {
-                    self.find_command: {
-                        "_ref": 1,
-                        "unique": False,
-                        "constraints": {
-                            "_uniqueid": ["==", entity["_uniqueid"]]
-                        }
-                    }
-                }, {
-                    "FindEntity": {
-                        "is_connected_to": {
-                            "ref": 1
-                        },
-                        "with_class": entity_class,
-                        "constraints": constraints.constraints,
-                        "results": {
-                            "all_properties": True
-                        }
-                    }
+            params_src = {
+                "_ref": 1,
+                "unique": False,
+                "constraints": {
+                    "_uniqueid": ["==", entity["_uniqueid"]]
                 }
+            }
+            params_dst = {
+                "is_connected_to": {
+                    "ref": 1
+                },
+                "with_class": entity_class,
+                "constraints": constraints.constraints,
+                "results": {
+                    "all_properties": True
+                }
+            }
+
+            query = [
+                QueryBuilder.find_command(self.db_object, params=params_src),
+                QueryBuilder.find_command(
+                    oclass=entity_class, params=params_dst)
             ]
             res, r, b = execute_batch(query, [], self.db)
             cl = Entities
@@ -230,19 +232,18 @@ class Entities(Subscriptable):
         """
         Helper to get blobs for FindImage, FindVideo and FindBlob commands.
         """
-        query = [
-            {
-                self.find_command: {
-                    "constraints": {
-                        "_uniqueid": ["==", entity["_uniqueid"]]
-                    },
-                    "blobs": True,
-                    "uniqueids": True,
-                    "results": {
-                        "count": True
-                    }
-                }
+        cmd_params = {
+            "constraints": {
+                "_uniqueid": ["==", entity["_uniqueid"]]
+            },
+            "blobs": True,
+            "uniqueids": True,
+            "results": {
+                "count": True
             }
+        }
+        query = [
+            QueryBuilder().find_command(self.db_object, params=cmd_params)
         ]
         res, r, b = execute_batch(query, [], self.db)
         return b[0]
