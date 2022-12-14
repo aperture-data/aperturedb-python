@@ -5,11 +5,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aperturedb",
-    version="0.3.5",
+    version="0.3.6",
     description="ApertureDB Client Module",
-    install_requires=['protobuf>=3.20.0', 'scikit-image', 'image', 'requests', 'boto3',
+    install_requires=['scikit-image', 'image', 'requests', 'boto3',
                       'opencv-python', 'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
                       'dask[complete]', 'ipywidgets',
+                      # Pinning this to be able to install tensorflow.
+                      'protobuf<3.20.0',
                       # Pinning the following 2 packages to avoid a conflict with the latest version of dask.
                       # TODO: Remove these pins once the conflict is resolved.
                       # TODO: Explore other package mgmt optins (pyproject.toml), or pip-tools to

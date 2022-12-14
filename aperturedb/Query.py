@@ -49,8 +49,6 @@ class Query():
     This is the underlying class to generate a query using python code.
     """
     db_object = "Entity"
-    find_command = f"Find{db_object}"
-    update_command = f"Update{db_object}"
     next = None
 
     def connected_to(self,
@@ -142,33 +140,27 @@ class Query():
 
     def query(self) -> List[dict]:
         results_section = "results"
-        cmd = {
-            self.find_command: {
-                "_ref": self.adj_to,
-                results_section: {
-
-                }
-            }
-        }
-        if self.db_object == "Entity":
-            cmd[self.find_command]["with_class"] = self.with_class
+        cmd_params = {results_section: {}}
         if self.limit != -1:
-            cmd[self.find_command][results_section]["limit"] = self.limit
+            cmd_params[results_section]["limit"] = self.limit
         if self.sort:
-            cmd[self.find_command][results_section]["sort"] = self.sort._sort
+            cmd_params[results_section]["sort"] = self.sort._sort
         if self.list is not None and len(self.list) > 0:
-            cmd[self.find_command][results_section]["list"] = self.list
+            cmd_params[results_section]["list"] = self.list
         else:
-            cmd[self.find_command][results_section]["all_properties"] = True
-        cmd[self.find_command][results_section]["group_by_source"] = self.group_by_src
+            cmd_params[results_section]["all_properties"] = True
+        cmd_params[results_section]["group_by_source"] = self.group_by_src
 
         if self.constraints:
-            cmd[self.find_command]["constraints"] = self.constraints.constraints
-
+            cmd_params["constraints"] = self.constraints.constraints
+        self.with_class = self.with_class if self.db_object == "Entity" else self.db_object
+        cmd = QueryBuilder.find_command(
+            oclass=self.with_class, params=cmd_params)
+        self.find_command = list(cmd.keys())[0]
         query = [cmd]
         if self.next:
             next_commands = self.next.query()
-            next_commands[0][self.next.find_command]["is_connected_to"] = {
+            list(next_commands[0].values())[0]["is_connected_to"] = {
                 "ref": self.adj_to
             }
             query.extend(next_commands)
