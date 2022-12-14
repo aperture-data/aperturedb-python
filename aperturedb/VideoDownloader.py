@@ -1,14 +1,12 @@
 import time
 import requests
 import os
-from os import path
 
 import cv2
 import numpy as np
 
 from aperturedb import Parallelizer
 from aperturedb import CSVParser
-from aperturedb import ProgressBar
 
 HEADER_PATH = "filename"
 HEADER_URL  = "url"

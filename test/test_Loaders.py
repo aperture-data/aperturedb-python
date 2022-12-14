@@ -6,18 +6,16 @@ from aperturedb import Utils
 from aperturedb import EntityLoader, ConnectionLoader
 from aperturedb import ImageLoader, BBoxLoader, BlobLoader
 from aperturedb import DescriptorSetLoader, DescriptorLoader
+import unittest
 
 
 class TestEntityLoader(TestBase):
     def setUp(self) -> None:
         db = self.create_connection()
         dbutils = Utils.Utils(db)
-        classes = ["_Image", "_Descriptor", "Person", "_BoundingBox"]
-        for c in classes:
-            # Assert that we have a clean slate to begin with.
-            self.assertEqual(dbutils.remove_entities(c), True)
-            self.assertEqual(dbutils.count_entities(c), 0)
+        self.assertTrue(dbutils.remove_all_objects(), True)
 
+    @unittest.skip("This is going to be deleted.")
     def test_Loader(self):
 
         db = self.create_connection()
