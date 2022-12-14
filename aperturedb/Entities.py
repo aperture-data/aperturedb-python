@@ -6,6 +6,7 @@ from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Constraints import Constraints
 from aperturedb.Connector import Connector
 from aperturedb.ParallelQuery import execute_batch
+from aperturedb.Query import QueryBuilder
 import pandas as pd
 
 
@@ -21,13 +22,13 @@ class Entities(Subscriptable):
     update_command = f"Update{db_object}"
 
     @classmethod
-    def retrieve(cls,
-                 db: Connector,
-                 spec: Query,
-                 with_adjacent: Dict[str, Query] = None
-                 ) -> List[Entities]:
+    def retrieve_entities(cls,
+                          db: Connector,
+                          spec: Query,
+                          with_adjacent: Dict[str, Query] = None
+                          ) -> List[Entities]:
         """
-        Using the Entities.retrieve method, is a simpple layer, with typical native queries converted
+        Using the Entities.retrieve method, is a simple layer, with typical native queries converted
         using :class:`~aperturedb.Query.Query`
 
         Args:
@@ -85,8 +86,7 @@ class Entities(Subscriptable):
                 entities = cls.known_entities[wc](
                     db=db, response=subresponse, type=wc)
                 entities.blobs = blobs
-                if wc[0] == "_":
-                    entities.find_command = f"Find{wc[1:]}"
+
                 results.append(entities)
             except Exception as e:
                 print(e)
@@ -96,8 +96,25 @@ class Entities(Subscriptable):
         cls.__postprocess__(entities=results[-1], with_adjacent=with_adjacent)
         return results
 
+    @classmethod
+    def retrieve(cls,
+                 db: Connector,
+                 spec: Query,
+                 with_adjacent: Dict[str, Query] = None) -> Entities:
+        spec.db_object = cls.db_object
+
+        results = Entities.retrieve_entities(
+            db=db, spec=spec, with_adjacent=with_adjacent)
+
+        # This is a very naive assumption, we will stop querying once
+        # the object of interest is the in the resopnses.
+        objects = results[-1]
+
+        return objects
+
     # This needs to be defined so that the application can access the adjacent items,
     # with every item of this iterable.
+
     @classmethod
     def __decorator(cls, index, adjacent):
         item = {}
@@ -180,27 +197,28 @@ class Entities(Subscriptable):
         result = []
         entity_class = etype.value if isinstance(etype, ObjectType) else etype
         for entity in self:
-            query = [
-                {
-                    self.find_command: {
-                        "_ref": 1,
-                        "unique": False,
-                        "constraints": {
-                            "_uniqueid": ["==", entity["_uniqueid"]]
-                        }
-                    }
-                }, {
-                    "FindEntity": {
-                        "is_connected_to": {
-                            "ref": 1
-                        },
-                        "with_class": entity_class,
-                        "constraints": constraints.constraints,
-                        "results": {
-                            "all_properties": True
-                        }
-                    }
+            params_src = {
+                "_ref": 1,
+                "unique": False,
+                "constraints": {
+                    "_uniqueid": ["==", entity["_uniqueid"]]
                 }
+            }
+            params_dst = {
+                "is_connected_to": {
+                    "ref": 1
+                },
+                "with_class": entity_class,
+                "constraints": constraints.constraints,
+                "results": {
+                    "all_properties": True
+                }
+            }
+
+            query = [
+                QueryBuilder.find_command(self.db_object, params=params_src),
+                QueryBuilder.find_command(
+                    oclass=entity_class, params=params_dst)
             ]
             res, r, b = execute_batch(query, [], self.db)
             cl = Entities
@@ -214,19 +232,18 @@ class Entities(Subscriptable):
         """
         Helper to get blobs for FindImage, FindVideo and FindBlob commands.
         """
-        query = [
-            {
-                self.find_command: {
-                    "constraints": {
-                        "_uniqueid": ["==", entity["_uniqueid"]]
-                    },
-                    "blobs": True,
-                    "uniqueids": True,
-                    "results": {
-                        "count": True
-                    }
-                }
+        cmd_params = {
+            "constraints": {
+                "_uniqueid": ["==", entity["_uniqueid"]]
+            },
+            "blobs": True,
+            "uniqueids": True,
+            "results": {
+                "count": True
             }
+        }
+        query = [
+            QueryBuilder().find_command(self.db_object, params=cmd_params)
         ]
         res, r, b = execute_batch(query, [], self.db)
         return b[0]
