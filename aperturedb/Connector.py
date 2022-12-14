@@ -63,7 +63,8 @@ class Session():
         session_age = time.time() - self.session_started
 
         # This triggers refresh if the session is about to expire.
-        if session_age > self.session_token_ttl - os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10):
+        if session_age > self.session_token_ttl - \
+                int(os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10)):
             return False
 
         return True
@@ -160,12 +161,12 @@ class Connector(object):
         if session_info["status"] != 0:
             raise Exception(session_info["info"])
 
-        self.shared_data.session = Session(session_info["session_token"],
-                                           session_info["refresh_token"],
-                                           session_info["session_token_expires_in"],
-                                           session_info["refresh_token_expires_in"],
-                                           time.time()
-                                           )
+        self.shared_data.session = Session(
+            session_info["session_token"],
+            session_info["refresh_token"],
+            session_info["session_token_expires_in"],
+            session_info["refresh_token_expires_in"],
+            time.time())
 
     def _check_session_status(self):
         if not self.shared_data.session:
@@ -190,12 +191,12 @@ class Connector(object):
             if session_info["status"] != 0:
                 raise UnauthorizedException(response)
 
-            self.shared_data.session = Session(session_info["session_token"],
-                                               session_info["refresh_token"],
-                                               session_info["session_token_expires_in"],
-                                               session_info["refresh_token_expires_in"],
-                                               time.time()
-                                               )
+            self.shared_data.session = Session(
+                session_info["session_token"],
+                session_info["refresh_token"],
+                session_info["session_token_expires_in"],
+                session_info["refresh_token_expires_in"],
+                time.time())
         else:
             raise UnauthorizedException(response)
 
@@ -312,10 +313,13 @@ class Connector(object):
         try:
             start = time.time()
             self.response, self.blobs = self._query(q, blobs)
-            if not isinstance(self.response, list) and self.response["info"] == "Not Authenticated!":
+            if not isinstance(
+                    self.response,
+                    list) and self.response["info"] == "Not Authenticated!":
                 # The case where session is valid, but expires while query is sent.
-                # Hope is that the query send won't be longer than the session ttl.
-                logger.warn(
+                # Hope is that the query send won't be longer than the session
+                # ttl.
+                logger.warning(
                     f"Session expired while query was sent. Retrying... \r\n{traceback.format_stack(limit=5)}")
                 self._renew_session()
                 start = time.time()
@@ -333,7 +337,7 @@ class Connector(object):
                 self._check_session_status()
                 break
             except UnauthorizedException as e:
-                logger.warn(
+                logger.warning(
                     f"[Attempt {count + 1} of 3] Failed to refresh token. Details: \r\n{traceback.format_exc(limit=5)}")
                 time.sleep(1)
                 count += 1
