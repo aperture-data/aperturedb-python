@@ -1,28 +1,14 @@
 from __future__ import annotations
-from typing import Dict, Any, List
+from typing import Any
 
-from aperturedb.Connector import Connector
 from aperturedb.Entities import Entities
-from aperturedb.Query import Query
 from IPython.display import HTML, display
-from aperturedb.NotebookHelpers import display_annotated_video, TemporalBoundingBox
+from aperturedb.NotebookHelpers import display_annotated_video
 from ipywidgets import widgets
 
 
 class Videos(Entities):
     db_object = "_Video"
-
-    @classmethod
-    def retrieve(cls,
-                 db: Connector,
-                 spec: Query,
-                 with_adjacent: Dict[str, Query]) -> Videos:
-        spec.with_class = cls.db_object
-
-        videos = super().retrieve(
-            db, spec=spec, with_adjacent=with_adjacent)[-1]
-
-        return videos
 
     def getitem(self, idx):
         item = super().getitem(idx)

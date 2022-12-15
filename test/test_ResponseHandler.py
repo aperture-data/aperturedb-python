@@ -88,8 +88,7 @@ class QGPersons(Subscriptable):
 class TestResponseHandler():
     def cleanDB(self, utils):
         logger.debug(f"Cleaning existing data")
-        assert utils.remove_entities("_BoundingBox") == True
-        assert utils.remove_entities("Person") == True
+        assert utils.remove_all_objects() == True
         self.requests = []
         self.responses = []
 

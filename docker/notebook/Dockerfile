@@ -16,7 +16,7 @@ RUN apt-get -y install build-essential git cmake python3.10-venv\
     pkg-config\
     libavutil-dev libswscale-dev python3-venv\
     libavcodec-extra libavcodec-dev python3-dev\
-    ffmpeg h264enc
+    ffmpeg h264enc npm
 
 RUN git clone https://github.com/opencv/opencv.git
 

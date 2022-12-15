@@ -1,21 +1,10 @@
 from __future__ import annotations
-from aperturedb.Connector import Connector
 from aperturedb.Entities import Entities
-from aperturedb.Query import Query
 from aperturedb.ParallelQuery import execute_batch
 
 
 class Polygons(Entities):
     db_object = "_Polygon"
-
-    @classmethod
-    def retrieve(cls,
-                 db: Connector,
-                 spec: Query) -> Polygons:
-        polygons = Entities.retrieve(
-            db=db,
-            spec=spec)
-        return polygons[-1]
 
     def intersection(self, other: Polygons, threshold: float) -> Polygons:
         """

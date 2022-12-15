@@ -2,3 +2,4 @@ jupyterlab
 jupyterlab-dash
 dash-cytoscape
 plotly
+jupyter-dash
