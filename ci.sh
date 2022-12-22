@@ -76,6 +76,18 @@ then
 fi
 echo "Repository: $DOCKER_REPOSITORY"
 
+build_notebook_dependencies_image(){
+    DEPS_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook:dependencies
+    LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook:dependencies
+    echo "Building image $DEPS_IMAGE"
+    docker pull $DEPS_IMAGE
+    docker build -t $DEPS_IMAGE -f docker/dependencies/Dockerfile .
+    if [ -z ${NO_PUSH+x} ]
+    then
+        docker push --all-tags $DOCKER_REPOSITORY/aperturedb-notebook
+    fi
+}
+
 # Build notebook image
 build_notebook_image(){
     NOTEBOOK_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_WITH_VERSION}
@@ -127,6 +139,10 @@ push_aws_ecr(){
 # Execute only if ONLY_DEFINES is not set
 if [ -z ${ONLY_DEFINES+x} ]
 then
+    # Dependecies 
+    # TODO : Conditionally build.
+    build_notebook_dependencies_image
+
     # Trigger build notebook image
     build_notebook_image
 
