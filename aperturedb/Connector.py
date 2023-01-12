@@ -130,12 +130,14 @@ class Connector(object):
         recv_len = self.conn.recv(4)  # get message size
 
         recv_len = struct.unpack('@I', recv_len)[0]
-        response = b''
-        while len(response) < recv_len:
-            packet = self.conn.recv(recv_len - len(response))
+        response = bytearray(recv_len)
+        read = 0
+        while read < recv_len:
+            packet = self.conn.recv(recv_len - read)
             if not packet:
                 logger.error("Error receiving")
-            response += packet
+            response[read:] = packet
+            read += len(packet)
 
         return response
 
