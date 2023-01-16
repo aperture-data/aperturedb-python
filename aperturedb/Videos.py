@@ -13,12 +13,13 @@ class Videos(Entities):
     def getitem(self, idx):
         item = super().getitem(idx)
         if self.blobs:
-            item['preview'] = self.get_blob(item)
+            if 'preview' not in item:
+                item['preview'] = self.get_blob(item)
         return item
 
     def inspect(self, show_preview: bool = True, meta = None) -> Any:
         if meta == None:
-            def meta(x): return x
+            def meta(x): return []
         df = super().inspect()
         if show_preview == True:
             op = widgets.Output()
