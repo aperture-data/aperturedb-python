@@ -51,10 +51,11 @@ class Images(Entities):
     def getitem(self, idx):
         item = super().getitem(idx)
         if self.get_image == True:
-            buffer = self.get_image_by_index(idx)
-            if buffer is not None:
-                item['thumbnail'] = Image.fromarray(
-                    self.get_np_image_by_index(idx))
+            if 'thumbnail' not in item:
+                buffer = self.get_image_by_index(idx)
+                if buffer is not None:
+                    item['thumbnail'] = Image.fromarray(
+                        self.get_np_image_by_index(idx))
         return item
 
     # DW interface ends
