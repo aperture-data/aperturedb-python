@@ -93,7 +93,7 @@ class Utils(object):
         p = object["properties"]
 
         if p is None:
-            return
+            return total_elements
 
         max = 0
         for k in p:
@@ -109,8 +109,10 @@ class Utils(object):
             # Warning if there is a property with "id" in the name not indexes
             w = "!" if "id" in k and not p[k][1] else w
             print(f"{i} {w} {p[k][2].ljust(8)} |"
-                  f" {k.ljust(max)} | {p[k][0]} "
+                  f" {k.ljust(max)} | {str(p[k][0]).rjust(9)} "
                   f"({int(p[k][0]/total_elements*100.0)}%)")
+
+        return total_elements
 
     def summary(self):
 
@@ -120,30 +122,41 @@ class Utils(object):
         status  = s["status"]
         info    = s["info"]
 
-        total_entities    = r["entities"]["returned"]
-        total_connections = r["entities"]["returned"]
+        if r["entities"] == None:
+            total_entities = 0
+            entities_classes = []
+        else:
+            total_entities   = r["entities"]["returned"]
+            entities_classes = [c for c in r["entities"]["classes"]]
 
-        entities_classes = [c for c in r["entities"]["classes"]]
-        connections_classes = [c for c in r["connections"]["classes"]]
-
-        total_images = self.count_images()
+        if r["connections"] == None:
+            total_connections = 0
+            connections_classes = []
+        else:
+            total_connections   = r["connections"]["returned"]
+            connections_classes = [c for c in r["connections"]["classes"]]
 
         print(f"================== Summary ==================")
         print(f"Database: {self.connector.host}")
         print(f"Version: {version}")
         print(f"Status:  {status}")
         print(f"Info:    {info}")
-        print(f"Total entities types:    {total_entities}")
-        print(f"Total connections types: {total_connections}")
-        print(f"Total images:            {total_images}")
         print(f"------------------ Entities -----------------")
+        print(f"Total entities types:    {total_entities}")
+        total_nodes = 0
         for c in entities_classes:
-            self._object_summary(c, r["entities"]["classes"][c])
+            total_nodes += self._object_summary(c, r["entities"]["classes"][c])
 
         print(f"---------------- Connections ----------------")
+        print(f"Total connections types: {total_connections}")
+        total_edges = 0
         for c in connections_classes:
-            self._object_summary(c, r["connections"]["classes"][c])
+            total_edges += self._object_summary(c,
+                                                r["connections"]["classes"][c])
 
+        print(f"------------------ Totals -------------------")
+        print(f"Total nodes: {total_nodes}")
+        print(f"Total edges: {total_edges}")
         print(f"=============================================")
 
     def _create_index(self, index_type, class_name, property_key):
@@ -673,17 +686,20 @@ class Utils(object):
 
         cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
 
-        # There is no DeleteDescriptor, but when the sets are removed
-        # all the descriptors are also removed.
         queries = [
-            [{"DeleteDescriptorSet": cmd}],
-            # [{"DeleteDescriptor": cmd}],
-            [{"DeleteBoundingBox": cmd}],
-            [{"DeleteVideo": cmd}],
-            [{"DeleteImage": cmd}],
-            [{"DeleteBlob": cmd}],
-            [{"DeletePolygon": cmd}],
             [{"DeleteEntity": cmd}],
+            [{"DeleteImage": cmd}],
+            [{"DeleteVideo": cmd}],
+            [{"DeleteBlob": cmd}],
+            # DeleteDescriptorSet also deletes the descriptors
+            [{"DeleteDescriptorSet": cmd}],
+
+            # All the following should be deleted automatically once the
+            # related objects are deleted.
+            # We keep them here until ApertureDB fully implements this.
+            [{"DeleteBoundingBox": cmd}],
+            [{"DeletePolygon": cmd}],
+            [{"DeleteFrame": cmd}],
         ]
 
         try:
