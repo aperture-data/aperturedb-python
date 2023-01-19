@@ -14,16 +14,15 @@ on:
 # A workflow run is made up of one or more jobs
 # that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build-test"
-  build-test:
-    # The type of runner that the job will run on Ubuntu 18.04 (latest)
+  run_test:
+    needs:
+      - build_images
     runs-on: ubuntu-latest
+    using: 'node16'
 
     # Steps represent a sequence of tasks that will be
     # executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE,
-      # so your job can access it
       - uses: actions/checkout@v2
 
       - name: Login to DockerHub
@@ -48,10 +47,11 @@ jobs:
           cd test
           bash run_test_container.sh
 
-  build_docs:
+  build_images:
 
     # The type of runner that the job will run on Ubuntu 18.04 (latest)
     runs-on: ubuntu-latest
+    using: 'node16'
 
     # Steps represent a sequence of tasks that will be
     # executed as part of the job
