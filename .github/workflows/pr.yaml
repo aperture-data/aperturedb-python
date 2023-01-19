@@ -18,7 +18,6 @@ jobs:
     needs:
       - build_images
     runs-on: ubuntu-latest
-    using: 'node16'
 
     # Steps represent a sequence of tasks that will be
     # executed as part of the job
@@ -48,13 +47,7 @@ jobs:
           bash run_test_container.sh
 
   build_images:
-
-    # The type of runner that the job will run on Ubuntu 18.04 (latest)
     runs-on: ubuntu-latest
-    using: 'node16'
-
-    # Steps represent a sequence of tasks that will be
-    # executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE,
       # so your job can access it
