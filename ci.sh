@@ -148,15 +148,15 @@ push_aws_ecr(){
 # Execute only if ONLY_DEFINES is not set
 if [ -z ${ONLY_DEFINES+x} ]
 then
-    # Tests
-    build_tests
-
     # Dependecies
     # TODO : Conditionally build.
     build_notebook_dependencies_image
 
     # Trigger build notebook image
     build_notebook_image
+
+    # Tests
+    build_tests
 
     # Trigger build docs image
     build_docs_image
