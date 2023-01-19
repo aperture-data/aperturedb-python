@@ -46,9 +46,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           cd test
-          bash run_test.sh
+          bash run_test_container.sh
 
-  build_and_deploy_docs:
+  build_docs:
 
     # The type of runner that the job will run on Ubuntu 18.04 (latest)
     runs-on: ubuntu-latest
@@ -69,6 +69,6 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASS }}
 
-      - name: Build and push docker
+      - name: Build docker
         run: 'NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
         shell: bash

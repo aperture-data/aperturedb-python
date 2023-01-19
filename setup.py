@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.3.6",
     description="ApertureDB Client Module",
     install_requires=['scikit-image', 'image', 'requests', 'boto3',
-                      'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
+                      'opencv-python', 'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
                       'dask[complete]', 'ipywidgets',
                       # Pinning this to be able to install tensorflow.
                       'protobuf<3.20.0'

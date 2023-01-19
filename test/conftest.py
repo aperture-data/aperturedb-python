@@ -19,6 +19,7 @@ import dbinfo
 @pytest.fixture()
 def db():
     return Connector(
+        host=dbinfo.DB_HOST,
         port=dbinfo.DB_PORT,
         user=dbinfo.DB_USER,
         password=dbinfo.DB_PASSWORD)
