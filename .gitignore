@@ -146,3 +146,4 @@ docs/*/*.svg
 test/aperturedb/logs
 adb-python/*
 docker/notebook/aperturedata/*
+docker/tests/aperturedata/*

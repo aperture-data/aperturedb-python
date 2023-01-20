@@ -2,7 +2,7 @@
 FROM aperturedata/aperturedb-notebook:dependencies
 
 RUN mkdir /aperturedata
-COPY docker/notebook/aperturedata /aperturedata
+ADD docker/notebook/aperturedata /aperturedata
 
 # Configure the Juypter Notebook password to "test"
 RUN jupyter lab --generate-config \
@@ -17,6 +17,7 @@ RUN  chmod 755 /start.sh
 # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
 # RUN chmod +x /usr/bin/tini
 # ENTRYPOINT ["/usr/bin/tini", "--"]
+RUN cd /aperturedata && pip install -e .
 
 EXPOSE 8888
 CMD ["/start.sh"]

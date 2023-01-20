@@ -1,6 +1,7 @@
 FROM ubuntu:22.04
 
-ENV OPENCV_VERSION=4.3.0
+# Updated as per the newest release.
+ENV OPENCV_VERSION=4.7.0
 
 RUN apt-get update \
     && apt-get upgrade -y \
@@ -19,6 +20,15 @@ RUN apt-get -y install build-essential git cmake python3.10-venv\
     libavcodec-extra libavcodec-dev python3-dev\
     ffmpeg h264enc npm wget
 
+# Cmake determines the correct path for site packages by looking at
+# numpy, and results in following output in configure:
+# --   Python 3:
+# --     Interpreter:                 /opt/venv/bin/python3 (ver 3.10.6)
+# --     Libraries:                   /usr/lib/x86_64-linux-gnu/libpython3.10.so (ver 3.10.6)
+# --     numpy:                       /opt/venv/lib/python3.10/site-packages/numpy/core/include (ver 1.24.1)
+# --     install path:                lib/python3.10/site-packages/cv2/python-3.10
+RUN pip install numpy
+
 RUN wget -q https://github.com/opencv/opencv/archive/$OPENCV_VERSION.tar.gz && \
     tar xf $OPENCV_VERSION.tar.gz && rm $OPENCV_VERSION.tar.gz && \
     cd opencv-$OPENCV_VERSION && mkdir build && cd build && \
@@ -32,10 +42,9 @@ RUN wget -q https://github.com/opencv/opencv/archive/$OPENCV_VERSION.tar.gz && \
         -D BUILD_TESTS=OFF                              \
         -D BUILD_opencv_apps=OFF                        \
         -D WITH_FFMPEG=ON                               \
-        -D CMAKE_INSTALL_PREFIX=/usr/local .. &&        \
+        -D CMAKE_INSTALL_PREFIX=/usr/local              \
+        -D OPENCV_PYTHON3_INSTALL_PATH=/opt/venv/lib/python3.10/site-packages .. && \
     make -j6 && make install
-    # rm -rf /opencv-$OPENCV_VERSION
 
 RUN pip install jupyterlab jupyterlab-dash dash-cytoscape plotly jupyter-dash numpy
-
-RUN cd /opencv-$OPENCV_VERSION/build/python_loader && pip install -e .
+RUN jupyter lab build
