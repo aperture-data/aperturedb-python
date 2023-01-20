@@ -3,6 +3,11 @@
 set -u
 set -e
 
+if [ -z "$BRANCH_NAME" ]
+then
+    echo "This is on a merge branch. Will not continue"
+    exit 0
+fi
 
 rm -rf aperturedb/db
 docker-compose down && docker-compose up -d
