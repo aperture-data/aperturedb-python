@@ -49,6 +49,11 @@ then
 fi
 
 echo "Branch: $BRANCH_NAME"
+if [ -z "$BRANCH_NAME" ]
+then
+    echo "This is on a merge branch. Will not continue"
+    exit 0
+fi
 
 # Set default version to develop
 BUILD_VERSION=develop
