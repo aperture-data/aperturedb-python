@@ -76,6 +76,16 @@ then
 fi
 echo "Repository: $DOCKER_REPOSITORY"
 
+build_tests(){
+    TESTS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:latest
+    mkdir -p docker/tests/aperturedata
+    cp -r aperturedb setup.py README.md test requirements.txt docker/tests/aperturedata
+
+    echo "Building image $TESTS_IMAGE"
+    docker build -t $TESTS_IMAGE --cache-from $TESTS_IMAGE -f docker/tests/Dockerfile .
+}
+
+
 build_notebook_dependencies_image(){
     DEPS_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook:dependencies
     echo "Building image $DEPS_IMAGE"
@@ -138,15 +148,24 @@ push_aws_ecr(){
 # Execute only if ONLY_DEFINES is not set
 if [ -z ${ONLY_DEFINES+x} ]
 then
-    # Dependecies
-    # TODO : Conditionally build.
-    build_notebook_dependencies_image
+    if [ -z ${EXCLUDE_TESTING+x} ]
+    then
+        # Dependecies
+        # TODO : Conditionally build.
+        build_notebook_dependencies_image
 
-    # Trigger build notebook image
-    build_notebook_image
+        # Trigger build notebook image
+        build_notebook_image
 
-    # Trigger build docs image
-    build_docs_image
+        # Tests
+        build_tests
+    fi
+
+    if [ -z ${EXCLUDE_DOCUMENTATION+x} ]
+    then
+        # Trigger build docs image
+        build_docs_image
+    fi
 
     if [ -z ${NO_PUSH+x} ]
     then

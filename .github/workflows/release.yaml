@@ -19,7 +19,7 @@ jobs:
   # This workflow contains a single job called "build-test"
   build-test:
     # The type of runner that the job will run on Ubuntu 18.04 (latest)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     # Steps represent a sequence of tasks that will be
     # executed as part of the job
@@ -41,20 +41,23 @@ jobs:
           project_id:          ${{ secrets.GCP_SERVICE_ACCOUNT_PROJECT_ID }}
           export_default_credentials: true
 
+      - name: Build tests
+        run: 'EXCLUDE_DOCUMENTATION=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
+        shell: bash
+
       - name: Run Tests
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         run: |
-          pip3 install ipython torch torchvision boto3
-          cd test
-          bash run_test.sh
-  
+          bash run_test_container.sh
+
   build_and_deploy_docs:
 
     # The type of runner that the job will run on Ubuntu 18.04 (latest)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     # Steps represent a sequence of tasks that will be
     # executed as part of the job
@@ -73,5 +76,5 @@ jobs:
           password: ${{ secrets.DOCKER_PASS }}
 
       - name: Build Notebook Docker
-        run: 'NO_PUSH=1 ./ci.sh'
+        run: 'EXCLUDE_TESTING=1 NO_PUSH=1 ./ci.sh'
         shell: bash
