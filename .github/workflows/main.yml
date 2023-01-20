@@ -53,8 +53,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         run: |
-          bash run_test_container.sh
-          ONLY_DEFINES=1 bash coverage.sh
+          cd test
+          BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./run_test_container.sh
 
   build_and_deploy_docs:
     needs:

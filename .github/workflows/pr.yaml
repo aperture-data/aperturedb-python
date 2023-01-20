@@ -47,7 +47,7 @@ jobs:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         run: |
           cd test
-          bash run_test_container.sh
+          BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./run_test_container.sh
 
   build_images:
     runs-on: self-hosted
