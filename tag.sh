@@ -2,6 +2,13 @@
 
 set -e
 
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+if [ -z "$BRANCH_NAME" ]
+then
+    echo "This is on a merge branch. Will not continue"
+    exit 0
+fi
+
 source $(dirname "$0")/version.sh
 
 # Trigger read version
