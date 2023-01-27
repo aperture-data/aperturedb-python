@@ -11,7 +11,9 @@ setuptools.setup(
                       'opencv-python', 'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
                       'dask[complete]', 'ipywidgets',
                       # Pinning this to be able to install tensorflow.
-                      'protobuf<3.20.0'
+                      'protobuf<3.20.0',
+                      # Pinning this to be able to install google-cloud-bigquery
+                      'grpcio-status==1.48.2'
                       ],
     long_description=long_description,
     long_description_content_type="text/markdown",
