@@ -17,7 +17,6 @@ RUN  chmod 755 /start.sh
 # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
 # RUN chmod +x /usr/bin/tini
 # ENTRYPOINT ["/usr/bin/tini", "--"]
-ENV CV_BUILD=1
 RUN cd /aperturedata && pip install -e .
 
 EXPOSE 8888

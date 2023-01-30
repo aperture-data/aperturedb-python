@@ -4,17 +4,17 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-CV_BUILD = os.getenv("CV_BUILD")
+OPENCV_VERSION = os.getenv("OPENCV_VERSION")
 
 install_requires = ['scikit-image', 'image', 'requests', 'boto3',
                     'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
-                    'dask[complete]', 'ipywidgets',
+                    'dask[complete]==2023.1.0', 'ipywidgets',
                     # Pinning this to be able to install tensorflow.
                     'protobuf<3.20.0',
                     # Pinning this to be able to install google-cloud-bigquery
                     'grpcio-status==1.48.2'
                     ]
-if CV_BUILD is None:
+if OPENCV_VERSION is None:
     install_requires.append('opencv-python')
 
 setuptools.setup(
