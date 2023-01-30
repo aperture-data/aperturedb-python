@@ -13,7 +13,6 @@ rm -rf aperturedb/db
 docker-compose down && docker-compose up -d
 
 docker run \
-    --link test_aperturedb_1:aperturedb \
     --network test_default \
     -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
     -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
