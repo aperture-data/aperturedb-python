@@ -120,22 +120,24 @@ class Connector(object):
         self.connected = False
 
     def _send_msg(self, data):
-
         sent_len = struct.pack('@I', len(data))  # send size first
-        self.conn.send(sent_len)
-        self.conn.send(data)
+        x = self.conn.send(sent_len + data)
+        return x == len(data) + 4
 
     def _recv_msg(self):
-
         recv_len = self.conn.recv(4)  # get message size
-
+        if recv_len == b'':
+            return None
         recv_len = struct.unpack('@I', recv_len)[0]
         response = bytearray(recv_len)
         read = 0
         while read < recv_len:
             packet = self.conn.recv(recv_len - read)
+            if recv_len == b'':
+                return None
             if not packet:
                 logger.error("Error receiving")
+                return None
             response[read:] = packet
             read += len(packet)
 
@@ -282,9 +284,20 @@ class Connector(object):
 
         # Serialize with protobuf and send
         data = query_msg.SerializeToString()
-        self._send_msg(data)
 
-        response = self._recv_msg()
+        tries = 0
+        while tries < 3:
+            if self._send_msg(data):
+                response = self._recv_msg()
+                if response is not None:
+                    break
+
+            tries += 1
+            logger.error(
+                f"Connection broken. Reconnectng attempt [{tries}/3] ..")
+            time.sleep(5)
+            self._connect()
+            self._renew_session()
 
         querRes = queryMessage_pb2.queryMessage()
         querRes.ParseFromString(response)
