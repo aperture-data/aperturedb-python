@@ -1,0 +1,1 @@
+docker build -f docker/pytorch-gpu/Dockerfile -t aperturedata/aperturedb-pytorch-gpu:latest .
