@@ -42,7 +42,7 @@ jobs:
           export_default_credentials: true
 
       - name: Build tests
-        run: 'EXCLUDE_DOCUMENTATION=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
+        run: 'EXCLUDE_DOCUMENTATION=1 NO_PUSH=1 ./ci.sh'
         shell: bash
 
 
@@ -54,7 +54,7 @@ jobs:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         run: |
           cd test
-          BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./run_test_container.sh
+          ./run_test_container.sh
 
   build_and_deploy_docs:
     needs:
@@ -102,27 +102,3 @@ jobs:
       - name: GitHub Release
         run: 'TOKEN=${{ secrets.GITHUBPAT }} ./github-release.sh'
         shell: bash
-
-  deploy_artifacts_staging_environment:
-    needs:
-      - build-test
-      - build_and_deploy_docs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
-      - name: Set release version
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: './configure_deployment.sh'
-        shell: bash
-      - uses: actions-hub/kubectl@master
-        env:
-          KUBE_CONFIG: ${{ secrets.KUBECONFIG_STAGE }}
-          KUBE_CONTEXT: arn:aws:eks:us-west-2:684446431133:cluster/aperturedata-eks
-        with:
-          args: apply -f deploy/
