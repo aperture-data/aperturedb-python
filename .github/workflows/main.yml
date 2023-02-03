@@ -42,7 +42,7 @@ jobs:
           export_default_credentials: true
 
       - name: Build tests
-        run: 'EXCLUDE_DOCUMENTATION=1 NO_PUSH=1 ./ci.sh'
+        run: 'EXCLUDE_DOCUMENTATION=1 ./ci.sh'
         shell: bash
 
 
@@ -84,7 +84,9 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: 'EXCLUDE_TESTING=1 ./ci.sh'
+        run: |
+          pip3 install boto3==1.26.8
+          'EXCLUDE_TESTING=1 ./ci.sh'
         shell: bash
 
       - name: Publish to PyPi
