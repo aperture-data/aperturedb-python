@@ -176,15 +176,14 @@ then
     then
         # Trigger build docs image
         build_docs_image
-    fi
+        if [ -z ${NO_PUSH+x} ]
+        then
+            ECR_REPO_NAME=aperturedb-python-docs
+            DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
+            ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
 
-    if [ -z ${NO_PUSH+x} ]
-    then
-        ECR_REPO_NAME=aperturedb-python-docs
-        DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
-        ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
-
-        push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
+            push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
+        fi
     fi
 fi
 
