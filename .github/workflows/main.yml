@@ -86,7 +86,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           pip3 install boto3==1.26.8
-          'EXCLUDE_TESTING=1 ./ci.sh'
+          EXCLUDE_TESTING=1 ./ci.sh
         shell: bash
 
       - name: Publish to PyPi
