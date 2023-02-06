@@ -18,7 +18,12 @@ RUN apt-get -y install build-essential git cmake python3.10-venv\
     pkg-config\
     libavutil-dev libswscale-dev python3-venv\
     libavcodec-extra libavcodec-dev python3-dev\
-    ffmpeg h264enc npm wget
+    ffmpeg h264enc wget
+
+#The version of nodejs in ubuntu is very old
+#Installing the LTS as on Feb 23
+RUN cd /opt && wget https://nodejs.org/dist/v18.14.0/node-v18.14.0-linux-x64.tar.xz && tar xf node-v18.14.0-linux-x64.tar.xz
+ENV PATH="/opt/node-v18.14.0-linux-x64/bin:$PATH"
 
 # Cmake determines the correct path for site packages by looking at
 # numpy, and results in following output in configure:

@@ -42,11 +42,19 @@ update_version() {
     BUILD_VERSION=$VERSION_BUMP
 }
 
+install_prerequisites() {
+    sudo apt-get update
+    sudo apt-get install -y vim awscli
+}
+
 # Fetch branch
 if [ -z ${BRANCH_NAME+x} ]
 then
     BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 fi
+
+#Install pre requisites
+install_prerequisites
 
 # Set default version to develop
 BUILD_VERSION=develop
@@ -55,8 +63,13 @@ BUILD_VERSION=develop
 read_version
 echo "Build version: $BUILD_VERSION"
 
-# Trigger update version
-update_version
+if [ -z ${UPDATE_BRANCH+x} ]
+then
+    echo "UPDATE_BRANCH is not set"
+else
+    # Trigger update version
+    update_version
+fi
 
 # Set image extension according to branch
 IMAGE_EXTENSION_WITH_VERSION="-${BRANCH_NAME}:v${BUILD_VERSION}"
@@ -163,15 +176,14 @@ then
     then
         # Trigger build docs image
         build_docs_image
-    fi
+        if [ -z ${NO_PUSH+x} ]
+        then
+            ECR_REPO_NAME=aperturedb-python-docs
+            DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
+            ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
 
-    if [ -z ${NO_PUSH+x} ]
-    then
-        ECR_REPO_NAME=aperturedb-python-docs
-        DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
-        ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
-
-        push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
+            push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
+        fi
     fi
 fi
 

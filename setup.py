@@ -8,7 +8,7 @@ OPENCV_VERSION = os.getenv("OPENCV_VERSION")
 
 install_requires = ['scikit-image', 'image', 'requests', 'boto3',
                     'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
-                    'dask[complete]==2023.1.0', 'ipywidgets',
+                    'dask[complete]<=2023.1.0', 'ipywidgets',
                     # Pinning this to be able to install tensorflow.
                     'protobuf<3.20.0',
                     # Pinning this to be able to install google-cloud-bigquery
@@ -19,7 +19,7 @@ if OPENCV_VERSION is None:
 
 setuptools.setup(
     name="aperturedb",
-    version="0.3.9",
+    version="0.4.0",
     description="ApertureDB Client Module",
     install_requires=install_requires,
     long_description=long_description,
