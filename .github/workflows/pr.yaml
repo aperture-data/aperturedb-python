@@ -85,7 +85,7 @@ jobs:
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         run: |
           cd test
-          ./run_test_container.sh
+          ./run_test_container.sh aperturedata/aperturedb-pytorch-gpu
 
   build_images:
     runs-on: ubuntu-latest
