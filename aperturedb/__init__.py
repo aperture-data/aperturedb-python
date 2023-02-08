@@ -42,4 +42,4 @@ if os.getenv("ADB_NO_VERSION_CHECK") is None:
         logger.warning(
             f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
         print(
-        f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
+            f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")

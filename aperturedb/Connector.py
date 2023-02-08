@@ -104,7 +104,9 @@ class Connector(object):
 
         self._connect()
 
-        os.register_at_fork( after_in_child=lambda: Connector._fork_reconnect(weakref.ref(self)))
+        os.register_at_fork(
+            after_in_child=lambda: Connector._fork_reconnect(
+                weakref.ref(self)))
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
@@ -129,10 +131,11 @@ class Connector(object):
 
     def __getstate__(self):
         """interface for pickling"""
-        return (self.host,self.port,self.use_ssl,self.shared_data.session)
-    def __setstate__(self,state):
+        return (self.host, self.port, self.use_ssl, self.shared_data.session)
+
+    def __setstate__(self, state):
         """interface for unpickling"""
-        host,port,use_ssl,session = state
+        host, port, use_ssl, session = state
         self.host = host
         self.port = port
         self.use_ssl = use_ssl
