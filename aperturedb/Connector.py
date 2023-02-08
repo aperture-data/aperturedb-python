@@ -330,7 +330,6 @@ class Connector(object):
         try:
             start = time.time()
             self.response, self.blobs = self._query(q, blobs)
-            # logger.info(f"pid={os.getpid()},\n query = {q},\nresponse={self.response}")
             if not isinstance(
                     self.response,
                     list) and self.response["info"] == "Not Authenticated!":
