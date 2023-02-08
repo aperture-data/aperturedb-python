@@ -30,15 +30,16 @@ error_console_handler.setLevel(log_console_level)
 error_console_handler.setFormatter(formatter)
 logger.addHandler(error_console_handler)
 
-try:
-    latest_version = json.loads(requests.get(
-        "https://pypi.org/pypi/aperturedb/json").text)["info"]["version"]
-except Exception as e:
-    logger.warning(
-        f"Failed to get latest version: {e}. You are using version {__version__}")
-    latest_version = None
-if __version__ != latest_version:
-    logger.warning(
-        f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
-    print(
+if os.getenv("ADB_NO_VERSION_CHECK") is None:
+    try:
+        latest_version = json.loads(requests.get(
+            "https://pypi.org/pypi/aperturedb/json").text)["info"]["version"]
+    except Exception as e:
+        logger.warning(
+            f"Failed to get latest version: {e}. You are using version {__version__}")
+        latest_version = None
+    if __version__ != latest_version:
+        logger.warning(
+            f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
+        print(
         f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")

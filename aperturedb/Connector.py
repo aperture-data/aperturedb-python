@@ -35,6 +35,7 @@ import time
 import json
 import ssl
 import logging
+import weakref
 
 from threading import Lock
 from types import SimpleNamespace
@@ -103,6 +104,8 @@ class Connector(object):
 
         self._connect()
 
+        os.register_at_fork( after_in_child=lambda: Connector._fork_reconnect(weakref.ref(self)))
+
         if shared_data is None:
             self.shared_data = SimpleNamespace()
             self.shared_data.session = None
@@ -114,10 +117,33 @@ class Connector(object):
         else:
             self.shared_data = shared_data
 
+    def _fork_reconnect(selfref):
+        if selfref() is not None:
+            selfref().connected = False
+            selfref()._connect()
+
     def __del__(self):
 
         self.conn.close()
         self.connected = False
+
+    def __getstate__(self):
+        """interface for pickling"""
+        return (self.host,self.port,self.use_ssl,self.shared_data.session)
+    def __setstate__(self,state):
+        """interface for unpickling"""
+        host,port,use_ssl,session = state
+        self.host = host
+        self.port = port
+        self.use_ssl = use_ssl
+
+        shared = SimpleNamespace()
+        shared.sesison = session
+        shared.lock = Lock()
+        self.shared_data = shared
+
+        self.connected = False
+        self._connect()
 
     def _send_msg(self, data):
         sent_len = struct.pack('@I', len(data))  # send size first
