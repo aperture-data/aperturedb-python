@@ -16,20 +16,25 @@ from aperturedb.Utils import Utils
 import dbinfo
 
 
-@pytest.fixture()
-def db():
-    return Connector(
-        host=dbinfo.DB_HOST,
-        port=dbinfo.DB_PORT,
-        user=dbinfo.DB_USER,
-        password=dbinfo.DB_PASSWORD)
-
-
 def pytest_generate_tests(metafunc):
+    if "db" in metafunc.fixturenames:
+        metafunc.parametrize("db", [{"server": dbinfo.DB_TCP_HOST, "use_ssl": True, "use_rest": False},
+                                    {"server": dbinfo.DB_HTTP_HOST, "use_ssl": False, "use_rest": True}], indirect=True, ids=["TCP", "HTTP"])
     if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
                              True, False], indirect=True, ids=["with_dask", "without_dask"])
+
+
+@pytest.fixture()
+def db(request):
+    return Connector(
+        host=request.param["server"],
+        port=dbinfo.DB_PORT,
+        user=dbinfo.DB_USER,
+        password=dbinfo.DB_PASSWORD,
+        use_ssl=request.param["use_ssl"],
+        use_rest=request.param["use_rest"])
 
 
 @pytest.fixture()

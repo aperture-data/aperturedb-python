@@ -9,7 +9,7 @@ class TestBase(unittest.TestCase):
     def setUpClass(cls):
         # import pdb;pdb.set_trace()
         # ApertureDB Server Info
-        cls.db_host  = dbinfo.DB_HOST
+        cls.db_host  = dbinfo.DB_TCP_HOST
         cls.db_port  = dbinfo.DB_PORT
         cls.user     = dbinfo.DB_USER
         cls.password = dbinfo.DB_PASSWORD

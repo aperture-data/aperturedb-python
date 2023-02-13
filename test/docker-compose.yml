@@ -12,7 +12,7 @@ services:
   webui:
     image: aperturedata/aperturedb-webui
     ports:
-      - 8087:80
+      - 80:80
     restart: always
     depends_on:
       - aperturedb

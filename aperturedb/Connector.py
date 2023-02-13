@@ -29,6 +29,7 @@ from . import queryMessage_pb2
 import sys
 import traceback
 import os
+import requests
 import socket
 import struct
 import time
@@ -84,24 +85,28 @@ class Connector(object):
         str (user): Username to specify while establishing a connection.
         str (password): Password to specify while connecting to the db.
         str (token): Token to use while connecting to the database.
-        object (session):
         bool (use_ssl): Use SSL to encrypt communication with the database.
     """
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
-                 use_ssl=True, shared_data=None):
-
-        self.use_ssl = use_ssl
+                 use_ssl=True, use_rest=False, shared_data=None):
 
         self.host = host
         self.port = port
+        self.use_ssl = use_ssl
+        self.use_rest = use_rest
 
-        self.connected = False
         self.last_response   = ''
         self.last_query_time = 0
 
-        self._connect()
+        if (use_rest):
+            self.url = ('https' if self.use_ssl else 'http') + \
+                '://' + host + '/api/'
+
+        else:
+            self.connected = False
+            self._connect()
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
@@ -116,8 +121,9 @@ class Connector(object):
 
     def __del__(self):
 
-        self.conn.close()
-        self.connected = False
+        if not self.use_rest:
+            self.conn.close()
+            self.connected = False
 
     def _send_msg(self, data):
         sent_len = struct.pack('@I', len(data))  # send size first
@@ -268,45 +274,70 @@ class Connector(object):
         else:
             query_str = query
 
-        if not self.connected:
-            return "NOT CONNECTED"
+        if self.use_rest:
+            files = [
+                ('query', (None, query_str)),
+            ]
 
-        query_msg = queryMessage_pb2.queryMessage()
-        # query has .json and .blobs
-        query_msg.json = query_str
+            for blob in blob_array:
+                files.append(('blobs', blob))
 
-        # Set Auth token, only when not authenticated before
-        if self.shared_data.session:
-            query_msg.token = self.shared_data.session.session_token
+            # Set Auth token, only when not authenticated before
+            if self.shared_data.session:
+                headers = {'Authorization': "Bearer " +
+                           self.shared_data.session.session_token}
+            else:
+                headers = None
+            response = requests.post(self.url,
+                                     headers = headers,
+                                     files   = files,
+                                     verify  = self.use_ssl)
 
-        for blob in blob_array:
-            query_msg.blobs.append(blob)
+            # Parse response:
+            json_response       = json.loads(response.text)
+            response_blob_array = json_response["blobs"]
+            self.last_response  = json_response["json"]
 
-        # Serialize with protobuf and send
-        data = query_msg.SerializeToString()
+        else:
+            if not self.connected:
+                return "NOT CONNECTED"
 
-        tries = 0
-        while tries < 3:
-            try:
-                if self._send_msg(data):
-                    response = self._recv_msg()
-                    if response is not None:
-                        querRes = queryMessage_pb2.queryMessage()
-                        querRes.ParseFromString(response)
-                        response_blob_array = [b for b in querRes.blobs]
-                        self.last_response = json.loads(querRes.json)
-                        break
-            except ssl.SSLError as e:
-                # This can happen in a scenario where multiple
-                # processes might be accessing a single connection.
-                # The copy does not make usable connections.
-                logger.warning(f"Socket error on process {os.getpid()}")
-            tries += 1
-            logger.warning(
-                f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
-            time.sleep(1)
-            self._connect()
-            self._renew_session()
+            query_msg = queryMessage_pb2.queryMessage()
+            # query has .json and .blobs
+            query_msg.json = query_str
+
+            # Set Auth token, only when not authenticated before
+            if self.shared_data.session:
+                query_msg.token = self.shared_data.session.session_token
+
+            for blob in blob_array:
+                query_msg.blobs.append(blob)
+
+            # Serialize with protobuf and send
+            data = query_msg.SerializeToString()
+
+            tries = 0
+            while tries < 3:
+                try:
+                    if self._send_msg(data):
+                        response = self._recv_msg()
+                        if response is not None:
+                            querRes = queryMessage_pb2.queryMessage()
+                            querRes.ParseFromString(response)
+                            response_blob_array = [b for b in querRes.blobs]
+                            self.last_response = json.loads(querRes.json)
+                            break
+                except ssl.SSLError as e:
+                    # This can happen in a scenario where multiple
+                    # processes might be accessing a single connection.
+                    # The copy does not make usable connections.
+                    logger.warning(f"Socket error on process {os.getpid()}")
+                tries += 1
+                logger.warning(
+                    f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
+                time.sleep(1)
+                self._connect()
+                self._renew_session()
 
         return (self.last_response, response_blob_array)
 
@@ -360,7 +391,7 @@ class Connector(object):
                 count += 1
 
     def create_new_connection(self) -> Connector:
-        return Connector(self.host, self.port, shared_data=self.shared_data)
+        return Connector(self.host, self.port, use_ssl=self.use_ssl, use_rest=self.use_rest, shared_data=self.shared_data)
 
     def get_last_response_str(self):
 
