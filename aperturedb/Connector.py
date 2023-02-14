@@ -344,11 +344,20 @@ class Connector(object):
 
         tries = 0
         while tries < self._send_attempt_count:
-            if self._send_msg(data):
-                response = self._recv_msg()
-                if response is not None:
-                    break
-
+            try:
+                if self._send_msg(data):
+                    response = self._recv_msg()
+                    if response is not None:
+                        querRes = queryMessage_pb2.queryMessage()
+                        querRes.ParseFromString(response)
+                        response_blob_array = [b for b in querRes.blobs]
+                        self.last_response = json.loads(querRes.json)
+                        break
+            except ssl.SSLError as e:
+                # This can happen in a scenario where multiple
+                # processes might be accessing a single connection.
+                # The copy does not make usable connections.
+                logger.warning(f"Socket error on process {os.getpid()}")
             tries += 1
             logger.error(
                 f"Connection broken. Reconnecting attempt [{tries}/{self._send_attempt_count}] ..")
@@ -356,12 +365,7 @@ class Connector(object):
             self._connect()
             self._renew_session()
 
-        querRes = queryMessage_pb2.queryMessage()
-        querRes.ParseFromString(response)
 
-        response_blob_array = [b for b in querRes.blobs]
-
-        self.last_response = json.loads(querRes.json)
 
         return (self.last_response, response_blob_array)
 
