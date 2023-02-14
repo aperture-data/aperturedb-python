@@ -64,7 +64,7 @@ class Session():
 
         # This triggers refresh if the session is about to expire.
         if session_age > self.session_token_ttl - \
-                int(os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10)):
+                int(os.getenv("APERTUREDB_SESSION_EXPIRY_OFFSET_SEC", 10)):
             return False
 
         return True
