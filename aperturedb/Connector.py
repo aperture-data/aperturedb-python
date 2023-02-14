@@ -66,9 +66,10 @@ class Session():
         env_session_expiry_offset = None
         session_expiry_offset_sec = 10
         try:
-                env_session_expiry_offset = os.getenv("APERTUREDB_SESSION_EXPIRY_OFFSET_SEC", 10)
-                session_expiry_offset_sec = int(env_session_expiry_offset)
-        except:
+            env_session_expiry_offset = os.getenv(
+                "APERTUREDB_SESSION_EXPIRY_OFFSET_SEC", 10)
+            session_expiry_offset_sec = int(env_session_expiry_offset)
+        except BaseException:
             Session._on_session_env_bad(env_session_expiry_offset)
 
         # This triggers refresh if the session is about to expire.
@@ -77,9 +78,10 @@ class Session():
 
         return True
     @classmethod
-    def _on_session_env_bad(cls,value):
-        if not hasattr( cls, 'previously_warned' ):
-            logger.warning(f"error retrieving APERTUREDB_SESSION_EXPIRY_OFFSET_SEC  got {value}, need an int")
+    def _on_session_env_bad(cls, value):
+        if not hasattr(cls, 'previously_warned'):
+            logger.warning(
+                f"error retrieving APERTUREDB_SESSION_EXPIRY_OFFSET_SEC  got {value}, need an int")
             cls.previously_warned = True
 
 
@@ -116,15 +118,16 @@ class Connector(object):
 
         self._connect()
 
-        resend_tries_env =  None
+        resend_tries_env = None
         try:
-            send_attempt_tries =os.getenv("APERTUREDB_SEND_ATTEMPT_TRIES",3) 
-            self._send_attempt_count = int( send_attempt_tries )
+            send_attempt_tries = os.getenv("APERTUREDB_SEND_ATTEMPT_TRIES", 3)
+            self._send_attempt_count = int(send_attempt_tries)
             if self._send_attempt_count < 1:
                 logger.error("APERTUREDB_RESEND_TRIES must be greater than 0")
                 self._send_attempt_count = 1
-        except:
-            logger.warning(f"error retrieving APERTUREDB_RESEND_TRIES  got {resend_tries_env}, need an int")
+        except BaseException:
+            logger.warning(
+                f"error retrieving APERTUREDB_RESEND_TRIES  got {resend_tries_env}, need an int")
             self._send_attempt_count = 3
         os.register_at_fork(
             after_in_child=lambda: Connector._fork_reconnect(
@@ -145,7 +148,8 @@ class Connector(object):
         if selfref() is not None:
             selfref()._process_reconnect(selfref().shared_data.session)
 
-    def _process_reconnect(self,session): #refresh_token,session_expiry,refresh_expiry):
+    # refresh_token,session_expiry,refresh_expiry):
+    def _process_reconnect(self, session):
         # when a new process is created, the (ssl?) connection is not valid.
         if self.connected:
             self.connected = False
@@ -170,7 +174,7 @@ class Connector(object):
         self.host = host
         self.port = port
         self.use_ssl = use_ssl
-        self._process_reconnect( session )
+        self._process_reconnect(session)
 
     def _send_msg(self, data):
         sent_len = struct.pack('@I', len(data))  # send size first
