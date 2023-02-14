@@ -63,12 +63,24 @@ class Session():
     def valid(self) -> bool:
         session_age = time.time() - self.session_started
 
+        env_session_expiry_offset = None
+        session_expiry_offset_sec = 10
+        try:
+                env_session_expiry_offset = os.getenv("APERTUREDB_SESSION_EXPIRY_OFFSET_SEC", 10)
+                session_expiry_offset_sec = int(env_session_expiry_offset)
+        except:
+            Session._on_session_env_bad(env_session_expiry_offset)
+
         # This triggers refresh if the session is about to expire.
-        if session_age > self.session_token_ttl - \
-                int(os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10)):
+        if session_age > self.session_token_ttl - session_expiry_offset_sec:
             return False
 
         return True
+    @classmethod
+    def _on_session_env_bad(cls,value):
+        if not hasattr( cls, 'previously_warned' ):
+            logger.warning(f"error retrieving APERTUREDB_SESSION_EXPIRY_OFFSET_SEC  got {value}, need an int")
+            cls.previously_warned = True
 
 
 class Connector(object):
@@ -104,6 +116,16 @@ class Connector(object):
 
         self._connect()
 
+        resend_tries_env =  None
+        try:
+            send_attempt_tries =os.getenv("APERTUREDB_SEND_ATTEMPT_TRIES",3) 
+            self._send_attempt_count = int( send_attempt_tries )
+            if self._send_attempt_count < 1:
+                logger.error("APERTUREDB_RESEND_TRIES must be greater than 0")
+                self._send_attempt_count = 1
+        except:
+            logger.warning(f"error retrieving APERTUREDB_RESEND_TRIES  got {resend_tries_env}, need an int")
+            self._send_attempt_count = 3
         os.register_at_fork(
             after_in_child=lambda: Connector._fork_reconnect(
                 weakref.ref(self)))
@@ -121,8 +143,17 @@ class Connector(object):
 
     def _fork_reconnect(selfref):
         if selfref() is not None:
-            selfref().connected = False
-            selfref()._connect()
+            selfref()._process_reconnect(selfref().shared_data.session)
+
+    def _process_reconnect(self,session): #refresh_token,session_expiry,refresh_expiry):
+        # when a new process is created, the (ssl?) connection is not valid.
+        if self.connected:
+            self.connected = False
+            self.conn.close()
+            self.shared_data = SimpleNamespace()
+            self.shared_data.session = session
+            self.shared_data.lock = Lock()
+            self._connect()
 
     def __del__(self):
 
@@ -139,14 +170,7 @@ class Connector(object):
         self.host = host
         self.port = port
         self.use_ssl = use_ssl
-
-        shared = SimpleNamespace()
-        shared.sesison = session
-        shared.lock = Lock()
-        self.shared_data = shared
-
-        self.connected = False
-        self._connect()
+        self._process_reconnect( session )
 
     def _send_msg(self, data):
         sent_len = struct.pack('@I', len(data))  # send size first
@@ -315,7 +339,7 @@ class Connector(object):
         data = query_msg.SerializeToString()
 
         tries = 0
-        while tries < 3:
+        while tries < self._send_attempt_count:
             if self._send_msg(data):
                 response = self._recv_msg()
                 if response is not None:
@@ -323,7 +347,7 @@ class Connector(object):
 
             tries += 1
             logger.error(
-                f"Connection broken. Reconnectng attempt [{tries}/3] ..")
+                f"Connection broken. Reconnecting attempt [{tries}/{self._send_attempt_count}] ..")
             time.sleep(5)
             self._connect()
             self._renew_session()
@@ -376,13 +400,13 @@ class Connector(object):
 
     def _renew_session(self):
         count = 0
-        while count < 3:
+        while count < self._send_attempt_count:
             try:
                 self._check_session_status()
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of 3] Failed to refresh token. Details: \r\n{traceback.format_exc(limit=5)}")
+                    f"[Attempt {count + 1} of {self._send_attempt_count}] Failed to refresh token. Details: \r\n{traceback.format_exc(limit=5)}")
                 time.sleep(1)
                 count += 1
 
