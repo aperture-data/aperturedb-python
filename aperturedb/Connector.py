@@ -77,6 +77,7 @@ class Session():
             return False
 
         return True
+
     @classmethod
     def _on_session_env_bad(cls, value):
         if not hasattr(cls, 'previously_warned'):
@@ -364,8 +365,6 @@ class Connector(object):
             time.sleep(5)
             self._connect()
             self._renew_session()
-
-
 
         return (self.last_response, response_blob_array)
 
