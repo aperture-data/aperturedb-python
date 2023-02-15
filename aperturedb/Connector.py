@@ -114,6 +114,7 @@ class Connector(object):
         self.port = port
 
         self.connected = False
+        self.reconnect_needed = False
         self.last_response   = ''
         self.last_query_time = 0
 
@@ -158,7 +159,7 @@ class Connector(object):
             self.shared_data = SimpleNamespace()
             self.shared_data.session = session
             self.shared_data.lock = Lock()
-            self._connect()
+            self.reconnect_needed = True
 
     def __del__(self):
 
@@ -361,8 +362,8 @@ class Connector(object):
                 logger.warning(f"Socket error on process {os.getpid()}")
             tries += 1
             logger.error(
-                f"Connection broken. Reconnecting attempt [{tries}/{self._send_attempt_count}] ..")
-            time.sleep(5)
+                f"Connection broken. Reconnecting attempt [{tries}/{self._send_attempt_count}] .. PID = {os.getpid()}")
+            time.sleep(1)
             self._connect()
             self._renew_session()
 
@@ -384,6 +385,10 @@ class Connector(object):
         Returns:
             _type_: _description_
         """
+        if self.reconnect_needed:
+            print("**RECONNECTING**")
+            self._connect()
+            self.reconnect_needed = False
         self._renew_session()
         try:
             start = time.time()
