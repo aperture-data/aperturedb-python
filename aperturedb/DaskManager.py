@@ -19,7 +19,7 @@ class DaskManager:
         self.__num_workers = num_workers
 
     def run(self, db: Connector, generator, batchsize, stats):
-        def process(df, host, port, session):
+        def process(df, host, port, use_ssl, use_rest, session):
             metrics = Stats()
             # Dask reads data in partitions, and the first partition is of 2 rows, with all
             # values as 'foo'. This is for sampling the column names and types. Should not process
@@ -32,7 +32,8 @@ class DaskManager:
                 shared_data = SimpleNamespace()
                 shared_data.session = session
                 shared_data.lock = Lock()
-                db = Connector(host=host, port=port, shared_data=shared_data)
+                db = Connector(host=host, port=port, use_ssl=use_ssl,
+                               use_rest=use_rest, shared_data=shared_data)
             except Exception as e:
                 logger.exception(e)
             from aperturedb.ParallelLoader import ParallelLoader
@@ -64,6 +65,8 @@ class DaskManager:
                 process,
                 db.host,
                 db.port,
+                db.use_ssl,
+                db.use_rest,
                 db.shared_data.session)
             computation = computation.persist()
             if stats:
