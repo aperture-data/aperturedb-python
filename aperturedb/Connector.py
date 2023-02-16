@@ -88,25 +88,25 @@ class Connector(object):
         bool (use_ssl): Use SSL to encrypt communication with the database.
     """
 
-    def __init__(self, host="localhost", port=55555, web_port=80,
+    def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
-                 use_ssl=True, use_rest=False, shared_data=None):
+                 use_ssl=True, use_rest=False, rest_port=80, shared_data=None):
 
         self.host = host
         self.port = port
-        self.web_port = web_port
+        self.rest_port = rest_port
         self.use_ssl = use_ssl
         self.use_rest = use_rest
-        self.connected = False
 
         self.last_response   = ''
         self.last_query_time = 0
 
         if (use_rest):
             self.url = ('https' if self.use_ssl else 'http') + \
-                '://' + host + (f':{web_port}' if web_port !=
-                                80 else '') + '/api/'
+                '://' + host + ':' + str(rest_port) + '/api/'
+
         else:
+            self.connected = False
             self._connect()
 
         if shared_data is None:
@@ -289,21 +289,15 @@ class Connector(object):
                            self.shared_data.session.session_token}
             else:
                 headers = None
-            # with requests.Session() as s:
             response = requests.post(self.url,
                                      headers = headers,
                                      files   = files,
                                      verify  = self.use_ssl)
+
             # Parse response:
-            if response.status_code != 200:
-                logger.error(f"Response not OK = {response.text}")
-            else:
-                json_response       = json.loads(response.text)
-                response_blob_array = []
-                import base64
-                response_blob_array = [base64.b64decode(
-                    b) for b in json_response['blobs']]
-                self.last_response  = json_response["json"]
+            json_response       = json.loads(response.text)
+            response_blob_array = json_response["blobs"]
+            self.last_response  = json_response["json"]
 
         else:
             if not self.connected:
@@ -403,7 +397,7 @@ class Connector(object):
             self.port,
             use_ssl=self.use_ssl,
             use_rest=self.use_rest,
-            web_port=self.web_port,
+            rest_port=self.rest_port,
             shared_data=self.shared_data)
 
     def get_last_response_str(self):

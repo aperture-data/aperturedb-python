@@ -19,7 +19,7 @@ import dbinfo
 def pytest_generate_tests(metafunc):
     if "db" in metafunc.fixturenames:
         metafunc.parametrize("db", [{"server": dbinfo.DB_TCP_HOST, "use_ssl": True, "use_rest": False},
-                                    {"server": dbinfo.DB_HTTP_HOST, "use_ssl": False, "use_rest": True}], indirect=True, ids=["TCP", "HTTP"])
+                                    {"server": dbinfo.DB_REST_HOST, "use_ssl": False, "use_rest": True}], indirect=True, ids=["TCP", "HTTP"])
     if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
@@ -30,12 +30,12 @@ def pytest_generate_tests(metafunc):
 def db(request):
     db = Connector(
         host=request.param["server"],
-        port=dbinfo.DB_PORT,
+        port=dbinfo.DB_TCP_PORT,
         user=dbinfo.DB_USER,
         password=dbinfo.DB_PASSWORD,
-        web_port=dbinfo.WEB_PORT,
         use_ssl=request.param["use_ssl"],
-        use_rest=request.param["use_rest"])
+        use_rest=request.param["use_rest"],
+        rest_port=dbinfo.DB_REST_PORT)
     utils = Utils(db)
     assert utils.remove_all_objects() == True
     return db
