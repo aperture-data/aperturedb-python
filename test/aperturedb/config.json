@@ -4,7 +4,7 @@
 {
     // Network
     "port": 55555,
-    "max_simultaneous_clients": 100,
+    "max_simultaneous_clients": 500,
 
     // Database paths
     "db_root_path": "db",
