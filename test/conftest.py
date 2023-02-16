@@ -33,6 +33,7 @@ def db(request):
         port=dbinfo.DB_PORT,
         user=dbinfo.DB_USER,
         password=dbinfo.DB_PASSWORD,
+        web_port=dbinfo.WEB_PORT,
         use_ssl=request.param["use_ssl"],
         use_rest=request.param["use_rest"])
 

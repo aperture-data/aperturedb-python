@@ -88,12 +88,13 @@ class Connector(object):
         bool (use_ssl): Use SSL to encrypt communication with the database.
     """
 
-    def __init__(self, host="localhost", port=55555,
+    def __init__(self, host="localhost", port=55555, web_port=80,
                  user="", password="", token="",
                  use_ssl=True, use_rest=False, shared_data=None):
 
         self.host = host
         self.port = port
+        self.web_port = web_port
         self.use_ssl = use_ssl
         self.use_rest = use_rest
 
@@ -102,7 +103,8 @@ class Connector(object):
 
         if (use_rest):
             self.url = ('https' if self.use_ssl else 'http') + \
-                '://' + host + '/api/'
+                '://' + host + (f':{web_port}' if web_port !=
+                                80 else '') + '/api/'
 
         else:
             self.connected = False
@@ -288,15 +290,21 @@ class Connector(object):
                            self.shared_data.session.session_token}
             else:
                 headers = None
+            # with requests.Session() as s:
             response = requests.post(self.url,
                                      headers = headers,
                                      files   = files,
                                      verify  = self.use_ssl)
-
             # Parse response:
-            json_response       = json.loads(response.text)
-            response_blob_array = json_response["blobs"]
-            self.last_response  = json_response["json"]
+            if response.status_code != 200:
+                logger.error(f"Response not OK = {response.text}")
+            else:
+                json_response       = json.loads(response.text)
+                response_blob_array = []
+                import base64
+                response_blob_array = [base64.b64decode(
+                    b) for b in json_response['blobs']]
+                self.last_response  = json_response["json"]
 
         else:
             if not self.connected:
@@ -391,7 +399,13 @@ class Connector(object):
                 count += 1
 
     def create_new_connection(self) -> Connector:
-        return Connector(self.host, self.port, use_ssl=self.use_ssl, use_rest=self.use_rest, shared_data=self.shared_data)
+        return Connector(
+            self.host,
+            self.port,
+            use_ssl=self.use_ssl,
+            use_rest=self.use_rest,
+            web_port=self.web_port,
+            shared_data=self.shared_data)
 
     def get_last_response_str(self):
 
