@@ -28,7 +28,7 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture()
 def db(request):
-    return Connector(
+    db = Connector(
         host=request.param["server"],
         port=dbinfo.DB_PORT,
         user=dbinfo.DB_USER,
@@ -36,6 +36,9 @@ def db(request):
         web_port=dbinfo.WEB_PORT,
         use_ssl=request.param["use_ssl"],
         use_rest=request.param["use_rest"])
+    utils = Utils(db)
+    assert utils.remove_all_objects() == True
+    return db
 
 
 @pytest.fixture()

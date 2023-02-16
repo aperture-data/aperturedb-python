@@ -78,6 +78,7 @@ class TestDataWizardBlobs():
 
 class TestDataWizardBoundingBoxes():
     def test_get_bounding_boxes(self, insert_data_from_csv, db):
+        loaded = insert_data_from_csv("./input/images.adb.csv", rec_count=10)
         loaded = insert_data_from_csv("./input/bboxes.adb.csv", rec_count=10)
         bboxes = BoundingBoxes.retrieve(db, Query.spec(limit=10))
         assert isinstance(
