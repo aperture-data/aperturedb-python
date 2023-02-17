@@ -166,6 +166,10 @@ class Connector(object):
         self.conn.close()
         self.connected = False
 
+    def disconnect(self):
+        self.conn.close()
+        self.connected = False
+
     def __getstate__(self):
         """interface for pickling"""
         return (self.host, self.port, self.use_ssl, self.shared_data.session)
