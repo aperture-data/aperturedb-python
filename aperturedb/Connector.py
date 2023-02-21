@@ -268,7 +268,7 @@ class Connector(object):
         self.connected = True
 
     def _query(self, query, blob_array = []):
-
+        response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
             query_str = json.dumps(query)
@@ -295,9 +295,14 @@ class Connector(object):
                                      verify  = self.use_ssl)
 
             # Parse response:
-            json_response       = json.loads(response.text)
-            response_blob_array = json_response["blobs"]
-            self.last_response  = json_response["json"]
+            if response.status_code != 200:
+                logger.error(f"Response not OK = {response.text}")
+            else:
+                json_response       = json.loads(response.text)
+                import base64
+                response_blob_array = [base64.b64decode(
+                    b) for b in json_response['blobs']]
+                self.last_response  = json_response["json"]
 
         else:
             if not self.connected:
