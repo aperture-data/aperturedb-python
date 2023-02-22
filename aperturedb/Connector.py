@@ -97,6 +97,7 @@ class Connector(object):
         self.rest_port = rest_port
         self.use_ssl = use_ssl
         self.use_rest = use_rest
+        self.connected = False
 
         self.last_response   = ''
         self.last_query_time = 0
@@ -106,7 +107,6 @@ class Connector(object):
                 '://' + host + ':' + str(rest_port) + '/api/'
 
         else:
-            self.connected = False
             self._connect()
 
         if shared_data is None:

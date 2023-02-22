@@ -41,4 +41,5 @@ class TestSession():
             assert db.shared_data.session.valid() == True
         except Exception as e:
             print(e)
-            self.fail("Failed to renew Session")
+            print("Failed to renew Session")
+            assert False
