@@ -289,21 +289,27 @@ class Connector(object):
                            self.shared_data.session.session_token}
             else:
                 headers = None
-            response = requests.post(self.url,
-                                     headers = headers,
-                                     files   = files,
-                                     verify  = self.use_ssl)
-
-            # Parse response:
-            if response.status_code != 200:
-                logger.error(f"Response not OK = {response.text}")
-            else:
-                json_response       = json.loads(response.text)
-                import base64
-                response_blob_array = [base64.b64decode(
-                    b) for b in json_response['blobs']]
-                self.last_response  = json_response["json"]
-
+            tries = 0
+            response = SimpleNamespace()
+            response.status_code = 0
+            while tries < 3:
+                tries += 1
+                response = requests.post(self.url,
+                                         headers = headers,
+                                         files   = files,
+                                         verify  = self.use_ssl)
+                if response.status_code == 200:
+                    # Parse response:
+                    json_response       = json.loads(response.text)
+                    import base64
+                    response_blob_array = [base64.b64decode(
+                        b) for b in json_response['blobs']]
+                    self.last_response  = json_response["json"]
+                    break
+                logger.error(
+                    f"Response not OK = {response.status_code} {response.text[:1000]}\n\
+                        attempt [{tries}/3] .. PID = {os.getpid()}")
+                time.sleep(1)
         else:
             if not self.connected:
                 return "NOT CONNECTED"
@@ -342,9 +348,12 @@ class Connector(object):
                 logger.warning(
                     f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
                 time.sleep(1)
+                self.conn.close()
                 self._connect()
                 self._renew_session()
-
+        if tries == 3:
+            raise Exception(
+                f"Could not query apertureDB using {'REST' if self.use_rest else 'TCP'}.")
         return (self.last_response, response_blob_array)
 
     def query(self, q, blobs=[]):
