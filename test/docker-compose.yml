@@ -10,7 +10,7 @@ services:
     restart: always
 
   webui:
-    image: aperturedata/aperturedb-webui
+    image: aperturedata/aperturedb-webui:1.14.2-sta
     ports:
       - 8087:80
     restart: always
