@@ -90,24 +90,16 @@ class Connector(object):
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
-                 use_ssl=True, use_rest=False, rest_port=80, shared_data=None):
+                 use_ssl=True, shared_data=None):
 
         self.host = host
         self.port = port
-        self.rest_port = rest_port
         self.use_ssl = use_ssl
-        self.use_rest = use_rest
         self.connected = False
-
         self.last_response   = ''
         self.last_query_time = 0
 
-        if (use_rest):
-            self.url = ('https' if self.use_ssl else 'http') + \
-                '://' + host + ':' + str(rest_port) + '/api/'
-
-        else:
-            self._connect()
+        self._connect()
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
@@ -121,10 +113,8 @@ class Connector(object):
             self.shared_data = shared_data
 
     def __del__(self):
-
-        if not self.use_rest:
-            self.conn.close()
-            self.connected = False
+        self.conn.close()
+        self.connected = False
 
     def _send_msg(self, data):
         sent_len = struct.pack('@I', len(data))  # send size first
@@ -275,85 +265,49 @@ class Connector(object):
         else:
             query_str = query
 
-        if self.use_rest:
-            files = [
-                ('query', (None, query_str)),
-            ]
+        if not self.connected:
+            return "NOT CONNECTED"
 
-            for blob in blob_array:
-                files.append(('blobs', blob))
+        query_msg = queryMessage_pb2.queryMessage()
+        # query has .json and .blobs
+        query_msg.json = query_str
 
-            # Set Auth token, only when not authenticated before
-            if self.shared_data.session:
-                headers = {'Authorization': "Bearer " +
-                           self.shared_data.session.session_token}
-            else:
-                headers = None
-            tries = 0
-            response = SimpleNamespace()
-            response.status_code = 0
-            while tries < 3:
-                tries += 1
-                response = requests.post(self.url,
-                                         headers = headers,
-                                         files   = files,
-                                         verify  = self.use_ssl)
-                if response.status_code == 200:
-                    # Parse response:
-                    json_response       = json.loads(response.text)
-                    import base64
-                    response_blob_array = [base64.b64decode(
-                        b) for b in json_response['blobs']]
-                    self.last_response  = json_response["json"]
-                    break
-                logger.error(
-                    f"Response not OK = {response.status_code} {response.text[:1000]}\n\
-                        attempt [{tries}/3] .. PID = {os.getpid()}")
-                time.sleep(1)
-        else:
-            if not self.connected:
-                return "NOT CONNECTED"
+        # Set Auth token, only when not authenticated before
+        if self.shared_data.session:
+            query_msg.token = self.shared_data.session.session_token
 
-            query_msg = queryMessage_pb2.queryMessage()
-            # query has .json and .blobs
-            query_msg.json = query_str
+        for blob in blob_array:
+            query_msg.blobs.append(blob)
 
-            # Set Auth token, only when not authenticated before
-            if self.shared_data.session:
-                query_msg.token = self.shared_data.session.session_token
+        # Serialize with protobuf and send
+        data = query_msg.SerializeToString()
 
-            for blob in blob_array:
-                query_msg.blobs.append(blob)
-
-            # Serialize with protobuf and send
-            data = query_msg.SerializeToString()
-
-            tries = 0
-            while tries < 3:
-                try:
-                    if self._send_msg(data):
-                        response = self._recv_msg()
-                        if response is not None:
-                            querRes = queryMessage_pb2.queryMessage()
-                            querRes.ParseFromString(response)
-                            response_blob_array = [b for b in querRes.blobs]
-                            self.last_response = json.loads(querRes.json)
-                            break
-                except ssl.SSLError as e:
-                    # This can happen in a scenario where multiple
-                    # processes might be accessing a single connection.
-                    # The copy does not make usable connections.
-                    logger.warning(f"Socket error on process {os.getpid()}")
-                tries += 1
-                logger.warning(
-                    f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
-                time.sleep(1)
-                self.conn.close()
-                self._connect()
-                self._renew_session()
+        tries = 0
+        while tries < 3:
+            try:
+                if self._send_msg(data):
+                    response = self._recv_msg()
+                    if response is not None:
+                        querRes = queryMessage_pb2.queryMessage()
+                        querRes.ParseFromString(response)
+                        response_blob_array = [b for b in querRes.blobs]
+                        self.last_response = json.loads(querRes.json)
+                        break
+            except ssl.SSLError as e:
+                # This can happen in a scenario where multiple
+                # processes might be accessing a single connection.
+                # The copy does not make usable connections.
+                logger.warning(f"Socket error on process {os.getpid()}")
+            tries += 1
+            logger.warning(
+                f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
+            time.sleep(1)
+            self.conn.close()
+            self._connect()
+            self._renew_session()
         if tries == 3:
             raise Exception(
-                f"Could not query apertureDB using {'REST' if self.use_rest else 'TCP'}.")
+                f"Could not query apertureDB using TCP.")
         return (self.last_response, response_blob_array)
 
     def query(self, q, blobs=[]):
@@ -406,12 +360,10 @@ class Connector(object):
                 count += 1
 
     def create_new_connection(self) -> Connector:
-        return Connector(
+        return type(self)(
             self.host,
             self.port,
             use_ssl=self.use_ssl,
-            use_rest=self.use_rest,
-            rest_port=self.rest_port,
             shared_data=self.shared_data)
 
     def get_last_response_str(self):

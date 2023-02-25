@@ -10,6 +10,8 @@ from aperturedb import PyTorchDataset
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
+from aperturedb.ConnectorRest import ConnectorRest
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +44,7 @@ class TestTorchDatasets():
     def test_nativeContraints(self, db, utils, images):
         assert len(images) > 0
         # This is a hack against a bug in batch API.
-        dim = 224 if db.use_rest else 225
+        dim = 224 if isinstance(db, ConnectorRest) else 225
         query = [{
             "FindImage": {
                 "constraints": {
@@ -70,7 +72,7 @@ class TestTorchDatasets():
         len_limit = utils.count_images()
         # This is a hack against a bug in batch API.
         # TODO Fixme
-        dim = 224 if db.use_rest else 225
+        dim = 224 if isinstance(db, ConnectorRest) else 225
         query = [{
             "FindImage": {
                 "constraints": {
