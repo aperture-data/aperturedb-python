@@ -2,6 +2,31 @@ set -e
 
 source $(dirname "$0")/version.sh
 
+check_for_changed_docker_files() {
+  echo "Checking for changed docker files..."
+
+  # Get files changed on merge
+  FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only | { grep 'Dockerfile' || true; })
+
+  echo "Files Changed: " ${FILES_CHANGED}
+  if [ -z "$FILES_CHANGED" ]
+  then
+    echo "No Dockerfile changes."
+    return
+  fi
+
+  for file in $FILES_CHANGED; do
+
+    # Check if dependencies image changed
+    if [ $file == 'docker/dependencies/Dockerfile' ]
+    then
+      DEPENDENCIES_DOCKER_IMAGE_CHANGED=1
+      echo "Dependencies image changed"
+    fi
+  done
+  echo "Checking for changed docker files...done"
+}
+
 # Check and updates version based on release branch name
 update_version() {
     echo "Checking versions"
@@ -56,6 +81,13 @@ fi
 #Install pre requisites
 install_prerequisites
 
+echo "Branch: $BRANCH_NAME"
+if [ -z "$BRANCH_NAME" ]
+then
+    echo "This is on a merge branch. Will not continue"
+    exit 0
+fi
+
 # Set default version to develop
 BUILD_VERSION=develop
 
@@ -90,7 +122,11 @@ echo "Repository: $DOCKER_REPOSITORY"
 build_tests(){
     TESTS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:latest
     mkdir -p docker/tests/aperturedata
-    cp -r aperturedb setup.py README.md test requirements.txt docker/tests/aperturedata
+    sudo rm -rf test/aperturedb/db
+    cp -r aperturedb setup.py README.md requirements.txt docker/tests/aperturedata
+    mkdir -p docker/tests/aperturedata/test/aperturedb
+    cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
+    cp test/aperturedb/config.json docker/tests/aperturedata/test/aperturedb
 
     echo "Building image $TESTS_IMAGE"
     docker build -t $TESTS_IMAGE --cache-from $TESTS_IMAGE -f docker/tests/Dockerfile .
@@ -161,9 +197,17 @@ if [ -z ${ONLY_DEFINES+x} ]
 then
     if [ -z ${EXCLUDE_TESTING+x} ]
     then
+        check_for_changed_docker_files
+        echo "DEPENDENCIES_DOCKER_IMAGE_CHANGED=$DEPENDENCIES_DOCKER_IMAGE_CHANGED"
         # Dependecies
         # TODO : Conditionally build.
-        build_notebook_dependencies_image
+        # Check if there is base image change
+        if [ $DEPENDENCIES_DOCKER_IMAGE_CHANGED == 1 ]
+        then
+            build_notebook_dependencies_image
+            return
+        fi
+
 
         # Trigger build notebook image
         build_notebook_image

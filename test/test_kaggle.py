@@ -2,7 +2,6 @@ from collections import namedtuple
 import os
 from typing import List, Tuple
 import zipfile
-from test_Base import TestBase
 import pandas as pd
 import os
 from kaggle.api.kaggle_api_extended import KaggleApi
@@ -54,8 +53,8 @@ class CatDataKaggle(KaggleData):
         return pd.json_normalize(related_files)
 
 
-class TestKaggleIngest(TestBase):
-    def setUp(self) -> None:
+class TestKaggleIngest():
+    def common_setup(self) -> None:
         self.root = "kaggleds"
         self.authenticates = False
 
@@ -68,6 +67,7 @@ class TestKaggleIngest(TestBase):
         This type of dataset comes wiht 1 csv file, and Kaggle Dataset is able to
         process it without the need for a custom indexer.
         """
+        self.common_setup()
         dataset_ref = "gpiosenka/good-guysbad-guys-image-data-set"
         f = file(".csv", 1024, "index.csv")
         k = kf(files = [f])
@@ -83,12 +83,13 @@ class TestKaggleIngest(TestBase):
                                 side_effect = self.does_auth)
                             ) as mocks:
             dataset = GoodGuysBadGuysImageDataKaggle()
-        self.assertEqual(len(dataset), 1)
-        self.assertTrue(os.path.exists(
-            os.path.join(self.root, dataset_ref, "file.zip")))
-        self.assertTrue(self.authenticates)
+        assert len(dataset) == 1
+        assert os.path.exists(
+            os.path.join(self.root, dataset_ref, "file.zip")) == True
+        assert self.authenticates == True
 
     def test_ingest_annotations_images_without_index(self):
+        self.common_setup()
         dataset_ref = "crawford/cat-dataset"
         f = file(".csv", 1024, "index.csv")
         k = kf(files = [f])
@@ -109,7 +110,7 @@ class TestKaggleIngest(TestBase):
                             ) as mocks:
 
             dataset = CatDataKaggle()
-        self.assertEqual(len(dataset), 2)
-        self.assertTrue(os.path.exists(
-            os.path.join(self.root, dataset_ref, "file.zip")))
-        self.assertTrue(self.authenticates)
+        assert len(dataset) == 2
+        assert os.path.exists(
+            os.path.join(self.root, dataset_ref, "file.zip")) == True
+        assert self.authenticates == True

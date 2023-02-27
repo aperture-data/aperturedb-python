@@ -1,5 +1,6 @@
 import pytest
 from aperturedb.Connector import Connector
+from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.BlobDataCSV import BlobDataCSV
 from aperturedb.EntityDataCSV import EntityDataCSV
@@ -16,20 +17,35 @@ from aperturedb.Utils import Utils
 import dbinfo
 
 
-@pytest.fixture()
-def db():
-    return Connector(
-        host=dbinfo.DB_HOST,
-        port=dbinfo.DB_PORT,
-        user=dbinfo.DB_USER,
-        password=dbinfo.DB_PASSWORD)
-
-
 def pytest_generate_tests(metafunc):
+    if "db" in metafunc.fixturenames:
+        metafunc.parametrize("db", [
+            {"db": Connector(
+                host = dbinfo.DB_TCP_HOST,
+                port = dbinfo.DB_TCP_PORT,
+                user = dbinfo.DB_USER,
+                password = dbinfo.DB_PASSWORD,
+                use_ssl = True)},
+            {"db": ConnectorRest(
+                host = dbinfo.DB_REST_HOST,
+                port = dbinfo.DB_REST_PORT,
+                user = dbinfo.DB_USER,
+                password = dbinfo.DB_PASSWORD,
+                use_ssl = False
+            )}
+        ], indirect=True, ids=["TCP", "HTTP"])
     if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
                              True, False], indirect=True, ids=["with_dask", "without_dask"])
+
+
+@pytest.fixture()
+def db(request):
+    db = request.param['db']
+    utils = Utils(db)
+    assert utils.remove_all_objects() == True
+    return db
 
 
 @pytest.fixture()

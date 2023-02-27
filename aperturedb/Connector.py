@@ -29,6 +29,7 @@ from . import queryMessage_pb2
 import sys
 import traceback
 import os
+import requests
 import socket
 import struct
 import time
@@ -84,7 +85,6 @@ class Connector(object):
         str (user): Username to specify while establishing a connection.
         str (password): Password to specify while connecting to the db.
         str (token): Token to use while connecting to the database.
-        object (session):
         bool (use_ssl): Use SSL to encrypt communication with the database.
     """
 
@@ -92,11 +92,9 @@ class Connector(object):
                  user="", password="", token="",
                  use_ssl=True, shared_data=None):
 
-        self.use_ssl = use_ssl
-
         self.host = host
         self.port = port
-
+        self.use_ssl = use_ssl
         self.connected = False
         self.last_response   = ''
         self.last_query_time = 0
@@ -115,7 +113,6 @@ class Connector(object):
             self.shared_data = shared_data
 
     def __del__(self):
-
         self.conn.close()
         self.connected = False
 
@@ -261,7 +258,7 @@ class Connector(object):
         self.connected = True
 
     def _query(self, query, blob_array = []):
-
+        response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
             query_str = json.dumps(query)
@@ -305,9 +302,12 @@ class Connector(object):
             logger.warning(
                 f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
             time.sleep(1)
+            self.conn.close()
             self._connect()
             self._renew_session()
-
+        if tries == 3:
+            raise Exception(
+                f"Could not query apertureDB using TCP.")
         return (self.last_response, response_blob_array)
 
     def query(self, q, blobs=[]):
@@ -360,7 +360,11 @@ class Connector(object):
                 count += 1
 
     def create_new_connection(self) -> Connector:
-        return Connector(self.host, self.port, shared_data=self.shared_data)
+        return type(self)(
+            self.host,
+            self.port,
+            use_ssl=self.use_ssl,
+            shared_data=self.shared_data)
 
     def get_last_response_str(self):
 
