@@ -10,6 +10,8 @@ from aperturedb import PyTorchDataset
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
+from aperturedb.ConnectorRest import ConnectorRest
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +43,8 @@ class TestTorchDatasets():
 
     def test_nativeContraints(self, db, utils, images):
         assert len(images) > 0
+        # This is a hack against a bug in batch API.
+        dim = 224 if isinstance(db, ConnectorRest) else 225
         query = [{
             "FindImage": {
                 "constraints": {
@@ -49,8 +53,8 @@ class TestTorchDatasets():
                 "operations": [
                     {
                         "type": "resize",
-                        "width": 224,
-                        "height": 224
+                        "width": dim,
+                        "height": dim
                     }
                 ],
                 "results": {
@@ -64,8 +68,11 @@ class TestTorchDatasets():
 
         self.validate_dataset(dataset, utils.count_images())
 
-    def test_datasetWithMultiprocessing(self, db, utils):
+    def test_datasetWithMultiprocessing(self, db, utils, images):
         len_limit = utils.count_images()
+        # This is a hack against a bug in batch API.
+        # TODO Fixme
+        dim = 224 if isinstance(db, ConnectorRest) else 225
         query = [{
             "FindImage": {
                 "constraints": {
@@ -74,8 +81,8 @@ class TestTorchDatasets():
                 "operations": [
                     {
                         "type": "resize",
-                        "width": 224,
-                        "height": 224
+                        "width": dim,
+                        "height": dim
                     }
                 ],
                 "results": {
@@ -89,6 +96,7 @@ class TestTorchDatasets():
             db, query, label_prop="license")
 
         self.validate_dataset(dataset, len_limit)
+
         # Distributed Data Loader Setup
 
         # Needed for init_process_group
@@ -125,3 +133,4 @@ class TestTorchDatasets():
         )
 
         self.validate_dataset(data_loader, len_limit)
+        dist.destroy_process_group()
