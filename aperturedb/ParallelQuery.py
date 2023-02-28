@@ -191,9 +191,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
             except Exception as e:
                 logger.exception(e)
                 self.error_counter += 1
+                db.disconnect()
 
             if thid == 0 and self.stats:
                 self.pb.update((i + 1) / total_batches)
+        db.disconnect()
 
     def query(self, generator, batchsize=1, numthreads=4, stats=False):
         """

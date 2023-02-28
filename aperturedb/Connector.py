@@ -36,6 +36,7 @@ import time
 import json
 import ssl
 import logging
+import weakref
 
 from threading import Lock
 from types import SimpleNamespace
@@ -63,12 +64,27 @@ class Session():
     def valid(self) -> bool:
         session_age = time.time() - self.session_started
 
+        env_session_expiry_offset = None
+        session_expiry_offset_sec = 10
+        try:
+            env_session_expiry_offset = os.getenv(
+                "APERTUREDB_SESSION_EXPIRY_OFFSET_SEC", 10)
+            session_expiry_offset_sec = int(env_session_expiry_offset)
+        except BaseException:
+            Session._on_session_env_bad(env_session_expiry_offset)
+
         # This triggers refresh if the session is about to expire.
-        if session_age > self.session_token_ttl - \
-                int(os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10)):
+        if session_age > self.session_token_ttl - session_expiry_offset_sec:
             return False
 
         return True
+
+    @classmethod
+    def _on_session_env_bad(cls, value):
+        if not hasattr(cls, 'previously_warned'):
+            logger.warning(
+                f"error retrieving APERTUREDB_SESSION_EXPIRY_OFFSET_SEC  got {value}, need an int")
+            cls.previously_warned = True
 
 
 class Connector(object):
@@ -96,10 +112,26 @@ class Connector(object):
         self.port = port
         self.use_ssl = use_ssl
         self.connected = False
+        self.reconnect_needed = False
         self.last_response   = ''
         self.last_query_time = 0
 
         self._connect()
+
+        resend_tries_env = None
+        try:
+            send_attempt_tries = os.getenv("APERTUREDB_SEND_ATTEMPT_TRIES", 3)
+            self._send_attempt_count = int(send_attempt_tries)
+            if self._send_attempt_count < 1:
+                logger.error("APERTUREDB_RESEND_TRIES must be greater than 0")
+                self._send_attempt_count = 1
+        except BaseException:
+            logger.warning(
+                f"error retrieving APERTUREDB_RESEND_TRIES  got {resend_tries_env}, need an int")
+            self._send_attempt_count = 3
+        os.register_at_fork(
+            after_in_child=lambda: Connector._fork_reconnect(
+                weakref.ref(self)))
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
@@ -112,9 +144,40 @@ class Connector(object):
         else:
             self.shared_data = shared_data
 
+    def _fork_reconnect(selfref):
+        if selfref() is not None:
+            selfref()._process_reconnect(selfref().shared_data.session)
+
+    # refresh_token,session_expiry,refresh_expiry):
+    def _process_reconnect(self, session):
+        # when a new process is created, the (ssl?) connection is not valid.
+        if self.connected:
+            self.connected = False
+            self.conn.close()
+            self.shared_data = SimpleNamespace()
+            self.shared_data.session = session
+            self.shared_data.lock = Lock()
+            self.reconnect_needed = True
+
     def __del__(self):
         self.conn.close()
         self.connected = False
+
+    def disconnect(self):
+        self.conn.close()
+        self.connected = False
+
+    def __getstate__(self):
+        """interface for pickling"""
+        return (self.host, self.port, self.use_ssl, self.shared_data.session)
+
+    def __setstate__(self, state):
+        """interface for unpickling"""
+        host, port, use_ssl, session = state
+        self.host = host
+        self.port = port
+        self.use_ssl = use_ssl
+        self._process_reconnect(session)
 
     def _send_msg(self, data):
         sent_len = struct.pack('@I', len(data))  # send size first
@@ -283,7 +346,7 @@ class Connector(object):
         data = query_msg.SerializeToString()
 
         tries = 0
-        while tries < 3:
+        while tries < self._send_attempt_count:
             try:
                 if self._send_msg(data):
                     response = self._recv_msg()
@@ -299,8 +362,8 @@ class Connector(object):
                 # The copy does not make usable connections.
                 logger.warning(f"Socket error on process {os.getpid()}")
             tries += 1
-            logger.warning(
-                f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
+            logger.error(
+                f"Connection broken. Reconnecting attempt [{tries}/{self._send_attempt_count}] .. PID = {os.getpid()}")
             time.sleep(1)
             self.conn.close()
             self._connect()
@@ -326,6 +389,10 @@ class Connector(object):
         Returns:
             _type_: _description_
         """
+        if self.reconnect_needed:
+            print("**RECONNECTING**")
+            self._connect()
+            self.reconnect_needed = False
         self._renew_session()
         try:
             start = time.time()
@@ -349,13 +416,13 @@ class Connector(object):
 
     def _renew_session(self):
         count = 0
-        while count < 3:
+        while count < self._send_attempt_count:
             try:
                 self._check_session_status()
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of 3] Failed to refresh token. Details: \r\n{traceback.format_exc(limit=5)}")
+                    f"[Attempt {count + 1} of {self._send_attempt_count}] Failed to refresh token. Details: \r\n{traceback.format_exc(limit=5)}")
                 time.sleep(1)
                 count += 1
 
