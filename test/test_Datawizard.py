@@ -149,6 +149,10 @@ class TestQueryBuilder():
 
         assert len(total_commands) == 310
         assert len(total_blobs) == 20
+        assert len(list(filter(lambda cmd: "AddConnection" in cmd, total_commands))) == 150
+        assert len(list(filter(lambda cmd: "AddEntity" in cmd, total_commands))) == 130
+        assert len(list(filter(lambda cmd: "AddImage" in cmd, total_commands))) == 20
+        assert len(list(filter(lambda cmd: "FindImage" in cmd, total_commands))) == 10
 
 
 
