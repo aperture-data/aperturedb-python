@@ -24,11 +24,14 @@ class ObjectType(Enum):
     POLYGON = "_Polygon"
     VIDEO = "_Video"
 
+
 class Config(Enum):
     SAVE_NAME = 1
     SAVE_VALUE = 2
 
+
 config = Config.SAVE_NAME
+
 
 def generate_save_query(
         obj: BaseModel,
@@ -72,23 +75,25 @@ def generate_save_query(
                 props[p] = subobj.name if config == Config.SAVE_NAME else subobj.value
             elif isinstance(subobj, list):
                 for i, si in enumerate(subobj):
-                    q, b, index = generate_save_query(si, cached=cached, source_field=f"{p}[{i}]", index=index+1, parent=cindex)
+                    q, b, index = generate_save_query(
+                        si, cached=cached, source_field=f"{p}[{i}]", index=index + 1, parent=cindex)
                     blobs.extend(b)
                     dependents.extend(q)
             else:
-                q, b, index = generate_save_query(subobj, cached=cached, source_field=f"{p}", index=index+1, parent=cindex)
+                q, b, index = generate_save_query(
+                    subobj, cached=cached, source_field=f"{p}", index=index + 1, parent=cindex)
                 dependents.extend(q)
                 blobs.extend(b)
 
     # We still want to create dummy Add* commands so that references
     # for creating already created instances are mantained.
     params = {
-            "_ref": cindex,
-            "properties": props if "id" in props else {},
-            "if_not_found": {
-                "id": ["==", props["id"] if "id" in props else obj.id]
-            }
+        "_ref": cindex,
+        "properties": props if "id" in props else {},
+        "if_not_found": {
+            "id": ["==", props["id"] if "id" in props else obj.id]
         }
+    }
     if hasattr(obj, "type"):
         props.pop('type', None)
         if obj.type != ObjectType.ENTITY:
@@ -96,15 +101,15 @@ def generate_save_query(
             # Generates a Add<ADB object> command
             if obj.id not in cached:
                 query.append(
-                    QueryBuilder.add_command(obj.type.value , params=params))
+                    QueryBuilder.add_command(obj.type.value, params=params))
             else:
                 params["constraints"] = params["if_not_found"]
                 params.pop("if_not_found", None)
                 params.pop("properties", None)
                 query.append(
-                    QueryBuilder.find_command(obj.type.value , params=params))
+                    QueryBuilder.find_command(obj.type.value, params=params))
         if obj.type in [ObjectType.IMAGE, ObjectType.VIDEO, ObjectType.BLOB]:
-            # Do not send blob if Node has been added to set of commands.
+            # Do not send blob, if Node has been added to set of commands.
             if obj.id not in cached:
                 with open(obj.file, "rb") as instream:
                     blobs.append(instream.read())
@@ -112,7 +117,7 @@ def generate_save_query(
         else:
             # Generates an AddEntity
             query.append(
-                QueryBuilder.add_command(type(obj).__name__ , params=params))
+                QueryBuilder.add_command(type(obj).__name__, params=params))
 
         cached.append(obj.id)
     if parent > 0:
@@ -125,7 +130,8 @@ def generate_save_query(
             }
         }
         query.append(
-            QueryBuilder.add_command(ObjectType.CONNECTION.value, params=params)
+            QueryBuilder.add_command(
+                ObjectType.CONNECTION.value, params=params)
         )
     query.extend(dependents)
     return query, blobs, index

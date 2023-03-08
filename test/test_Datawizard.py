@@ -94,7 +94,7 @@ class TestDataWizardBoundingBoxes():
         assert len(bboxes) <= 10
 
 
-def make_people(count:int = 1) -> List[object]:
+def make_people(count: int = 1) -> List[object]:
     class Side(Enum):
         RIGHT = 1
         LEFT = 2
@@ -108,13 +108,14 @@ def make_people(count:int = 1) -> List[object]:
         fingers: List[Finger] = []
 
     class Person(IdentityModel):
-        name: str =  ""
-        hands : List[Hand] = []
-        dominant_hand : Hand = None
+        name: str = ""
+        hands: List[Hand] = []
+        dominant_hand: Hand = None
 
     def make_hand(side: Side) -> Hand:
         hand = Hand(side = side, file= "input/images/0079.jpg")
-        hand.fingers = [Finger(nail_clean=True) if random.randint(0, 1) == 1  else Finger(nail_clean=False) for i in range(5)]
+        hand.fingers = [Finger(nail_clean=True) if random.randint(
+            0, 1) == 1 else Finger(nail_clean=False) for i in range(5)]
         hand.thumb = hand.fingers[0]
         return hand
 
@@ -127,6 +128,7 @@ def make_people(count:int = 1) -> List[object]:
         person.dominant_hand = person.hands[0]
         people.append(person)
     return people
+
 
 class TestQueryBuilder():
     def test_all_info_preserved(self):
@@ -149,11 +151,11 @@ class TestQueryBuilder():
 
         assert len(total_commands) == 310
         assert len(total_blobs) == 20
-        assert len(list(filter(lambda cmd: "AddConnection" in cmd, total_commands))) == 150
-        assert len(list(filter(lambda cmd: "AddEntity" in cmd, total_commands))) == 130
-        assert len(list(filter(lambda cmd: "AddImage" in cmd, total_commands))) == 20
-        assert len(list(filter(lambda cmd: "FindImage" in cmd, total_commands))) == 10
-
-
-
-
+        assert len(
+            list(filter(lambda cmd: "AddConnection" in cmd, total_commands))) == 150
+        assert len(
+            list(filter(lambda cmd: "AddEntity" in cmd, total_commands))) == 130
+        assert len(
+            list(filter(lambda cmd: "AddImage" in cmd, total_commands))) == 20
+        assert len(
+            list(filter(lambda cmd: "FindImage" in cmd, total_commands))) == 10
