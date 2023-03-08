@@ -8,7 +8,7 @@ OPENCV_VERSION = os.getenv("OPENCV_VERSION")
 
 install_requires = ['scikit-image', 'image', 'requests', 'boto3',
                     'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
-                    'dask[complete]<=2023.1.0', 'ipywidgets',
+                    'dask[complete]<=2023.1.0', 'ipywidgets', 'pydantic', 'devtools',
                     # Pinning this to be able to install tensorflow.
                     'protobuf<3.20.0',
                     # Pinning this to be able to install google-cloud-bigquery

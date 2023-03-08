@@ -55,3 +55,11 @@ The following files are under *rest_api*
 | rest_api.py | Interactions with aperturedb using python's requests | ``python rest_api.py``|
 | rest_api.js | Interactions with aperturedb using javascript with axios | Is included in index.html |
 | index.html | A web page that renders from responses from aperturedb | Tested on chrome |
+
+## Example 5: Adding Data to aperturedb with User defined models
+
+The following files are under *loading_with_models*
+
+| File | Description | instructions |
+| -----| ------------| -----|
+| models.ipynb | A notebook with some sample code to add data using models | Also available to read at [Aperturedb model exmaple](https://python.docs.aperturedata.io/examples/loading.html)|
