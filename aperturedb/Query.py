@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List
+from typing import List, Tuple
 
 from aperturedb.Constraints import Constraints
 from aperturedb.Sort import Sort
+from pydantic import BaseModel
 
 
 class ObjectType(Enum):
@@ -24,23 +25,146 @@ class ObjectType(Enum):
     VIDEO = "_Video"
 
 
+class Config(Enum):
+    SAVE_NAME = 1
+    SAVE_VALUE = 2
+
+
+config = Config.SAVE_NAME
+
+
+def generate_save_query(
+        obj: BaseModel,
+        cached: List[str] = None,
+        source_field: str = None,
+        index: int = 1,
+        parent: int = 0) -> Tuple(List[object], List[bytearray], str):
+    """
+    Takes the user model, and builds out a sequence of commands that creates
+    a similar structure on apertureDB's graph.
+
+    Args:
+        obj (BaseModel): The object from the user domain.
+        cached (List[str], optional): helps to optimize sending one blob per node. Defaults to None.
+        source_field (str, optional): Preserves the relavant connection informatio from user objects. Defaults to None.
+        index (int, optional): The index to start creating references from. Defaults to 1.
+        parent (int, optional): The parent of the current node. Defaults to None.
+
+    Returns:
+        tuple : Contains 3 items:
+            * List of commands with current node and it's children
+            * List of blobs with current node and it's children
+            * index, adjusting the count of children + self for the number of commands
+              in current query
+    """
+    if cached == None:
+        cached = []
+    query = []
+    dependents = []
+    props = {}
+    blobs = []
+    cindex = index
+    if obj.id not in cached:
+        for p in obj.__dict__.keys():
+            if "_" == p[0]:
+                continue
+            subobj = getattr(obj, p)
+            if isinstance(subobj, int) or isinstance(subobj, str):
+                props[p] = subobj
+            elif isinstance(subobj, Enum):
+                props[p] = subobj.name if config == Config.SAVE_NAME else subobj.value
+            elif isinstance(subobj, list):
+                for i, si in enumerate(subobj):
+                    q, b, index = generate_save_query(
+                        si, cached=cached, source_field=f"{p}[{i}]", index=index + 1, parent=cindex)
+                    blobs.extend(b)
+                    dependents.extend(q)
+            else:
+                q, b, index = generate_save_query(
+                    subobj, cached=cached, source_field=f"{p}", index=index + 1, parent=cindex)
+                dependents.extend(q)
+                blobs.extend(b)
+
+    # We still want to create dummy Add* commands so that references
+    # for creating already created instances are mantained.
+    params = {
+        "_ref": cindex,
+        "properties": props if "id" in props else {},
+        "if_not_found": {
+            "id": ["==", props["id"] if "id" in props else obj.id]
+        }
+    }
+    if hasattr(obj, "type"):
+        props.pop('type', None)
+        if obj.type != ObjectType.ENTITY:
+            props["user_type"] = type(obj).__name__
+            # Generates a Add<ADB object> command
+            if obj.id not in cached:
+                query.append(
+                    QueryBuilder.add_command(obj.type.value, params=params))
+            else:
+                params["constraints"] = params["if_not_found"]
+                params.pop("if_not_found", None)
+                params.pop("properties", None)
+                query.append(
+                    QueryBuilder.find_command(obj.type.value, params=params))
+        if obj.type in [ObjectType.IMAGE, ObjectType.VIDEO, ObjectType.BLOB]:
+            # Do not send blob, if Node has been added to set of commands.
+            if obj.id not in cached:
+                with open(obj.file, "rb") as instream:
+                    blobs.append(instream.read())
+                props.pop('file', None)
+        else:
+            # Generates an AddEntity
+            query.append(
+                QueryBuilder.add_command(type(obj).__name__, params=params))
+
+        cached.append(obj.id)
+    if parent > 0:
+        params = {
+            "src": parent,
+            "dst": cindex,
+            "class": type(obj).__name__,
+            "properties": {
+                "source_field": source_field
+            }
+        }
+        query.append(
+            QueryBuilder.add_command(
+                ObjectType.CONNECTION.value, params=params)
+        )
+    query.extend(dependents)
+    return query, blobs, index
+
+
 class QueryBuilder():
     @classmethod
     def find_command(self, oclass: str, params: dict) -> dict:
+        return self.build_command(oclass, params, "Find")
+
+    @classmethod
+    def add_command(self, oclass: str, params: dict) -> dict:
+        return self.build_command(oclass, params, "Add")
+
+    @classmethod
+    def build_command(self, oclass, params, operation):
         command = {
-            "FindEntity": params
+            f"{operation}Entity": params
         }
         members = [m.value for m in ObjectType]
         if oclass.startswith("_"):
             if oclass in members:
                 command = {
-                    f"Find{oclass[1:]}": params
+                    f"{operation}{oclass[1:]}": params
                 }
             else:
                 raise Exception(
                     f"Invalid Object type. Should not begin with _, exceept for {members}")
         else:
-            params["with_class"] = oclass
+            if operation == "Find":
+                params["with_class"] = oclass
+            else:
+                params["class"] = oclass
         return command
 
 

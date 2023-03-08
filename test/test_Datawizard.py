@@ -5,6 +5,12 @@ from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
 from aperturedb.Images import Images
 from aperturedb.Query import ObjectType, Query
+from aperturedb.Query import generate_save_query
+from aperturedb.QueryTypes import ImageModel, IdentityModel
+import random
+from typing import List
+from enum import Enum
+from devtools import debug
 
 logger = logging.getLogger(__file__)
 
@@ -86,3 +92,70 @@ class TestDataWizardBoundingBoxes():
         logger.info(f"\n{bboxes.inspect()}")
         assert bboxes != None
         assert len(bboxes) <= 10
+
+
+def make_people(count: int = 1) -> List[object]:
+    class Side(Enum):
+        RIGHT = 1
+        LEFT = 2
+
+    class Finger(IdentityModel):
+        nail_clean: bool = False
+
+    class Hand(ImageModel):
+        side: Side = None
+        thumb: Finger = None
+        fingers: List[Finger] = []
+
+    class Person(IdentityModel):
+        name: str = ""
+        hands: List[Hand] = []
+        dominant_hand: Hand = None
+
+    def make_hand(side: Side) -> Hand:
+        hand = Hand(side = side, file= "input/images/0079.jpg")
+        hand.fingers = [Finger(nail_clean=True) if random.randint(
+            0, 1) == 1 else Finger(nail_clean=False) for i in range(5)]
+        hand.thumb = hand.fingers[0]
+        return hand
+
+    people = []
+    for i in range(10):
+        person = Person(name=f"adam{i+1}")
+        left_hand = make_hand(Side.LEFT)
+        right_hand = make_hand(Side.RIGHT)
+        person.hands.extend([left_hand, right_hand])
+        person.dominant_hand = person.hands[0]
+        people.append(person)
+    return people
+
+
+class TestQueryBuilder():
+    def test_all_info_preserved(self):
+        # this will create 10 people entities.
+        # Each person will have 2 hands (+1 connection via dominant hand)
+        # Each hand will have 10 fingers (+2 connections via thumb)
+        # Everything will be interconnected.
+        # Nodes per person = 1 + 3 + 12 = 16 (The commands will be generated with if not found)
+        # Connections per person = 3 for hand 12 for fingers
+        # Commands = 16 + 15 = 31
+        people = make_people(10)
+        total_commands = []
+        total_blobs = []
+        for person in people:
+            q, b, current_ref = generate_save_query(person)
+            total_commands += q
+            total_blobs += b
+            # 16 entities have been inserted and referenced
+            assert current_ref == 16
+
+        assert len(total_commands) == 310
+        assert len(total_blobs) == 20
+        assert len(
+            list(filter(lambda cmd: "AddConnection" in cmd, total_commands))) == 150
+        assert len(
+            list(filter(lambda cmd: "AddEntity" in cmd, total_commands))) == 130
+        assert len(
+            list(filter(lambda cmd: "AddImage" in cmd, total_commands))) == 20
+        assert len(
+            list(filter(lambda cmd: "FindImage" in cmd, total_commands))) == 10
