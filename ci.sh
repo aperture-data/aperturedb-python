@@ -70,6 +70,9 @@ update_version() {
 install_prerequisites() {
     sudo apt-get update
     sudo apt-get install -y vim awscli
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    DEBIAN_FRONTEND=noninteractive sudo -E apt-get install -y git-lfs
 }
 
 # Fetch branch
