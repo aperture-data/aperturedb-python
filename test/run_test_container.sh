@@ -4,7 +4,7 @@ set -u
 set -e
 
 rm -rf aperturedb/db
-docker-compose down && docker-compose up -d
+docker compose down && docker compose up -d
 
 REPOSITORY="aperturedata/aperturedb-python-tests"
 if ! [ -z ${1+x} ]
