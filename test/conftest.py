@@ -50,7 +50,7 @@ def db(request):
 
 @pytest.fixture()
 def insert_data_from_csv(db, request):
-    def insert_data_from_csv(in_csv_file, rec_count=-1):
+    def insert_data_from_csv(in_csv_file, rec_count=-1, expected_error_count=0,loader_result_lambda=None):
         if rec_count > 0 and rec_count < 80:
             request.param = False
             print("Not enough records to test parallel loader. Using serial loader.")
@@ -66,7 +66,9 @@ def insert_data_from_csv(db, request):
             "./input/s3_images.adb.csv": ImageDataCSV,
             "./input/http_images.adb.csv": ImageDataCSV,
             "./input/bboxes-constraints.adb.csv": BBoxDataCSV,
-            "./input/gs_images.adb.csv": ImageDataCSV
+            "./input/gs_images.adb.csv": ImageDataCSV,
+            "./input/persons-exist-base.adb.csv": EntityDataCSV,
+            "./input/persons-some-exist.adb.csv": EntityDataCSV
         }
         use_dask = False
         if hasattr(request, "param"):
@@ -81,6 +83,9 @@ def insert_data_from_csv(db, request):
                       stats=True,
                       )
         assert loader.error_counter == 0
+        assert len(data) - loader.get_suceeded_queries() == expected_error_count
+        if loader_result_lambda is not None:
+            loader_result_lambda( loader,data )
         return data
 
     return insert_data_from_csv
