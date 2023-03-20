@@ -242,7 +242,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             results, self.total_actions_time = daskmanager.run(
                 self.db, generator, batchsize, stats=stats)
-            self.actual_stats = { "suceeded_queries" : 0 , "objects_existed": 0 }
+            self.actual_stats = []
             for result in results:
                 if result is not None:
                     self.times_arr.extend(result.times_arr)
