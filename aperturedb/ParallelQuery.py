@@ -71,11 +71,13 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [ 0 ],
         result = 1
 
     statuses = {}
-    if isinstance(r,dict):
-        statuses[r['status']] = [ r ]
-    elif isinstance(r,list):
-        # add each result to a list of the responses, keyed by the response code.
-        [ statuses.setdefault( result[cmd]['status'], []).append( result ) for result in r for cmd in result ]
+    if isinstance(r, dict):
+        statuses[r['status']] = [r]
+    elif isinstance(r, list):
+        # add each result to a list of the responses, keyed by the response
+        # code.
+        [statuses.setdefault(result[cmd]['status'], []).append(result)
+         for result in r for cmd in result]
     else:
         logger.error("Response in unexpected format")
         result = 1
@@ -89,7 +91,7 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [ 0 ],
                     warn_list.append(wr)
         if len(warn_list) != 0:
             logger.warning(
-                        f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(warn_list)}")
+                f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(warn_list)}")
             result = 2
 
     return result, r, b
@@ -103,13 +105,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
     """
 
     # 0 is success, 2 is object exists
-    success_statuses = [ 0, 2 ]
+    success_statuses = [0, 2]
 
     @classmethod
-    def setSuccessStatus(cls, statuses: list[int] ):
+    def setSuccessStatus(cls, statuses: list[int]):
         cls.success_statuses = statuses
     @classmethod
-    def getSuccessStatus(cls ):
+    def getSuccessStatus(cls):
         return cls.success_statuses
 
     def __init__(self, db, dry_run=False):
@@ -179,7 +181,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["suceeded_commands"] = len(q)
                 worker_stats["suceeded_queries"] = len(data)
                 worker_stats["objects_existed"] = sum(
-                        [v['status'] == 2  for i in r for k,v in i.items()])
+                    [v['status'] == 2 for i in r for k, v in i.items()])
             elif result == 1:
                 self.error_counter += 1
                 worker_stats["suceeded_queries"] = 0
@@ -247,10 +249,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 if result is not None:
                     self.times_arr.extend(result.times_arr)
                     self.error_counter += result.error_counter
-                    self.actual_stats.append( 
-                            { "suceeded_queries" : result.suceeded_queries,
-                             "suceeded_commands" : result.suceeded_commands,
-                        "objects_existed" : result.objects_existed })
+                    self.actual_stats.append(
+                        {"suceeded_queries": result.suceeded_queries,
+                         "suceeded_commands": result.suceeded_commands,
+                         "objects_existed": result.objects_existed})
             self.total_actions = len(generator.df)
 
             if stats:

@@ -83,9 +83,10 @@ def insert_data_from_csv(db, request):
                       stats=True,
                       )
         assert loader.error_counter == 0
-        assert len(data) - loader.get_suceeded_queries() == expected_error_count
+        assert len(data) - \
+            loader.get_suceeded_queries() == expected_error_count
         if loader_result_lambda is not None:
-            loader_result_lambda( loader,data )
+            loader_result_lambda(loader, data)
         return data
 
     return insert_data_from_csv

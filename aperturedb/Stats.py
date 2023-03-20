@@ -12,5 +12,5 @@ class Stats:
         self.total_actions_time = 0
         self.error_counter = 0
         self.objects_existed = 0
-        self.suceeded_queries= 0
-        self.suceeded_commands= 0
+        self.suceeded_queries = 0
+        self.suceeded_commands = 0

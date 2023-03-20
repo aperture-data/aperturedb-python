@@ -23,13 +23,16 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
     def get_objects_existed(self):
         return sum([stat["objects_existed"]
-                                for stat in self.actual_stats])
+                    for stat in self.actual_stats])
+
     def get_suceeded_queries(self):
         return sum([stat["suceeded_queries"]
-                                for stat in self.actual_stats])
+                    for stat in self.actual_stats])
+
     def get_suceeded_commands(self):
         return sum([stat["suceeded_commands"]
-                                for stat in self.actual_stats])
+                    for stat in self.actual_stats])
+
     def print_stats(self):
 
         times = np.array(self.get_times())

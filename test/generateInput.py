@@ -301,10 +301,10 @@ def generate_partial_load():
 
     df = pd.read_csv("input/persons.adb.csv")
     base = df.head(10)
-    base.to_csv( "input/persons-exist-base.adb.csv",index=False)
+    base.to_csv("input/persons-exist-base.adb.csv", index=False)
     # causes 3 overlaps
     overlapped = df.head(12).tail(5)
-    overlapped.to_csv( "input/persons-some-exist.adb.csv",index=False)
+    overlapped.to_csv("input/persons-some-exist.adb.csv", index=False)
 
 
 def main(params):
