@@ -247,8 +247,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 if result is not None:
                     self.times_arr.extend(result.times_arr)
                     self.error_counter += result.error_counter
-                    self.actual_stats["suceeded_queries"] += result.suceeded_queries
-                    self.actual_stats["objects_existed"] += result.objects_existed
+                    self.actual_stats.append( 
+                            { "suceeded_queries" : result.suceeded_queries,
+                        "objects_existed" : result.objects_existed })
             self.total_actions = len(generator.df)
 
             if stats:
