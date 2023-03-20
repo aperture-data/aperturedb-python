@@ -20,7 +20,8 @@ class TestLoaderSuccess():
         # Assert that we have a clean slate to begin with.
         self.assertTrue(utils.remove_all_objects())
         # initial load
-        data = insert_data_from_csv(in_csv_file = "./input/persons-exist-base.adb.csv")
+        data = insert_data_from_csv(
+            in_csv_file = "./input/persons-exist-base.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
 
         # default configuration does not consider object exists to be a query failure
@@ -31,17 +32,20 @@ class TestLoaderSuccess():
                 loader_result_lambda = assert_partial)
 
         # change to disallow object exist to qualify as success.
-        old_status = ParallelQuery.getSuccessStatus( )
-        ParallelQuery.setSuccessStatus( [ 0 ] )
+        old_status = ParallelQuery.getSuccessStatus()
+        ParallelQuery.setSuccessStatus([0])
 
         # Assert that we have a clean slate to begin with.
         self.assertTrue(utils.remove_all_objects())
         # initial load
-        data = insert_data_from_csv(in_csv_file = "./input/persons-exist-base.adb.csv")
-        # default configuration does not consider object exists to be a query failure
-        data = insert_data_from_csv(in_csv_file = "./input/persons-some-exist.adb.csv",
-                expected_error_count = 3,
-                loader_result_lambda=assert_partial)
+        data = insert_data_from_csv(
+            in_csv_file = "./input/persons-exist-base.adb.csv")
+        # default configuration does not consider object exists to be a query
+        # failure
+        data = insert_data_from_csv(
+            in_csv_file = "./input/persons-some-exist.adb.csv",
+            expected_error_count = 3,
+            loader_result_lambda=assert_partial)
 
         # reset success status to default
-        ParallelQuery.setSuccessStatus( old_status )
+        ParallelQuery.setSuccessStatus(old_status)

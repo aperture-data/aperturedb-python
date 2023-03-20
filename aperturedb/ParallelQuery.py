@@ -191,7 +191,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["suceeded_commands"] = sum(
                     [v['status'] == 0 for i in r for k, v in i.items()])
                 worker_stats["objects_existed"] = sum(
-                        [v['status'] == 2 for i in r for k,v in i.items()])
+                    [v['status'] == 2 for i in r for k, v in i.items()])
                 sq = 0
                 for i in range(0, len(r), self.commands_per_query):
                     if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in j.items()]):
