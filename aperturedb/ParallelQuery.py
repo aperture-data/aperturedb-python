@@ -242,10 +242,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             results, self.total_actions_time = daskmanager.run(
                 self.db, generator, batchsize, stats=stats)
+            self.actual_stats = { "suceeded_queries" : 0 , "objects_existed": 0 }
             for result in results:
                 if result is not None:
                     self.times_arr.extend(result.times_arr)
                     self.error_counter += result.error_counter
+                    self.actual_stats["suceeded_queries"] += results.suceeded_queries
+                    self.actual_stats["objects_existed"] += results.objects_exited
             self.total_actions = len(generator.df)
 
             if stats:
