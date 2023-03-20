@@ -297,6 +297,7 @@ def generate_descriptorset(names, dims):
 
     df.to_csv("input/descriptorset.adb.csv", index=False)
 
+
 def generate_partial_load():
 
     df = pd.read_csv("input/persons.adb.csv")
@@ -326,6 +327,7 @@ def main(params):
         generate_descriptors(images, name, dims)
 
     generate_partial_load()
+
 
 def get_args():
     obj = argparse.ArgumentParser()
