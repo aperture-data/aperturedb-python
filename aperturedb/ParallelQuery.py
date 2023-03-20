@@ -249,7 +249,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     self.error_counter += result.error_counter
                     self.actual_stats.append( 
                             { "suceeded_queries" : result.suceeded_queries,
-                            { "suceeded_commands" : result.suceeded_commands,
+                             "suceeded_commands" : result.suceeded_commands,
                         "objects_existed" : result.objects_existed })
             self.total_actions = len(generator.df)
 
