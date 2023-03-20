@@ -110,6 +110,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     @classmethod
     def setSuccessStatus(cls, statuses: list[int]):
         cls.success_statuses = statuses
+
     @classmethod
     def getSuccessStatus(cls):
         return cls.success_statuses
