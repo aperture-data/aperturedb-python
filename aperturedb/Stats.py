@@ -3,7 +3,7 @@ class Stats:
     times_arr = []
     total_actions_time = 0
     objects_existed  = 0
-    queries_suceeded  = 0
+    suceeded_queries = 0
 
     def __init__(self):
         self.total_actions = 0
@@ -11,4 +11,4 @@ class Stats:
         self.total_actions_time = 0
         self.error_counter = 0
         self.objects_existed = 0
-        self.queries_suceeded = 0
+        self.suceeded_queries= 0
