@@ -26,10 +26,10 @@ class TestLoaderSuccess():
 
         # default configuration does not consider object exists to be a query failure
         def assert_partial(loader, test_data):
-            self.assertEqual(len(data) + len(test_data ) - loader.get_objects_existed(), 
-                    utils.count_entities("Person"))
+            self.assertEqual(len(data) + len(test_data) - loader.get_objects_existed(), 
+                             utils.count_entities("Person"))
         data = insert_data_from_csv(in_csv_file = "./input/persons-some-exist.adb.csv",
-                loader_result_lambda = assert_partial)
+                                    loader_result_lambda = assert_partial)
 
         # change to disallow object exist to qualify as success.
         old_status = ParallelQuery.getSuccessStatus()
