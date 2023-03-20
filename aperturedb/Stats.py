@@ -4,6 +4,7 @@ class Stats:
     total_actions_time = 0
     objects_existed  = 0
     suceeded_queries = 0
+    suceeded_commands = 0
 
     def __init__(self):
         self.total_actions = 0
@@ -12,3 +13,4 @@ class Stats:
         self.error_counter = 0
         self.objects_existed = 0
         self.suceeded_queries= 0
+        self.suceeded_commands= 0
