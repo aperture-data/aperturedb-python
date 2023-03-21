@@ -47,6 +47,8 @@ class EntityDataCSV(CSVParser.CSVParser):
             self.constraints_keys = [x for x in self.header[1:]
                                      if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.command = "AddEntity"
+            self.search_keys = [x for x in self.header[1:]
+                                     if x.startswith(CSVParser.SEARCH_PREFIX)]
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
@@ -63,3 +65,59 @@ class EntityDataCSV(CSVParser.CSVParser):
     def validate(self):
         if self.header[0] != ENTITY_CLASS:
             raise Exception("Error with CSV file field: " + ENTITY_CLASS)
+
+# Used when a csv has a single entity type that needs to be deleted
+class SingleEntityDeleteCSV(CSVParser.CSVParser):
+    def __init__(self, entity_class, filename, df=None, use_dask=False):
+        super().__init__(filename, df=df, use_dask=use_dask)
+        self.command = "Delete" + entity_class
+        self.constraint_keyword = "constraints"
+        if not use_dask:
+            self.constraint_keys       = [x for x in self.header[0:]]
+
+    def getitem(self, idx):
+        idx = self.df.index.start + idx
+        q = []
+        entity_delete = self._basic_command(idx)
+
+        q.append(entity_delete)
+        return q, []
+    def validate(self):
+        # all we require is a valid csv with 1 or more columns.
+        return True
+
+class ImageDeleteCSV(SingleEntityDeleteCSV):
+    def __init__(self, filename, df=None, use_dask=False):
+        super().__init__("Image",filename, df=df, use_dask=use_dask)
+
+# we need to update conditionally; if_not_found only works for add.
+# additionally there are two metrics in use: selection critera
+# and update critera.
+# find_<prop> is the column form to bind 
+class SingleEntityUpdateCSV(CSVParser.CSVParser):
+    def __init__(self, entity_class, filename, df=None, use_dask=False):
+        super().__init__(filename, df=df, use_dask=use_dask)
+        self.command = "Update" + entity_class
+        self.findcommand = "Find" + entity_class
+        if not use_dask:
+            self.props_keys       = [x for x in self.header[1:]
+                                     if not ( x.startswith(CSVParser.CONSTRAINTS_PREFIX)
+                                         or x.startswith(CSVParser.SEARCH_PREFIX) ) ]
+            self.constraint_keys       = [x for x in self.header[1:]
+                                        if not x.startswith(CSVParser.SEARCH_PREFIX)]
+            self.search_keys       = [x for x in self.header[1:]
+                                        if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+    def getitem(self, idx):
+        idx = self.df.index.start + idx
+        q = []
+
+        search_constraints = self.parse_search(self.df, idx)
+        entity_find = {}
+        entity_find[self.findcommand][CSVParser.CONSTRAINTS] = search_constraints
+        entity_find[self.findcommand]["_ref"] = 1
+        entity_update = self._basic_command(idx)
+        entity_update[self.command]["ref"] = 1
+
+        q.append(entity_find)
+        q.append(entity_update)
+        return q, []
