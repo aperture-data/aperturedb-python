@@ -3,8 +3,8 @@
 set -u
 set -e
 
-rm -rf output
-mkdir output
+mkdir -p output
+rm -rf output/*
 mkdir -p input/blobs
 
 echo "Downloading images..."
