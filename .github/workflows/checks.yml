@@ -3,16 +3,23 @@ name: syntax-check
 on:
   pull_request:
   push:
-    branches: [develop, main]
+    branches:
+    - develop
+    - main
 
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
+
     - uses: actions/checkout@v2
+
     - uses: actions/setup-python@v3
       with:
         python-version: '3.10'
+
     - uses: pre-commit/action@v2.0.3
+
     - uses: actions/checkout@v2
+
     - uses: luisremis/find-trailing-whitespace@master
