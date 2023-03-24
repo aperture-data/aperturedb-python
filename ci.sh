@@ -246,7 +246,7 @@ then
         # Dependecies
         # TODO : Conditionally build.
         # Check if there is base image change
-        if [ $DEPENDENCIES_DOCKER_IMAGE_CHANGED == 1 ]
+        if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
         then
             build_notebook_dependencies_image
             return
