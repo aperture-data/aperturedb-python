@@ -7,7 +7,11 @@ on:
 
 jobs:
   run_test:
-    runs-on: self-hosted
+
+    runs-on:
+    - self-hosted
+    - deployer
+
     steps:
 
     - uses: actions/checkout@v2
@@ -35,7 +39,11 @@ jobs:
       shell: bash
 
   run_test_conda_gpu:
-    runs-on: self-hosted
+
+    runs-on:
+    - self-hosted
+    - deployer
+
     steps:
 
     - uses: actions/checkout@v2
@@ -71,7 +79,11 @@ jobs:
         ./run_test_container.sh aperturedata/aperturedb-pytorch-gpu
 
   build_images:
-    runs-on: self-hosted
+
+    runs-on:
+    - self-hosted
+    - deployer
+
     steps:
 
     - uses: actions/checkout@v2

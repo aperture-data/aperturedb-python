@@ -136,7 +136,7 @@ build_tests(){
     mkdir -p docker/tests/aperturedata
     sudo rm -rf test/aperturedb/db
     cp -r aperturedb setup.py README.md requirements.txt docker/tests/aperturedata
-    mkdir -p docker/tests/aperturedata/test/aperturedb
+    mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
     cp test/aperturedb/config.json docker/tests/aperturedata/test/aperturedb
 
@@ -203,8 +203,6 @@ build_docs_image(){
 
 
 build_coverage_image(){
-    echo "Preping coverage image"
-    coverage html
     COV_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-coverage${IMAGE_EXTENSION_WITH_VERSION}
     echo "Building image $COV_IMAGE"
     docker build -t $COV_IMAGE -f coverage/Dockerfile .
@@ -259,6 +257,7 @@ then
         pushd "test"
         ./run_test_container.sh
         build_coverage_image
+        rm -rf "./output/"
         popd
     fi
 
