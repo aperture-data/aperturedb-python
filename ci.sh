@@ -189,18 +189,8 @@ build_docs_image(){
         DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
         ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
         push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
-
-        if [ "${DEPLOY_SERVER}" == "yes" ]
-        then
-            pushd "./deploy"
-            source login.sh "${BRANCH_NAME}" "${IMAGE_EXTENSION_WITH_VERSION}"
-            terraform init
-            terraform apply -auto-approve
-            popd
-        fi
     fi
 }
-
 
 build_coverage_image(){
     COV_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-coverage${IMAGE_EXTENSION_WITH_VERSION}
@@ -217,7 +207,6 @@ build_coverage_image(){
     fi
 }
 
-
 push_aws_ecr(){
     SRC_IMAGE=$1
     DST_IMAGE=$2
@@ -233,39 +222,46 @@ push_aws_ecr(){
     docker push 684446431133.dkr.ecr.$REGION.amazonaws.com/$DST_IMAGE
 }
 
-
-# Execute only if ONLY_DEFINES is not set
-if [ -z ${ONLY_DEFINES+x} ]
-then
-    if [ -z ${EXCLUDE_TESTING+x} ]
+deploy_terraform(){
+    if [ "${DEPLOY_SERVER}" == "yes" ]
     then
-        check_for_changed_docker_files
-        echo "DEPENDENCIES_DOCKER_IMAGE_CHANGED=$DEPENDENCIES_DOCKER_IMAGE_CHANGED"
-        # Dependecies
-        # TODO : Conditionally build.
-        # Check if there is base image change
-        if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
-        then
-            build_notebook_dependencies_image
-            return
-        fi
-
-        build_notebook_image
-        build_tests
-
-        # Tests
-        pushd "test"
-        ./run_test_container.sh
-        build_coverage_image
-        rm -rf "./output/"
+        pushd "./deploy"
+        source login.sh "${BRANCH_NAME}" "${IMAGE_EXTENSION_WITH_VERSION}"
+        terraform init
+        terraform apply -auto-approve
         popd
     fi
+}
 
-    if [ -z ${EXCLUDE_DOCUMENTATION+x} ]
+if [ -z ${EXCLUDE_TESTING+x} ]
+then
+    check_for_changed_docker_files
+    echo "DEPENDENCIES_DOCKER_IMAGE_CHANGED=$DEPENDENCIES_DOCKER_IMAGE_CHANGED"
+    # Dependecies
+    # TODO : Conditionally build.
+    # Check if there is base image change
+    if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
     then
-        # Trigger build docs image
-        build_docs_image
+        build_notebook_dependencies_image
+        return
     fi
+
+    build_notebook_image
+    build_tests
+
+    pushd "test"
+    ./run_test_container.sh
+    build_coverage_image
+    rm -rf "./output/"
+    popd
 fi
 
+if [ -z ${EXCLUDE_DOCUMENTATION+x} ]
+then
+    build_docs_image
+fi
 
+if [ -z ${EXCLUDE_DEPLOY+x} ]
+then
+    deploy_terraform
+fi

@@ -35,7 +35,7 @@ jobs:
         AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-      run: 'EXCLUDE_DOCUMENTATION=1 ./ci.sh'
+      run: 'EXCLUDE_DOCUMENTATION=1 EXCLUDE_DEPLOY=1 ./ci.sh'
       shell: bash
 
   build_and_deploy_docs:
@@ -62,7 +62,7 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: |
-        EXCLUDE_TESTING=1 ./ci.sh
+        EXCLUDE_TESTING=1 EXCLUDE_DEPLOY=1 ./ci.sh
       shell: bash
 
     - name: Publish to PyPi
@@ -79,4 +79,30 @@ jobs:
 
     - name: GitHub Release
       run: 'TOKEN=${{ secrets.GITHUBPAT }} ./github-release.sh'
+      shell: bash
+
+  deploy_web_services:
+    needs:
+    - build-test
+    - build_and_deploy_docs
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASS }}
+
+    - name: Apply Terraform
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        EXCLUDE_TESTING=1 EXCLUDE_DOCUMENTATION=1 ./ci.sh
       shell: bash
