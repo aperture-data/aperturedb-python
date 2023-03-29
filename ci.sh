@@ -78,6 +78,12 @@ then
     BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 fi
 
+# Fetch branch
+if [ -z ${COMMIT_HASH+x} ]
+then
+    COMMIT_HASH=$(git rev-parse HEAD)
+fi
+
 #Install pre requisites
 install_prerequisites
 
@@ -104,12 +110,18 @@ else
 fi
 
 # Set image extension according to branch
-IMAGE_EXTENSION_WITH_VERSION="-${BRANCH_NAME}:v${BUILD_VERSION}"
-if [ $BRANCH_NAME == 'master' ] || [ $BRANCH_NAME == 'main' ]
+if [ $BRANCH_NAME == 'main' ]
 then
-    # when merging to master remove branch name
     IMAGE_EXTENSION_WITH_VERSION=":v${BUILD_VERSION}"
     IMAGE_EXTENSION_LATEST=":latest"
+    DEPLOY_SERVER=yes
+elif [ $BRANCH_NAME == 'develop' ]
+then
+    IMAGE_EXTENSION_WITH_VERSION="-develop:v${BUILD_VERSION}-${COMMIT_HASH}"
+    DEPLOY_SERVER=yes
+else
+    IMAGE_EXTENSION_WITH_VERSION="-${BRANCH_NAME}:v${BUILD_VERSION}"
+    DEPLOY_SERVER=no
 fi
 
 # Set default repo if repo var is not set
@@ -124,7 +136,7 @@ build_tests(){
     mkdir -p docker/tests/aperturedata
     sudo rm -rf test/aperturedb/db
     cp -r aperturedb setup.py README.md requirements.txt docker/tests/aperturedata
-    mkdir -p docker/tests/aperturedata/test/aperturedb
+    mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
     cp test/aperturedb/config.json docker/tests/aperturedata/test/aperturedb
 
@@ -172,6 +184,36 @@ build_docs_image(){
     if [ -z ${NO_PUSH+x} ]
     then
         docker push $DOCS_IMAGE
+
+        ECR_REPO_NAME=aperturedb-python-docs
+        DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
+        ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
+        push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
+
+        if [ "${DEPLOY_SERVER}" == "yes" ]
+        then
+            pushd "./deploy"
+            source login.sh "${BRANCH_NAME}" "${IMAGE_EXTENSION_WITH_VERSION}"
+            terraform init
+            terraform apply -auto-approve
+            popd
+        fi
+    fi
+}
+
+
+build_coverage_image(){
+    COV_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-coverage${IMAGE_EXTENSION_WITH_VERSION}
+    echo "Building image $COV_IMAGE"
+    docker build -t $COV_IMAGE -f coverage/Dockerfile .
+    if [ -z ${NO_PUSH+x} ]
+    then
+        docker push $COV_IMAGE
+
+        ECR_REPO_NAME=aperturedb-python-coverage
+        COV_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
+        ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
+        push_aws_ecr $COV_IMAGE $ECR_NAME $ECR_REPO_NAME
     fi
 }
 
@@ -202,32 +244,27 @@ then
         # Dependecies
         # TODO : Conditionally build.
         # Check if there is base image change
-        if [ $DEPENDENCIES_DOCKER_IMAGE_CHANGED == 1 ]
+        if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
         then
             build_notebook_dependencies_image
             return
         fi
 
-
-        # Trigger build notebook image
         build_notebook_image
+        build_tests
 
         # Tests
-        build_tests
+        pushd "test"
+        ./run_test_container.sh
+        build_coverage_image
+        rm -rf "./output/"
+        popd
     fi
 
     if [ -z ${EXCLUDE_DOCUMENTATION+x} ]
     then
         # Trigger build docs image
         build_docs_image
-        if [ -z ${NO_PUSH+x} ]
-        then
-            ECR_REPO_NAME=aperturedb-python-docs
-            DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
-            ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
-
-            push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
-        fi
     fi
 fi
 

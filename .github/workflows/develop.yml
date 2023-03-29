@@ -1,9 +1,9 @@
-name: release
+name: develop
 
 on:
   push:
     branches:
-    - release*
+      - develop
 
 jobs:
   build-test:
@@ -31,14 +31,16 @@ jobs:
 
     - name: Build and Run Tests
       env:
-        AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-      run: 'EXCLUDE_DOCUMENTATION=1 NO_PUSH=1 UPDATE_BRANCH=1 ./ci.sh'
+      run: 'EXCLUDE_DOCUMENTATION=1 ./ci.sh'
       shell: bash
 
   build_and_deploy_docs:
+    needs:
+    - build-test
 
     runs-on:
     - self-hosted
@@ -54,6 +56,11 @@ jobs:
         username: ${{ secrets.DOCKER_USER }}
         password: ${{ secrets.DOCKER_PASS }}
 
-    - name: Build Notebook Docker
-      run: 'EXCLUDE_TESTING=1 NO_PUSH=1 ./ci.sh'
+    - name: Build Notebook,docs Docker
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        EXCLUDE_TESTING=1 ./ci.sh
       shell: bash
