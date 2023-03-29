@@ -88,9 +88,9 @@ class ConnectorRest(Connector):
         self.port = port
         self.use_ssl = use_ssl
         self.connected = False
-        #Session is useful because it does not add "Connection: close header"
-        #Since we will be making same call to the same URL, making a session
-        #REF: https://requests.readthedocs.io/en/latest/user/advanced/
+        # Session is useful because it does not add "Connection: close header"
+        # Since we will be making same call to the same URL, making a session
+        # REF: https://requests.readthedocs.io/en/latest/user/advanced/
         self.http_session = requests.Session()
 
         self.last_response   = ''
@@ -141,9 +141,9 @@ class ConnectorRest(Connector):
         while tries < 3:
             tries += 1
             response = self.http_session.post(self.url,
-                                     headers = headers,
-                                     files   = files,
-                                     verify  = self.use_ssl)
+                                              headers = headers,
+                                              files   = files,
+                                              verify  = self.use_ssl)
             if response.status_code == 200:
                 # Parse response:
                 json_response       = json.loads(response.text)
