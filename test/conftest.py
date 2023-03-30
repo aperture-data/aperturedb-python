@@ -2,8 +2,9 @@ import pytest
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.ParallelLoader import ParallelLoader
+from aperturedb.ParallelQuerySet import ParallelQuerySet
 from aperturedb.BlobDataCSV import BlobDataCSV
-from aperturedb.EntityDataCSV import EntityDataCSV
+from aperturedb.EntityDataCSV import EntityDataCSV, EntityUpdateCSV
 from aperturedb.ConnectionDataCSV import ConnectionDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
@@ -44,7 +45,7 @@ def pytest_generate_tests(metafunc):
 def db(request):
     db = request.param['db']
     utils = Utils(db)
-    assert utils.remove_all_objects() == True
+    assert utils.remove_all_objects()
     return db
 
 
@@ -67,6 +68,8 @@ def insert_data_from_csv(db, request):
             "./input/http_images.adb.csv": ImageDataCSV,
             "./input/bboxes-constraints.adb.csv": BBoxDataCSV,
             "./input/gs_images.adb.csv": ImageDataCSV,
+            "./input/images_to_modify.adb.csv": ImageDataCSV,
+            "./input/images_to_modify.adb.csv": ImageDataCSV,
             "./input/persons-exist-base.adb.csv": EntityDataCSV,
             "./input/persons-some-exist.adb.csv": EntityDataCSV
         }
@@ -93,6 +96,35 @@ def insert_data_from_csv(db, request):
 
 
 @pytest.fixture()
+def modify_data_from_csv(db, request):
+    def modify_data_from_csv(in_csv_file, rec_count=-1):
+        if rec_count > 0 and rec_count < 80:
+            request.param = False
+            print("Not enough records to test parallel loader. Using serial loader.")
+        def PersonEntityCSV( csv_file, use_dask ):
+            return EntityUpdateCSV( "Person", csv_file, use_dask = use_dask )
+        file_data_pair = {
+            "./input/entity_update_just_add.adb.csv": PersonEntityCSV
+        }
+        use_dask = False
+        if hasattr(request, "param"):
+            use_dask = request.param
+        data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask)
+        if rec_count != -1:
+            data = data[:rec_count]
+
+        loader = ParallelQuerySet(db)
+        loader.query(data, batchsize=99,
+                      numthreads=8,
+                      stats=True,
+                      )
+        assert loader.error_counter == 0
+        return [data, loader.modified_count]
+
+    return modify_data_from_csv
+
+
+@pytest.fixture()
 def utils(db):
     return Utils(db)
 
@@ -108,6 +140,7 @@ def retired_persons(db, insert_data_from_csv, utils):
     loaded = insert_data_from_csv("./input/persons.adb.csv")
     constraints = Constraints()
     constraints.greaterequal("age", 60)
-    retired_persons = Entities.retrieve(db,
-                                        spec=Query.spec(with_class="Person", constraints=constraints))
+    retired_persons = Entities.retrieve(
+        db, spec=Query.spec(
+            with_class="Person", constraints=constraints))
     return retired_persons

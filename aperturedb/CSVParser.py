@@ -4,6 +4,7 @@ from aperturedb.Subscriptable import Subscriptable
 from dask import dataframe
 import os
 import multiprocessing as mp
+import re
 
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ ENTITY_CLASS      = "EntityClass"
 CONSTRAINTS_PREFIX = "constraint_"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
+SEARCH_PREFIX = "find_"
 
 # This number is based on the partitions one wants to use per core.
 PARTITIONS_PER_CORE = 10
@@ -35,6 +37,7 @@ class CSVParser(Subscriptable):
     def __init__(self, filename, df=None, use_dask=False):
         self.use_dask = use_dask
         self.filename = filename
+        self.constraint_keyword = "if_not_found"
 
         if not use_dask:
             if df is None:
@@ -90,12 +93,29 @@ class CSVParser(Subscriptable):
                     constraints[prop] = ["==", self.df.loc[idx, key]]
 
         return constraints
+    def parse_search(self, df, idx):
 
-    def _basic_command(self, idx, custom_fields: dict = None):
+        search_constraints = {}
+        if len(self.search_keys) > 0:
+            for key in self.constraints_keys:
+                res = re.search("^find_date(>|<)?:",key)
+                if res is not None:
+                    prop = key[len(res.group(0)):]  # remove prefix
+                    sort = res.group(0)[-2:][:1] # get character before :
+
+                    if sort != ">" and sort != "<":
+                        sort = "=="
+                    search_constraints[prop] = [
+                        sort, {"_date": self.df.loc[idx, key]}]
+                else:
+                    prop = key[len(CONSTRAINTS_PREFIX):]  # remove "prefix
+                    search_constraints[prop] = ["==", self.df.loc[idx, key]]
+
+        return search_constraints
+
+    def _parsed_command(self, idx, custom_fields: dict = None, constraints: dict = None, properties: dict = None):
         if custom_fields == None:
             custom_fields = {}
-        properties = self.parse_properties(self.df, idx)
-        constraints = self.parse_constraints(self.df, idx)
         query = {
             self.command: custom_fields
         }
@@ -103,9 +123,13 @@ class CSVParser(Subscriptable):
             query[self.command][PROPERTIES] = properties
 
         if constraints:
-            query[self.command]["if_not_found"] = constraints
+            query[self.command][self.constraint_keyword] = constraints
 
         return query
+    def _basic_command(self, idx, custom_fields: dict = None):
+        properties = self.parse_properties(self.df, idx)
+        constraints = self.parse_constraints(self.df, idx)
+        return self._parsed_command( idx, custom_fields, constraints, properties )
 
     def validate(self):
 

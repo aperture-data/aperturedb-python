@@ -129,6 +129,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         self.commands_per_query = 1
         self.blobs_per_query = 0
+        self.batch_command = execute_batch
 
     def generate_batch(self, data):
         """
@@ -137,6 +138,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
         q     = [cmd for query in data for cmd in query[0]]
         blobs = [blob for query in data for blob in query[1]]
+        #print("generate_batch:",q)
 
         return q, blobs
 
@@ -175,7 +177,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             response_handler = None
             if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
                 response_handler = self.generator.response_handler
-            result, r, b = execute_batch(
+            result, r, b = self.batch_command(
                 q, blobs, db, ParallelQuery.success_statuses, response_handler, self.commands_per_query, self.blobs_per_query)
             if result == 0:
                 query_time = db.get_last_query_time()
