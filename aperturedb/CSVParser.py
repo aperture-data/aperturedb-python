@@ -84,6 +84,7 @@ class CSVParser(Subscriptable):
         constraints = {}
         if len(self.constraints_keys) > 0:
             for key in self.constraints_keys:
+                print("PC = ",key)
                 if key.startswith("constraint_date:"):
                     prop = key[len("constraint_date:"):]  # remove prefix
                     constraints[prop] = [
@@ -92,12 +93,14 @@ class CSVParser(Subscriptable):
                     prop = key[len(CONSTRAINTS_PREFIX):]  # remove "prefix
                     constraints[prop] = ["==", self.df.loc[idx, key]]
 
+        print("parse_constraints = ",constraints)
         return constraints
     def parse_search(self, df, idx):
 
         search_constraints = {}
         if len(self.search_keys) > 0:
-            for key in self.constraints_keys:
+            for key in self.search_keys:
+                print("PS = ",key)
                 res = re.search("^find_date(>|<)?:",key)
                 if res is not None:
                     prop = key[len(res.group(0)):]  # remove prefix
@@ -108,9 +111,10 @@ class CSVParser(Subscriptable):
                     search_constraints[prop] = [
                         sort, {"_date": self.df.loc[idx, key]}]
                 else:
-                    prop = key[len(CONSTRAINTS_PREFIX):]  # remove "prefix
+                    prop = key[len(SEARCH_PREFIX):]  # remove "prefix
                     search_constraints[prop] = ["==", self.df.loc[idx, key]]
 
+        print("parse_search = ",search_constraints)
         return search_constraints
 
     def _parsed_command(self, idx, custom_fields: dict = None, constraints: dict = None, properties: dict = None):

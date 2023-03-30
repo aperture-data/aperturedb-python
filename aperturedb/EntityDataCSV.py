@@ -116,9 +116,9 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
                                          if not ( x.startswith(CSVParser.CONSTRAINTS_PREFIX)
                                              or x.startswith(CSVParser.SEARCH_PREFIX) ) ]
                 self.constraints_keys       = [x for x in self.header[1:]
-                                            if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+                                            if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
                 self.search_keys       = [x for x in self.header[1:]
-                                            if not x.startswith(CSVParser.SEARCH_PREFIX)]
+                                            if x.startswith(CSVParser.SEARCH_PREFIX)]
     def getitem(self, idx):
         idx = self.df.index.start + idx
         query_set = []
@@ -130,10 +130,18 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
         update_constraints = self.parse_constraints(self.df,idx)
         search_constraints = self.parse_search(self.df, idx)
         update_constraints.update(search_constraints)
-        properties = self.parse_search(self.df, idx)
-        entity_update = self._parsed_command(idx,update_constraints,properties)
+        properties = self.parse_properties(self.df, idx)
+        print("UC = " ,update_constraints)
+        print("SC = ", search_constraints)
+        self.constraint_keyword = "constraints"
+        entity_update = self._parsed_command(idx,None,update_constraints,properties)
+        print("ADD CMD = ",entity_add)
+        print("UPDATE CMD = ",entity_update)
         query_set.append(entity_add)
         query_set.append([condition_add_failed,entity_update])
+
+
+        sys.exit(0)
 
         if hasattr(self, "modify_item") and callable(self.modify_item):
             query_set = self.modify_item(query_set,idx)

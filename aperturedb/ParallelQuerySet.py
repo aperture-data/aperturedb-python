@@ -18,6 +18,12 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
 
     def execute_batch_sets( query_set, blob_set, db, success_statuses: list[int] = [0],
             response_handler: Callable = None, commands_per_query: list[int] = -1, blobs_per_query: list[int] = -1):
+
+
+        # expand results to sparse
+        def expand_results( orig, results ):
+
+            return results
         print("Execute Batch Sets = cpq {0} bpq {1}".format(commands_per_query,blobs_per_query))
         first_element = query_set[0]
 
@@ -126,10 +132,30 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
             [print(f"#{enum} = {query_set[enum]}\n") for enum in range(0,len(query_set))]
             print(f"= ",[resg for resg in stored_results])
             [print(f"#{enum} = ",[stored_results[resg][enum] for resg in stored_results])  for enum in range(0,len(query_set))]
-            result_code,db_results,db_blobs = base_executor([ query_filter(query_set[enum],[stored_results[resg][enum] for resg in stored_results]) for enum in range(0,len(query_set))],
-                                                            blob_filter(blob_set,i), db,local_success_statuses,
-                                                            None,commands_per_query[i],blobs_per_query[i])
-            stored_results[i] = db_results
+            queries = [ query_filter(query_set[enum],[stored_results[resg][enum] for resg in stored_results])
+                        for enum in range(0,len(query_set))]
+            executable_queries = list(filter( lambda q: q is not None, queries ))
+
+            if len(executable_queries) > 0:
+                result_code,db_results,db_blobs = base_executor( queries,
+                                                                blob_filter(blob_set,i), db,local_success_statuses,
+                                                                None,commands_per_query[i],blobs_per_query[i])
+            else:
+                logger.info(f"Skipped executing set {i}, no executable queries")
+            # expand results
+            off = 0
+            empty_off = 0
+            def insert_empty_results(result_value):
+                nonlocal off
+                nonlocal empty_off
+                if result_value is None:
+                    empty_off += 1
+                    return None
+                else:
+                    off += 1
+                    return db_results[(off-1)+empty_off]
+
+            stored_results[i] = [ insert_empty_results( q ) for q in queries ]
             if result_code == 1:
                 logger.error(f"Ran into error on set {i} in ParallQuerySet, unable to continue")
                 return 1,db_results,db_blobs
