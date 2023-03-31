@@ -76,6 +76,7 @@ class CSVParser(Subscriptable):
                     value = self.df.loc[idx, key]
                     if value == value:  # skips nan values
                         properties[key] = value
+                        print("property {0} is {1} of {2}".format(key,value,type(value)))
 
         return properties
 
@@ -112,7 +113,14 @@ class CSVParser(Subscriptable):
                         sort, {"_date": self.df.loc[idx, key]}]
                 else:
                     prop = key[len(SEARCH_PREFIX):]  # remove "prefix
-                    search_constraints[prop] = ["==", self.df.loc[idx, key]]
+                    op = "=="
+                    if prop[0] in [ ">", "<", "!" ]:
+                        op = prop[0]
+                        prop = str(prop[1:])
+
+                    value = self.df.loc[idx, key]
+                    search_constraints[prop] = [op, value]
+                    print("search constraint {0} is {1} of {2}".format(key,value,type(value)))
 
         print("parse_search = ",search_constraints)
         return search_constraints

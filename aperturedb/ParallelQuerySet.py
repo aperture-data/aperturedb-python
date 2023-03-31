@@ -51,9 +51,15 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
             blob_filter = first_only_blobs
 
         stored_results = {}
-        db_results = None
+        db_results = []
         db_blobs = None
         for i in range(0,set_total):
+
+            blobs_this_set = len(blob_filter(blob_set,i))
+
+            logger.info(
+                    f"Set {i} : Commands per query = {commands_per_query[0]}, Blobs per query = {blobs_this_set}"
+            )
             execute = True
 
             # now we determine if the executing set has a constraint
@@ -80,7 +86,16 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
             if constraints is not None:
                 def check_apply_constraint( test_op, item_a,item_b):
                     print(f"check_apply_constraint {test_op} {item_a} {item_b}")
-                    return False
+                    if test_op == "==":
+                        return item_a == item_b
+                    elif test_op == ">":
+                        return item_a > item_b
+                    elif test_op == "<":
+                        return item_a < item_b
+                    elif test_op == "!=":
+                        return item_a != item_b
+                    else:
+                        raise Exception(f"Unhandled constraint {test_op} in check_apply_constraint")
                 def constraint_filter(single_line,single_results):
                     single_constraints = single_line[i][0]
 
@@ -137,23 +152,21 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
             executable_queries = list(filter( lambda q: q is not None, queries ))
 
             if len(executable_queries) > 0:
-                result_code,db_results,db_blobs = base_executor( queries,
+                result_code,db_results,db_blobs = base_executor( executable_queries,
                                                                 blob_filter(blob_set,i), db,local_success_statuses,
                                                                 None,commands_per_query[i],blobs_per_query[i])
             else:
                 logger.info(f"Skipped executing set {i}, no executable queries")
-            # expand results
+
+            # expand results so queries that didn't run show up as a None
             off = 0
-            empty_off = 0
             def insert_empty_results(result_value):
                 nonlocal off
-                nonlocal empty_off
                 if result_value is None:
-                    empty_off += 1
                     return None
                 else:
                     off += 1
-                    return db_results[(off-1)+empty_off]
+                    return db_results[(off-1)]
 
             stored_results[i] = [ insert_empty_results( q ) for q in queries ]
             if result_code == 1:

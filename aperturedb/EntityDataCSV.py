@@ -123,6 +123,7 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
         idx = self.df.index.start + idx
         query_set = []
 
+        self.constraint_keyword = "if_not_found"
         self.command = "Add" + self.entity
         entity_add = self._basic_command(idx)
         condition_add_failed = { "results": { 0: { "status" : [ "==", 2 ] } } }
@@ -141,7 +142,6 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
         query_set.append([condition_add_failed,entity_update])
 
 
-        sys.exit(0)
 
         if hasattr(self, "modify_item") and callable(self.modify_item):
             query_set = self.modify_item(query_set,idx)
