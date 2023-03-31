@@ -97,6 +97,7 @@ class ImageDeleteCSV(SingleEntityDeleteCSV):
 # and update critera.
 # find_<prop> is the column form to bind 
 class SingleEntityUpdateCSV(CSVParser.CSVParser):
+    UPDATE_CONSTRAINT_PREFIX = "updateif_"
     def __init__(self, entity_class, filename, df=None, use_dask=False):
         self.entity = entity_class
         self.command = "Update" + entity_class
@@ -114,11 +115,11 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
                 self.keys_set = True
                 self.props_keys       = [x for x in self.header[1:]
                                          if not ( x.startswith(CSVParser.CONSTRAINTS_PREFIX)
-                                             or x.startswith(CSVParser.SEARCH_PREFIX) ) ]
+                                             or x.startswith(SingleEntityUpdateCSV.UPDATE_CONSTRAINT_PREFIX) ) ]
                 self.constraints_keys       = [x for x in self.header[1:]
                                             if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
                 self.search_keys       = [x for x in self.header[1:]
-                                            if x.startswith(CSVParser.SEARCH_PREFIX)]
+                                            if x.startswith(SingleEntityUpdateCSV.UPDATE_CONSTRAINT_PREFIX)]
     def getitem(self, idx):
         idx = self.df.index.start + idx
         query_set = []
@@ -129,7 +130,7 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
         condition_add_failed = { "results": { 0: { "status" : [ "==", 2 ] } } }
         self.command = "Update" + self.entity
         update_constraints = self.parse_constraints(self.df,idx)
-        search_constraints = self.parse_search(self.df, idx)
+        search_constraints = self.parse_other_constraint(SingleEntityUpdateCSV.UPDATE_CONSTRAINT_PREFIX,self.df, idx)
         update_constraints.update(search_constraints)
         properties = self.parse_properties(self.df, idx)
         print("UC = " ,update_constraints)

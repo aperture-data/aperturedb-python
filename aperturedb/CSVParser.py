@@ -13,7 +13,6 @@ ENTITY_CLASS      = "EntityClass"
 CONSTRAINTS_PREFIX = "constraint_"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
-SEARCH_PREFIX = "find_"
 
 # This number is based on the partitions one wants to use per core.
 PARTITIONS_PER_CORE = 10
@@ -96,13 +95,13 @@ class CSVParser(Subscriptable):
 
         print("parse_constraints = ",constraints)
         return constraints
-    def parse_search(self, df, idx):
+    def parse_other_constraint(self, constraint_name, df, idx):
 
         search_constraints = {}
         if len(self.search_keys) > 0:
             for key in self.search_keys:
                 print("PS = ",key)
-                res = re.search("^find_date(>|<)?:",key)
+                res = re.search(f"^{constraint_name}_date(>|<)?:",key)
                 if res is not None:
                     prop = key[len(res.group(0)):]  # remove prefix
                     sort = res.group(0)[-2:][:1] # get character before :
@@ -112,7 +111,7 @@ class CSVParser(Subscriptable):
                     search_constraints[prop] = [
                         sort, {"_date": self.df.loc[idx, key]}]
                 else:
-                    prop = key[len(SEARCH_PREFIX):]  # remove "prefix
+                    prop = key[len(constraint_name):]  # remove "prefix
                     op = "=="
                     if prop[0] in [ ">", "<", "!" ]:
                         op = prop[0]
