@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 
 from aperturedb import CSVParser
+from aperturedb.SingleEntityUpdateCSV import SingleEntityUpdateCSV
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,105 +19,13 @@ PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
-
-class ImageDataCSV(CSVParser.CSVParser):
-    """**ApertureDB Image Data.**
-
-    This class loads the Image Data which is present in a csv file,
-    and converts it into a series of aperturedb queries.
-
-
-    .. note::
-        Is backed by a csv file with the following columns (format optional):
-
-            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
-
-            OR
-
-            ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
-
-            OR
-
-            ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
-
-            OR
-
-            ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
-            ...
-
-    Example csv file::
-
-        filename,id,label,constraint_id,format
-        /home/user/file1.jpg,321423532,dog,321423532,jpg
-        /home/user/file2.jpg,42342522,cat,42342522,png
-        ...
-
-    Example usage:
-
-    .. code-block:: python
-
-        data = ImageDataCSV("/path/to/ImageData.csv")
-        loader = ParallelLoader(db)
-        loader.ingest(data)
-
-
-    .. important::
-        In the above example, the constraint_id ensures that an Image with the specified
-        id would be only inserted if it does not already exist in the database.
-
-
-    """
-
-    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+class ImageDataProcessor():
+    def __init__(self, check_image, n_download_retries):
         self.loaders = [self.load_image, self.load_url,
                         self.load_s3_url, self.load_gs_url]
         self.source_types = [HEADER_PATH,
-                             HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
-
-        super().__init__(filename, df=df, use_dask=use_dask)
-
+                         HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
         self.check_image = check_image
-        if not use_dask:
-            self.format_given     = IMG_FORMAT in self.header
-            self.props_keys       = [x for x in self.header[1:]
-                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.props_keys       = [
-                x for x in self.props_keys if x != IMG_FORMAT]
-            self.constraints_keys = [x for x in self.header[1:]
-                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-
-            self.source_type      = self.header[0]
-
-            if self.source_type not in self.source_types:
-                logger.error("Source not recognized: " + self.source_type)
-                raise Exception("Error loading image: " + filename)
-            self.source_loader    = {
-                st: sl for st, sl in zip(self.source_types, self.loaders)
-            }
-
-            self.n_download_retries = n_download_retries
-            self.command = "AddImage"
-
-    def getitem(self, idx):
-        idx = self.df.index.start + idx
-        image_path = self.df.loc[idx, self.source_type]
-        img_ok, img = self.source_loader[self.source_type](image_path)
-
-        if not img_ok:
-            logger.error("Error loading image: " + image_path)
-            raise Exception("Error loading image: " + image_path)
-
-        q = []
-        blobs = []
-        custom_fields = {}
-        if self.format_given:
-            custom_fields["format"] = self.df.loc[idx, IMG_FORMAT]
-        ai = self._basic_command(idx, custom_fields)
-        blobs.append(img)
-        q.append(ai)
-
-        return q, blobs
-
     def load_image(self, filename):
         if self.check_image:
             try:
@@ -225,6 +134,100 @@ class ImageDataCSV(CSVParser.CSVParser):
         logger.error("GS ERROR:", gs_url)
         return False, None
 
+                
+class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
+    """**ApertureDB Image Data.**
+
+    This class loads the Image Data which is present in a csv file,
+    and converts it into a series of aperturedb queries.
+
+
+    .. note::
+        Is backed by a csv file with the following columns (format optional):
+
+            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+            ...
+
+    Example csv file::
+
+        filename,id,label,constraint_id,format
+        /home/user/file1.jpg,321423532,dog,321423532,jpg
+        /home/user/file2.jpg,42342522,cat,42342522,png
+        ...
+
+    Example usage:
+
+    .. code-block:: python
+
+        data = ImageDataCSV("/path/to/ImageData.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data)
+
+
+    .. important::
+        In the above example, the constraint_id ensures that an Image with the specified
+        id would be only inserted if it does not already exist in the database.
+
+
+    """
+
+    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+
+        ImageDataProcessor.__init__(self,check_image,n_download_retries)
+        CSVParser.__init__(self,filename, df=df, use_dask=use_dask)
+
+        if not use_dask:
+            self.format_given     = IMG_FORMAT in self.header
+            self.props_keys       = [x for x in self.header[1:]
+                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+            self.props_keys       = [
+                x for x in self.props_keys if x != IMG_FORMAT]
+            self.constraints_keys = [x for x in self.header[1:]
+                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+
+            self.source_type      = self.header[0]
+
+            if self.source_type not in self.source_types:
+                logger.error("Source not recognized: " + self.source_type)
+                raise Exception("Error loading image: " + filename)
+            self.source_loader    = {
+                st: sl for st, sl in zip(self.source_types, self.loaders)
+            }
+
+            self.command = "AddImage"
+
+    def getitem(self, idx):
+        idx = self.df.index.start + idx
+        image_path = self.df.loc[idx, self.source_type]
+        img_ok, img = self.source_loader[self.source_type](image_path)
+
+        if not img_ok:
+            logger.error("Error loading image: " + image_path)
+            raise Exception("Error loading image: " + image_path)
+
+        q = []
+        blobs = []
+        custom_fields = {}
+        if self.format_given:
+            custom_fields["format"] = self.df.loc[idx, IMG_FORMAT]
+        ai = self._basic_command(idx, custom_fields)
+        blobs.append(img)
+        q.append(ai)
+
+        return q, blobs
+
     def validate(self):
 
         self.header = list(self.df.columns.values)
@@ -232,3 +235,43 @@ class ImageDataCSV(CSVParser.CSVParser):
         if self.header[0] not in self.source_types:
             raise Exception(
                 f"Error with CSV file field: {self.header[0]}. Must be first field")
+
+# Update and Add Images
+class ImageUpdateCSV(SingleEntityUpdateCSV,ImageDataProcessor):
+    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+        ImageDataProcessor.__init__(self,check_image,n_download_retries)
+        SingleEntityUpdateCSV.__init__(self, "Image", filename,df,use_dask)
+        self.blobs_per_query = [1,1]
+        if not use_dask:
+            self.format_given     = IMG_FORMAT in self.header
+            self.props_keys = list(filter( lambda prop: prop not in [IMG_FORMAT,"filename"],self.props_keys))
+            self.source_type      = self.header[0]
+            if self.source_type not in self.source_types:
+                logger.error("Source not recognized: " + self.source_type)
+                raise Exception("Error loading image: " + filename)
+            self.source_loader    = {
+                st: sl for st, sl in zip(self.source_types, self.loaders)
+            }
+    def _setupkeys(self):
+        super()._setupkeys()
+        # remove image from props
+    def getitem(self,idx):
+        blob_set = []
+        [query_set,empty_blobs] = super().getitem(idx)
+        image_path = self.df.loc[idx, self.source_type]
+        img_ok, img = self.source_loader[self.source_type](image_path)
+        if not img_ok:
+            logger.error("Error loading image: " + image_path)
+            raise Exception("Error loading image: " + image_path)
+        print(query_set)
+        blob_set = [ img, img ]
+        return [query_set,blob_set]
+    def validate(self):
+
+        self.header = list(self.df.columns.values)
+
+        if self.header[0] not in self.source_types:
+            raise Exception(
+                f"Error with CSV file field: {self.header[0]}. Must be first field")
+        else:
+            SingleEntityUpdateCSV.validate(self)

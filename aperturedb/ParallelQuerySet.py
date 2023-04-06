@@ -24,7 +24,7 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
         def expand_results( orig, results ):
 
             return results
-        print("Execute Batch Sets = cpq {0} bpq {1}".format(commands_per_query,blobs_per_query))
+        logger.debug("Execute Batch Sets = Comands Per Query {0} Blobs Per Query {1}".format(commands_per_query,blobs_per_query))
         first_element = query_set[0]
 
         if not isinstance( first_element, list ):
