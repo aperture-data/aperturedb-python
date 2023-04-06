@@ -148,3 +148,4 @@ adb-python/*
 docker/notebook/aperturedata/*
 docker/tests/aperturedata/*
 docker/pytorch-gpu/aperturedata/*
+/test/input/
