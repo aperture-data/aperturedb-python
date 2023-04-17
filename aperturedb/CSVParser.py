@@ -75,7 +75,7 @@ class CSVParser(Subscriptable):
                     value = self.df.loc[idx, key]
                     if value == value:  # skips nan values
                         properties[key] = value
-                        print("property {0} is {1} of {2}".format(key,value,type(value)))
+                        #print("property {0} is {1} of {2}".format(key,value,type(value)))
 
         return properties
 
@@ -84,7 +84,6 @@ class CSVParser(Subscriptable):
         constraints = {}
         if len(self.constraints_keys) > 0:
             for key in self.constraints_keys:
-                print("PC = ",key)
                 if key.startswith("constraint_date:"):
                     prop = key[len("constraint_date:"):]  # remove prefix
                     constraints[prop] = [
@@ -93,14 +92,13 @@ class CSVParser(Subscriptable):
                     prop = key[len(CONSTRAINTS_PREFIX):]  # remove "prefix
                     constraints[prop] = ["==", self.df.loc[idx, key]]
 
-        print("parse_constraints = ",constraints)
         return constraints
-    def parse_other_constraint(self, constraint_name, df, idx):
+    def parse_other_constraint(self, constraint_name, keys, df, idx):
 
-        search_constraints = {}
-        if len(self.search_keys) > 0:
-            for key in self.search_keys:
-                print("PS = ",key)
+        other_constraints = {}
+        if len(keys) > 0:
+            for key in keys:
+                #print("PS = ",key)
                 res = re.search(f"^{constraint_name}_date(>|<)?:",key)
                 if res is not None:
                     prop = key[len(res.group(0)):]  # remove prefix
@@ -108,7 +106,7 @@ class CSVParser(Subscriptable):
 
                     if sort != ">" and sort != "<":
                         sort = "=="
-                    search_constraints[prop] = [
+                    other_constraints[prop] = [
                         sort, {"_date": self.df.loc[idx, key]}]
                 else:
                     prop = key[len(constraint_name):]  # remove "prefix
@@ -118,11 +116,11 @@ class CSVParser(Subscriptable):
                         prop = str(prop[1:])
 
                     value = self.df.loc[idx, key]
-                    search_constraints[prop] = [op, value]
-                    print("search constraint {0} is {1} of {2}".format(key,value,type(value)))
+                    other_constraints[prop] = [op, value]
+                    #print("other constraint {0} is {1} of {2}".format(key,value,type(value)))
 
-        print("parse_search = ",search_constraints)
-        return search_constraints
+        #print("parse_other = ",other_constraints)
+        return other_constraints
 
     def _parsed_command(self, idx, custom_fields: dict = None, constraints: dict = None, properties: dict = None):
         if custom_fields == None:

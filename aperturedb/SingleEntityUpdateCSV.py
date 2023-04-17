@@ -21,7 +21,6 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
     def _setupkeys(self):
         if not self.keys_set:
             if not self.use_dask:
-                print("Setting CS")
                 self.keys_set = True
                 self.props_keys       = [x for x in self.header[1:]
                                          if not ( x.startswith(CSVParser.CONSTRAINTS_PREFIX)
@@ -40,15 +39,11 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
         condition_add_failed = { "results": { 0: { "status" : [ "==", 2 ] } } }
         self.command = "Update" + self.entity
         update_constraints = self.parse_constraints(self.df,idx)
-        search_constraints = self.parse_other_constraint(SingleEntityUpdateCSV.UPDATE_CONSTRAINT_PREFIX,self.df, idx)
+        search_constraints = self.parse_other_constraint(SingleEntityUpdateCSV.UPDATE_CONSTRAINT_PREFIX, self.search_keys, self.df, idx)
         update_constraints.update(search_constraints)
         properties = self.parse_properties(self.df, idx)
-        print("UC = " ,update_constraints)
-        print("SC = ", search_constraints)
         self.constraint_keyword = "constraints"
         entity_update = self._parsed_command(idx,None,update_constraints,properties)
-        print("ADD CMD = ",entity_add)
-        print("UPDATE CMD = ",entity_update)
         query_set.append(entity_add)
         query_set.append([condition_add_failed,entity_update])
 
@@ -63,11 +58,10 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
         self._setupkeys()
         valid = True
         if not self.use_dask:
-            print("Testing CS")
-            if len(self.constraints_keys) > 0:
+            if len(self.constraints_keys) < 1:
                 logger.error("Cannot add/update " + self.entity + "; no constraint keys")
                 valid = False
-            if valid and len(self.update_constraint_keys) > 0:
+            if valid and len(self.search_keys) < 1:
                 logger.error("Cannot update " + self.entity + "; no update constraint keys")
                 valid = False
         return valid

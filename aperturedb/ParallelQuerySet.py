@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Callable
 from aperturedb.ParallelQuery import ParallelQuery
+import itertools
 import logging
 import numpy as np
 
@@ -8,6 +9,8 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# Turn on to debug constraints ( produces a lot of output )
+DEBUG_CONSTRAINTS = False
 
 # if blob_set is None, or an empty list, it is ignored.
 # if blob_set is a list, it will be given to the seed query
@@ -16,31 +19,40 @@ logger = logging.getLogger(__name__)
 
 def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable = None ):
 
+    #
+    # execute_batch_sets - executes multiple sets of queries with optional constraints on follow on sets
+    #
     def execute_batch_sets( query_set, blob_set, db, success_statuses: list[int] = [0],
             response_handler: Callable = None, commands_per_query: list[int] = -1, blobs_per_query: list[int] = -1):
 
 
-        # expand results to sparse
-        def expand_results( orig, results ):
+        logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format( len(query_set), commands_per_query,blobs_per_query))
 
-            return results
-        logger.debug("Execute Batch Sets = Comands Per Query {0} Blobs Per Query {1}".format(commands_per_query,blobs_per_query))
+        batch_size = len(query_set)
+        # test query set
         first_element = query_set[0]
-
         if not isinstance( first_element, list ):
-            print(first_element)
+            logger.error("First Element not a list: {first_element}")
             raise Exception( "Query set must be a list of lists" )
         set_total = len(first_element)
 
-        # blobs will be passed to each set only
+        # Check if blobs are a simple array or nested array of blobs
         per_set_blobs = isinstance( blob_set, list ) and len(blob_set) > 0 and isinstance( blob_set[0], list )
 
-        # method for extracting the blobs
+        # verify layout if a complex set
+        if per_set_blobs and not isinstance(blob_set[0][0],list):
+            logger.error("Expected a list of lists for the first element's blob sets")
+            raise Exception("Could not determine blob strategy; first batch element doesn't have a list of blobs for the first query set. Are you missing a list wrapping in the CVS parser?")
+
+        # define method for extracting the blobs
         blob_filter = lambda all_blobs,set_nm:all_blobs
 
         if per_set_blobs:
+            # if each query_set has blobs, we must extract out the n-th element in each blob set
             def set_blob_filter(all_blobs,set_nm):
-                return [blob_set[set_nm] for blob_set in all_blobs]
+                # the list comprehension pulls out the blob set for the requested set
+                # the blob set is then flattened as the query expects a flat array using blobs_per_query as the iterator
+                return list(itertools.chain( *[blob_set[set_nm] for blob_set in all_blobs] ))
             blob_filter = set_blob_filter
         else:
             def first_only_blobs(all_blobs,set_nm):
@@ -50,16 +62,23 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                     return []
             blob_filter = first_only_blobs
 
+        # start execution
         stored_results = {}
         db_results = []
         db_blobs = None
         for i in range(0,set_total):
 
+            # total number of blobs in this set
             blobs_this_set = len(blob_filter(blob_set,i))
-
+            expected_blobs =   blobs_per_query[i] * batch_size
             logger.info(
-                    f"Set {i} : Commands per query = {commands_per_query[0]}, Blobs per query = {blobs_this_set}"
+                    f"Set {i}: Commands per query = {commands_per_query[i]}, Blobs per query = {blobs_per_query[i]}"
             )
+            if blobs_this_set != expected_blobs:
+                logger.error(
+                    f"Set {i}: Expected {expected_blobs} blobs, but filter is returning {blobs_this_set}" 
+                    )
+            #print("Blobs This time:", blob_filter(blob_set,i))
             execute = True
 
             # now we determine if the executing set has a constraint
@@ -73,7 +92,7 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
 
             known_constraint_keys = [ "results" , "apply" ]
             constraints = None
-            # filter to optionally remove constraints when passing to executor
+            # define filter to optionally remove constraints when passing to executor
             query_filter = lambda entity,entity_results: entity[i]
 
             if i != 0 and isinstance( first_element[i],list) and len(first_element[i]) > 0:
@@ -84,8 +103,10 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
 
 
             if constraints is not None:
+                # operations for constraints
                 def check_apply_constraint( test_op, item_a,item_b):
-                    print(f"check_apply_constraint {test_op} {item_a} {item_b}")
+                    if DEBUG_CONSTRAINTS:
+                        logger.debug(f"check_apply_constraint {test_op} {item_a} {item_b}")
                     if test_op == "==":
                         return item_a == item_b
                     elif test_op == ">":
@@ -96,13 +117,16 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                         return item_a != item_b
                     else:
                         raise Exception(f"Unhandled constraint {test_op} in check_apply_constraint")
+                # function called for each row in the set to decide if a query is executed
                 def constraint_filter(single_line,single_results):
-                    single_constraints = single_line[i][0]
+                    currrent_constraints = single_line[i][0]
 
-                    print(f"SC is {single_constraints}")
-                    print(f"RC is {single_results}")
-                    if 'results' in single_constraints:
-                        result_constraints = single_constraints['results']
+                    if DEBUG_CONSTRAINTS:
+                        logger.debug(f"constraint = {single_constraints}")
+                        logger.debug(f"results = {single_results}")
+
+                    if 'results' in  current_constraints:
+                        result_constraints = current_constraints['results']
                         for result_number in result_constraints:
 
                             if len(single_results) < result_number or single_results[result_number] is None:
@@ -120,14 +144,14 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                             for result_item in target_constraints:
                                 test = target_constraints[result_item]
                                 if not result_item in target_results:
-                                    print("SR = ",target_results)
+                                    logger.debug(f"failed results = {target_results}")
                                     raise Exception(f"Failed applying constraints, requested result '{result_item}' from operation {result_number}, but none exited")
                                 # if constraint passes, apply:
                                 if check_apply_constraint( test[0], target_results[result_item], test[1] ):
                                     return single_line[i][1]
                                 else:
                                     return None
-                    elif 'apply' in single_constraints:
+                    elif 'apply' in current_constraints:
                         # apply means run the line
                         return single_line[i][1]
                     else:
@@ -138,17 +162,12 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
 
             execute = True
             local_success_statuses = [ 0 , 2 ]
-            #rq = [ query_filter(entity) for entity in query_set ]
-            #print("Running = ",rq)
-            #result_code,db_results,db_blobs = base_executor([ query_filter(entity,entity_results) for entity,entity_results in zip(query_set,],
-            print("len qs = ",len(query_set))
-            print("qs = ",query_set)
-            print("enums = ",[enum for enum in range(0,len(query_set))])
-            [print(f"#{enum} = {query_set[enum]}\n") for enum in range(0,len(query_set))]
-            print(f"= ",[resg for resg in stored_results])
-            [print(f"#{enum} = ",[stored_results[resg][enum] for resg in stored_results])  for enum in range(0,len(query_set))]
-            queries = [ query_filter(query_set[enum],[stored_results[resg][enum] for resg in stored_results])
-                        for enum in range(0,len(query_set))]
+
+            # queries are by row first, so we run query_filter on each query
+            # we pass the entire row's data, then we retrieve all of the stored results for that row
+            queries = [ query_filter(query_set[row_num],[stored_results[res_grp][row_num] for res_grp in stored_results])
+                        for row_num in range(0,len(query_set))]
+            # finally, we remove queries that were reduced to None so the base executor doesn't have to deal with them
             executable_queries = list(filter( lambda q: q is not None, queries ))
 
             if len(executable_queries) > 0:
@@ -158,20 +177,21 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
             else:
                 logger.info(f"Skipped executing set {i}, no executable queries")
 
-            # expand results so queries that didn't run show up as a None
-            off = 0
-            def insert_empty_results(result_value):
-                nonlocal off
-                if result_value is None:
-                    return None
-                else:
-                    off += 1
-                    return db_results[(off-1)]
-
-            stored_results[i] = [ insert_empty_results( q ) for q in queries ]
             if result_code == 1:
                 logger.error(f"Ran into error on set {i} in ParallQuerySet, unable to continue")
                 return 1,db_results,db_blobs
+
+            # expand results so queries that didn't run show up as a None
+            results_off = 0
+            def insert_empty_results(result_value):
+                nonlocal results_off
+                if result_value is None:
+                    return None
+                else:
+                    results_off += 1
+                    return db_results[(results_off-1)]
+
+            stored_results[i] = [ insert_empty_results( q ) for q in queries ]
 
         return 0,db_results,db_blobs # end execute_batch_sets
     return execute_batch_sets
@@ -198,6 +218,19 @@ class ParallelQuerySet(ParallelQuery):
         #    response_handler = self.generator.response_handler
 
 
+
+    def verify_generator(self,generator):
+        # first level should be grouping of commands
+        # first cmd should have a list of query sets
+        if isinstance(generator[0], list):
+            print("ok tuple")
+            cmd = generator[0]
+            if isinstance(generator[0][0], list):
+                return True
+        logger.error(
+            f"Could not determine query structure from:\n{generator[0]}")
+        logger.error(type(generator[0]))
+        sys.exit(0)
 
     def do_batch(self, db, data):
         """

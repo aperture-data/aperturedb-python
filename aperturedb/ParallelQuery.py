@@ -28,6 +28,7 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
     """
     result = 0
     logger.debug(f"Query={q}")
+    print("Blobs is ", blobs)
     r, b = db.query(q, blobs)
     logger.debug(f"Response={r}")
 
@@ -261,7 +262,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if stats:
                 self.print_stats()
         else:
-            if len(generator) > 0:
+            # allow subclass to do verification
+            if issubclass(type(self),ParallelQuery) and hasattr( self, 'verify_generator' ) and callable(self.verify_generator):
+                self.verify_generator(generator)
+            elif len(generator) > 0:
                 if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
                     # if len(generator[0]) > 0:
                     #
