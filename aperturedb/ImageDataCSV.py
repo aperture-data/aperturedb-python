@@ -7,6 +7,7 @@ import cv2
 
 from aperturedb import CSVParser
 from aperturedb.SingleEntityUpdateCSV import SingleEntityUpdateCSV
+from aperturedb.SingleEntityBlobNewestCSV import SingleEntityBlobNewestCSV
 import logging
 
 logger = logging.getLogger(__name__)
@@ -241,7 +242,7 @@ class ImageUpdateCSV(SingleEntityUpdateCSV,ImageDataProcessor):
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(self,check_image,n_download_retries)
         SingleEntityUpdateCSV.__init__(self, "Image", filename,df,use_dask)
-        self.blobs_per_query = [1,1]
+        self.blobs_per_query = [1,0]
         if not use_dask:
             self.format_given     = IMG_FORMAT in self.header
             self.props_keys = list(filter( lambda prop: prop not in [IMG_FORMAT,"filename"],self.props_keys))
@@ -252,9 +253,6 @@ class ImageUpdateCSV(SingleEntityUpdateCSV,ImageDataProcessor):
             self.source_loader    = {
                 st: sl for st, sl in zip(self.source_types, self.loaders)
             }
-    def _setupkeys(self):
-        super()._setupkeys()
-        # remove image from props
     def getitem(self,idx):
         blob_set = []
         [query_set,empty_blobs] = super().getitem(idx)
@@ -263,9 +261,15 @@ class ImageUpdateCSV(SingleEntityUpdateCSV,ImageDataProcessor):
         if not img_ok:
             logger.error("Error loading image: " + image_path)
             raise Exception("Error loading image: " + image_path)
-        print(query_set)
-        blob_set = [ img, img ]
-        return [query_set,blob_set]
+        #print(query_set)
+       # blob_set = [ [ img ], [ img ]]
+        #blob_set = [ [ f"DUMB{idx}"], [ f"YEAH{idx}" ]]
+        # element has 2 queries, each with 1 blob.
+        blob_set = [ [ img ], [ ]]
+        blob_set = [ [ f"DUMB{idx}" ], [ ]]
+        #blob_set = [ [ img ], [ img ]]
+        # must wrap the blob return for this item in a list
+        return [query_set,[blob_set]]
     def validate(self):
 
         self.header = list(self.df.columns.values)
@@ -275,3 +279,25 @@ class ImageUpdateCSV(SingleEntityUpdateCSV,ImageDataProcessor):
                 f"Error with CSV file field: {self.header[0]}. Must be first field")
         else:
             SingleEntityUpdateCSV.validate(self)
+
+class ImageForceNewestCSV(SingleEntityBlobNewestCSV,ImageDataProcessor):
+    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+        ImageDataProcessor.__init__(self,check_image,n_download_retries)
+        SingleEntityBlobNewestCSV.__init__(self, "Image", filename,df,use_dask)
+        if not use_dask:
+            self.format_given     = IMG_FORMAT in self.header
+            self.props_keys = list(filter( lambda prop: prop not in [IMG_FORMAT,"filename"],self.props_keys))
+            self.source_type      = self.header[0]
+            if self.source_type not in self.source_types:
+                logger.error("Source not recognized: " + self.source_type)
+                raise Exception("Error loading image: " + filename)
+            self.source_loader    = {
+                st: sl for st, sl in zip(self.source_types, self.loaders)
+            }
+    def read_blob(self,idx):
+        image_path = self.df.loc[idx, self.source_type]
+        img_ok, img = self.source_loader[self.source_type](image_path)
+        if not img_ok:
+            logger.error("Error loading image: " + image_path)
+            raise Exception("Error loading image: " + image_path)
+        return img

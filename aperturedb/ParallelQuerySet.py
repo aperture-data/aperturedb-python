@@ -25,6 +25,12 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
     def execute_batch_sets( query_set, blob_set, db, success_statuses: list[int] = [0],
             response_handler: Callable = None, commands_per_query: list[int] = -1, blobs_per_query: list[int] = -1):
 
+        def remove_blobs(item):
+            if isinstance(item,list):
+                item = list(map(remove_blobs,item))
+            elif isinstance(item,bytes):
+                item = "BLOB"
+            return item
 
         logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format( len(query_set), commands_per_query,blobs_per_query))
 
@@ -40,19 +46,49 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
         per_set_blobs = isinstance( blob_set, list ) and len(blob_set) > 0 and isinstance( blob_set[0], list )
 
         # verify layout if a complex set
-        if per_set_blobs and not isinstance(blob_set[0][0],list):
-            logger.error("Expected a list of lists for the first element's blob sets")
-            raise Exception("Could not determine blob strategy; first batch element doesn't have a list of blobs for the first query set. Are you missing a list wrapping in the CVS parser?")
+        if per_set_blobs:
+            first_element_blobs = blob_set[0]
+            first_query_blobs = first_element_blobs[0]
+            print(remove_blobs(blob_set[0]))
+            print(remove_blobs(blob_set[0][0]))
+            if  not isinstance(first_query_blobs,list):
+                logger.error("Expected a list of lists for the first element's blob sets")
+                expected_list = remove_blobs(first_query_blobs)
+                logger.error(f"Blob input for set is : {expected_list}, but should be a list")
+                raise Exception("Could not determine blob strategy; first batch element doesn't have a list of blobs for the first query set. Are you missing a list wrapping in the CVS parser?")
+
+            for set_i in range(len(first_element_blobs)):
+                expected_set = first_element_blobs[set_i]
+                if not isinstance(expected_set,list):
+                    without_blobs = remove_blobs(expected_set)
+                    logger.error(f"Blob input for set {set_i} for first item is : {without_blobs}, but should be a list")
+                    raise Exception(f"Could not determine blob strategy; first batch element doesn't have a list of blobs for set {set_i}")
+                if len(expected_set) != blobs_per_query[set_i]:
+                    without_blobs = remove_blobs(expected_set)
+                    logger.error(f"Blob input for set {set_i} for first item is : {without_blobs}, but expecting a length of {blobs_per_query[set_i]}")
+                    raise Exception(f"Could not executed blob strategy; first batch element's list length doesn't match blob_per_query for the set {set_i} ( {len(expected_set)} != {blobs_per_query[set_i]} )")
+
+                print(remove_blobs(expected_set))
 
         # define method for extracting the blobs
         blob_filter = lambda all_blobs,set_nm:all_blobs
 
         if per_set_blobs:
             # if each query_set has blobs, we must extract out the n-th element in each blob set
+
             def set_blob_filter(all_blobs,set_nm):
                 # the list comprehension pulls out the blob set for the requested set
                 # the blob set is then flattened as the query expects a flat array using blobs_per_query as the iterator
-                return list(itertools.chain( *[blob_set[set_nm] for blob_set in all_blobs] ))
+                print("All Blobs, {0} -> set_num {1} ".format( remove_blobs(all_blobs),set_nm))
+                print(blobs_per_query)
+                def get_blobs(i):
+                    print(f"i = {i}")
+                    print(remove_blobs(all_blobs[i]))
+                    print(f"{i}, {blobs_per_query[set_nm]}")
+                    return all_blobs[i][set_nm] if blobs_per_query[set_nm] != 0 else []
+                return list(itertools.chain( *[get_blobs(i)  for i in range(len(all_blobs))] ))
+                #return list(itertools.chain( *[all_blobs[i][set_nm] if blobs_per_query[i] != 0 else [] for i in range(all_blobs)] ))
+                #return list(itertools.chain( *[blob_set[set_nm] for blob_set in all_blobs] ))
             blob_filter = set_blob_filter
         else:
             def first_only_blobs(all_blobs,set_nm):
@@ -119,7 +155,7 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                         raise Exception(f"Unhandled constraint {test_op} in check_apply_constraint")
                 # function called for each row in the set to decide if a query is executed
                 def constraint_filter(single_line,single_results):
-                    currrent_constraints = single_line[i][0]
+                    current_constraints = single_line[i][0]
 
                     if DEBUG_CONSTRAINTS:
                         logger.debug(f"constraint = {single_constraints}")
@@ -227,6 +263,9 @@ class ParallelQuerySet(ParallelQuery):
             cmd = generator[0]
             if isinstance(generator[0][0], list):
                 return True
+            print("GEN2 IS:", type(generator[0][0]))
+        else:
+            print("GEN IS:", type(generator[0]))
         logger.error(
             f"Could not determine query structure from:\n{generator[0]}")
         logger.error(type(generator[0]))
