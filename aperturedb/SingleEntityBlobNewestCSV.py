@@ -4,10 +4,31 @@ import hashlib # for sha1
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
-# we need to update conditionally; if_not_found only works for add.
-# additionally there are two metrics in use: selection critera
-# and update critera.
-# find_<prop> is the column form to bind 
+
+# SingleEntityBlobNewestCSV
+# Update an Entity which has an associated blob to the data in the CSV
+# What this means is:
+# - If it doesn't exist, add it.
+# - If it exsits and the blob hasn't changed, update it.
+# - If it exists and the blobl has changed, delete and re-add it.
+
+# This means if these elements are part of a graph where they are linked by connections
+#  these connections will be need to be regenerated afterwards.
+
+# This class utilizes 3 conditionals
+# - normal constraint_ to select the element
+# - a series of updateif_ to determine if an update is necessary
+# - one or more prop_ and the assocaited updateif blob conditonals
+#   to determine if a update or an delete/add is appropriate
+
+# Generated fields
+#  currently blobsha1 and blobsize are the generated fields
+#  which this class creates and manages for you that allow it to make the determination
+#  - blobsha1 - the sha1 for the blob is calculated
+#  - blobsize - the length in bytes of the blob is calcualte
+#
+#  the result is then used to identify if a blob has changed.
+
 class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
     GENERATE_PROP_PREFIX = "prop_"
@@ -37,9 +58,11 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
                 self.search_keys       = [x for x in self.header[1:]
                                             if x.startswith(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX)]
 
+    # derived class interface for retrieving blob
     def read_blob(self,idx):
         raise Exception("No Blob Defined for SingleEnttityBlobNewestCSV ( requires subclass )") 
 
+    # creates generated data
     def parse_generated(self,idx,action):
         generated = None
         if action == "blobsize":
@@ -53,13 +76,13 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
         else:
             raise Exception(f"Unable to generate data for action {action}")
         return generated
+
     # filter in or out generated constraints
     def filter_generated_constraints(self,return_generated=False):
         filtered = []
         prefix_len = len(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX)
         for key in self.search_keys:
             key_postfix = key[prefix_len:]
-            # must have _ to be 
             if "_" in key_postfix:
                 (action,*proplist) = key_postfix.split('_')
                 if action in self.known_generators:
@@ -77,14 +100,13 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
             else:
                 if not return_generated:
                     filtered.append(key)
-        print(f"FGC (rg {return_generated})) = {filtered}")
         return filtered
 
+    # creat generated constraints for specific index
     def create_generated_constraints(self,idx,match=True):
         constraints = {}
         generated_keys = self.filter_generated_constraints( return_generated=True )
         prefix_len = len(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX)
-        # 
         for key in generated_keys:
             (action,*proplist) = key[prefix_len:].split('_')
             prop = '_'.join(proplist)
@@ -94,15 +116,13 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
             if cache_key in self._generated_cache:
                 v = self._generated_cache[ cache_key ]
             else:
-                print(f"CGC {key} -> {action}")
                 v = self.parse_generated(idx,action)
                 # save result
                 self._generated_cache[ cache_key ] = v
-            print(f"CGC {prop} -> {op} {v}")
             constraints[prop] = [ op , v ]
-        print("CGC = ",constraints)
         return constraints
 
+    # create generated props for specific index
     def create_generated_props(self,idx):
         prefix_len = len(SingleEntityBlobNewestCSV.GENERATE_PROP_PREFIX)
         properties = {}
@@ -118,7 +138,6 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
                 v = self.parse_generated(idx,action)
                 # save result
                 self._generated_cache[ cache_key ] = v
-            print(f"GCP {idx} {action} = {v}")
             properties[prop] = v
 
         return properties
@@ -149,17 +168,14 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
         condition_add_failed = { "results": { 0: { "status" : [ "==", 2 ] } } }
         self.command = "Update" + self.entity
         update_constraints = self.parse_constraints(self.df,idx)
-        print("Base UC = ",update_constraints)
         search_constraints = self.parse_other_constraint(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX,
                 self.filter_generated_constraints( ), self.df, idx)
-        print(" sC = ",search_constraints)
         generated_positive_constraints = self.create_generated_constraints( idx, match = True )
         update_constraints.update(search_constraints)
         update_constraints.update(generated_positive_constraints)
         properties = self.parse_properties(self.df, idx)
         self.constraint_keyword = "constraints"
         entity_update = self._parsed_command(idx,None,update_constraints,properties)
-        print(f"UPDATE CMD = {entity_update}")
 
         # Part 3
         condition_add_and_update_failed = { "results": {
@@ -181,12 +197,11 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
             
 
         blob = self.read_blob(idx)
-        #blob = "REALPNG"
+        # blobs , 1 for add set, 0 for update set, 1 for delete/add set
         blob_set = [ [ blob ] , [] , [ blob ] ]
+
         return [[query_set], [blob_set]]
 
-#        blob_set = [blob]
-#        return [[query_set], [[blob_set],[],[blob_set]]]
     def validate(self):
         self._setupkeys()
         valid = True
@@ -196,5 +211,8 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
                 valid = False
             if valid and len(self.search_keys) < 1:
                 logger.error("Cannot update " + self.entity + "; no update constraint keys")
+                valid = False
+            if len(self.filter_generated_constraints()) < 1:
+                logger.error("Cannot differentiate update and reinsert for  " + self.__class__.__name__ + ": no generated constraints for blob comparison"  )
                 valid = False
         return valid
