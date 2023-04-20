@@ -81,7 +81,8 @@ def insert_data_from_csv(db, request):
                       stats=True,
                       )
         assert loader.error_counter == 0
-        return data
+        # Preserve loader so that dask manager is not auto deleted.
+        return data, loader
 
     return insert_data_from_csv
 
