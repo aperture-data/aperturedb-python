@@ -10,13 +10,14 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # Turn on to debug constraints ( produces a lot of output )
-DEBUG_CONSTRAINTS = False
+DEBUG_CONSTRAINTS = True
 
 # if blob_set is None, or an empty list, it is ignored.
 # if blob_set is a list, it will be given to the seed query
 # if blob_set is a list of lists, each inner list will be given to the inner
 #  execution
 
+# function to create a batch set runner which injects values from the base class.
 def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable = None ):
 
     #
@@ -32,12 +33,13 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
             elif isinstance(item,tuple):
                 item = list(map(remove_blobs,item))
             elif isinstance(item,bytes):
-                item = "BLOB"
+                item = "*BLOB*"
             return item
 
         logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format( len(query_set), commands_per_query,blobs_per_query))
 
         batch_size = len(query_set)
+
         # test query set
         first_element = query_set[0]
         if not isinstance( first_element, list ):
@@ -54,7 +56,7 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
             first_query_blobs = first_element_blobs[0]
             print(remove_blobs(blob_set[0]))
             print(remove_blobs(blob_set[0][0]))
-            if  not isinstance(first_query_blobs,list):
+            if not isinstance(first_query_blobs,list):
                 logger.error("Expected a list of lists for the first element's blob sets")
                 expected_list = remove_blobs(first_query_blobs)
                 logger.error(f"Blob input for set is : {expected_list}, but should be a list")
@@ -71,43 +73,23 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                     logger.error(f"Blob input for set {set_i} for first item is : {without_blobs}, but expecting a length of {blobs_per_query[set_i]}")
                     raise Exception(f"Could not executed blob strategy; first batch element's list length doesn't match blob_per_query for the set {set_i} ( {len(expected_set)} != {blobs_per_query[set_i]} )")
 
-                print(remove_blobs(expected_set))
 
         # define method for extracting the blobs
         blob_filter = lambda all_blobs,strike_list,set_nm:all_blobs
 
+        # set blob filter based on how blobs are passed to function
         if per_set_blobs:
             # if each query_set has blobs, we must extract out the n-th element in each blob set
 
             def set_blob_filter(all_blobs,strike_list,set_nm):
                 # the list comprehension pulls out the blob set for the requested set
                 # the blob set is then flattened as the query expects a flat array using blobs_per_query as the iterator
-                print("All Blobs, {0} -> set_num {1} ".format( remove_blobs(all_blobs),set_nm))
-                print(blobs_per_query)
-                def get_blobs(i):
-                    print(f"i = {i}")
-                    print(remove_blobs(all_blobs[i]))
-                    print(f"{i}, {blobs_per_query[set_nm]}")
-                    return all_blobs[i][set_nm] if blobs_per_query[set_nm] != 0 else []
-                #return list(itertools.chain( *[get_blobs(i)  for i in range(len(all_blobs))] ))
-                #return list(itertools.chain( *[all_blobs[i][set_nm] if blobs_per_query[i] != 0 else [] for i in range(all_blobs)] ))
-
-                def ftest( fpair ):
-                    print("** fpair = ",remove_blobs(fpair), fpair[1] is not True)
-                    return fpair[1] is not True
-
-                r = list(map(lambda pair : pair[0],
-                            filter( ftest, 
-                                itertools.zip_longest(
-                        itertools.chain( *[blob_set[set_nm] for blob_set in all_blobs] ),
-                        strike_list)
-                            )))
-
-                print(remove_blobs(r))
-                print(strike_list)
+                # the flat list is them zipped with the strike list, which determines which blobs are unused
+                # the filter checks if the blob is to be struc
+                # the map pulls the remaining blobs out
 
                 return list(map( lambda pair: pair[0],
-                            filter(ftest,  # lambda pair: pair[1] is not True,
+                            filter( lambda pair: pair[1] is not True,
                                 itertools.zip_longest(
                         itertools.chain( *[blob_set[set_nm] for blob_set in all_blobs] ),
                         strike_list)
@@ -117,6 +99,7 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
         else:
             def first_only_blobs(all_blobs,strike_list,set_nm):
                 if set_nm == 0 :
+                    # same as above, without the list comprehension and flattening.
                     return list(map( lambda pair: pair[0] , filter( lambda pair: pair[1] is not False ,   itertools.zip_longest(all_blobs,strike_list))))
                 else:
                     return []
@@ -128,7 +111,9 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
         db_blobs = None
         for i in range(0,set_total):
 
+
             # total number of blobs in this set
+            # passing in [] allows for no strikes, so maximum size.
             blobs_this_set = len(blob_filter(blob_set,[],i))
             expected_blobs =   blobs_per_query[i] * batch_size
             logger.info(
@@ -138,8 +123,6 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                 logger.error(
                     f"Set {i}: Expected {expected_blobs} blobs, but filter is returning {blobs_this_set}" 
                     )
-            #print("Blobs This time:", blob_filter(blob_set,i))
-            execute = True
 
             # now we determine if the executing set has a constraint
             # in the head
@@ -156,7 +139,6 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
             query_filter = lambda entity,entity_results: entity[i]
 
             if i != 0 and isinstance( first_element[i],list) and len(first_element[i]) > 0:
-                print(f"item {i} is a list = {first_element[i]}")
                 set_component = first_element[i][0]
                 if not isinstance(set_component,list) and any( [ k in known_constraint_keys for k in set_component.keys() ] ):
                     constraints = set_component
@@ -177,27 +159,44 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                         return item_a != item_b
                     else:
                         raise Exception(f"Unhandled constraint {test_op} in check_apply_constraint")
+
+                known_constraint_keywords = ['results','apply']
                 # function called for each row in the set to decide if a query is executed
                 def constraint_filter(single_line,single_results):
                     current_constraints = single_line[i][0]
 
                     if DEBUG_CONSTRAINTS:
-                        logger.debug(f"constraint = {single_constraints}")
+                        logger.debug(f"constraint = {current_constraints}")
                         logger.debug(f"results = {single_results}")
 
                     if 'results' in  current_constraints:
                         result_constraints = current_constraints['results']
+                        passed_all_constraints = True
                         for result_number in result_constraints:
 
                             if len(single_results) < result_number or single_results[result_number] is None:
-                                raise Exception(f"Failed applying constraints, requested results from operation {result_number}, but none existed")
+                                # in theory here we have two possibilities: a user can have a correctly formed constraint which didn't execute by design 
+                                # ( which is what process here )
+                                #  or they can have a mis-configured constraint, which is harder to detect.
+                                if DEBUG_CONSTRAINTS:
+                                    logger.debug( f"Failed applying constraints, requested results from operation {result_number}, but none existed ( Query didn't run )")
+                                passed_all_constraints = False
+                                break;
 
                             # query this constraint references
                             prev_query = single_line[result_number]
 
-                            if not isinstance(prev_query,dict):
-                                raise Exception("Contraints only implemented with with single queries; query {result_number} not single item.")
-                            prev_query_cmd = [ cmd for cmd in prev_query.keys() ][0]
+                            if DEBUG_CONSTRAINTS:
+                                logger.debug(f"prev_query = {single_line[result_number]}")
+
+                            if isinstance(prev_query,dict):
+                                prev_query_cmd = [ cmd for cmd in prev_query.keys() ][0]
+                            elif isinstance(prev_query,list) and isinstance(prev_query[0], dict) \
+                                and all( map( lambda k: k in known_constraint_keywords , prev_query[0].keys() ))  \
+                                and isinstance(prev_query[1],dict):
+                                prev_query_cmd = [ cmd for cmd in prev_query[1].keys() ][0]
+                            else:
+                                raise Exception(f"Contraints only implemented with with single queries; query {result_number} not single item.")
 
                             target_results = single_results[result_number][prev_query_cmd]
                             target_constraints = result_constraints[result_number]
@@ -207,10 +206,14 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                                     logger.debug(f"failed results = {target_results}")
                                     raise Exception(f"Failed applying constraints, requested result '{result_item}' from operation {result_number}, but none exited")
                                 # if constraint passes, apply:
-                                if check_apply_constraint( test[0], target_results[result_item], test[1] ):
-                                    return single_line[i][1]
-                                else:
-                                    return None
+                                if not check_apply_constraint( test[0], target_results[result_item], test[1] ):
+                                    passed_all_constraints = False
+                                    break
+
+                        if passed_all_constraints:
+                            return single_line[i][1]
+                        else:
+                            return None
                     elif 'apply' in current_constraints:
                         # apply means run the line
                         return single_line[i][1]
@@ -220,17 +223,14 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                 query_filter = constraint_filter
 
 
-            execute = True
             local_success_statuses = [ 0 , 2 ]
 
             # queries are by row first, so we run query_filter on each query
             # we pass the entire row's data, then we retrieve all of the stored results for that row
 
-
             queries = [ query_filter(query_set[row_num],[stored_results[res_grp][row_num] for res_grp in stored_results])
                         for row_num in range(0,len(query_set))]
-            #queries = list(itertools.chain( * [ query_filter(query_set[row_num],[stored_results[res_grp][row_num] for res_grp in stored_results])
-            #            for row_num in range(0,len(query_set)) ] ) )
+
             # finally, we remove queries that were reduced to None so the base executor doesn't have to deal with them
             # and unwrap multiple commands per element into a flat list; map allows one command to process either type
             #  by wrapping all in a list.
@@ -239,10 +239,11 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                         filter( lambda q: q is not None, queries ))
                     ))
 
+            # produce strike list based on queries that are none
             blob_strike_list = list(map( lambda q: q is None, queries ))
 
+            # filter out struck blobs
             used_blobs = filter( lambda b: b is not None,  blob_filter(blob_set,blob_strike_list,i))
-            print("Blobs to base:",remove_blobs(used_blobs))
 
 
             if len(executable_queries) > 0:
@@ -274,8 +275,8 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
 
 class ParallelQuerySet(ParallelQuery):
     """
-    **Parallel and Batch Querier for ApertureDB**
-    This class provides the abstraction for partitioning data into batches,
+    **Parallel and Batch Set Querier for ApertureDB**
+    This class provides the abstraction for partitioning sets of data into batches,
     so that they may be processed using different threads.
     """
 
@@ -298,17 +299,14 @@ class ParallelQuerySet(ParallelQuery):
         # first level should be grouping of commands
         # first cmd should have a list of query sets
         if isinstance(generator[0], list):
-            print("ok tuple")
             cmd = generator[0]
             if isinstance(generator[0][0], list):
                 return True
-            print("GEN2 IS:", type(generator[0][0]))
-        else:
-            print("GEN IS:", type(generator[0]))
+
         logger.error(
             f"Could not determine query structure from:\n{generator[0]}")
         logger.error(type(generator[0]))
-        sys.exit(0)
+        return False
 
     def do_batch(self, db, data):
         """
