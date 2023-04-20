@@ -77,6 +77,7 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
             else:
                 if not return_generated:
                     filtered.append(key)
+        print(f"FGC (rg {return_generated})) = {filtered}")
         return filtered
 
     def create_generated_constraints(self,idx,match=True):
@@ -96,9 +97,10 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
                 print(f"CGC {key} -> {action}")
                 v = self.parse_generated(idx,action)
                 # save result
-                self._generated_cache[ f"{idx}_{action}" ] = v
+                self._generated_cache[ cache_key ] = v
             print(f"CGC {prop} -> {op} {v}")
             constraints[prop] = [ op , v ]
+        print("CGC = ",constraints)
         return constraints
 
     def create_generated_props(self,idx):
@@ -115,7 +117,8 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
             else:
                 v = self.parse_generated(idx,action)
                 # save result
-                self._generated_cache[ f"{idx}_{action}" ] = v
+                self._generated_cache[ cache_key ] = v
+            print(f"GCP {idx} {action} = {v}")
             properties[prop] = v
 
         return properties
@@ -146,14 +149,17 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
         condition_add_failed = { "results": { 0: { "status" : [ "==", 2 ] } } }
         self.command = "Update" + self.entity
         update_constraints = self.parse_constraints(self.df,idx)
+        print("Base UC = ",update_constraints)
         search_constraints = self.parse_other_constraint(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX,
-                self.filter_generated_constraints( self.search_keys ), self.df, idx)
+                self.filter_generated_constraints( ), self.df, idx)
+        print(" sC = ",search_constraints)
         generated_positive_constraints = self.create_generated_constraints( idx, match = True )
         update_constraints.update(search_constraints)
         update_constraints.update(generated_positive_constraints)
         properties = self.parse_properties(self.df, idx)
         self.constraint_keyword = "constraints"
         entity_update = self._parsed_command(idx,None,update_constraints,properties)
+        print(f"UPDATE CMD = {entity_update}")
 
         # Part 3
         condition_add_and_update_failed = { "results": {

@@ -25,8 +25,11 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
     def execute_batch_sets( query_set, blob_set, db, success_statuses: list[int] = [0],
             response_handler: Callable = None, commands_per_query: list[int] = -1, blobs_per_query: list[int] = -1):
 
+        # pretty printing for errors
         def remove_blobs(item):
             if isinstance(item,list):
+                item = list(map(remove_blobs,item))
+            elif isinstance(item,tuple):
                 item = list(map(remove_blobs,item))
             elif isinstance(item,bytes):
                 item = "BLOB"
@@ -71,12 +74,12 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                 print(remove_blobs(expected_set))
 
         # define method for extracting the blobs
-        blob_filter = lambda all_blobs,set_nm:all_blobs
+        blob_filter = lambda all_blobs,strike_list,set_nm:all_blobs
 
         if per_set_blobs:
             # if each query_set has blobs, we must extract out the n-th element in each blob set
 
-            def set_blob_filter(all_blobs,set_nm):
+            def set_blob_filter(all_blobs,strike_list,set_nm):
                 # the list comprehension pulls out the blob set for the requested set
                 # the blob set is then flattened as the query expects a flat array using blobs_per_query as the iterator
                 print("All Blobs, {0} -> set_num {1} ".format( remove_blobs(all_blobs),set_nm))
@@ -86,14 +89,35 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
                     print(remove_blobs(all_blobs[i]))
                     print(f"{i}, {blobs_per_query[set_nm]}")
                     return all_blobs[i][set_nm] if blobs_per_query[set_nm] != 0 else []
-                return list(itertools.chain( *[get_blobs(i)  for i in range(len(all_blobs))] ))
+                #return list(itertools.chain( *[get_blobs(i)  for i in range(len(all_blobs))] ))
                 #return list(itertools.chain( *[all_blobs[i][set_nm] if blobs_per_query[i] != 0 else [] for i in range(all_blobs)] ))
-                #return list(itertools.chain( *[blob_set[set_nm] for blob_set in all_blobs] ))
+
+                def ftest( fpair ):
+                    print("** fpair = ",remove_blobs(fpair), fpair[1] is not True)
+                    return fpair[1] is not True
+
+                r = list(map(lambda pair : pair[0],
+                            filter( ftest, 
+                                itertools.zip_longest(
+                        itertools.chain( *[blob_set[set_nm] for blob_set in all_blobs] ),
+                        strike_list)
+                            )))
+
+                print(remove_blobs(r))
+                print(strike_list)
+
+                return list(map( lambda pair: pair[0],
+                            filter(ftest,  # lambda pair: pair[1] is not True,
+                                itertools.zip_longest(
+                        itertools.chain( *[blob_set[set_nm] for blob_set in all_blobs] ),
+                        strike_list)
+                                )
+                            ))
             blob_filter = set_blob_filter
         else:
-            def first_only_blobs(all_blobs,set_nm):
+            def first_only_blobs(all_blobs,strike_list,set_nm):
                 if set_nm == 0 :
-                    return all_blobs
+                    return list(map( lambda pair: pair[0] , filter( lambda pair: pair[1] is not False ,   itertools.zip_longest(all_blobs,strike_list))))
                 else:
                     return []
             blob_filter = first_only_blobs
@@ -105,7 +129,7 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
         for i in range(0,set_total):
 
             # total number of blobs in this set
-            blobs_this_set = len(blob_filter(blob_set,i))
+            blobs_this_set = len(blob_filter(blob_set,[],i))
             expected_blobs =   blobs_per_query[i] * batch_size
             logger.info(
                     f"Set {i}: Commands per query = {commands_per_query[i]}, Blobs per query = {blobs_per_query[i]}"
@@ -201,14 +225,29 @@ def gen_execute_batch_sets( base_executor, per_batch_response_handler: Callable 
 
             # queries are by row first, so we run query_filter on each query
             # we pass the entire row's data, then we retrieve all of the stored results for that row
+
+
             queries = [ query_filter(query_set[row_num],[stored_results[res_grp][row_num] for res_grp in stored_results])
                         for row_num in range(0,len(query_set))]
+            #queries = list(itertools.chain( * [ query_filter(query_set[row_num],[stored_results[res_grp][row_num] for res_grp in stored_results])
+            #            for row_num in range(0,len(query_set)) ] ) )
             # finally, we remove queries that were reduced to None so the base executor doesn't have to deal with them
-            executable_queries = list(filter( lambda q: q is not None, queries ))
+            # and unwrap multiple commands per element into a flat list; map allows one command to process either type
+            #  by wrapping all in a list.
+            executable_queries = list( itertools.chain( *
+                    map( lambda q: q if isinstance(q, list) else [ q] ,
+                        filter( lambda q: q is not None, queries ))
+                    ))
+
+            blob_strike_list = list(map( lambda q: q is None, queries ))
+
+            used_blobs = filter( lambda b: b is not None,  blob_filter(blob_set,blob_strike_list,i))
+            print("Blobs to base:",remove_blobs(used_blobs))
+
 
             if len(executable_queries) > 0:
-                result_code,db_results,db_blobs = base_executor( executable_queries,
-                                                                blob_filter(blob_set,i), db,local_success_statuses,
+                result_code,db_results,db_blobs = base_executor( executable_queries, used_blobs,
+                                                                db,local_success_statuses,
                                                                 None,commands_per_query[i],blobs_per_query[i])
             else:
                 logger.info(f"Skipped executing set {i}, no executable queries")

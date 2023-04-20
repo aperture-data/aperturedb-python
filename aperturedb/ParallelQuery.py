@@ -28,7 +28,6 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
     """
     result = 0
     logger.debug(f"Query={q}")
-    print("Blobs is ", blobs)
     r, b = db.query(q, blobs)
     logger.debug(f"Response={r}")
 
