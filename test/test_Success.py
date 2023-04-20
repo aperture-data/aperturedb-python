@@ -12,13 +12,9 @@ class TestLoaderSuccess():
             raise AssertionError(
                 "Expected {}, got {}".format(expected, actual))
 
-    def assertTrue(self, condition):
-        if not condition:
-            raise AssertionError("Condition not true")
-
     def test_Loader(self, utils, insert_data_from_csv):
         # Assert that we have a clean slate to begin with.
-        self.assertTrue(utils.remove_all_objects())
+        assert utils.remove_all_objects() == True
         # initial load
         data = insert_data_from_csv(
             in_csv_file = "./input/persons-exist-base.adb.csv")
@@ -36,7 +32,7 @@ class TestLoaderSuccess():
         ParallelQuery.setSuccessStatus([0])
 
         # Assert that we have a clean slate to begin with.
-        self.assertTrue(utils.remove_all_objects())
+        assert utils.remove_all_objects() == True
         # initial load
         data = insert_data_from_csv(
             in_csv_file = "./input/persons-exist-base.adb.csv")
