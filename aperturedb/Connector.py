@@ -90,7 +90,7 @@ class Connector(object):
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
-                 use_ssl=True, shared_data=None):
+                 use_ssl=True, shared_data=None, authenticate=True):
 
         self.host = host
         self.port = port
@@ -101,6 +101,10 @@ class Connector(object):
 
         self._connect()
 
+        if authenticate:
+            self.authenticate(shared_data, user, password, token)
+
+    def authenticate(self, shared_data, user, password, token):
         if shared_data is None:
             self.shared_data = SimpleNamespace()
             self.shared_data.session = None

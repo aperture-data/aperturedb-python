@@ -129,6 +129,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         self.commands_per_query = 1
         self.blobs_per_query = 0
+        self.daskManager = None
 
     def generate_batch(self, data):
         """
@@ -241,9 +242,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if hasattr(generator, "use_dask") and generator.use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
-            daskmanager = DaskManager(num_workers=numthreads)
+            self.daskmanager = DaskManager(num_workers=numthreads)
 
-            results, self.total_actions_time = daskmanager.run(
+            results, self.total_actions_time = self.daskmanager.run(
                 self.db, generator, batchsize, stats=stats)
             self.actual_stats = []
             for result in results:

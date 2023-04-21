@@ -24,21 +24,21 @@ class TestEntityLoader():
         self.assertTrue(all(results))
 
         # Insert Person Nodes
-        data = insert_data_from_csv("./input/persons.adb.csv")
+        data, _ = insert_data_from_csv("./input/persons.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
 
         # Insert Images
-        data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
+        data, _ = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
 
         # Insert Connections
-        data = insert_data_from_csv(
+        data, _ = insert_data_from_csv(
             in_csv_file = "./input/connections-persons-images.adb.csv")
         self.assertEqual(
             len(data), utils.count_connections("has_image"))
 
         # Insert BBoxes
-        data = insert_data_from_csv(in_csv_file="./input/bboxes.adb.csv")
+        data, _ = insert_data_from_csv(in_csv_file="./input/bboxes.adb.csv")
         self.assertEqual(len(data), utils.count_bboxes())
 
     def test_LoaderDescriptorsImages(self, utils, insert_data_from_csv):
@@ -46,11 +46,11 @@ class TestEntityLoader():
 
         # Insert Images, images may be there already, and that case should
         # be handled correctly by contraints
-        data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
+        data, _ = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
 
         # Insert DescriptorsSet
-        data = insert_data_from_csv(
+        data, _ = insert_data_from_csv(
             in_csv_file = "./input/descriptorset.adb.csv")
         self.assertEqual(len(data), utils.count_entities("_DescriptorSet"))
 
@@ -60,7 +60,7 @@ class TestEntityLoader():
 
         total_descriptors = 0
         for setname in sets:
-            data = insert_data_from_csv(
+            data, _ = insert_data_from_csv(
                 in_csv_file = "./input/" + setname + ".adb.csv")
 
             total_descriptors += len(data)
@@ -71,7 +71,7 @@ class TestEntityLoader():
         # Assert that we have a clean slate to begin with.
         self.assertTrue(utils.remove_all_objects())
 
-        data = insert_data_from_csv(in_csv_file = "./input/blobs.adb.csv")
+        data, _ = insert_data_from_csv(in_csv_file = "./input/blobs.adb.csv")
         self.assertEqual(len(data), utils.count_entities("_Blob"))
 
         query = [{
@@ -94,14 +94,14 @@ class TestEntityLoader():
         logger.debug(f"Cleaning existing data")
         self.assertTrue(utils.remove_all_objects())
         # insert one of the images from image csv, for bboxes to refer to.
-        images = insert_data_from_csv(
+        images, _ = insert_data_from_csv(
             in_csv_file="./input/images.adb.csv", rec_count=1)
         self.assertEqual(len(images), 1)
 
         # Insert BBoxes with repeated entries.
         # There is just one unique entry in the input csv.
         logger.debug(f"Inserting bounding box data")
-        boxes = insert_data_from_csv(
+        boxes, _ = insert_data_from_csv(
             in_csv_file="./input/bboxes-constraints.adb.csv")
         self.assertEqual(3, len(boxes))
         self.assertEqual(1, utils.count_bboxes())
@@ -115,16 +115,18 @@ class TestURILoader():
 
     def test_S3Loader(self, utils, insert_data_from_csv):
         self.assertEqual(utils.remove_all_objects(), True)
-        data = insert_data_from_csv(in_csv_file = "./input/s3_images.adb.csv")
+        data, _ = insert_data_from_csv(
+            in_csv_file = "./input/s3_images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
 
     def test_HttpImageLoader(self, utils, insert_data_from_csv):
         self.assertEqual(utils.remove_all_objects(), True)
-        data = insert_data_from_csv(
+        data, _ = insert_data_from_csv(
             in_csv_file = "./input/http_images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
 
     def test_GSImageLoader(self, utils, insert_data_from_csv):
         self.assertEqual(utils.remove_all_objects(), True)
-        data = insert_data_from_csv(in_csv_file = "./input/gs_images.adb.csv")
+        data, _ = insert_data_from_csv(
+            in_csv_file = "./input/gs_images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
