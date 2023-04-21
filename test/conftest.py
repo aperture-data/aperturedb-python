@@ -53,9 +53,6 @@ def db(request):
 
 @pytest.fixture()
 def insert_data_from_csv(db, request):
-    def insert_data_from_csv(in_csv_file, rec_count=-1, expected_error_count=0, loader_result_lambda=None):
-
-
     """
     A helper function that processes various .csv files supported
     by aperturedb, and maps a corresponding DataCSV class that can be
