@@ -58,7 +58,7 @@ def insert_data_from_csv(db, request):
     by aperturedb, and maps a corresponding DataCSV class that can be
     used to parse semantics of the .csv file
     """
-    def insert_data_from_csv((in_csv_file, rec_count=-1, expected_error_count=0, loader_result_lambda=None):
+    def insert_data_from_csv(in_csv_file, rec_count=-1, expected_error_count=0, loader_result_lambda=None):
         if rec_count > 0 and rec_count < 80:
             request.param = False
             print("Not enough records to test parallel loader. Using serial loader.")
