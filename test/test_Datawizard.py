@@ -17,7 +17,7 @@ logger = logging.getLogger(__file__)
 
 class TestDataWizardEntities():
     def test_get_persons(self, insert_data_from_csv, db):
-        loaded = insert_data_from_csv(in_csv_file="./input/persons.adb.csv")
+        loaded, _ = insert_data_from_csv(in_csv_file="./input/persons.adb.csv")
         all_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person"))
         assert len(all_persons) == len(loaded)
@@ -62,7 +62,8 @@ class TestDataWizardEntities():
 
 class TestDataWizardImages():
     def test_get_images(self, insert_data_from_csv, db):
-        loaded = insert_data_from_csv("./input/images.adb.csv", rec_count=10)
+        loaded, _ = insert_data_from_csv(
+            "./input/images.adb.csv", rec_count=10)
         images = Images.retrieve(db, Query.spec(limit=10))
         assert isinstance(
             images, Images), f"{type(images)} is not an instance of Images"
@@ -73,7 +74,7 @@ class TestDataWizardImages():
 
 class TestDataWizardBlobs():
     def test_get_blobs(self, insert_data_from_csv, db):
-        loaded = insert_data_from_csv("./input/blobs.adb.csv", rec_count=10)
+        loaded, _ = insert_data_from_csv("./input/blobs.adb.csv", rec_count=10)
         blobs = Blobs.retrieve(db, Query.spec(limit=10))
         assert isinstance(
             blobs, Blobs), f"blobs is not an instance of Blobs = {blobs}"
@@ -84,8 +85,10 @@ class TestDataWizardBlobs():
 
 class TestDataWizardBoundingBoxes():
     def test_get_bounding_boxes(self, insert_data_from_csv, db):
-        loaded = insert_data_from_csv("./input/images.adb.csv", rec_count=10)
-        loaded = insert_data_from_csv("./input/bboxes.adb.csv", rec_count=10)
+        loaded, _ = insert_data_from_csv(
+            "./input/images.adb.csv", rec_count=10)
+        loaded, _ = insert_data_from_csv(
+            "./input/bboxes.adb.csv", rec_count=10)
         bboxes = BoundingBoxes.retrieve(db, Query.spec(limit=10))
         assert isinstance(
             bboxes, BoundingBoxes), f"bboxes is not an instance of BoundingBoxes = {bboxes}"
