@@ -453,8 +453,9 @@ class Utils(object):
         try:
             res, _ = self.connector.query(q)
 
-            sets = [ent["_name"]
-                    for ent in res[0]["FindDescriptorSet"]["entities"]]
+            if res[0]["FindDescriptorSet"]["returned"] > 0:
+                sets = [ent["_name"]
+                        for ent in res[0]["FindDescriptorSet"]["entities"]]
         except BaseException as e:
             logger.error(self.connector.get_last_response_str())
             raise e
