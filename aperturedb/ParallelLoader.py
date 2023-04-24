@@ -21,16 +21,17 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         schema = schema_result[0]["GetSchema"]
         existing_indices = set()
         for index_type in [["entity", "entities"], ["connection", "connections"]]:
-            if (index_type[1] in schema) and ("classes" in schema[index_type[1]]):
-                for cls_name, cls_schema in enumerate(schema[index_type[1]]["classes"]):
-                    if "properties" in cls_schema:
-                        for prop_name, prop_schema in enumerate(cls_schema):
-                            if prop_schema[1]:  # indicates property has an index
-                                existing_indices.add({
-                                    "index_type": index_type[0],
-                                    "class": cls_name,
-                                    "property": prop_name
-                                })
+            if index_type[1] in schema:
+                if "classes" in schema[index_type[1]]:
+                    for cls_name, cls_schema in enumerate(schema[index_type[1]]["classes"]):
+                        if "properties" in cls_schema:
+                            for prop_name, prop_schema in enumerate(cls_schema):
+                                if prop_schema[1]:  # indicates property has an index
+                                    existing_indices.add({
+                                        "index_type": index_type[0],
+                                        "class": cls_name,
+                                        "property": prop_name
+                                    })
 
     def create_indices(self, indices):
         if len(indices) == 0:
