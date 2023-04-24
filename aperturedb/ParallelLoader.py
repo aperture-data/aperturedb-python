@@ -20,8 +20,8 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         schema_result, _ = self.db.query([{"GetSchema": {}}])
         schema = schema_result[0]["GetSchema"]
         existing_indices = set()
-        for index_type in (("entity", "entities"), ("connection", "connections")):
-            if index_type[1] in schema and "classes" in schema[index_type[1]]:
+        for index_type in [["entity", "entities"], ["connection", "connections"]]:
+            if (index_type[1] in schema) and ("classes" in schema[index_type[1]]):
                 for cls_name, cls_schema in enumerate(schema[index_type[1]]["classes"]):
                     if "properties" in cls_schema:
                         for prop_name, prop_schema in enumerate(cls_schema):
