@@ -17,6 +17,22 @@ logger = logging.getLogger(__name__)
 class DaskManager:
     def __init__(self, num_workers: int = -1):
         self.__num_workers = num_workers
+        # The -1 magic number is to use as many 90% of the cores (1 worker per core).
+        # This can be overridden by the user.
+        # Create a pool of workers.
+        # TODO: see if the same pool can be reused for multiple tasks.
+        workers = self.__num_workers if self.__num_workers != \
+            -1 else int(0.9 * mp.cpu_count())
+
+        self._cluster = LocalCluster(n_workers=workers)
+        self._cluster.shutdown_on_close = False
+        self._client = Client(self._cluster)
+        dask.config.set(scheduler="distributed")
+
+    def __del__(self):
+        logger.info(".......Shutting cluster.........")
+        self._client.close()
+        self._cluster.close()
 
     def run(self, db: Connector, generator, batchsize, stats):
         def process(df, host, port, use_ssl, session, connnector_type):
@@ -50,26 +66,19 @@ class DaskManager:
 
             return metrics
 
-        # The -1 magic number is to use as many 90% of the cores (1 worker per core).
-        # This can be overridden by the user.
-        # Create a pool of workers.
-        # TODO: see if the same pool can be reused for multiple tasks.
-        workers = self.__num_workers if self.__num_workers != \
-            -1 else int(0.9 * mp.cpu_count())
-        with LocalCluster(n_workers=workers) as cluster, Client(cluster) as client:
-            dask.config.set(scheduler="distributed")
-            start_time = time.time()
-            # Passing DB as an argument to function is not supported by Dask,
-            # so we pass session and host/port instead.
-            computation = generator.df.map_partitions(
-                process,
-                db.host,
-                db.port,
-                db.use_ssl,
-                db.shared_data.session,
-                type(db))
-            computation = computation.persist()
-            if stats:
-                progress(computation)
-            results = computation.compute()
+        start_time = time.time()
+        # Passing DB as an argument to function is not supported by Dask,
+        # so we pass session and host/port instead.
+        computation = generator.df.map_partitions(
+            process,
+            db.host,
+            db.port,
+            db.use_ssl,
+            db.shared_data.session,
+            type(db))
+        computation = computation.persist()
+        if stats:
+            progress(computation)
+        results = computation.compute()
+
         return results, time.time() - start_time
