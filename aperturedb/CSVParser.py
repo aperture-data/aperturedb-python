@@ -32,11 +32,9 @@ class CSVParser(Subscriptable):
         So the Data CSV has another signature, where the df is passed explicitly.
     """
 
-    def __init__(self, filename, index_class=None, index_type="entity", df=None, use_dask=False):
+    def __init__(self, filename, df=None, use_dask=False):
         self.use_dask = use_dask
         self.filename = filename
-        self.index_class = index_class
-        self.index_type = index_type
 
         if not use_dask:
             if df is None:
@@ -64,35 +62,6 @@ class CSVParser(Subscriptable):
 
     def get_indices(self):
         raise NotImplementedError
-
-    # def _create_indices(self, db):
-    #     if len(self.constraints_keys) == 0:
-    #         return
-
-    #     schema_result, _ = db.query([{"GetSchema": {}}])
-    #     try:
-    #         plural_index_type = "entities" if self.index_type == "entity" else "connections"
-    #         existing_indices = {
-    #             k for k in schema_result[0]["GetSchema"][plural_index_type]["classes"][self.index_class].keys()}
-    #     except:
-    #         existing_indices = set()
-
-    #     new_indices = self.constraints_keys - existing_indices
-    #     if len(new_indices) == 0:
-    #         return
-
-    #     logger.info(
-    #         f"Creating {self.index_type} indices of class '{self.index_class}' for properties {new_indices}.")
-
-    #     create_indices = [{"CreateIndex": {
-    #         "index_type":   self.index_type,
-    #         "class":        self.index_class,
-    #         "property_key": key}} for key in new_indices]
-
-    #     res, _ = db.query(create_indices)
-
-    #     if self.check_status(res) != 0:
-    #         logger.warn("Failed to create indices; ingestion will be slow.")
 
     def parse_properties(self, df, idx):
 
