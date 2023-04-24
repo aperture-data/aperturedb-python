@@ -16,7 +16,7 @@ class TestLoaderSuccess():
         # Assert that we have a clean slate to begin with.
         assert utils.remove_all_objects() == True
         # initial load
-        data = insert_data_from_csv(
+        data, _ = insert_data_from_csv(
             in_csv_file = "./input/persons-exist-base.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
 
