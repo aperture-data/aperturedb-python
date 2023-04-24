@@ -68,7 +68,14 @@ class ConnectionDataCSV(CSVParser):
             self.dst_class   = self.header[2].split("@")[0]
             # Pandas appends a .n to the column name if there is a duplicate
             self.dst_key     = self.header[2].split("@")[1].split(".")[0]
-            self.command     = "AddConnection"
+            self.command = "AddConnection"
+
+    def get_indices(self):
+        return [{
+            "index_type": "connection",
+            "class": cls,
+            "property": prop
+        } for prop in self.constraints_keys for cls in self.df[CONNECTION_CLASS].unique()]
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

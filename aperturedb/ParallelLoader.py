@@ -16,10 +16,48 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         super().__init__(db, dry_run=dry_run)
         self.type = "element"
 
-    def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
+    def get_existing_indices(self):
+        schema_result, _ = self.db.query([{"GetSchema": {}}])
+        schema = schema_result[0]["GetSchema"]
+        existing_indices = set()
+        for index_type in (("entity", "entities"), ("connection", "connections")):
+            if index_type[1] in schema and "classes" in schema[index_type[1]]:
+                for cls_name, cls_schema in enumerate(schema[index_type[1]]["classes"]):
+                    if "properties" in cls_schema:
+                        for prop_name, prop_schema in enumerate(cls_schema):
+                            if prop_schema[1]:  # indicates property has an index
+                                existing_indices.add({
+                                    "index_type": index_type[0],
+                                    "class": cls_name,
+                                    "property": prop_name
+                                })
+
+    def create_indices(self, indices):
+        if len(indices) == 0:
+            return
+
+        existing_indices = self.get_existing_indices()
+        new_indices = indices - existing_indices
+        if len(new_indices) == 0:
+            return
+
+        logger.info(
+            f"Creating {len(new_indices)} indices: {new_indices}.")
+
+        create_indices = [{"CreateIndex": idx} for idx in new_indices]
+
+        res, _ = self.db.query(
+            create_indices)
+
+        if self.db.check_status(res) != 0:
+            logger.warn(
+                "Failed to create indices; ingestion will be slow.")
+
+    def ingest(self, csv_data, batchsize=1, numthreads=4, stats=False):
+        self.create_indices(csv_data.get_indices())
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
-        self.query(generator, batchsize, numthreads, stats)
+        self.query(csv_data, batchsize, numthreads, stats)
 
     def print_stats(self):
 

@@ -48,6 +48,13 @@ class EntityDataCSV(CSVParser.CSVParser):
                                      if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.command = "AddEntity"
 
+    def get_indices(self):
+        return [{
+            "index_type": "entity",
+            "class": cls,
+            "property": prop
+        } for prop in self.constraints_keys for cls in self.df[ENTITY_CLASS].unique()]
+
     def getitem(self, idx):
         idx = self.df.index.start + idx
         eclass = self.df.loc[idx, ENTITY_CLASS]

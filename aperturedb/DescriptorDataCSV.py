@@ -80,6 +80,13 @@ class DescriptorDataCSV(CSVParser.CSVParser):
                                      if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.command = "AddDescriptor"
 
+    def get_indices(self):
+        return [{
+            "index_type": "entity",
+            "class": "_Descriptor",
+            "property": prop
+        } for prop in self.constraints_keys]
+
     def getitem(self, idx):
         idx = self.df.index.start + idx
         filename = self.df.loc[idx, HEADER_PATH]

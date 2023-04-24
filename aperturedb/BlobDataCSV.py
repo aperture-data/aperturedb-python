@@ -57,6 +57,13 @@ class BlobDataCSV(CSVParser.CSVParser):
                                      if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.command = "AddBlob"
 
+    def get_indices(self):
+        return [{
+            "index_type": "entity",
+            "class": "_Blob",
+            "property": prop
+        } for prop in self.constraints_keys]
+
     def getitem(self, idx):
         idx = self.df.index.start + idx
         filename = self.df.loc[idx, BLOB_PATH]

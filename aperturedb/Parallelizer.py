@@ -70,7 +70,8 @@ class Parallelizer:
         a = [th.join() for th in thread_arr]
 
         # Update progress bar to completion
-        self.pb.update(1)
+        if self.stats:
+            self.pb.update(1)
 
         self.total_actions_time = time.time() - start_time
 

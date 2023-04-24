@@ -55,6 +55,13 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
                                      if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
             self.command = "AddDescriptorSet"
 
+    def get_indices(self):
+        return [{
+            "index_type": "entity",
+            "class": "_DescriptorSet",
+            "property": prop
+        } for prop in self.constraints_keys]
+
     def getitem(self, idx):
 
         # Metrics/Engine can be of the form:
