@@ -63,6 +63,9 @@ class DaskManager:
                 count += 1
                 metrics.times_arr.extend(loader.times_arr)
                 metrics.error_counter += loader.error_counter
+                metrics.objects_existed += loader.get_objects_existed()
+                metrics.suceeded_queries += loader.get_suceeded_queries()
+                metrics.suceeded_commands += loader.get_suceeded_commands()
 
             return metrics
 
