@@ -51,7 +51,8 @@ class CSVParser(Subscriptable):
                 self.filename,
                 blocksize = os.path.getsize(self.filename) // (cores_used * PARTITIONS_PER_CORE))
 
-        if len(self.df) == 0:
+        # len for dask dataframe needs a client.
+        if not use_dask and len(self.df) == 0:
             logger.error("Dataframe empty. Is the CSV file ok?")
 
         self.df = self.df.astype('object')
@@ -59,7 +60,6 @@ class CSVParser(Subscriptable):
         self.validate()
 
     def __len__(self):
-
         return len(self.df.index)
 
     def parse_properties(self, df, idx):

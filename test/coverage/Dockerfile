@@ -1,2 +1,2 @@
 FROM nginx:alpine
-COPY htmlcov /usr/share/nginx/html
+COPY output/ /usr/share/nginx/html
