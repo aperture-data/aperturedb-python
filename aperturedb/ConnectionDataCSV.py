@@ -58,10 +58,10 @@ class ConnectionDataCSV(CSVParser):
         super().__init__(filename, df=df, use_dask=use_dask)
 
         self.props_keys       = [x for x in self.header[3:]
-                                    if not x.startswith(CONSTRAINTS_PREFIX)]
+                                 if not x.startswith(CONSTRAINTS_PREFIX)]
 
         self.constraints_keys = [x for x in self.header[3:]
-                                    if x.startswith(CONSTRAINTS_PREFIX)]
+                                 if x.startswith(CONSTRAINTS_PREFIX)]
 
         self.src_class   = self.header[1].split("@")[0]
         self.src_key     = self.header[1].split("@")[1]

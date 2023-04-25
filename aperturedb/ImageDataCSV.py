@@ -79,11 +79,11 @@ class ImageDataCSV(CSVParser.CSVParser):
 
         self.format_given     = IMG_FORMAT in self.header
         self.props_keys       = [x for x in self.header[1:]
-                                    if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+                                 if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.props_keys       = [
             x for x in self.props_keys if x != IMG_FORMAT]
         self.constraints_keys = [x for x in self.header[1:]
-                                    if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+                                 if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
 
         self.source_type      = self.header[0]
 

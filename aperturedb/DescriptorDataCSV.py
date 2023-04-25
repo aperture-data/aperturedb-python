@@ -75,9 +75,9 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         self.has_label = False
 
         self.props_keys       = [x for x in self.header[3:]
-                                    if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+                                 if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.constraints_keys = [x for x in self.header[3:]
-                                    if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+                                 if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.command = "AddDescriptor"
 
     def get_indices(self):
