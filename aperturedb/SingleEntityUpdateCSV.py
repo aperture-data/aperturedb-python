@@ -10,8 +10,6 @@ class SingleEntityUpdateCSV(CSVParser.CSVParser):
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
     def __init__(self, entity_class, filename, df=None, use_dask=False):
         self.entity = entity_class
-        #self.command = "Add" + entity_class
-        #self.findcommand = "Update" + entity_class
         self.keys_set = False
         super().__init__(filename, df=df, use_dask=use_dask)
         self.blobs_per_query = [0,0]

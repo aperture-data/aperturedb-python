@@ -75,7 +75,6 @@ class CSVParser(Subscriptable):
                     value = self.df.loc[idx, key]
                     if value == value:  # skips nan values
                         properties[key] = value
-                        #print("property {0} is {1} of {2}".format(key,value,type(value)))
 
         return properties
 
@@ -98,7 +97,6 @@ class CSVParser(Subscriptable):
         other_constraints = {}
         if len(keys) > 0:
             for key in keys:
-                #print("PS = ",key)
                 res = re.search(f"^{constraint_name}_date(>|<)?:",key)
                 if res is not None:
                     prop = key[len(res.group(0)):]  # remove prefix
@@ -117,9 +115,7 @@ class CSVParser(Subscriptable):
 
                     value = self.df.loc[idx, key]
                     other_constraints[prop] = [op, value]
-                    #print("other constraint {0} is {1} of {2}".format(key,value,type(value)))
 
-        #print("parse_other = ",other_constraints)
         return other_constraints
 
     def _parsed_command(self, idx, custom_fields: dict = None, constraints: dict = None, properties: dict = None):

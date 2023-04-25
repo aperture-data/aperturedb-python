@@ -139,7 +139,6 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
         q     = [cmd for query in data for cmd in query[0]]
         blobs = [blob for query in data for blob in query[1]]
-        #print("generate_batch:",q)
 
         return q, blobs
 

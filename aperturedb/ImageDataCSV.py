@@ -261,13 +261,8 @@ class ImageUpdateCSV(SingleEntityUpdateCSV,ImageDataProcessor):
         if not img_ok:
             logger.error("Error loading image: " + image_path)
             raise Exception("Error loading image: " + image_path)
-        #print(query_set)
-       # blob_set = [ [ img ], [ img ]]
-        #blob_set = [ [ f"DUMB{idx}"], [ f"YEAH{idx}" ]]
         # element has 2 queries, each with 1 blob.
         blob_set = [ [ img ], [ ]]
-        blob_set = [ [ f"DUMB{idx}" ], [ ]]
-        #blob_set = [ [ img ], [ img ]]
         # must wrap the blob return for this item in a list
         return [query_set,[blob_set]]
     def validate(self):
