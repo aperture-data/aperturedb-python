@@ -65,9 +65,11 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                 "Failed to create indices; ingestion will be slow.")
             logger.warning(res)
 
-    def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
+    def query_setup(self, generator):
         if hasattr(generator, "get_indices"):
             self.create_indices(generator.get_indices())
+
+    def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
         self.query(generator, batchsize, numthreads, stats)
