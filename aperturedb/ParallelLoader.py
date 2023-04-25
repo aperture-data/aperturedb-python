@@ -2,7 +2,6 @@
 from aperturedb import ParallelQuery
 
 import numpy as np
-import json
 import logging
 logger = logging.getLogger(__name__)
 
