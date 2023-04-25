@@ -73,19 +73,19 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         super().__init__(filename, df=df, use_dask=use_dask)
         self.npy_arrays = {}
         self.has_label = False
-        if not use_dask:
-            self.props_keys       = [x for x in self.header[3:]
-                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.constraints_keys = [x for x in self.header[3:]
-                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.command = "AddDescriptor"
+
+        self.props_keys       = [x for x in self.header[3:]
+                                    if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+        self.constraints_keys = [x for x in self.header[3:]
+                                    if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+        self.command = "AddDescriptor"
 
     def get_indices(self):
-        return [{
-            "index_type": "entity",
-            "class": "_Descriptor",
-            "property": prop
-        } for prop in self.constraints_keys]
+        return {
+            "entity": {
+                "_Descriptor": self.get_indexed_properties()
+            }
+        }
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

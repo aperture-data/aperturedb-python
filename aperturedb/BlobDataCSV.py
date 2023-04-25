@@ -50,19 +50,19 @@ class BlobDataCSV(CSVParser.CSVParser):
     def __init__(self, filename, df=None, use_dask=False):
 
         super().__init__(filename, df=df, use_dask=use_dask)
-        if not use_dask:
-            self.props_keys       = [x for x in self.header[1:]
-                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX) and x != BLOB_PATH]
-            self.constraints_keys = [x for x in self.header[1:]
-                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.command = "AddBlob"
+
+        self.props_keys = [x for x in self.header[1:]
+                           if not x.startswith(CSVParser.CONSTRAINTS_PREFIX) and x != BLOB_PATH]
+        self.constraints_keys = [x for x in self.header[1:]
+                                 if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+        self.command = "AddBlob"
 
     def get_indices(self):
-        return [{
-            "index_type": "entity",
-            "class": "_Blob",
-            "property": prop
-        } for prop in self.constraints_keys]
+        return {
+            "entity": {
+                "_Blob": self.get_indexed_properties()
+            }
+        }
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

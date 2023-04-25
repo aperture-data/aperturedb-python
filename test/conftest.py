@@ -88,6 +88,16 @@ def insert_data_from_csv(db, request):
                       numthreads=8,
                       stats=True,
                       )
+
+        # make sure all indices are present
+        if hasattr(data, "get_indices"):
+            expected_indices = data.get_indices()
+            observed_indices = loader.get_existing_indices()
+            for tp, classes in expected_indices.items():
+                for cls, props in classes.items():
+                    for prop in props:
+                        assert prop in observed_indices[tp][cls]
+
         assert loader.error_counter == 0
         # Preserve loader so that dask manager is not auto deleted.
         # ---------------

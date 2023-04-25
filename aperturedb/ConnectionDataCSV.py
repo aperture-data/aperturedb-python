@@ -56,26 +56,26 @@ class ConnectionDataCSV(CSVParser):
 
     def __init__(self, filename, df=None, use_dask=False):
         super().__init__(filename, df=df, use_dask=use_dask)
-        if not use_dask:
-            self.props_keys       = [x for x in self.header[3:]
-                                     if not x.startswith(CONSTRAINTS_PREFIX)]
 
-            self.constraints_keys = [x for x in self.header[3:]
-                                     if x.startswith(CONSTRAINTS_PREFIX)]
+        self.props_keys       = [x for x in self.header[3:]
+                                    if not x.startswith(CONSTRAINTS_PREFIX)]
 
-            self.src_class   = self.header[1].split("@")[0]
-            self.src_key     = self.header[1].split("@")[1]
-            self.dst_class   = self.header[2].split("@")[0]
-            # Pandas appends a .n to the column name if there is a duplicate
-            self.dst_key     = self.header[2].split("@")[1].split(".")[0]
-            self.command     = "AddConnection"
+        self.constraints_keys = [x for x in self.header[3:]
+                                    if x.startswith(CONSTRAINTS_PREFIX)]
+
+        self.src_class   = self.header[1].split("@")[0]
+        self.src_key     = self.header[1].split("@")[1]
+        self.dst_class   = self.header[2].split("@")[0]
+        # Pandas appends a .n to the column name if there is a duplicate
+        self.dst_key     = self.header[2].split("@")[1].split(".")[0]
+        self.command     = "AddConnection"
 
     def get_indices(self):
-        return [{
-            "index_type": "connection",
-            "class": cls,
-            "property": prop
-        } for prop in self.constraints_keys for cls in self.df[CONNECTION_CLASS].unique()]
+        return {
+            "connection": {
+                cls: self.get_indexed_properties() for cls in self.df[CONNECTION_CLASS].unique()
+            }
+        }
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

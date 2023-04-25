@@ -52,11 +52,11 @@ class VideoDataCSV(CSVParser.CSVParser):
         self.command = "AddVideo"
 
     def get_indices(self):
-        return [{
-            "index_type": "entity",
-            "class": "_Video",
-            "property": prop
-        } for prop in self.constraints_keys]
+        return {
+            "entity": {
+                "_Video": self.get_indexed_properties()
+            }
+        }
 
     def getitem(self, idx):
         filename   = self.df.loc[idx, HEADER_PATH]

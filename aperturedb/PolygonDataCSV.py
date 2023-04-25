@@ -71,11 +71,11 @@ class PolygonDataCSV(CSVParser.CSVParser):
         self.command = "AddPolygon"
 
     def get_indices(self):
-        return [{
-            "index_type": "entity",
-            "class": "_Polygon",
-            "property": prop
-        } for prop in self.constraints_keys]
+        return {
+            "entity": {
+                "_Polygon": self.get_indexed_properties()
+            }
+        }
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

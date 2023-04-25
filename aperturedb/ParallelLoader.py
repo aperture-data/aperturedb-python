@@ -2,6 +2,7 @@
 from aperturedb import ParallelQuery
 
 import numpy as np
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -19,26 +20,36 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     def get_existing_indices(self):
         schema_result, _ = self.db.query([{"GetSchema": {}}])
         schema = schema_result[0]["GetSchema"]
-        existing_indices = set()
-        for index_type in [["entity", "entities"], ["connection", "connections"]]:
-            if index_type[1] in schema:
-                if "classes" in schema[index_type[1]] or {}:
-                    for cls_name, cls_schema in enumerate(schema[index_type[1]]["classes"] or {}):
-                        if "properties" in cls_schema:
-                            for prop_name, prop_schema in enumerate(cls_schema or {}):
-                                if prop_schema[1]:  # indicates property has an index
-                                    existing_indices.add({
-                                        "index_type": index_type[0],
-                                        "class": cls_name,
-                                        "property": prop_name
-                                    })
+        existing_indices = {}
+        if schema:
+            for index_type in (("entity", "entities"), ("connection", "connections")):
+                foo = schema.get(index_type[1]) or {}
+                bar = foo.get("classes") or {}
+                for cls_name, cls_schema in bar.items():
+                    props = cls_schema.get("properties") or {}
+                    for prop_name, prop_schema in props.items():
+                        if prop_schema[1]:  # indicates property has an index
+                            existing_indices.setdefault(index_type[0], {}).setdefault(
+                                cls_name, set()).add(prop_name)
+        return existing_indices
 
     def create_indices(self, indices):
         if len(indices) == 0:
             return
 
         existing_indices = self.get_existing_indices()
-        new_indices = indices - existing_indices
+        new_indices = []
+        for tp, classes in indices.items():
+            ex_classes = existing_indices.get(tp, {})
+            for cls, props in classes.items():
+                ex_props = ex_classes.get(cls, set())
+                for prop in props - ex_props:
+                    new_indices.append({
+                        "index_type": tp,
+                        "class": cls,
+                        "property_key": prop
+                    })
+
         if len(new_indices) == 0:
             return
 
@@ -51,14 +62,16 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             create_indices)
 
         if self.db.check_status(res) != 0:
-            logger.warn(
+            logger.warning(
                 "Failed to create indices; ingestion will be slow.")
+            logger.warning(res)
 
-    def ingest(self, csv_data, batchsize=1, numthreads=4, stats=False):
-        self.create_indices(csv_data.get_indices())
+    def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
+        if hasattr(generator, "get_indices"):
+            self.create_indices(generator.get_indices())
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
-        self.query(csv_data, batchsize, numthreads, stats)
+        self.query(generator, batchsize, numthreads, stats)
 
     def print_stats(self):
 

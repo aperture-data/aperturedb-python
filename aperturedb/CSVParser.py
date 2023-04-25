@@ -60,6 +60,11 @@ class CSVParser(Subscriptable):
     def __len__(self):
         return len(self.df.index)
 
+    def get_indexed_properties(self):
+        if self.constraints_keys:
+            return {k[len(CONSTRAINTS_PREFIX):] for k in self.constraints_keys}
+        return set()
+
     def get_indices(self):
         raise NotImplementedError
 
