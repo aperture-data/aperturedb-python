@@ -38,7 +38,8 @@ class Utils(object):
 
     def execute(self, query, blobs=[], success_statuses=[0]):
         try:
-            rc, r, b = execute_batch(query, blobs, self.connector, success_statuses=success_statuses)
+            rc, r, b = execute_batch(
+                query, blobs, self.connector, success_statuses=success_statuses)
         except BaseException as e:
             logger.error(self.connector.get_last_response_str())
             raise e
