@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def execute_batch(q, blobs, db,
-                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0):
+                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0, accept_status=[0]):
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -72,7 +72,7 @@ def execute_batch(q, blobs, db,
     if isinstance(r, dict) and db.last_response['status'] != 0:
         logger.error(f"Failed query = {q} with response = {r}")
         result = 1
-    if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
+    if isinstance(r, list) and not all([v['status'] in accept_status for i in r for k, v in i.items()]):
         logger.warning(
             f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
         result = 2
