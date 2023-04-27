@@ -181,7 +181,7 @@ class Utils(object):
         }]
 
         try:
-            self.execute(q, accept_status=[0,2])
+            self.execute(q, success_statuses=[0, 2])
         except:
             return False
 
