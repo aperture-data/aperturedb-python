@@ -298,6 +298,16 @@ def generate_descriptorset(names, dims):
     df.to_csv("input/descriptorset.adb.csv", index=False)
 
 
+def generate_partial_load():
+
+    df = pd.read_csv("input/persons.adb.csv")
+    base = df.head(10)
+    base.to_csv("input/persons-exist-base.adb.csv", index=False)
+    # causes 3 overlaps
+    overlapped = df.head(12).tail(5)
+    overlapped.to_csv("input/persons-some-exist.adb.csv", index=False)
+
+
 def main(params):
 
     persons = generate_person_csv(params.multiplier)
@@ -315,6 +325,8 @@ def main(params):
     generate_descriptorset(desc_name, desc_dims)
     for name, dims in zip(desc_name, desc_dims):
         generate_descriptors(images, name, dims)
+
+    generate_partial_load()
 
 
 def get_args():
