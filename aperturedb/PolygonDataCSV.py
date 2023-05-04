@@ -70,6 +70,13 @@ class PolygonDataCSV(CSVParser.CSVParser):
         self.img_key = self.header[0]
         self.command = "AddPolygon"
 
+    def get_indices(self):
+        return {
+            "entity": {
+                "_Polygon": self.get_indexed_properties()
+            }
+        }
+
     def getitem(self, idx):
         idx = self.df.index.start + idx
 

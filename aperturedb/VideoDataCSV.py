@@ -51,6 +51,13 @@ class VideoDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.command = "AddVideo"
 
+    def get_indices(self):
+        return {
+            "entity": {
+                "_Video": self.get_indexed_properties()
+            }
+        }
+
     def getitem(self, idx):
         filename   = self.df.loc[idx, HEADER_PATH]
         video_ok, video = self.load_video(filename)

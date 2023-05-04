@@ -76,26 +76,33 @@ class ImageDataCSV(CSVParser.CSVParser):
         super().__init__(filename, df=df, use_dask=use_dask)
 
         self.check_image = check_image
-        if not use_dask:
-            self.format_given     = IMG_FORMAT in self.header
-            self.props_keys       = [x for x in self.header[1:]
-                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.props_keys       = [
-                x for x in self.props_keys if x != IMG_FORMAT]
-            self.constraints_keys = [x for x in self.header[1:]
-                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
 
-            self.source_type      = self.header[0]
+        self.format_given     = IMG_FORMAT in self.header
+        self.props_keys       = [x for x in self.header[1:]
+                                 if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+        self.props_keys       = [
+            x for x in self.props_keys if x != IMG_FORMAT]
+        self.constraints_keys = [x for x in self.header[1:]
+                                 if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
 
-            if self.source_type not in self.source_types:
-                logger.error("Source not recognized: " + self.source_type)
-                raise Exception("Error loading image: " + filename)
-            self.source_loader    = {
-                st: sl for st, sl in zip(self.source_types, self.loaders)
+        self.source_type      = self.header[0]
+
+        if self.source_type not in self.source_types:
+            logger.error("Source not recognized: " + self.source_type)
+            raise Exception("Error loading image: " + filename)
+        self.source_loader    = {
+            st: sl for st, sl in zip(self.source_types, self.loaders)
+        }
+
+        self.n_download_retries = n_download_retries
+        self.command = "AddImage"
+
+    def get_indices(self):
+        return {
+            "entity": {
+                "_Image": self.get_indexed_properties()
             }
-
-            self.n_download_retries = n_download_retries
-            self.command = "AddImage"
+        }
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

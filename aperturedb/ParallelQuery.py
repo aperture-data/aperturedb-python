@@ -240,10 +240,15 @@ class ParallelQuery(Parallelizer.Parallelizer):
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
 
-        if hasattr(generator, "use_dask") and generator.use_dask:
+        use_dask = hasattr(generator, "use_dask") and generator.use_dask
+        if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 
+        if hasattr(self, "query_setup"):
+            self.query_setup(generator)
+
+        if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
                 self.db, generator, batchsize, stats=stats)
             self.actual_stats = []
