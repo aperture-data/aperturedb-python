@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 ENTITY_CLASS      = "EntityClass"
 CONSTRAINTS_PREFIX = "constraint_"
+DATE_PREFIX = "date:"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
@@ -60,42 +61,48 @@ class CSVParser(Subscriptable):
     def __len__(self):
         return len(self.df.index)
 
-    def parse_properties(self, df, idx):
+    def get_indexed_properties(self):
+        if self.constraints_keys:
+            return {self._parse_prop(k)[0] for k in self.constraints_keys}
+        return set()
+
+    def get_indices(self):
+        raise NotImplementedError
+
+    def _parse_prop(self, key, val=None):
+        if key.startswith(CONSTRAINTS_PREFIX):
+            key = key[len(CONSTRAINTS_PREFIX):]
+        if key.startswith(DATE_PREFIX):
+            key = key[len(DATE_PREFIX):]
+            val = {"_date": val}
+        return key, val
+
+    def parse_properties(self, idx):
 
         properties = {}
-        if len(self.props_keys) > 0:
+        if self.props_keys:
             for key in self.props_keys:
-                # Handle Date data type
-                if key.startswith("date:"):
-                    prop = key[len("date:"):]  # remove prefix
-                    properties[prop] = {"_date": self.df.loc[idx, key]}
-                else:
-                    value = self.df.loc[idx, key]
-                    if value == value:  # skips nan values
-                        properties[key] = value
+                prop, value = self._parse_prop(key, self.df.loc[idx, key])
+                if value == value:  # skips nan values
+                    properties[prop] = value
 
         return properties
 
-    def parse_constraints(self, df, idx):
+    def parse_constraints(self, idx):
 
         constraints = {}
-        if len(self.constraints_keys) > 0:
+        if self.constraints_keys:
             for key in self.constraints_keys:
-                if key.startswith("constraint_date:"):
-                    prop = key[len("constraint_date:"):]  # remove prefix
-                    constraints[prop] = [
-                        "==", {"_date": self.df.loc[idx, key]}]
-                else:
-                    prop = key[len(CONSTRAINTS_PREFIX):]  # remove "prefix
-                    constraints[prop] = ["==", self.df.loc[idx, key]]
+                prop, value = self._parse_prop(key, self.df.loc[idx, key])
+                constraints[prop] = ["==", value]
 
         return constraints
 
     def _basic_command(self, idx, custom_fields: dict = None):
         if custom_fields == None:
             custom_fields = {}
-        properties = self.parse_properties(self.df, idx)
-        constraints = self.parse_constraints(self.df, idx)
+        properties = self.parse_properties(idx)
+        constraints = self.parse_constraints(idx)
         query = {
             self.command: custom_fields
         }

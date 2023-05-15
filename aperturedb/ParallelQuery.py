@@ -13,7 +13,7 @@ from aperturedb.DaskManager import DaskManager
 logger = logging.getLogger(__name__)
 
 
-def execute_batch(q, blobs, db,
+def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
                   response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0):
     """
     Execute a batch of queries, doing useful logging around it.
@@ -69,13 +69,30 @@ def execute_batch(q, blobs, db,
         # Transaction failed entirely.
         logger.error(f"Failed query = {q} with response = {r}")
         result = 1
-    if isinstance(r, dict) and db.last_response['status'] != 0:
-        logger.error(f"Failed query = {q} with response = {r}")
+
+    statuses = {}
+    if isinstance(r, dict):
+        statuses[r['status']] = [r]
+    elif isinstance(r, list):
+        # add each result to a list of the responses, keyed by the response
+        # code.
+        [statuses.setdefault(result[cmd]['status'], []).append(result)
+         for result in r for cmd in result]
+    else:
+        logger.error("Response in unexpected format")
         result = 1
-    if isinstance(r, list) and not all([v['status'] == 0 for i in r for k, v in i.items()]):
-        logger.warning(
-            f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(r)}")
-        result = 2
+
+    # last_query_ok means result status >= 0
+    if result != 1:
+        warn_list = []
+        for status, results in statuses.items():
+            if status not in success_statuses:
+                for wr in results:
+                    warn_list.append(wr)
+        if len(warn_list) != 0:
+            logger.warning(
+                f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(warn_list)}")
+            result = 2
 
     return result, r, b
 
@@ -86,6 +103,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
     This class provides the abstraction for partitioning data into batches,
     so that they may be processed using different threads.
     """
+
+    # 0 is success, 2 is object exists
+    success_statuses = [0, 2]
+
+    @classmethod
+    def setSuccessStatus(cls, statuses: list[int]):
+        cls.success_statuses = statuses
+
+    @classmethod
+    def getSuccessStatus(cls):
+        return cls.success_statuses
 
     def __init__(self, db, dry_run=False):
 
@@ -108,7 +136,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             Here we flatten the individual queries to run them as
             a single query in a batch
         """
-        q     = [cmd for query in data for cmd in query[0]]
+        q = [cmd for query in data for cmd in query[0]]
         blobs = [blob for query in data for blob in query[1]]
 
         return q, blobs
@@ -149,18 +177,23 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
                 response_handler = self.generator.response_handler
             result, r, b = execute_batch(
-                q, blobs, db, response_handler, self.commands_per_query, self.blobs_per_query)
+                q, blobs, db, ParallelQuery.success_statuses, response_handler, self.commands_per_query, self.blobs_per_query)
             if result == 0:
                 query_time = db.get_last_query_time()
                 worker_stats["suceeded_commands"] = len(q)
                 worker_stats["suceeded_queries"] = len(data)
+                worker_stats["objects_existed"] = sum(
+                    [v['status'] == 2 for i in r for k, v in i.items()])
             elif result == 1:
                 self.error_counter += 1
                 worker_stats["suceeded_queries"] = 0
                 worker_stats["suceeded_commands"] = 0
+                worker_stats["objects_existed"] = 0
             elif result == 2:
                 worker_stats["suceeded_commands"] = sum(
                     [v['status'] == 0 for i in r for k, v in i.items()])
+                worker_stats["objects_existed"] = sum(
+                    [v['status'] == 2 for i in r for k, v in i.items()])
                 sq = 0
                 for i in range(0, len(r), self.commands_per_query):
                     if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in j.items()]):
@@ -185,7 +218,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         for i in range(total_batches):
 
             batch_start = start + i * self.batchsize
-            batch_end   = min(batch_start + self.batchsize, end)
+            batch_end = min(batch_start + self.batchsize, end)
 
             try:
                 self.do_batch(db, generator[batch_start:batch_end])
@@ -207,16 +240,26 @@ class ParallelQuery(Parallelizer.Parallelizer):
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
 
-        if hasattr(generator, "use_dask") and generator.use_dask:
+        use_dask = hasattr(generator, "use_dask") and generator.use_dask
+        if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 
+        if hasattr(self, "query_setup"):
+            self.query_setup(generator)
+
+        if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
                 self.db, generator, batchsize, stats=stats)
+            self.actual_stats = []
             for result in results:
                 if result is not None:
                     self.times_arr.extend(result.times_arr)
                     self.error_counter += result.error_counter
+                    self.actual_stats.append(
+                        {"suceeded_queries": result.suceeded_queries,
+                         "suceeded_commands": result.suceeded_commands,
+                         "objects_existed": result.objects_existed})
             self.total_actions = len(generator.df)
 
             if stats:
@@ -254,7 +297,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         else:
             mean = np.mean(times)
-            std  = np.std(times)
+            std = np.std(times)
             tp = 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")

@@ -16,10 +16,75 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         super().__init__(db, dry_run=dry_run)
         self.type = "element"
 
+    def get_existing_indices(self):
+        schema_result, _ = self.db.query([{"GetSchema": {}}])
+        schema = schema_result[0]["GetSchema"]
+        existing_indices = {}
+        if schema:
+            for index_type in (("entity", "entities"), ("connection", "connections")):
+                foo = schema.get(index_type[1]) or {}
+                bar = foo.get("classes") or {}
+                for cls_name, cls_schema in bar.items():
+                    props = cls_schema.get("properties") or {}
+                    for prop_name, prop_schema in props.items():
+                        if prop_schema[1]:  # indicates property has an index
+                            existing_indices.setdefault(index_type[0], {}).setdefault(
+                                cls_name, set()).add(prop_name)
+        return existing_indices
+
+    def create_indices(self, indices):
+        if len(indices) == 0:
+            return
+
+        existing_indices = self.get_existing_indices()
+        new_indices = []
+        for tp, classes in indices.items():
+            ex_classes = existing_indices.get(tp, {})
+            for cls, props in classes.items():
+                ex_props = ex_classes.get(cls, set())
+                for prop in props - ex_props:
+                    new_indices.append({
+                        "index_type": tp,
+                        "class": cls,
+                        "property_key": prop
+                    })
+
+        if len(new_indices) == 0:
+            return
+
+        logger.info(
+            f"Creating {len(new_indices)} indices: {new_indices}.")
+
+        create_indices = [{"CreateIndex": idx} for idx in new_indices]
+
+        res, _ = self.db.query(
+            create_indices)
+
+        if self.db.check_status(res) != 0:
+            logger.warning(
+                "Failed to create indices; ingestion will be slow.")
+            logger.warning(res)
+
+    def query_setup(self, generator):
+        if hasattr(generator, "get_indices"):
+            self.create_indices(generator.get_indices())
+
     def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
         self.query(generator, batchsize, numthreads, stats)
+
+    def get_objects_existed(self):
+        return sum([stat["objects_existed"]
+                    for stat in self.actual_stats])
+
+    def get_suceeded_queries(self):
+        return sum([stat["suceeded_queries"]
+                    for stat in self.actual_stats])
+
+    def get_suceeded_commands(self):
+        return sum([stat["suceeded_commands"]
+                    for stat in self.actual_stats])
 
     def print_stats(self):
 

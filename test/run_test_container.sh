@@ -3,7 +3,7 @@
 set -u
 set -e
 
-docker compose down
+docker compose down --remove-orphans
 rm -rf aperturedb/db
 rm -rf output
 mkdir -m 777 output
