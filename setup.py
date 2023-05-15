@@ -9,8 +9,9 @@ OPENCV_VERSION = os.getenv("OPENCV_VERSION")
 install_requires = ['scikit-image', 'image', 'requests', 'boto3',
                     'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
                     'dask[complete]', 'ipywidgets', 'pydantic', 'devtools',
-                    # Pinning this to be able to install tensorflow.
-                    'protobuf<3.20.0',
+                    # Pin to the bridge version.
+                    # https://github.com/tensorflow/tensorflow/issues/60320
+                    'protobuf==3.20.3',
                     # Pinning this to be able to install google-cloud-bigquery
                     'grpcio-status==1.48.2',
                     # Pinning this to resolve test errors temporarily
