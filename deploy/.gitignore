@@ -1,0 +1,3 @@
+/backend.tf
+/.terraform
+/.terraform.tfstate.lock.info

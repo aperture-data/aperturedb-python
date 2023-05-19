@@ -16,6 +16,9 @@ from aperturedb.Utils import Utils
 
 import dbinfo
 
+# These are test fixtures and can be used in any
+# pytest tests as function parmeters with same names.
+
 
 def pytest_generate_tests(metafunc):
     if "db" in metafunc.fixturenames:
@@ -50,7 +53,12 @@ def db(request):
 
 @pytest.fixture()
 def insert_data_from_csv(db, request):
-    def insert_data_from_csv(in_csv_file, rec_count=-1):
+    """
+    A helper function that processes various .csv files supported
+    by aperturedb, and maps a corresponding DataCSV class that can be
+    used to parse semantics of the .csv file
+    """
+    def insert_data_from_csv(in_csv_file, rec_count=-1, expected_error_count=0, loader_result_lambda=None):
         if rec_count > 0 and rec_count < 80:
             request.param = False
             print("Not enough records to test parallel loader. Using serial loader.")
@@ -66,7 +74,9 @@ def insert_data_from_csv(db, request):
             "./input/s3_images.adb.csv": ImageDataCSV,
             "./input/http_images.adb.csv": ImageDataCSV,
             "./input/bboxes-constraints.adb.csv": BBoxDataCSV,
-            "./input/gs_images.adb.csv": ImageDataCSV
+            "./input/gs_images.adb.csv": ImageDataCSV,
+            "./input/persons-exist-base.adb.csv": EntityDataCSV,
+            "./input/persons-some-exist.adb.csv": EntityDataCSV
         }
         use_dask = False
         if hasattr(request, "param"):
@@ -80,8 +90,29 @@ def insert_data_from_csv(db, request):
                       numthreads=8,
                       stats=True,
                       )
+
+        # make sure all indices are present
+        if hasattr(data, "get_indices"):
+            expected_indices = data.get_indices()
+            observed_indices = loader.get_existing_indices()
+            for tp, classes in expected_indices.items():
+                for cls, props in classes.items():
+                    for prop in props:
+                        assert prop in observed_indices[tp][cls]
+
         assert loader.error_counter == 0
-        return data
+        assert len(data) - \
+            loader.get_suceeded_queries() == expected_error_count
+        if loader_result_lambda is not None:
+            loader_result_lambda(loader, data)
+
+       # Preserve loader so that dask manager is not auto deleted.
+        # ---------------
+        # Previously, dask's cluster and client were entirely managed in a context
+        # insede dask manager. A change upstream broke that, and now we keep the DM
+        # in scope just so that we can do computations after ingestion, as those
+        # things are lazily evaluated.
+        return data, loader
 
     return insert_data_from_csv
 

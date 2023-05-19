@@ -80,14 +80,23 @@ class ConnectorRest(Connector):
         bool (use_ssl): Use SSL to encrypt communication with the database.
     """
 
-    def __init__(self, host="localhost", port=80,
+    def __init__(self, host="localhost", port=None,
                  user="", password="", token="",
                  use_ssl=True, shared_data=None):
 
         self.host = host
-        self.port = port
+
+        if port is None:
+            self.port = 443 if use_ssl else 80
+        else:
+            self.port = port
+
         self.use_ssl = use_ssl
         self.connected = False
+        # Session is useful because it does not add "Connection: close header"
+        # Since we will be making same call to the same URL, making a session
+        # REF: https://requests.readthedocs.io/en/latest/user/advanced/
+        self.http_session = requests.Session()
 
         self.last_response   = ''
         self.last_query_time = 0
@@ -108,6 +117,7 @@ class ConnectorRest(Connector):
 
     def __del__(self):
         logger.info("Done with connector")
+        self.http_session.close()
 
     def _query(self, query, blob_array = []):
         response_blob_array = []
@@ -135,10 +145,10 @@ class ConnectorRest(Connector):
         response.status_code = 0
         while tries < 3:
             tries += 1
-            response = requests.post(self.url,
-                                     headers = headers,
-                                     files   = files,
-                                     verify  = self.use_ssl)
+            response = self.http_session.post(self.url,
+                                              headers = headers,
+                                              files   = files,
+                                              verify  = self.use_ssl)
             if response.status_code == 200:
                 # Parse response:
                 json_response       = json.loads(response.text)
