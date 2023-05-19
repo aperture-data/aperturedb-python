@@ -80,12 +80,17 @@ class ConnectorRest(Connector):
         bool (use_ssl): Use SSL to encrypt communication with the database.
     """
 
-    def __init__(self, host="localhost", port=80,
+    def __init__(self, host="localhost", port=None,
                  user="", password="", token="",
                  use_ssl=True, shared_data=None):
 
         self.host = host
-        self.port = port
+
+        if port is None:
+            self.port = 443 if use_ssl else 80
+        else:
+            self.port = port
+
         self.use_ssl = use_ssl
         self.connected = False
         # Session is useful because it does not add "Connection: close header"
