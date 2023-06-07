@@ -106,6 +106,43 @@ class TestEntityLoader():
         self.assertEqual(3, len(boxes))
         self.assertEqual(1, utils.count_bboxes())
 
+class TestEntityDelete():
+    def test_delete(self, utils, insert_data_from_csv, modify_data_from_csv):
+        # Assert that we have a clean slate to begin with.
+        self.assertTrue(utils.remove_all_objects())
+
+        # Verify entire file is loaded
+        data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("_Image"))
+
+        deleted = insert_data_from_csv(in_csv_file = "./input/images_delete.adb.csv")
+        self.assertEqual(len(data)-len(deleted), utils.count_entities("_Image"))
+
+class TestEntityUpdate():
+    def test_partial_update(self, utils, insert_data_from_csv, xx ):
+        # Assert that we have a clean slate to begin with.
+        self.assertTrue(utils.remove_all_objects())
+
+        # Verify entire file is loaded
+        data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("_Image"))
+        update = insert_data_from_csv(in_csv_file = "./input/images_partial_update.adb.csv")
+        self.assertEqual(len(data)-len(deleted), utils.count_entities("_Image"))
+
+class TestEntityAddOrUpdate():
+    def test_just_add(self,utils,modify_data_from_csv ):
+        data = modify_data_from_csv(in_csv_file = "./input/entity_update_just_add.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("Person"))
+
+class TestImageAddOrUpdate():
+    def test_images(self,utils,modify_data_from_csv ):
+        data = modify_data_from_csv(in_csv_file= "./input/images_update_and_add.adb.csv")
+        self.assertEqual(True,True) # how to verify.
+
+class TestImageAlwaysNewest():
+    def test_images(self,utils,modify_data_from_csv ):
+        data = modify_data_from_csv(in_csv_file= "./input/images_newest_blobs.adb.csv")
+        self.assertEqual(True,True) # how to verify.
 
 class TestURILoader():
     def assertEqual(self, expected, actual):

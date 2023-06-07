@@ -34,7 +34,7 @@ class DaskManager:
         self._client.close()
         self._cluster.close()
 
-    def run(self, db: Connector, generator, batchsize, stats):
+    def run(self, QueryClass: class, db: Connector, generator, batchsize, stats):
         def process(df, host, port, use_ssl, session, connnector_type):
             metrics = Stats()
             # Dask reads data in partitions, and the first partition is of 2 rows, with all
@@ -52,8 +52,8 @@ class DaskManager:
                                      use_ssl=use_ssl, shared_data=shared_data)
             except Exception as e:
                 logger.exception(e)
-            from aperturedb.ParallelLoader import ParallelLoader
-            loader = ParallelLoader(db)
+            #from aperturedb.ParallelLoader import ParallelLoader
+            loader = QueryClass(db)
             for i in range(0, len(df), batchsize):
                 end = min(i + batchsize, len(df))
                 slice = df[i:end]
