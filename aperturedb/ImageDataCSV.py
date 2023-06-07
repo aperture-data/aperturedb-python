@@ -98,7 +98,7 @@ class ImageDataCSV(CSVParser.CSVParser):
         self.command = "AddImage"
 
         self.s3 = None
-        if self.source_type == HEADER_S3_URL:
+        if use_dask == False and self.source_type == HEADER_S3_URL:
             # The connections by boto3 cause ResourceWarning. Known
             # issue: https://github.com/boto/boto3/issues/454
             self.s3 = boto3.client('s3')
