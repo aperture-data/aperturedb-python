@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-test:
+    if:  ${{ github.head_ref != 'main' }}
 
     runs-on:
     - self-hosted
@@ -39,6 +40,8 @@ jobs:
       shell: bash
 
   build_and_deploy_docs:
+    if:  ${{ github.head_ref != 'main' }}
+
     needs:
     - build-test
 
@@ -66,6 +69,8 @@ jobs:
       shell: bash
 
   deploy_web_services:
+    if:  ${{ github.head_ref != 'main' }}
+
     needs:
     - build-test
     - build_and_deploy_docs
