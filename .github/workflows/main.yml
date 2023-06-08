@@ -106,3 +106,17 @@ jobs:
       run: |
         EXCLUDE_TESTING=1 EXCLUDE_DOCUMENTATION=1 ./ci.sh
       shell: bash
+
+  trigger_demos_buils:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: repository dispatch
+      run: |
+        curl -X POST https://api.github.com/repos/aperture-data/demos/actions/workflows/11368906/dispatches \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${{ secrets.GITHUBPAT }}"
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        -d '{"ref":"master","inputs":{}}'
+
+      shell: bash

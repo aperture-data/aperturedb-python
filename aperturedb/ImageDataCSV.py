@@ -97,6 +97,12 @@ class ImageDataCSV(CSVParser.CSVParser):
         self.n_download_retries = n_download_retries
         self.command = "AddImage"
 
+        self.s3 = None
+        if use_dask == False and self.source_type == HEADER_S3_URL:
+            # The connections by boto3 cause ResourceWarning. Known
+            # issue: https://github.com/boto/boto3/issues/454
+            self.s3 = boto3.client('s3')
+
     def get_indices(self):
         return {
             "entity": {
@@ -179,15 +185,11 @@ class ImageDataCSV(CSVParser.CSVParser):
     def load_s3_url(self, s3_url):
         retries = 0
 
-        # The connections by boto3 cause ResourceWarning. Known
-        # issue: https://github.com/boto/boto3/issues/454
-        s3 = boto3.client('s3')
-
         while True:
             try:
                 bucket_name = s3_url.split("/")[2]
                 object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
-                s3_response_object = s3.get_object(
+                s3_response_object = self.s3.get_object(
                     Bucket=bucket_name, Key=object_name)
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
