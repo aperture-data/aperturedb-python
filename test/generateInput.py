@@ -314,8 +314,16 @@ def generate_update_person():
     df.to_csv("input/persons-update-oldversion.adb.csv", index=False)
 
     # csv 3 - modified data, and version ( will update )
+    # update in database if version < 2.
     df['updateif_<version_id'] = df['version_id']
     df.to_csv("input/persons-update-newversion.adb.csv", index=False)
+
+    # generate other updateif with different direction
+    df = pd.read_csv("input/persons.adb.csv")
+    df['age'] = df['age'].apply( lambda age: age + 200 )
+    # change if age in database is > 30
+    df['updateif_>age'] = [ 30 for x in range(len(df)) ]
+    df = df.to_csv("input/persons-update-olderage.adb.csv")
 
 def generate_partial_load():
 

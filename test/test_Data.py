@@ -164,6 +164,20 @@ class TestUpdatePersonEntityCSV():
         # if updated, age will be above 200.
         self.assertEqual( len( list( filter( lambda p: p['version_id'] == 2, all_persons ))), len(update_data) )
         self.assertEqual( len( list( filter( lambda p: p['age'] >= 200 , all_persons))), len(update_data) )
+
+    def test_updateif_partial_age(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_objects())
+        data = modify_data_from_csv(in_csv_file = "./input/persons-update.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("Person"))
+
+        all_persons = Entities.retrieve(db,
+                                        spec=Query.spec(with_class="Person"))
+        previous_old_age = len( list( filter( lambda p: p['age'] > 30, all_persons)))
+        update_data = modify_data_from_csv(in_csv_file = "./input/persons-update-olderage.adb.csv")
+        all_persons = Entities.retrieve(db,
+                                        spec=Query.spec(with_class="Person"))
+        new_old_age = len( list( filter( lambda p: p['age'] > 200, all_persons)))
+        self.assertEqual( previous_old_age, new_old_age )
             
 
 # Test functionality of ImageUpdateCSV loader.
