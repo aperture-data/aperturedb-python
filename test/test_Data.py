@@ -1,5 +1,6 @@
 import numpy as np
-from aperturedb.Query import QueryBuilder
+from aperturedb.Query import QueryBuilder, Query
+from aperturedb.Entities import Entities
 
 import logging
 logger = logging.getLogger(__name__)
@@ -129,18 +130,52 @@ class TestEntityUpdate():
         update = insert_data_from_csv(in_csv_file = "./input/images_partial_update.adb.csv")
         self.assertEqual(len(data)-len(deleted), utils.count_entities("_Image"))
 
-class TestEntityAddOrUpdate():
-    def test_just_add(self,utils,modify_data_from_csv ):
-        data = modify_data_from_csv(in_csv_file = "./input/entity_update_just_add.adb.csv")
+# test EntityUpdateCSV with Person entity.
+class TestUpdatePersonEntityCSV():
+    def assertEqual(self, expected, actual):
+        if expected != actual:
+            raise AssertionError(
+                "Expected {}, got {}".format(expected, actual))
+    def assertTrue(self, condition):
+        if not condition:
+            raise AssertionError("Condition not true")
+    # verifies adding and no update when version isn't greater.
+    def test_updateif_fails(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_objects())
+        # verifies loading with empty database.
+        data = modify_data_from_csv(in_csv_file = "./input/persons-update.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
+        # verifies updateif will not update if criteria doesn't pass.
+        update_data = modify_data_from_csv(in_csv_file = "./input/persons-update-oldversion.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("Person"))
+        all_persons = Entities.retrieve(db,
+                                        spec=Query.spec(with_class="Person"))
+        # if updated, age will be above 200.
+        self.assertEqual( len( list( filter( lambda p: p['version_id'] == 2, all_persons ))), 0 )
+        self.assertEqual( len( list( filter( lambda p: p['age'] >= 200, all_persons ))), 0 )
+    def test_updateif_passes(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_objects())
+        data = modify_data_from_csv(in_csv_file = "./input/persons-update.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("Person"))
+        update_data = modify_data_from_csv(in_csv_file = "./input/persons-update-newversion.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("Person"))
+        all_persons = Entities.retrieve(db,
+                                        spec=Query.spec(with_class="Person"))
+        # if updated, age will be above 200.
+        self.assertEqual( len( list( filter( lambda p: p['version_id'] == 2, all_persons ))), len(update_data) )
+        self.assertEqual( len( list( filter( lambda p: p['age'] >= 200 , all_persons))), len(update_data) )
+            
 
-class TestImageAddOrUpdate():
+# Test functionality of ImageUpdateCSV loader.
+class TestImageUpdateCSV():
     def test_images(self,utils,modify_data_from_csv ):
         data = modify_data_from_csv(in_csv_file= "./input/images_update_and_add.adb.csv")
         self.assertEqual(True,True) # how to verify.
 
-class TestImageAlwaysNewest():
+# Test functionality of ImageForceNewestCSV loader.
+class TestImageForceNewestCSV():
     def test_images(self,utils,modify_data_from_csv ):
+        # 
         data = modify_data_from_csv(in_csv_file= "./input/images_newest_blobs.adb.csv")
         self.assertEqual(True,True) # how to verify.
 

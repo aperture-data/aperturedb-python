@@ -297,6 +297,25 @@ def generate_descriptorset(names, dims):
 
     df.to_csv("input/descriptorset.adb.csv", index=False)
 
+def generate_update_person():
+    # generate 3 testing csvs for update testing
+    # cvs 1 - base load with version.
+    df = pd.read_csv("input/persons.adb.csv")
+
+    # set version column to 1.
+    version_id = [1 for x in range(len(df))]
+    df["updateif_<version_id"] = version_id
+    df["version_id"] = version_id
+    df.to_csv("input/persons-update.adb.csv", index=False)
+
+    # csv 2 - modified data, but same version ( will cause no updates )
+    df['age'] = df['age'].apply( lambda age: age + 200 )
+    df['version_id'] = df['version_id'].apply( lambda ver: ver + 1 )
+    df.to_csv("input/persons-update-oldversion.adb.csv", index=False)
+
+    # csv 3 - modified data, and version ( will update )
+    df['updateif_<version_id'] = df['version_id']
+    df.to_csv("input/persons-update-newversion.adb.csv", index=False)
 
 def generate_partial_load():
 
@@ -410,9 +429,7 @@ def generate_newest_images(multiplier):
 
 def main(params):
 
-    generate_newest_images(params.multiplier)
-    return
-    generate_update_images(params.multiplier)
+    generate_update_person()
     return
     persons = generate_person_csv(params.multiplier)
     blobs   = generate_blobs_csv()

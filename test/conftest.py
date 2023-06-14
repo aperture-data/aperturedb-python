@@ -120,10 +120,14 @@ def modify_data_from_csv(db, request):
         if rec_count > 0 and rec_count < 80:
             request.param = False
             print("Not enough records to test parallel loader. Using serial loader.")
-        def PersonEntityCSV( csv_file, use_dask ):
+        def UpdatePersonEntityCSV( csv_file, use_dask ):
             return EntityUpdateCSV( "Person", csv_file, use_dask = use_dask )
         file_data_pair = {
-            "./input/entity_update_just_add.adb.csv": PersonEntityCSV
+            "./input/persons-update.adb.csv": UpdatePersonEntityCSV,
+            "./input/persons-update-oldversion.adb.csv": UpdatePersonEntityCSV,
+            "./input/persons-update-newversion.adb.csv": UpdatePersonEntityCSV,
+            "./input/images_update_and_add.adb.csv": ImageUpdateCSV,
+            "./input/images_newest_blobs.adb.csv": ImageForceNewestCSV 
         }
         use_dask = False
         if hasattr(request, "param"):
@@ -138,7 +142,7 @@ def modify_data_from_csv(db, request):
                       stats=True,
                       )
         assert loader.error_counter == 0
-        return [data, loader.modified_count]
+        return data
 
     return modify_data_from_csv
 
