@@ -437,8 +437,6 @@ def generate_newest_images(multiplier):
 
 def main(params):
 
-    generate_update_person()
-    return
     persons = generate_person_csv(params.multiplier)
     blobs   = generate_blobs_csv()
     images  = generate_images_csv(int(params.multiplier / 2))
@@ -455,7 +453,7 @@ def main(params):
     for name, dims in zip(desc_name, desc_dims):
         generate_descriptors(images, name, dims)
 
-    generate_partial_load()
+    generate_update_person()
 
 
 
