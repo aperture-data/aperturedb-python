@@ -109,15 +109,16 @@ class CSVParser(Subscriptable):
                     constraints[prop] = ["==", self.df.loc[idx, key]]
 
         return constraints
+
     def parse_other_constraint(self, constraint_name, keys, df, idx):
 
         other_constraints = {}
         if len(keys) > 0:
             for key in keys:
-                res = re.search(f"^{constraint_name}_date(>|<)?:",key)
+                res = re.search(f"^{constraint_name}_date(>|<)?:", key)
                 if res is not None:
                     prop = key[len(res.group(0)):]  # remove prefix
-                    sort = res.group(0)[-2:][:1] # get character before :
+                    sort = res.group(0)[-2:][:1]  # get character before :
 
                     if sort != ">" and sort != "<":
                         sort = "=="
@@ -126,7 +127,7 @@ class CSVParser(Subscriptable):
                 else:
                     prop = key[len(constraint_name):]  # remove "prefix
                     op = "=="
-                    if prop[0] in [ ">", "<", "!" ]:
+                    if prop[0] in [">", "<", "!"]:
                         op = prop[0]
                         prop = str(prop[1:])
 
@@ -148,10 +149,11 @@ class CSVParser(Subscriptable):
             query[self.command][self.constraint_keyword] = constraints
 
         return query
+
     def _basic_command(self, idx, custom_fields: dict = None):
         properties = self.parse_properties(self.df, idx)
         constraints = self.parse_constraints(self.df, idx)
-        return self._parsed_command( idx, custom_fields, constraints, properties )
+        return self._parsed_command(idx, custom_fields, constraints, properties)
 
     def validate(self):
 

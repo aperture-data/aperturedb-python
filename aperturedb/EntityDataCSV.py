@@ -50,7 +50,7 @@ class EntityDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.command = "AddEntity"
         self.search_keys = [x for x in self.header[1:]
-                                 if x.startswith(CSVParser.SEARCH_PREFIX)]
+                            if x.startswith(CSVParser.SEARCH_PREFIX)]
 
     def get_indices(self):
         return {
@@ -58,6 +58,7 @@ class EntityDataCSV(CSVParser.CSVParser):
                 cls: self.get_indexed_properties() for cls in self.df[ENTITY_CLASS].unique()
             }
         }
+
     def getitem(self, idx):
         idx = self.df.index.start + idx
         eclass = self.df.loc[idx, ENTITY_CLASS]
@@ -75,6 +76,8 @@ class EntityDataCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: " + ENTITY_CLASS)
 
 # Used when a csv has a single entity type that needs to be deleted
+
+
 class SingleEntityDeleteCSV(CSVParser.CSVParser):
     def __init__(self, entity_class, filename, df=None, use_dask=False):
         super().__init__(filename, df=df, use_dask=use_dask)
@@ -90,23 +93,24 @@ class SingleEntityDeleteCSV(CSVParser.CSVParser):
 
         q.append(entity_delete)
         return q, []
+
     def validate(self):
         # all we require is a valid csv with 1 or more columns.
         return True
 
+
 class ImageDeleteCSV(SingleEntityDeleteCSV):
     def __init__(self, filename, df=None, use_dask=False):
-        super().__init__("Image",filename, df=df, use_dask=use_dask)
-
+        super().__init__("Image", filename, df=df, use_dask=use_dask)
 
 
 class EntityUpdateCSV(SingleEntityUpdateCSV):
     def __init__(self, entity_type, filename, df=None, use_dask=False):
-        super().__init__( "Entity", filename,df,use_dask)
+        super().__init__("Entity", filename, df, use_dask)
         self.entity_type = entity_type
         # Add had blob and update has blob.
-        self.blobs_per_query = [1,1]
-    def modify_item(self,query_set,idx):
+        self.blobs_per_query = [1, 1]
+
+    def modify_item(self, query_set, idx):
         query_set[0]["AddEntity"]["class"] = self.entity_type
         return query_set
-

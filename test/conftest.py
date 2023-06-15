@@ -121,9 +121,11 @@ def insert_data_from_csv(db, request):
 
     return insert_data_from_csv
 
-class UpdatePersonEntityCSV( EntityUpdateCSV ):
-    def __init__( self, filename, df=None, use_dask = False ):
-        super().__init__( "Person", filename, df=df, use_dask = use_dask )
+
+class UpdatePersonEntityCSV(EntityUpdateCSV):
+    def __init__(self, filename, df=None, use_dask = False):
+        super().__init__("Person", filename, df=df, use_dask = use_dask)
+
 
 @pytest.fixture()
 def modify_data_from_csv(db, request):
@@ -137,7 +139,7 @@ def modify_data_from_csv(db, request):
             "./input/persons-update-newversion.adb.csv": UpdatePersonEntityCSV,
             "./input/persons-update-olderage.adb.csv": UpdatePersonEntityCSV,
             "./input/images_update_and_add.adb.csv": ImageUpdateCSV,
-            "./input/images_newest_blobs.adb.csv": ImageForceNewestCSV 
+            "./input/images_newest_blobs.adb.csv": ImageForceNewestCSV
         }
         use_dask = False
         if hasattr(request, "param"):
@@ -148,9 +150,9 @@ def modify_data_from_csv(db, request):
 
         loader = ParallelQuerySet(db)
         loader.query(data, batchsize=99,
-                      numthreads=1,
-                      stats=True,
-                      )
+                     numthreads=1,
+                     stats=True,
+                     )
         assert loader.error_counter == 0
         return data
 

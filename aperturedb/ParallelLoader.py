@@ -74,7 +74,6 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
         self.query(generator, batchsize, numthreads, stats)
 
-
     def print_stats(self):
 
         times = np.array(self.get_times())

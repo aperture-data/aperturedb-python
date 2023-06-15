@@ -20,12 +20,13 @@ PROPERTIES    = "properties"
 CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
+
 class ImageDataProcessor():
-    def __init__(self, check_image, n_download_retries,use_dask,source_type):
+    def __init__(self, check_image, n_download_retries, use_dask, source_type):
         self.loaders = [self.load_image, self.load_url,
                         self.load_s3_url, self.load_gs_url]
         self.source_types = [HEADER_PATH,
-                         HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
+                             HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
         self.check_image = check_image
         self.source_type = source_type
         self.s3 = None
@@ -34,6 +35,7 @@ class ImageDataProcessor():
             # The connections by boto3 cause ResourceWarning. Known
             # issue: https://github.com/boto/boto3/issues/454
             self.s3 = boto3.client('s3')
+
     def load_image(self, filename):
 
         if self.check_image:
@@ -139,7 +141,7 @@ class ImageDataProcessor():
         logger.error("GS ERROR:", gs_url)
         return False, None
 
-                
+
 class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     """**ApertureDB Image Data.**
 
@@ -191,8 +193,9 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
 
         source_type = self.header[0]
-        ImageDataProcessor.__init__(self,check_image,n_download_retries,use_dask,source_type)
-        CSVParser.__init__(self,filename, df=df, use_dask=use_dask)
+        ImageDataProcessor.__init__(
+            self, check_image, n_download_retries, use_dask, source_type)
+        CSVParser.__init__(self, filename, df=df, use_dask=use_dask)
 
         self.format_given     = IMG_FORMAT in self.header
         self.props_keys       = [x for x in self.header[1:]
@@ -201,7 +204,6 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
             x for x in self.props_keys if x != IMG_FORMAT]
         self.constraints_keys = [x for x in self.header[1:]
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-
 
         if self.source_type not in self.source_types:
             logger.error("Source not recognized: " + self.source_type)
@@ -241,33 +243,39 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
                 f"Error with CSV file field: {self.header[0]}. Must be first field")
 
 # Update and Add Images
-class ImageUpdateCSV(SingleEntityUpdateCSV,ImageDataProcessor):
+
+
+class ImageUpdateCSV(SingleEntityUpdateCSV, ImageDataProcessor):
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         source_type = self.header[0]
-        ImageDataProcessor.__init__(self,check_image,n_download_retries,use_dask,source_type)
-        SingleEntityUpdateCSV.__init__(self, "Image", filename,df,use_dask)
-        self.blobs_per_query = [1,0]
+        ImageDataProcessor.__init__(
+            self, check_image, n_download_retries, use_dask, source_type)
+        SingleEntityUpdateCSV.__init__(self, "Image", filename, df, use_dask)
+        self.blobs_per_query = [1, 0]
 
         self.format_given     = IMG_FORMAT in self.header
-        self.props_keys = list(filter( lambda prop: prop not in [IMG_FORMAT,"filename"],self.props_keys))
+        self.props_keys = list(filter(lambda prop: prop not in [
+                               IMG_FORMAT, "filename"], self.props_keys))
         if self.source_type not in self.source_types:
             logger.error("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
         self.source_loader    = {
             st: sl for st, sl in zip(self.source_types, self.loaders)
         }
-    def getitem(self,idx):
+
+    def getitem(self, idx):
         blob_set = []
-        [query_set,empty_blobs] = super().getitem(idx)
+        [query_set, empty_blobs] = super().getitem(idx)
         image_path = self.df.loc[idx, self.source_type]
         img_ok, img = self.source_loader[self.source_type](image_path)
         if not img_ok:
             logger.error("Error loading image: " + image_path)
             raise Exception("Error loading image: " + image_path)
         # element has 2 queries, each with 1 blob.
-        blob_set = [ [ img ], [ ]]
+        blob_set = [[img], []]
         # must wrap the blob return for this item in a list
-        return [query_set,[blob_set]]
+        return [query_set, [blob_set]]
+
     def validate(self):
 
         self.header = list(self.df.columns.values)
@@ -278,21 +286,26 @@ class ImageUpdateCSV(SingleEntityUpdateCSV,ImageDataProcessor):
         else:
             SingleEntityUpdateCSV.validate(self)
 
-class ImageForceNewestCSV(SingleEntityBlobNewestCSV,ImageDataProcessor):
+
+class ImageForceNewestCSV(SingleEntityBlobNewestCSV, ImageDataProcessor):
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         source_type = self.header[0]
-        ImageDataProcessor.__init__(self,check_image,n_download_retries,use_dask,source_type)
-        SingleEntityBlobNewestCSV.__init__(self, "Image", filename,df,use_dask)
+        ImageDataProcessor.__init__(
+            self, check_image, n_download_retries, use_dask, source_type)
+        SingleEntityBlobNewestCSV.__init__(
+            self, "Image", filename, df, use_dask)
 
         self.format_given     = IMG_FORMAT in self.header
-        self.props_keys = list(filter( lambda prop: prop not in [IMG_FORMAT,"filename"],self.props_keys))
+        self.props_keys = list(filter(lambda prop: prop not in [
+                               IMG_FORMAT, "filename"], self.props_keys))
         if self.source_type not in self.source_types:
             logger.error("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
         self.source_loader    = {
             st: sl for st, sl in zip(self.source_types, self.loaders)
         }
-    def read_blob(self,idx):
+
+    def read_blob(self, idx):
         image_path = self.df.loc[idx, self.source_type]
         img_ok, img = self.source_loader[self.source_type](image_path)
         if not img_ok:

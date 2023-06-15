@@ -279,7 +279,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.print_stats()
         else:
             # allow subclass to do verification
-            if issubclass(type(self),ParallelQuery) and hasattr( self, 'verify_generator' ) and callable(self.verify_generator):
+            if issubclass(type(self), ParallelQuery) and hasattr(self, 'verify_generator') and callable(self.verify_generator):
                 self.verify_generator(generator)
             elif len(generator) > 0:
                 if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
