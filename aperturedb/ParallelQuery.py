@@ -230,6 +230,18 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if thid == 0 and self.stats:
                 self.pb.update((i + 1) / total_batches)
 
+    def get_objects_existed(self):
+        return sum([stat["objects_existed"]
+                    for stat in self.actual_stats])
+
+    def get_suceeded_queries(self):
+        return sum([stat["suceeded_queries"]
+                    for stat in self.actual_stats])
+
+    def get_suceeded_commands(self):
+        return sum([stat["suceeded_commands"]
+                    for stat in self.actual_stats])
+
     def query(self, generator, batchsize=1, numthreads=4, stats=False):
         """
         This function takes as input the data to be executed in specified number of threads.
@@ -246,7 +258,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             self.daskmanager = DaskManager(num_workers=numthreads)
 
             results, self.total_actions_time = self.daskmanager.run(
-                self.__class_, self.db, generator, batchsize, stats=stats)
+                self.__class__, self.db, generator, batchsize, stats=stats)
             self.actual_stats = []
             for result in results:
                 if result is not None:

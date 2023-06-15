@@ -34,7 +34,7 @@ class DaskManager:
         self._client.close()
         self._cluster.close()
 
-    def run(self, QueryClass: class, db: Connector, generator, batchsize, stats):
+    def run(self, QueryClass: type[ParallelQuery], db: Connector, generator, batchsize, stats):
         def process(df, host, port, use_ssl, session, connnector_type):
             metrics = Stats()
             # Dask reads data in partitions, and the first partition is of 2 rows, with all
@@ -58,12 +58,11 @@ class DaskManager:
                 end = min(i + batchsize, len(df))
                 slice = df[i:end]
                 data = generator.__class__(filename="", df=slice)
-                loader.ingest(generator=data, batchsize=len(
+                loader.query(generator=data, batchsize=len(
                     slice), numthreads=1, stats=False)
                 count += 1
                 metrics.times_arr.extend(loader.times_arr)
                 metrics.error_counter += loader.error_counter
-                metrics.objects_existed += loader.get_objects_existed()
                 metrics.suceeded_queries += loader.get_suceeded_queries()
                 metrics.suceeded_commands += loader.get_suceeded_commands()
 

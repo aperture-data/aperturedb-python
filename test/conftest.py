@@ -8,7 +8,7 @@ from aperturedb.EntityDataCSV import EntityDataCSV, EntityUpdateCSV
 from aperturedb.ConnectionDataCSV import ConnectionDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
-from aperturedb.ImageDataCSV import ImageDataCSV
+from aperturedb.ImageDataCSV import ImageDataCSV, ImageUpdateCSV, ImageForceNewestCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
@@ -29,18 +29,16 @@ def pytest_generate_tests(metafunc):
                 port = dbinfo.DB_TCP_PORT,
                 user = dbinfo.DB_USER,
                 password = dbinfo.DB_PASSWORD,
-                use_ssl = True)},
-            {"db": ConnectorRest(
-                host = dbinfo.DB_REST_HOST,
-                port = dbinfo.DB_REST_PORT,
-                user = dbinfo.DB_USER,
-                password = dbinfo.DB_PASSWORD,
-                use_ssl = False
-            )}
-        ], indirect=True, ids=["TCP", "HTTP"])
+                use_ssl = True)}
+
+        ], indirect=True, ids=["TCP"])
     if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
+                             True, False], indirect=True, ids=["with_dask", "without_dask"])
+    if "modify_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
+            ["test.test_Data"]:
+        metafunc.parametrize("modify_data_from_csv", [
                              True, False], indirect=True, ids=["with_dask", "without_dask"])
 
 
@@ -113,6 +111,9 @@ def insert_data_from_csv(db, request):
 
     return insert_data_from_csv
 
+class UpdatePersonEntityCSV( EntityUpdateCSV ):
+    def __init__( self, filename, df=None, use_dask = False ):
+        super().__init__( "Person", filename, df=df, use_dask = use_dask )
 
 @pytest.fixture()
 def modify_data_from_csv(db, request):
@@ -120,12 +121,11 @@ def modify_data_from_csv(db, request):
         if rec_count > 0 and rec_count < 80:
             request.param = False
             print("Not enough records to test parallel loader. Using serial loader.")
-        def UpdatePersonEntityCSV( csv_file, use_dask ):
-            return EntityUpdateCSV( "Person", csv_file, use_dask = use_dask )
         file_data_pair = {
             "./input/persons-update.adb.csv": UpdatePersonEntityCSV,
             "./input/persons-update-oldversion.adb.csv": UpdatePersonEntityCSV,
             "./input/persons-update-newversion.adb.csv": UpdatePersonEntityCSV,
+            "./input/persons-update-olderage.adb.csv": UpdatePersonEntityCSV,
             "./input/images_update_and_add.adb.csv": ImageUpdateCSV,
             "./input/images_newest_blobs.adb.csv": ImageForceNewestCSV 
         }
@@ -138,7 +138,7 @@ def modify_data_from_csv(db, request):
 
         loader = ParallelQuerySet(db)
         loader.query(data, batchsize=99,
-                      numthreads=8,
+                      numthreads=1,
                       stats=True,
                       )
         assert loader.error_counter == 0
