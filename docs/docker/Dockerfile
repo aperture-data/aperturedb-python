@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as docs
+FROM ubuntu:22.04 as docs
 
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \

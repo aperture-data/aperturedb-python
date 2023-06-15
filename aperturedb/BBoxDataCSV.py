@@ -60,14 +60,21 @@ class BBoxDataCSV(CSVParser.CSVParser):
     def __init__(self, filename, df=None, use_dask=False):
 
         super().__init__(filename, df=df, use_dask=use_dask)
-        if not use_dask:
-            self.props_keys       = [x for x in self.header[5:]
-                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.constraints_keys = [x for x in self.header[5:]
-                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
 
-            self.img_key = self.header[0]
-            self.command = "AddBoundingBox"
+        self.props_keys = [x for x in self.header[5:]
+                           if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+        self.constraints_keys = [x for x in self.header[5:]
+                                 if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+
+        self.img_key = self.header[0]
+        self.command = "AddBoundingBox"
+
+    def get_indices(self):
+        return {
+            "entity": {
+                "_BoundingBox": self.get_indexed_properties()
+            }
+        }
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
@@ -103,7 +110,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
         }
         abb = self._basic_command(idx, custom_fields)
 
-        properties  = self.parse_properties(self.df, idx)
+        properties = self.parse_properties(idx)
         if properties:
             props = properties
             if "_label" in props:

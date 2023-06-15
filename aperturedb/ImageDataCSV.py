@@ -21,13 +21,19 @@ CONSTRAINTS   = "constraints"
 IMG_FORMAT    = "format"
 
 class ImageDataProcessor():
-    def __init__(self, check_image, n_download_retries):
+    def __init__(self, check_image, n_download_retries,use_dask):
         self.loaders = [self.load_image, self.load_url,
                         self.load_s3_url, self.load_gs_url]
         self.source_types = [HEADER_PATH,
                          HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
         self.check_image = check_image
+        self.s3 = None
+        if use_dask == False and self.source_type == HEADER_S3_URL:
+            # The connections by boto3 cause ResourceWarning. Known
+            # issue: https://github.com/boto/boto3/issues/454
+            self.s3 = boto3.client('s3')
     def load_image(self, filename):
+
         if self.check_image:
             try:
                 a = cv2.imread(filename)
@@ -82,15 +88,11 @@ class ImageDataProcessor():
     def load_s3_url(self, s3_url):
         retries = 0
 
-        # The connections by boto3 cause ResourceWarning. Known
-        # issue: https://github.com/boto/boto3/issues/454
-        s3 = boto3.client('s3')
-
         while True:
             try:
                 bucket_name = s3_url.split("/")[2]
                 object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
-                s3_response_object = s3.get_object(
+                s3_response_object = self.s3.get_object(
                     Bucket=bucket_name, Key=object_name)
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')

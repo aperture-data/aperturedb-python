@@ -1,8 +1,10 @@
+from calendar import c
 import logging
 import json
 
 from aperturedb.Connector import Connector
 from aperturedb import ProgressBar
+from aperturedb.ParallelQuery import execute_batch
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +36,24 @@ class Utils(object):
         if self.verbose:
             print(str)
 
+    def execute(self, query, blobs=[], success_statuses=[0]):
+        try:
+            rc, r, b = execute_batch(
+                query, blobs, self.connector, success_statuses=success_statuses)
+        except BaseException as e:
+            logger.error(self.connector.get_last_response_str())
+            raise e
+
+        if rc != 0:
+            raise Exception("query failed with result {rc}")
+
+        return r, b
+
     def status(self):
 
         q = [{"GetStatus": {}}]
 
-        try:
-            res, blobs = self.connector.query(q)
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+        self.execute(q)
 
         return self.connector.get_last_response_str()
 
@@ -170,12 +181,8 @@ class Utils(object):
         }]
 
         try:
-            res, blobs = self.connector.query(q)
-            if not self.connector.last_query_ok():
-                logger.error(self.connector.get_last_response_str())
-                return False
+            self.execute(q, success_statuses=[0, 2])
         except:
-            logger.error(self.connector.get_last_response_str())
             return False
 
         return True
@@ -191,12 +198,8 @@ class Utils(object):
         }]
 
         try:
-            res, blobs = self.connector.query(q)
-            if not self.connector.last_query_ok():
-                logger.error(self.connector.get_last_response_str())
-                return False
+            self.execute(q)
         except:
-            logger.error(self.connector.get_last_response_str())
             return False
 
         return True
@@ -241,12 +244,8 @@ class Utils(object):
         if constraints:
             q[0]["FindImage"]["constraints"] = constraints
 
-        try:
-            res, blobs = self.connector.query(q)
-            total_images = res[0]["FindImage"]["count"]
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+        res, _ = self.execute(q)
+        total_images = res[0]["FindImage"]["count"]
 
         return total_images
 
@@ -267,12 +266,8 @@ class Utils(object):
 
         ids = []
 
-        try:
-            res, blobs = self.connector.query(q)
-            total_elements = res[0]["FindEntity"]["batch"]["total_elements"]
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+        res, _ = self.execute(q)
+        total_elements = res[0]["FindEntity"]["batch"]["total_elements"]
 
         batch_size = DEFAULT_METADATA_BATCH_SIZE
         iterations = total_elements // batch_size
@@ -292,13 +287,9 @@ class Utils(object):
 
             q[0]["FindEntity"]["batch"] = batch
 
-            try:
-                res, blobs = self.connector.query(q)
-                ids += [element["_uniqueid"]
-                        for element in res[0]["FindEntity"]["entities"]]
-            except BaseException as e:
-                logger.error(self.connector.get_last_response_str())
-                raise e
+            res, _ = self.execute(q)
+            ids += [element["_uniqueid"]
+                    for element in res[0]["FindEntity"]["entities"]]
 
             if self.verbose:
                 pb.update(i / iterations)
@@ -328,12 +319,8 @@ class Utils(object):
         if constraints:
             q[0]["FindBoundingBox"]["constraints"] = constraints
 
-        try:
-            res, blobs = self.connector.query(q)
-            total_connections = res[0]["FindBoundingBox"]["count"]
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+        res, _ = self.execute(q)
+        total_connections = res[0]["FindBoundingBox"]["count"]
 
         return total_connections
 
@@ -351,23 +338,8 @@ class Utils(object):
         if constraints:
             q[0]["FindEntity"]["constraints"] = constraints
 
-        try:
-            res, blobs = self.connector.query(q)
-            fe = res[0]["FindEntity"]
-
-            if fe["status"] == 1:
-                # TODO: Here we return 0 entities because the query failed.
-                # This is because Find* Command will return status: 1
-                # and no count if no object is found.
-                # We should change the Find* Command to return status: 0
-                # and count: 0 if no object is found.
-                total_entities = 0
-            else:
-                total_entities = fe["count"]
-
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+        res, _ = self.execute(q)
+        total_entities = res[0]["FindEntity"]["count"]
 
         return total_entities
 
@@ -385,12 +357,8 @@ class Utils(object):
         if constraints:
             q[0]["FindConnection"]["constraints"] = constraints
 
-        try:
-            res, blobs = self.connector.query(q)
-            total_connections = res[0]["FindConnection"]["count"]
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+        res, _ = self.execute(q)
+        total_connections = res[0]["FindConnection"]["count"]
 
         return total_connections
 
@@ -405,16 +373,9 @@ class Utils(object):
             }
         }]
 
-        response, arr = self.connector.query(query)
-
-        expected = [{
-            "AddDescriptorSet": {
-                "status": 0,
-            }
-        }]
-
-        if response != expected:
-            logger.error(self.connector.get_last_response_str())
+        try:
+            self.execute(query)
+        except:
             return False
 
         return True
@@ -429,12 +390,8 @@ class Utils(object):
             }
         }]
 
-        try:
-            res, blobs = self.connector.query(q)
-            total_descriptor_sets = res[0]["FindDescriptorSet"]["count"]
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+        res, _ = self.query(q)
+        total_descriptor_sets = res[0]["FindDescriptorSet"]["count"]
 
         return total_descriptor_sets
 
@@ -450,14 +407,10 @@ class Utils(object):
         }]
 
         sets = []
-        try:
-            res, _ = self.connector.query(q)
-
+        res, _ = self.execute(q)
+        if res[0]["FindDescriptorSet"]["returned"] > 0:
             sets = [ent["_name"]
                     for ent in res[0]["FindDescriptorSet"]["entities"]]
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
 
         return sets
 
@@ -476,12 +429,8 @@ class Utils(object):
         }]
 
         try:
-            res, _ = self.connector.query(q)
-            if not self.connector.last_query_ok():
-                logger.error(self.connector.get_last_response_str())
-                return False
+            self.execute(q)
         except:
-            logger.error(self.connector.get_last_response_str())
             return False
 
         return True
@@ -519,10 +468,9 @@ class Utils(object):
                 }
             }]
 
-            res, _ = self.connector.query(q)
-
-            if not self.connector.last_query_ok():
-                logger.error(self.connector.get_last_response_str())
+            try:
+                self.execute(q)
+            except:
                 return False
 
             self.print(
@@ -549,13 +497,8 @@ class Utils(object):
             }
         }]
 
-        r, _ = self.connector.query(query)
-
-        if not self.connector.last_query_ok():
-            logger.error(self.connector.get_last_response_str())
-            return False
-
         try:
+            r, _ = self.execute(query)
             count = r[0]["DeleteEntity"]["count"]
             self.print(f"Deleted {count} entities")
             self.print(
@@ -580,13 +523,8 @@ class Utils(object):
             }
         }]
 
-        r, _ = self.connector.query(query)
-
-        if not self.connector.last_query_ok():
-            logger.error(self.connector.get_last_response_str())
-            return False
-
         try:
+            r, _ = self.execute(query)
             count = r[0]["DeleteConnection"]["count"]
             self.print(f"Deleted {count} connections")
             self.print(
@@ -670,15 +608,8 @@ class Utils(object):
             }
         }]
 
-        try:
-            res, _ = self.connector.query(q)
-            if not self.connector.last_query_ok():
-                logger.error(self.connector.get_last_response_str())
-            else:
-                total = res[1]["FindDescriptor"]["count"]
-        except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+        res, _ = self.execute(q)
+        total = res[1]["FindDescriptor"]["count"]
 
         return total
 
@@ -703,28 +634,22 @@ class Utils(object):
         ]
 
         try:
-            for q in queries:
-                response, _ = self.connector.query(q)
-                if not self.connector.last_query_ok():
-                    logger.error(self.connector.get_last_response_str())
-                    return False
-
-            response, _ = self.connector.query(
-                [{"GetSchema": {"refresh": True}}])
-
-            if not self.connector.last_query_ok():
-                logger.error(self.connector.get_last_response_str())
+            try:
+                for q in queries:
+                    self.execute(q)
+                response, _ = self.execute(
+                    [{"GetSchema": {"refresh": True}}])
+            except:
                 return False
 
-            entities    = response[0]["GetSchema"]["entities"]
-            connections = response[0]["GetSchema"]["connections"]
+            schema = response[0]["GetSchema"]
 
-            if entities is not None:
+            if "entities" in schema and schema["entities"] is not None:
                 logger.error("Entities not removed completely")
                 logger.error(self.connector.get_last_response_str())
                 return False
 
-            if connections is not None:
+            if "connections" in schema and schema["connections"] is not None:
                 logger.error("Connections not removed completely")
                 logger.error(self.connector.get_last_response_str())
                 return False

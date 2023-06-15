@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 ENTITY_CLASS      = "EntityClass"
 CONSTRAINTS_PREFIX = "constraint_"
+DATE_PREFIX = "date:"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
 
@@ -61,6 +62,22 @@ class CSVParser(Subscriptable):
 
     def __len__(self):
         return len(self.df.index)
+
+    def get_indexed_properties(self):
+        if self.constraints_keys:
+            return {self._parse_prop(k)[0] for k in self.constraints_keys}
+        return set()
+
+    def get_indices(self):
+        raise NotImplementedError
+
+    def _parse_prop(self, key, val=None):
+        if key.startswith(CONSTRAINTS_PREFIX):
+            key = key[len(CONSTRAINTS_PREFIX):]
+        if key.startswith(DATE_PREFIX):
+            key = key[len(DATE_PREFIX):]
+            val = {"_date": val}
+        return key, val
 
     def parse_properties(self, df, idx):
 

@@ -137,7 +137,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             Here we flatten the individual queries to run them as
             a single query in a batch
         """
-        q     = [cmd for query in data for cmd in query[0]]
+        q = [cmd for query in data for cmd in query[0]]
         blobs = [blob for query in data for blob in query[1]]
 
         return q, blobs
@@ -219,7 +219,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         for i in range(total_batches):
 
             batch_start = start + i * self.batchsize
-            batch_end   = min(batch_start + self.batchsize, end)
+            batch_end = min(batch_start + self.batchsize, end)
 
             try:
                 self.do_batch(db, generator[batch_start:batch_end])
@@ -253,10 +253,15 @@ class ParallelQuery(Parallelizer.Parallelizer):
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
 
-        if hasattr(generator, "use_dask") and generator.use_dask:
+        use_dask = hasattr(generator, "use_dask") and generator.use_dask
+        if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 
+        if hasattr(self, "query_setup"):
+            self.query_setup(generator)
+
+        if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
                 self.__class__, self.db, generator, batchsize, stats=stats)
             self.actual_stats = []
@@ -308,7 +313,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         else:
             mean = np.mean(times)
-            std  = np.std(times)
+            std = np.std(times)
             tp = 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")
