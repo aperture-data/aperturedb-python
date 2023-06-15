@@ -297,6 +297,7 @@ def generate_descriptorset(names, dims):
 
     df.to_csv("input/descriptorset.adb.csv", index=False)
 
+
 def generate_update_person():
     # generate 3 testing csvs for update testing
     # cvs 1 - base load with version.
@@ -309,8 +310,8 @@ def generate_update_person():
     df.to_csv("input/persons-update.adb.csv", index=False)
 
     # csv 2 - modified data, but same version ( will cause no updates )
-    df['age'] = df['age'].apply( lambda age: age + 200 )
-    df['version_id'] = df['version_id'].apply( lambda ver: ver + 1 )
+    df['age'] = df['age'].apply(lambda age: age + 200)
+    df['version_id'] = df['version_id'].apply(lambda ver: ver + 1)
     df.to_csv("input/persons-update-oldversion.adb.csv", index=False)
 
     # csv 3 - modified data, and version ( will update )
@@ -320,10 +321,11 @@ def generate_update_person():
 
     # generate other updateif with different direction
     df = pd.read_csv("input/persons.adb.csv")
-    df['age'] = df['age'].apply( lambda age: age + 200 )
+    df['age'] = df['age'].apply(lambda age: age + 200)
     # change if age in database is > 30
-    df['updateif_>age'] = [ 30 for x in range(len(df)) ]
+    df['updateif_>age'] = [30 for x in range(len(df))]
     df = df.to_csv("input/persons-update-olderage.adb.csv")
+
 
 def generate_partial_load():
 
@@ -334,10 +336,11 @@ def generate_partial_load():
     overlapped = df.head(12).tail(5)
     overlapped.to_csv("input/persons-some-exist.adb.csv", index=False)
 
+
 def generate_update_images(multiplier):
 
-    image_count=5
-    licence_count=2
+    image_count = 5
+    licence_count = 2
     multiplier = multiplier // 2
     path    = "input/images/"
     imgs    = [path + "number_" + str(i).zfill(4) +
@@ -345,7 +348,7 @@ def generate_update_images(multiplier):
     license = [x for x in range(licence_count)] * multiplier
 
     images  = list(product(imgs, license))
-    duplicate_count=len(images)//10
+    duplicate_count = len(images) // 10
 
     ids      = random.sample(range(1000000000), len(images))
     age      = [int(100 * random.random()) for i in range(len(images))]
@@ -370,21 +373,23 @@ def generate_update_images(multiplier):
     updated_version_id = [2 for i in range(duplicate_count)]
     updates["version_id"] = updated_version_id
     updates["updateif_<version_id"] = updated_version_id
-    df = pd.concat([df,updates])
+    df = pd.concat([df, updates])
 
-    df.to_csv( "./input/images_update_and_add.adb.csv", index=False)
+    df.to_csv("./input/images_update_and_add.adb.csv", index=False)
+
 
 def generate_newest_images(multiplier):
-    image_count=5
-    licence_count=2
+    image_count = 5
+    licence_count = 2
     multiplier = multiplier // 2
     path    = "input/images/"
-    img_ids = [ i for i  in range(image_count)] * multiplier
-    filegen = lambda file_num : path + "number_" + str(file_num).zfill(4) + ".png"
+    img_ids = [i for i in range(image_count)] * multiplier
+    def filegen(file_num): return path + "number_" + \
+        str(file_num).zfill(4) + ".png"
     license = [x for x in range(licence_count)] * multiplier
 
     images  = list(product(img_ids, license))
-    prop_change_count=len(images)//10
+    prop_change_count = len(images) // 10
 
     ids      = random.sample(range(1000000000), len(images))
     age      = [int(100 * random.random()) for i in range(len(images))]
@@ -392,11 +397,11 @@ def generate_newest_images(multiplier):
     dog      = [x > 100 for x in height]
     date_cap = [datetime.now().isoformat() for x in range(len(images))]
     version_id = [1 for x in range(len(images))]
-    empty_column = [ "" for x in range(len(images))]
+    empty_column = ["" for x in range(len(images))]
 
     df = pd.DataFrame(images, columns=['img_id', 'license'])
     # we want filename to be first column
-    df.insert(0, "filename" , df['img_id'].apply( filegen ))
+    df.insert(0, "filename", df['img_id'].apply(filegen))
     df["id"]       = ids
     df["age"]      = age
     df["height"]   = height
@@ -408,32 +413,32 @@ def generate_newest_images(multiplier):
     df["updateif_<version_id"] = version_id
     df["updateif_blobsha1_imagesha"] = empty_column
 
-
     df = df.sort_values("id")
 
     # temporary
     df = df.head(4).copy()
     prop_change_count = 1
     blob_change_count = 1
-    
-
 
     prop_updates = df.head(prop_change_count).copy()
-    prop_updates["version_id"] = prop_updates["version_id"].apply( lambda id : id + 1 )
+    prop_updates["version_id"] = prop_updates["version_id"].apply(
+        lambda id: id + 1)
     prop_updates["updateif_<version_id"] = prop_updates["version_id"]
-    prop_updates["age"] = prop_updates["age"].apply( lambda age: age+1)
+    prop_updates["age"] = prop_updates["age"].apply(lambda age: age + 1)
 
-    blob_updates = df.head(prop_change_count+1).tail(1).copy()
-    blob_updates["version_id"] = blob_updates["version_id"].apply( lambda id : id + 2 )
+    blob_updates = df.head(prop_change_count + 1).tail(1).copy()
+    blob_updates["version_id"] = blob_updates["version_id"].apply(
+        lambda id: id + 2)
     blob_updates["updateif_<version_id"] = blob_updates["version_id"]
-    blob_updates["age"] = blob_updates["age"].apply( lambda age: age+2)
-    blob_updates["img_id"] = blob_updates["img_id"].apply( lambda id: id +1 )
-    blob_updates["filename"] = blob_updates["img_id"].apply( filegen )
-    df = pd.concat([df,prop_updates,blob_updates])
+    blob_updates["age"] = blob_updates["age"].apply(lambda age: age + 2)
+    blob_updates["img_id"] = blob_updates["img_id"].apply(lambda id: id + 1)
+    blob_updates["filename"] = blob_updates["img_id"].apply(filegen)
+    df = pd.concat([df, prop_updates, blob_updates])
     print(df)
     df = df.drop(columns=["img_id"])
 
-    df.to_csv( "./input/images_newest_blobs.adb.csv", index=False)
+    df.to_csv("./input/images_newest_blobs.adb.csv", index=False)
+
 
 def main(params):
 
@@ -454,7 +459,6 @@ def main(params):
         generate_descriptors(images, name, dims)
 
     generate_update_person()
-
 
 
 def get_args():
