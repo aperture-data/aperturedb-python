@@ -107,6 +107,7 @@ class TestEntityLoader():
         self.assertEqual(3, len(boxes))
         self.assertEqual(1, utils.count_bboxes())
 
+
 class TestEntityDelete():
     def test_delete(self, utils, insert_data_from_csv, modify_data_from_csv):
         # Assert that we have a clean slate to begin with.
@@ -116,82 +117,108 @@ class TestEntityDelete():
         data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
         self.assertEqual(len(data), utils.count_entities("_Image"))
 
-        deleted = insert_data_from_csv(in_csv_file = "./input/images_delete.adb.csv")
-        self.assertEqual(len(data)-len(deleted), utils.count_entities("_Image"))
+        deleted = insert_data_from_csv(
+            in_csv_file = "./input/images_delete.adb.csv")
+        self.assertEqual(len(data) - len(deleted),
+                         utils.count_entities("_Image"))
+
 
 class TestEntityUpdate():
-    def test_partial_update(self, utils, insert_data_from_csv, xx ):
+    def test_partial_update(self, utils, insert_data_from_csv, xx):
         # Assert that we have a clean slate to begin with.
         self.assertTrue(utils.remove_all_objects())
 
         # Verify entire file is loaded
         data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
         self.assertEqual(len(data), utils.count_entities("_Image"))
-        update = insert_data_from_csv(in_csv_file = "./input/images_partial_update.adb.csv")
-        self.assertEqual(len(data)-len(deleted), utils.count_entities("_Image"))
+        update = insert_data_from_csv(
+            in_csv_file = "./input/images_partial_update.adb.csv")
+        self.assertEqual(len(data) - len(deleted),
+                         utils.count_entities("_Image"))
 
 # test EntityUpdateCSV with Person entity.
+
+
 class TestUpdatePersonEntityCSV():
     def assertEqual(self, expected, actual):
         if expected != actual:
             raise AssertionError(
                 "Expected {}, got {}".format(expected, actual))
+
     def assertTrue(self, condition):
         if not condition:
             raise AssertionError("Condition not true")
     # verifies adding and no update when version isn't greater.
+
     def test_updateif_fails(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
         # verifies loading with empty database.
-        data = modify_data_from_csv(in_csv_file = "./input/persons-update.adb.csv")
+        data = modify_data_from_csv(
+            in_csv_file = "./input/persons-update.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
         # verifies updateif will not update if criteria doesn't pass.
-        update_data = modify_data_from_csv(in_csv_file = "./input/persons-update-oldversion.adb.csv")
+        update_data = modify_data_from_csv(
+            in_csv_file = "./input/persons-update-oldversion.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
         all_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person"))
         # if updated, age will be above 200.
-        self.assertEqual( len( list( filter( lambda p: p['version_id'] == 2, all_persons ))), 0 )
-        self.assertEqual( len( list( filter( lambda p: p['age'] >= 200, all_persons ))), 0 )
+        self.assertEqual(
+            len(list(filter(lambda p: p['version_id'] == 2, all_persons))), 0)
+        self.assertEqual(
+            len(list(filter(lambda p: p['age'] >= 200, all_persons))), 0)
+
     def test_updateif_passes(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
-        data = modify_data_from_csv(in_csv_file = "./input/persons-update.adb.csv")
+        data = modify_data_from_csv(
+            in_csv_file = "./input/persons-update.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
-        update_data = modify_data_from_csv(in_csv_file = "./input/persons-update-newversion.adb.csv")
+        update_data = modify_data_from_csv(
+            in_csv_file = "./input/persons-update-newversion.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
         all_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person"))
         # if updated, age will be above 200.
-        self.assertEqual( len( list( filter( lambda p: p['version_id'] == 2, all_persons ))), len(update_data) )
-        self.assertEqual( len( list( filter( lambda p: p['age'] >= 200 , all_persons))), len(update_data) )
+        self.assertEqual(
+            len(list(filter(lambda p: p['version_id'] == 2, all_persons))), len(update_data))
+        self.assertEqual(
+            len(list(filter(lambda p: p['age'] >= 200, all_persons))), len(update_data))
 
     def test_updateif_partial_age(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
-        data = modify_data_from_csv(in_csv_file = "./input/persons-update.adb.csv")
+        data = modify_data_from_csv(
+            in_csv_file = "./input/persons-update.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
 
         all_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person"))
-        previous_old_age = len( list( filter( lambda p: p['age'] > 30, all_persons)))
-        update_data = modify_data_from_csv(in_csv_file = "./input/persons-update-olderage.adb.csv")
+        previous_old_age = len(
+            list(filter(lambda p: p['age'] > 30, all_persons)))
+        update_data = modify_data_from_csv(
+            in_csv_file = "./input/persons-update-olderage.adb.csv")
         all_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person"))
-        new_old_age = len( list( filter( lambda p: p['age'] > 200, all_persons)))
-        self.assertEqual( previous_old_age, new_old_age )
-            
+        new_old_age = len(list(filter(lambda p: p['age'] > 200, all_persons)))
+        self.assertEqual(previous_old_age, new_old_age)
+
 
 # Test functionality of ImageUpdateCSV loader.
 class TestImageUpdateCSV():
-    def test_images(self,utils,modify_data_from_csv ):
-        data = modify_data_from_csv(in_csv_file= "./input/images_update_and_add.adb.csv")
-        self.assertEqual(True,True) # how to verify.
+    def test_images(self, utils, modify_data_from_csv):
+        data = modify_data_from_csv(
+            in_csv_file= "./input/images_update_and_add.adb.csv")
+        self.assertEqual(True, True)  # how to verify.
 
 # Test functionality of ImageForceNewestCSV loader.
+
+
 class TestImageForceNewestCSV():
-    def test_images(self,utils,modify_data_from_csv ):
-        # 
-        data = modify_data_from_csv(in_csv_file= "./input/images_newest_blobs.adb.csv")
-        self.assertEqual(True,True) # how to verify.
+    def test_images(self, utils, modify_data_from_csv):
+        #
+        data = modify_data_from_csv(
+            in_csv_file= "./input/images_newest_blobs.adb.csv")
+        self.assertEqual(True, True)  # how to verify.
+
 
 class TestURILoader():
     def assertEqual(self, expected, actual):
