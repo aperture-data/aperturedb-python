@@ -108,21 +108,6 @@ class TestEntityLoader():
         self.assertEqual(3, len(boxes))
         self.assertEqual(1, utils.count_bboxes())
 
-
-# test EntityUpdateCSV with Person entity.
-
-
-class TestUpdatePersonEntityCSV():
-    def assertEqual(self, expected, actual):
-        if expected != actual:
-            raise AssertionError(
-                "Expected {}, got {}".format(expected, actual))
-
-    def assertTrue(self, condition):
-        if not condition:
-            raise AssertionError("Condition not true")
-    # verifies adding and no update when version isn't greater.
-
     def test_updateif_fails(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
         # verifies loading with empty database.
@@ -173,6 +158,21 @@ class TestUpdatePersonEntityCSV():
                                         spec=Query.spec(with_class="Person"))
         new_old_age = len(list(filter(lambda p: p['age'] > 200, all_persons)))
         self.assertEqual(previous_old_age, new_old_age)
+
+
+# test EntityUpdateCSV with Person entity.
+
+
+class TestUpdatePersonEntityCSV():
+    def assertEqual(self, expected, actual):
+        if expected != actual:
+            raise AssertionError(
+                "Expected {}, got {}".format(expected, actual))
+
+    def assertTrue(self, condition):
+        if not condition:
+            raise AssertionError("Condition not true")
+    # verifies adding and no update when version isn't greater.
 
 
 # Test functionality of ImageUpdateCSV loader.
