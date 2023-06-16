@@ -459,6 +459,7 @@ def main(params):
         generate_descriptors(images, name, dims)
 
     generate_update_person()
+    generate_partial_load()
 
 
 def get_args():
