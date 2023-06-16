@@ -186,12 +186,15 @@ class TestImageUpdateCSV():
     def assertTrue(self, condition):
         if not condition:
             raise AssertionError("Condition not true")
+
     def test_images(self, utils, modify_data_from_csv):
         data = modify_data_from_csv(
             in_csv_file= "./input/images_update_and_add.adb.csv")
         self.assertEqual(True, True)  # how to verify.
 
 # Test functionality of ImageForceNewestCSV loader.
+
+
 @pytest.mark.skip(reason="Old csv not generated")
 class TestImageForceNewestCSV():
     def assertEqual(self, expected, actual):
@@ -202,6 +205,7 @@ class TestImageForceNewestCSV():
     def assertTrue(self, condition):
         if not condition:
             raise AssertionError("Condition not true")
+
     def test_images(self, utils, modify_data_from_csv):
         #
         data = modify_data_from_csv(
