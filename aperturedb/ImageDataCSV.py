@@ -44,10 +44,10 @@ class ImageDataProcessor():
             try:
                 a = cv2.imread(filename)
                 if a.size <= 0:
-                    logger.error("IMAGE SIZE ERROR:", filename)
+                    logger.error(f"IMAGE SIZE ERROR: {filename}")
                     return False, None
             except Exception as e:
-                logger.error("IMAGE ERROR:", filename)
+                logger.error(f"IMAGE ERROR: {filename}")
                 logger.exception(e)
 
         try:
@@ -56,7 +56,7 @@ class ImageDataProcessor():
             fd.close()
             return True, buff
         except Exception as e:
-            logger.error("IMAGE ERROR:", filename)
+            logger.error(f"IMAGE ERROR: {filename}")
             logger.exception(e)
         return False, None
 
@@ -78,14 +78,14 @@ class ImageDataProcessor():
             if imgdata.ok:
                 imgbuffer = np.frombuffer(imgdata.content, dtype='uint8')
                 if self.check_image and not self.check_image_buffer(imgbuffer):
-                    logger.error("IMAGE ERROR: ", url)
+                    logger.error(f"IMAGE ERROR: {url}")
                     return False, None
 
                 return imgdata.ok, imgdata.content
             else:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("WARNING: Retrying object:", url)
+                logger.warning(f"WARNING: Retrying object: {url}")
                 retries += 1
                 time.sleep(2)
 
@@ -103,18 +103,18 @@ class ImageDataProcessor():
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
                 if self.check_image and not self.check_image_buffer(imgbuffer):
-                    logger.error("IMAGE ERROR: ", s3_url)
+                    logger.error(f"IMAGE ERROR: {s3_url}")
                     return False, None
 
                 return True, img
             except:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("WARNING: Retrying object:", s3_url)
+                logger.warning(f"WARNING: Retrying object: {s3_url}")
                 retries += 1
                 time.sleep(2)
 
-        logger.error("S3 ERROR:", s3_url)
+        logger.error(f"S3 ERROR: {s3_url}")
         return False, None
 
     def load_gs_url(self, gs_url):
@@ -130,17 +130,17 @@ class ImageDataProcessor():
                     object_name).download_as_bytes()
                 imgbuffer = np.frombuffer(blob, dtype='uint8')
                 if self.check_image and not self.check_image_buffer(imgbuffer):
-                    logger.error("IMAGE ERROR: ", gs_url)
+                    logger.error(f"IMAGE ERROR: {gs_url}")
                     return False, None
                 return True, blob
             except:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("WARNING: Retrying object:", gs_url)
+                logger.warning(f"WARNING: Retrying object: {gs_url}")
                 retries += 1
                 time.sleep(2)
 
-        logger.error("GS ERROR:", gs_url)
+        logger.error(f"GS ERROR: {gs_url}")
         return False, None
 
 

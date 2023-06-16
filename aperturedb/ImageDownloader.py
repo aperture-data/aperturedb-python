@@ -82,10 +82,10 @@ class ImageDownloader(Parallelizer.Parallelizer):
         try:
             a = cv2.imread(filename)
             if a.size <= 0:
-                logger.warning("Image present but error reading it:", url)
+                logger.warning(f"Image present but error reading it: {url}")
                 return False
         except Exception as e:
-            logger.error("Image present but error decoding:", url)
+            logger.error(f"Image present but error decoding: {url}")
             logger.exception(e)
             return False
 
@@ -112,7 +112,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
             else:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("Retrying object:", url)
+                logger.warning(f"Retrying object: {url}")
                 retries += 1
                 time.sleep(2)
 
@@ -124,16 +124,16 @@ class ImageDownloader(Parallelizer.Parallelizer):
             try:
                 a = cv2.imread(filename)
                 if a.size <= 0:
-                    logger.error("Downloaded image size error:", url)
+                    logger.error(f"Downloaded image size error: {url}")
                     os.remove(filename)
                     self.error_counter += 1
             except Exception as e:
-                logger.error("Downloaded image cannot be decoded:", url)
+                logger.error(f"Downloaded image cannot be decoded: {url}")
                 logger.exception(e)
                 os.remove(filename)
                 self.error_counter += 1
         else:
-            logger.error("URL not found:", url)
+            logger.error(f"URL not found: {url}")
             self.error_counter += 1
 
         self.times_arr.append(time.time() - start)
