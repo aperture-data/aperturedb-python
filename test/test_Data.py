@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from aperturedb.Query import QueryBuilder, Query
 from aperturedb.Entities import Entities
 
