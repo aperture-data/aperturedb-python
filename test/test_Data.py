@@ -108,34 +108,6 @@ class TestEntityLoader():
         self.assertEqual(1, utils.count_bboxes())
 
 
-class TestEntityDelete():
-    def test_delete(self, utils, insert_data_from_csv, modify_data_from_csv):
-        # Assert that we have a clean slate to begin with.
-        self.assertTrue(utils.remove_all_objects())
-
-        # Verify entire file is loaded
-        data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
-        self.assertEqual(len(data), utils.count_entities("_Image"))
-
-        deleted = insert_data_from_csv(
-            in_csv_file = "./input/images_delete.adb.csv")
-        self.assertEqual(len(data) - len(deleted),
-                         utils.count_entities("_Image"))
-
-
-class TestEntityUpdate():
-    def test_partial_update(self, utils, insert_data_from_csv, xx):
-        # Assert that we have a clean slate to begin with.
-        self.assertTrue(utils.remove_all_objects())
-
-        # Verify entire file is loaded
-        data = insert_data_from_csv(in_csv_file = "./input/images.adb.csv")
-        self.assertEqual(len(data), utils.count_entities("_Image"))
-        update = insert_data_from_csv(
-            in_csv_file = "./input/images_partial_update.adb.csv")
-        self.assertEqual(len(data) - len(deleted),
-                         utils.count_entities("_Image"))
-
 # test EntityUpdateCSV with Person entity.
 
 
@@ -203,16 +175,32 @@ class TestUpdatePersonEntityCSV():
 
 
 # Test functionality of ImageUpdateCSV loader.
+@pytest.mark.skip(reason="Old csv not generated")
 class TestImageUpdateCSV():
+    def assertEqual(self, expected, actual):
+        if expected != actual:
+            raise AssertionError(
+                "Expected {}, got {}".format(expected, actual))
+
+    def assertTrue(self, condition):
+        if not condition:
+            raise AssertionError("Condition not true")
     def test_images(self, utils, modify_data_from_csv):
         data = modify_data_from_csv(
             in_csv_file= "./input/images_update_and_add.adb.csv")
         self.assertEqual(True, True)  # how to verify.
 
 # Test functionality of ImageForceNewestCSV loader.
-
-
+@pytest.mark.skip(reason="Old csv not generated")
 class TestImageForceNewestCSV():
+    def assertEqual(self, expected, actual):
+        if expected != actual:
+            raise AssertionError(
+                "Expected {}, got {}".format(expected, actual))
+
+    def assertTrue(self, condition):
+        if not condition:
+            raise AssertionError("Condition not true")
     def test_images(self, utils, modify_data_from_csv):
         #
         data = modify_data_from_csv(

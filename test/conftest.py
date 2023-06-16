@@ -32,11 +32,15 @@ def pytest_generate_tests(metafunc):
                 use_ssl = True)}
 
         ], indirect=True, ids=["TCP"])
-    if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
+    if all( func in metafunc.fixturenames for func in ["insert_data_from_csv", "modify_data_from_csv" ]) and \
+            metafunc.module.__name__ in ["test.test_Data"]:
+        metafunc.parametrize("insert_data_from_csv,modify_data_from_csv", [
+                             [True,True], [False,False]], indirect=True, ids=["with_dask", "without_dask"])
+    elif "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
                              True, False], indirect=True, ids=["with_dask", "without_dask"])
-    if "modify_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
+    elif "modify_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("modify_data_from_csv", [
                              True, False], indirect=True, ids=["with_dask", "without_dask"])

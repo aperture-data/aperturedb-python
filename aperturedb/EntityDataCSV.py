@@ -49,8 +49,6 @@ class EntityDataCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[1:]
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.command = "AddEntity"
-        self.search_keys = [x for x in self.header[1:]
-                            if x.startswith(CSVParser.SEARCH_PREFIX)]
 
     def get_indices(self):
         return {
