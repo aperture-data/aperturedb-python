@@ -54,7 +54,8 @@ def db(request):
 def check_reposnse_regressions(queries, input_blobs, responses, output_blobs):
     # Check that responses have no blobs
     first_command = list(responses[0].keys())[0]
-    assert "blobs_start" not in responses[0][first_command], f"{responses[0]=}, {first_command=}"
+    assert "blobs_start" not in responses[0][
+        first_command], f"responses[0]={responses[0]}"
 
 
 @pytest.fixture()
