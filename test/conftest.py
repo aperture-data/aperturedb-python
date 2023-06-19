@@ -51,6 +51,12 @@ def db(request):
     return db
 
 
+def check_reposnse_regressions(queries, input_blobs, responses, output_blobs):
+    # Check that responses have no blobs
+    first_command = list(responses[0].keys())[0]
+    assert "blobs_start" not in responses[0][first_command], f"{responses[0]=}, {first_command=}"
+
+
 @pytest.fixture()
 def insert_data_from_csv(db, request):
     """
@@ -82,6 +88,10 @@ def insert_data_from_csv(db, request):
         if hasattr(request, "param"):
             use_dask = request.param
         data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask)
+
+        setattr(data, "response_handler", check_reposnse_regressions)
+        data.strict_response_validation = True
+
         if rec_count != -1:
             data = data[:rec_count]
 
@@ -106,7 +116,7 @@ def insert_data_from_csv(db, request):
         if loader_result_lambda is not None:
             loader_result_lambda(loader, data)
 
-       # Preserve loader so that dask manager is not auto deleted.
+        # Preserve loader so that dask manager is not auto deleted.
         # ---------------
         # Previously, dask's cluster and client were entirely managed in a context
         # insede dask manager. A change upstream broke that, and now we keep the DM
