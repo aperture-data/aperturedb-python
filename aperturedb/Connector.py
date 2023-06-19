@@ -29,7 +29,6 @@ from . import queryMessage_pb2
 import sys
 import traceback
 import os
-import requests
 import socket
 import struct
 import time
