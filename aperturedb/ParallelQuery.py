@@ -177,8 +177,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
         worker_stats = {}
         if not self.dry_run:
             response_handler = None
+            strict_response_validation = False
             if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
                 response_handler = self.generator.response_handler
+            if hasattr(self.generator, "strict_response_validation") and isinstance(self.generator.strict_response_validation, bool):
+                strict_response_validation = self.generator.strict_response_validation
             result, r, b = execute_batch(
                 q,
                 blobs,
@@ -187,7 +190,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 response_handler,
                 self.commands_per_query,
                 self.blobs_per_query,
-                strict_response_validation=self.generator.strict_response_validation)
+                strict_response_validation=strict_response_validation)
             if result == 0:
                 query_time = db.get_last_query_time()
                 worker_stats["suceeded_commands"] = len(q)
