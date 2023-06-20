@@ -315,7 +315,7 @@ class ParallelQuerySet(ParallelQuery):
     def verify_generator(self, generator):
         # first level should be grouping of commands
         # first cmd should have a list of query sets
-        if isinstance(generator[0], list):
+        if isinstance(generator[0], list) or isinstance(generator[0],tuple):
             cmd = generator[0]
             if isinstance(generator[0][0], list):
                 return True
