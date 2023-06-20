@@ -51,7 +51,7 @@ def db(request):
     return db
 
 
-def check_reposnse_regressions(queries, input_blobs, responses, output_blobs):
+def check_response_regressions(queries, input_blobs, responses, output_blobs):
     # Check that responses have no blobs
     first_command = list(responses[0].keys())[0]
     assert "blobs_start" not in responses[0][
@@ -90,7 +90,7 @@ def insert_data_from_csv(db, request):
             use_dask = request.param
         data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask)
 
-        setattr(data, "response_handler", check_reposnse_regressions)
+        setattr(data, "response_handler", check_response_regressions)
         data.strict_response_validation = True
 
         if rec_count != -1:
