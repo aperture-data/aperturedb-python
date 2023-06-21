@@ -466,7 +466,7 @@ def get_args():
     obj = argparse.ArgumentParser()
 
     # Run Config
-    obj.add_argument('-multiplier', type=int, default=10)
+    obj.add_argument('-multiplier', type=int, default=2)
 
     params = obj.parse_args()
 
