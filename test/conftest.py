@@ -158,9 +158,9 @@ def modify_data_from_csv(db, request):
                      stats=True,
                      )
         assert loader.error_counter == 0
-        return data
+        return data, loader
 
-    return modify_data_from_csv, loader
+    return modify_data_from_csv
 
 
 @pytest.fixture()
