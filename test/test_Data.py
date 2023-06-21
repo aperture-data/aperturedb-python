@@ -111,7 +111,7 @@ class TestEntityLoader():
     def test_updateif_fails(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
         # verifies loading with empty database.
-        data = modify_data_from_csv(
+        data,_ = modify_data_from_csv(
             in_csv_file = "./input/persons-update.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
         # verifies updateif will not update if criteria doesn't pass.

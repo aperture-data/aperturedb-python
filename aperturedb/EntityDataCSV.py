@@ -107,7 +107,7 @@ class EntityUpdateCSV(SingleEntityUpdateCSV):
         super().__init__("Entity", filename, df, use_dask)
         self.entity_type = entity_type
         # Add had blob and update has blob.
-        self.blobs_per_query = [1, 1]
+        self.blobs_per_query = [0, 0]
 
     def modify_item(self, query_set, idx):
         query_set[0]["AddEntity"]["class"] = self.entity_type
