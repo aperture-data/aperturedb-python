@@ -160,7 +160,7 @@ def modify_data_from_csv(db, request):
         assert loader.error_counter == 0
         return data
 
-    return modify_data_from_csv
+    return modify_data_from_csv, loader
 
 
 @pytest.fixture()

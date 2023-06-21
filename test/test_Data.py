@@ -115,7 +115,7 @@ class TestEntityLoader():
             in_csv_file = "./input/persons-update.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
         # verifies updateif will not update if criteria doesn't pass.
-        update_data = modify_data_from_csv(
+        update_data, _ = modify_data_from_csv(
             in_csv_file = "./input/persons-update-oldversion.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
         all_persons = Entities.retrieve(db,
@@ -128,10 +128,10 @@ class TestEntityLoader():
 
     def test_updateif_passes(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
-        data = modify_data_from_csv(
+        data, _ = modify_data_from_csv(
             in_csv_file = "./input/persons-update.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
-        update_data = modify_data_from_csv(
+        update_data, _ = modify_data_from_csv(
             in_csv_file = "./input/persons-update-newversion.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
         all_persons = Entities.retrieve(db,
@@ -144,7 +144,7 @@ class TestEntityLoader():
 
     def test_updateif_partial_age(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
-        data = modify_data_from_csv(
+        data, _ = modify_data_from_csv(
             in_csv_file = "./input/persons-update.adb.csv")
         self.assertEqual(len(data), utils.count_entities("Person"))
 
@@ -152,7 +152,7 @@ class TestEntityLoader():
                                         spec=Query.spec(with_class="Person"))
         previous_old_age = len(
             list(filter(lambda p: p['age'] > 30, all_persons)))
-        update_data = modify_data_from_csv(
+        update_data, _ = modify_data_from_csv(
             in_csv_file = "./input/persons-update-olderage.adb.csv")
         all_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person"))
