@@ -83,7 +83,7 @@ class ConnectionDataCSV(CSVParser):
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]
         q = []
-        members = ["_Image", "_Blob", "_Video"]
+        members = ["_Image", "_Blob", "_Video", "_Descriptor"]
 
         try:
             ref_src = (2 * idx) % 100000 + 1
