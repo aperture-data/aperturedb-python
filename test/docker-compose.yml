@@ -2,7 +2,7 @@ version: '3'
 
 services:
   aperturedb:
-    image: aperturedata/aperturedb
+    image: aperturedata/aperturedb:v0.15.2
     volumes:
       - ./aperturedb:/aperturedb
     ports:
