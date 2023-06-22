@@ -31,11 +31,20 @@ class CSVParser(Subscriptable):
         In Dask mode the CSV file is read in chunks, and the operations are performed on each chunk.
         The tricky bit is that the chunck size is not known till the loader is created, so the processing happens when ingest is called.
         So the Data CSV has another signature, where the df is passed explicitly.
+
+    Typically, the response_handler is application specific, and loading does not break
+    on errors in response_handlers, so the default behaviour is to log the error and continue.
+    If you want to break on errors, set strict_response_validation to True.
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
+    def __init__(self,
+                 filename: str,
+                 df=None,
+                 use_dask: bool = False,
+                 strict_response_validation: bool = False):
         self.use_dask = use_dask
         self.filename = filename
+        self.strict_response_validation = strict_response_validation
 
         if not use_dask:
             if df is None:

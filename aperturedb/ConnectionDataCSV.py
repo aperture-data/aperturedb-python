@@ -1,6 +1,6 @@
 import logging
 from aperturedb.CSVParser import CSVParser, CONSTRAINTS_PREFIX
-from aperturedb.Query import QueryBuilder
+from aperturedb.Query import QueryBuilder, ObjectType
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +83,7 @@ class ConnectionDataCSV(CSVParser):
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]
         q = []
+        members = ["_Image", "_Blob", "_Video", "_Descriptor"]
 
         try:
             ref_src = (2 * idx) % 100000 + 1
@@ -93,6 +94,9 @@ class ConnectionDataCSV(CSVParser):
                     self.src_key: ["==", src_value]
                 }
             }
+            # Special case for objects with blobs
+            if self.src_class in members:
+                cmd_params["blobs"] = False
             q.append(QueryBuilder.find_command(self.src_class, cmd_params))
 
             ref_dst = ref_src + 1
@@ -103,6 +107,9 @@ class ConnectionDataCSV(CSVParser):
                     self.dst_key: ["==", dst_value]
                 }
             }
+            # Special case for objects with blobs
+            if self.dst_class in members:
+                cmd_params["blobs"] = False
             q.append(QueryBuilder.find_command(self.dst_class, cmd_params))
 
             ae = self._basic_command(idx,

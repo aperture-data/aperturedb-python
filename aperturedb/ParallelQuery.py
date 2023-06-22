@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
-                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0):
+                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0,
+                  strict_response_validation: bool = False):
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -64,6 +65,8 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
                         b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
                 except BaseException as e:
                     logger.exception(e)
+                    if strict_response_validation:
+                        raise e
                 blobs_returned += b_count
     else:
         # Transaction failed entirely.
@@ -174,10 +177,20 @@ class ParallelQuery(Parallelizer.Parallelizer):
         worker_stats = {}
         if not self.dry_run:
             response_handler = None
+            strict_response_validation = False
             if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
                 response_handler = self.generator.response_handler
+            if hasattr(self.generator, "strict_response_validation") and isinstance(self.generator.strict_response_validation, bool):
+                strict_response_validation = self.generator.strict_response_validation
             result, r, b = execute_batch(
-                q, blobs, db, ParallelQuery.success_statuses, response_handler, self.commands_per_query, self.blobs_per_query)
+                q,
+                blobs,
+                db,
+                ParallelQuery.success_statuses,
+                response_handler,
+                self.commands_per_query,
+                self.blobs_per_query,
+                strict_response_validation=strict_response_validation)
             if result == 0:
                 query_time = db.get_last_query_time()
                 worker_stats["suceeded_commands"] = len(q)
