@@ -1,3 +1,4 @@
+from enum import Enum
 import logging
 import typer
 from aperturedb.ParallelLoader import ParallelLoader
@@ -6,25 +7,33 @@ from aperturedb.BBoxDataCSV import BBoxDataCSV
 from aperturedb.EntityDataCSV import EntityDataCSV
 from aperturedb.BlobDataCSV import BlobDataCSV
 from aperturedb.Connector import Connector
+from aperturedb.Utils import connector
 
 logger = logging.getLogger(__file__)
 app = typer.Typer()
 
+
+class IngestType(str, Enum):
+    image = "image"
+    bbox = "bbox"
+    entity = "entity"
+    blob = "blob"
+
+
 @app.command()
-def from_csv(filepath: str, batchsize: int = 1, numthreads:int = 1, stats: bool = True):
-    with open(filepath) as infile:
-        headers = infile.readline().split(",")
-        csv_identifiers = {
-            "filename": ImageDataCSV,
-            "url": ImageDataCSV,
-            "s3_url": ImageDataCSV,
-            "gs_url": ImageDataCSV
-        }
-        identifier = csv_identifiers[headers[0]]
-        logger.info(f"csv processed as {identifier}")
+def from_csv(filepath: str, batchsize: int = 1, numthreads: int = 1,
+             stats: bool = True, ingest_type: IngestType = IngestType.image):
 
-        data = identifier(filename=filepath)
+    ingest_types = {
+        IngestType.image: ImageDataCSV,
+        IngestType.bbox: BBoxDataCSV,
+        IngestType.entity: EntityDataCSV,
+        IngestType.blob: BlobDataCSV
+    }
 
-        db = Connector(port=55557, user="admin", password="admin")
-        loader = ParallelLoader(db)
-        loader.ingest(data, batchsize=batchsize, numthreads=numthreads, stats=stats)
+    data = ingest_types[ingest_type](filepath)
+
+    db = connector()
+    loader = ParallelLoader(db)
+    loader.ingest(data, batchsize=batchsize,
+                  numthreads=numthreads, stats=stats)
