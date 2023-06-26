@@ -5,9 +5,10 @@ class Wrapper():
     that will be a part of generator.
     """
 
-    def __init__(self, list, response_handler):
+    def __init__(self, list, response_handler, strict_response_validation):
         self.list = list
         self.response_handler = response_handler
+        self.strict_response_validation = strict_response_validation
 
     def __len__(self):
         return len(self.list)
@@ -29,7 +30,11 @@ class Subscriptable():
             step = subscript.step if subscript.step else 1
             return Wrapper(
                 [self.getitem(i) for i in range(start, stop, step)],
-                self.response_handler if hasattr(self, "response_handler") else None)
+                self.response_handler if hasattr(
+                    self, "response_handler") else None,
+                self.strict_response_validation if hasattr(
+                    self, "strict_response_validation") else None
+            )
         else:
             if subscript < len(self):
                 return self.getitem(subscript)

@@ -418,7 +418,6 @@ class Images(Entities):
                     "k_neighbors": n_neighbors + 1,
                     "blobs":     False,
                     "distances": True,
-                    "ids":       True,
                     "uniqueids": True,
                 }
             }, {
