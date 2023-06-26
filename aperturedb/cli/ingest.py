@@ -6,34 +6,42 @@ from aperturedb.ImageDataCSV import ImageDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 from aperturedb.EntityDataCSV import EntityDataCSV
 from aperturedb.BlobDataCSV import BlobDataCSV
-from aperturedb.Connector import Connector
-from aperturedb.Utils import connector
+from aperturedb.ConnectionDataCSV import ConnectionDataCSV
+from aperturedb.PolygonDataCSV import PolygonDataCSV
+from aperturedb.VideoDataCSV import VideoDataCSV
+from aperturedb.DescriptorDataCSV import DescriptorDataCSV
+from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
+
+from aperturedb.Utils import create_connector
+from aperturedb.Query import ObjectType
 
 logger = logging.getLogger(__file__)
 app = typer.Typer()
 
 
-class IngestType(str, Enum):
-    image = "image"
-    bbox = "bbox"
-    entity = "entity"
-    blob = "blob"
+IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
 
 
 @app.command()
 def from_csv(filepath: str, batchsize: int = 1, numthreads: int = 1,
-             stats: bool = True, ingest_type: IngestType = IngestType.image):
+             stats: bool = True,
+             ingest_type: IngestType = IngestType.IMAGE):
 
     ingest_types = {
-        IngestType.image: ImageDataCSV,
-        IngestType.bbox: BBoxDataCSV,
-        IngestType.entity: EntityDataCSV,
-        IngestType.blob: BlobDataCSV
+        IngestType.BLOB: BlobDataCSV,
+        IngestType.BOUNDING_BOX: BBoxDataCSV,
+        IngestType.CONNECTION: ConnectionDataCSV,
+        IngestType.DESCRIPTOR: DescriptorDataCSV,
+        IngestType.DESCRIPTOR_SET: DescriptorSetDataCSV,
+        IngestType.ENTITY: EntityDataCSV,
+        IngestType.IMAGE: ImageDataCSV,
+        IngestType.POLYGON: PolygonDataCSV,
+        IngestType.VIDEO: VideoDataCSV
     }
 
     data = ingest_types[ingest_type](filepath)
 
-    db = connector()
+    db = create_connector()
     loader = ParallelLoader(db)
     loader.ingest(data, batchsize=batchsize,
                   numthreads=numthreads, stats=stats)

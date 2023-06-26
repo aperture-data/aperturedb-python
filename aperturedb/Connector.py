@@ -39,6 +39,7 @@ import logging
 from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
+from aperturedb.Configuration import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -85,18 +86,34 @@ class Connector(object):
         str (password): Password to specify while connecting to the db.
         str (token): Token to use while connecting to the database.
         bool (use_ssl): Use SSL to encrypt communication with the database.
+        Configuration (config): Configuration object to use for connection.
     """
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
-                 use_ssl=True, shared_data=None, authenticate=True):
-
-        self.host = host
-        self.port = port
-        self.use_ssl = use_ssl
+                 use_ssl=True, shared_data=None, authenticate=True,
+                 config: Configuration = None):
         self.connected = False
         self.last_response   = ''
         self.last_query_time = 0
+
+        if config is None:
+            self.host = host
+            self.port = port
+            self.use_ssl = use_ssl
+            self.config = Configuration(
+                host=self.host,
+                port=self.port,
+                use_ssl=self.use_ssl,
+                username=user,
+                password=password,
+                name="runtime"
+            )
+        else:
+            self.config = config
+            self.host = config.host
+            self.port = config.port
+            self.use_ssl = config.use_ssl
 
         self._connect()
 
@@ -256,7 +273,8 @@ class Connector(object):
             logger.error(f"Error connecting to server: {str(e)}")
             self.conn.close()
             self.connected = False
-            raise ConnectionError("Failed to connect to ApertureDB")
+            raise ConnectionError(
+                f"Failed to connect to ApertureDB {self.config}")
 
         self.connected = True
 

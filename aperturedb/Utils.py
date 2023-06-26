@@ -25,17 +25,19 @@ def __create_connector(configuration: Configuration):
             host=configuration.host,
             port=configuration.port,
             user=configuration.username,
-            password=configuration.password)
+            password=configuration.password,
+            config=configuration)
     else:
         connector = Connector(
             host=configuration.host,
             port=configuration.port,
             user=configuration.username,
-            password=configuration.password)
+            password=configuration.password,
+            config=configuration)
     return connector
 
 
-def connector():
+def create_connector():
     """
     **Create a connector to the database.**
 

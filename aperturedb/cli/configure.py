@@ -92,14 +92,25 @@ def ls(name: Annotated[Union[str, None], typer.Argument(help="Name of configurat
 def create(
         name: Annotated[str, typer.Argument(help="Name of this configuration for easy reference")],
         active: Annotated[bool, typer.Option(help="Set as active")] = False,
-        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
+        as_global: Annotated[bool, typer.Option(
+            help="Project level vs global level")] = True,
+        host: Annotated[str, typer.Option(help="Host name")] = "localhost",
+        port: Annotated[int, typer.Option(help="Port number")] = 55555,
+        username: Annotated[str, typer.Option(help="Username")] = "admin",
+        password: Annotated[str, typer.Option(help="Password")] = "admin",
+        use_rest: Annotated[bool, typer.Option(help="Use REST")] = False,
+        use_ssl: Annotated[bool, typer.Option(help="Use SSL")] = True,
+        interactive: Annotated[bool, typer.Option(help="Interactive mode")] = True):
     """
     Create a new configuration for the client.
     """
-    db_host = "localhost"
-    db_port = 55555
-    db_username = "admin"
-    db_password = "admin"
+    db_host = host
+    db_port = port
+    db_username = username
+    db_password = password
+    db_use_rest = use_rest
+    db_use_ssl = use_ssl
+
     config_path = _config_file_path(as_global)
     configs = {}
     try:
@@ -113,19 +124,25 @@ def create(
     except json.JSONDecodeError:
         active = True
 
-    db_host = typer.prompt(f"Enter {APP_NAME} host name", default=db_host)
-    db_port = typer.prompt(f"Enter {APP_NAME} port number", default=db_port)
-    db_username = typer.prompt(
-        f"Enter {APP_NAME} username", default=db_username)
-    db_password = typer.prompt(
-        f"Enter {APP_NAME} password", hide_input=True, default=db_password)
+    if interactive:
+        db_host = typer.prompt(f"Enter {APP_NAME} host name", default=db_host)
+        db_port = typer.prompt(
+            f"Enter {APP_NAME} port number", default=db_port)
+        db_username = typer.prompt(
+            f"Enter {APP_NAME} username", default=db_username)
+        db_password = typer.prompt(
+            f"Enter {APP_NAME} password", hide_input=True, default=db_password)
+        db_use_rest = typer.confirm(f"Use REST", default=db_use_rest)
+        db_use_ssl = typer.confirm(f"Use SSL", default=db_use_ssl)
 
     gen_config = Configuration(
         name=name,
         host=db_host,
         port=db_port,
         username=db_username,
-        password=db_password
+        password=db_password,
+        use_ssl=db_use_ssl,
+        use_rest=db_use_rest
     )
     configs[name] = gen_config
     if active:
@@ -151,9 +168,11 @@ def activate(
             return
         configs["active"] = configs[name]
     except FileNotFoundError:
-        check_configured()
+        check_configured(as_global=False) or \
+            check_configured(as_global=True, show_error=True)
     except json.JSONDecodeError:
-        check_configured()
+        check_configured(as_global=False) or \
+            check_configured(as_global=True, show_error=True)
 
     with open(config_path.as_posix(), "w") as config_file:
         config_file.write(json.dumps(configs, indent=2, cls=ObjEncoder))
