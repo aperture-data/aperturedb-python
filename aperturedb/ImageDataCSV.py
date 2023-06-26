@@ -113,7 +113,8 @@ class ImageDataCSV(CSVParser.CSVParser):
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
-        image_path = os.path.join(os.path.dirname(self.filename), self.df.loc[idx, self.source_type])
+        image_path = os.path.join(os.path.dirname(
+            self.filename), self.df.loc[idx, self.source_type])
         img_ok, img = self.source_loader[self.source_type](image_path)
 
         if not img_ok:
