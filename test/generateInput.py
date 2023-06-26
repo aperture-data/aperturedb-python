@@ -77,7 +77,7 @@ def generate_blobs_csv():
 def generate_images_csv(multiplier):
 
     multiplier = multiplier // 2
-    path    = "input/images/"
+    path    = "images/"
     imgs    = [path + str(x).zfill(4) +
                ".jpg" for x in range(200)] * multiplier
     license = [x for x in range(10)] * multiplier
