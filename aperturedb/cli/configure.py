@@ -46,17 +46,16 @@ def check_configured(as_global: bool, show_error: bool = False):
 
 def get_configurations(file: str):
     configs = {}
-    if os.path.exists(file):
-        with open(file) as config_file:
-            configurations = json.loads(config_file.read())
-            for c in configurations:
-                config = configurations[c]
-                configs[c] = Configuration(
-                    name=c,
-                    host=config["host"],
-                    port=config["port"],
-                    username=config["username"],
-                    password=config["password"])
+    with open(file) as config_file:
+        configurations = json.loads(config_file.read())
+        for c in configurations:
+            config = configurations[c]
+            configs[c] = Configuration(
+                name=c,
+                host=config["host"],
+                port=config["port"],
+                username=config["username"],
+                password=config["password"])
     return configs
 
 
@@ -69,7 +68,7 @@ def ls(name: Annotated[Union[str, None], typer.Argument(help="Name of configurat
     for as_global in [True, False]:
         config_path = _config_file_path(as_global)
         try:
-            configs = get_configurations(config_path.as_posix())
+            configs = get_configurations(config_path.as_posix(), throw=True)
             all_configs["global" if as_global else "local"] = configs
         except FileNotFoundError:
             check_configured(as_global)
