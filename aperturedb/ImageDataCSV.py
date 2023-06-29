@@ -186,13 +186,11 @@ class ImageDataCSV(CSVParser.CSVParser):
             if img[0] == 73 and img[1] == 73 and img[2] == 42:
                 return True
 
-            # Else, we return false and fail the batch.
-            return False
         except Exception as e:
             logger.exception(e)
             return False
 
-        return False  # Should never reach here
+        return False  # When header is not recognized
 
     def load_url(self, url):
         retries = 0
