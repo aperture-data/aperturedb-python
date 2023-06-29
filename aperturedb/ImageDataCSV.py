@@ -200,7 +200,7 @@ class ImageDataCSV(CSVParser.CSVParser):
             if imgdata.ok:
                 imgbuffer = np.frombuffer(imgdata.content, dtype='uint8')
                 if not self.check_image_buffer(imgbuffer):
-                    logger.warning("IMAGE ERROR: ", url)
+                    logger.error("IMAGE ERROR: ", url)
                     return False, None
 
                 return imgdata.ok, imgdata.content
