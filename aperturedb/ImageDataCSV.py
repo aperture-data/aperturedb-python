@@ -188,7 +188,7 @@ class ImageDataCSV(CSVParser.CSVParser):
             # Else, we return false and fail the batch.
             return False
         except Exception as e:
-            print(e)
+            logger.exception(e)
             return False
 
         return False  # Should never reach here
