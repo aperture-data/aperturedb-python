@@ -157,7 +157,7 @@ class ImageDataCSV(CSVParser.CSVParser):
             return True
 
         try:
-            # This is a full decoding of the image, a compute intensice operation.
+            # This is a full decoding of the image, a compute intensive operation.
             # decoded_img = cv2.imdecode(img, cv2.IMREAD_COLOR)
             # if decoded_img is None:
             #     logger.error("Error decoding image")
