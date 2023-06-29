@@ -157,14 +157,15 @@ class ImageDataCSV(CSVParser.CSVParser):
             return True
 
         try:
-            # This is a full decoding of the image, expesive operation.
+            # This is a full decoding of the image, a compute intensice operation.
             # decoded_img = cv2.imdecode(img, cv2.IMREAD_COLOR)
             # if decoded_img is None:
             #     logger.error("Error decoding image")
             #     print(img[0], img[1], img[2], img[3], img[4], img[5], img[6], img[7])
             #     return False
 
-            # Instead, we check the head of the image.
+            # Instead, we do a much lighter check on the header of the image,
+            # which is already in memory.
             # Check header signature for file format:
             # https://en.wikipedia.org/wiki/List_of_file_signatures
 
