@@ -67,24 +67,32 @@ def ls(name: Annotated[Union[str, None], typer.Argument(help="Name of configurat
     all_configs = {}
     for as_global in [True, False]:
         config_path = _config_file_path(as_global)
+        context = "global" if as_global else "local"
         try:
-            configs = get_configurations(config_path.as_posix(), throw=True)
-            all_configs["global" if as_global else "local"] = configs
+            configs = get_configurations(config_path.as_posix())
+            all_configs[context] = configs
         except FileNotFoundError:
             check_configured(as_global)
         except json.JSONDecodeError:
-            check_configured(as_global)
+            console.log("Failed to decode json")
 
-    if len(all_configs["global"]) == 0 and len(all_configs["local"]) == 0:
-        console.log(
-            f"No configurations found. Please run adb config create <name>")
-        return
-    else:
-        if name is None:
-            console.log(all_configs)
+    if "global" in all_configs or "local" in all_configs:
+        if "global" in all_configs and len(all_configs["global"]) == 0 \
+                and "local" in all_configs and len(all_configs["local"]) == 0:
+            console.log(
+                f"No configurations found. Please run adb config create <name>")
+            return
         else:
-            config = all_configs["global"][name] if name in all_configs["global"] else all_configs["local"][name]
-            console.log(config)
+            if name is None:
+                console.log(all_configs)
+            else:
+                config = all_configs["global"][name] if name in all_configs["global"] else all_configs["local"][name]
+                console.log(config)
+    else:
+        console.log(all_configs)
+        # Tried to parse global config as well as local, but failed.
+        # Show user the error and bail.
+        check_configured(as_global=True, show_error=True)
 
 
 @app.command()
