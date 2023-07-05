@@ -2,7 +2,6 @@ import json
 import os
 from json import JSONEncoder
 from pathlib import Path
-from typing import Union
 
 import typer
 from typing_extensions import Annotated
@@ -46,9 +45,10 @@ def check_configured(as_global: bool, show_error: bool = False):
 
 def get_configurations(file: str):
     configs = {}
+    active = None
     with open(file) as config_file:
         configurations = json.loads(config_file.read())
-        for c in configurations:
+        for c in filter(lambda key: key != "active", configurations):
             config = configurations[c]
             configs[c] = Configuration(
                 name=c,
@@ -56,11 +56,12 @@ def get_configurations(file: str):
                 port=config["port"],
                 username=config["username"],
                 password=config["password"])
-    return configs
+    active = configurations["active"]
+    return configs, active
 
 
 @app.command()
-def ls(name: Annotated[Union[str, None], typer.Argument(help="Name of configuration to get")] = None):
+def ls():
     """
     List the configurations with their details.
     """
@@ -69,11 +70,13 @@ def ls(name: Annotated[Union[str, None], typer.Argument(help="Name of configurat
         config_path = _config_file_path(as_global)
         context = "global" if as_global else "local"
         try:
-            configs = get_configurations(config_path.as_posix())
+            configs, active = get_configurations(config_path.as_posix())
             all_configs[context] = configs
+            all_configs["active"] = active
         except FileNotFoundError:
             check_configured(as_global)
         except json.JSONDecodeError:
+            check_configured(as_global)
             console.log("Failed to decode json")
 
     if "global" in all_configs or "local" in all_configs:
@@ -83,11 +86,8 @@ def ls(name: Annotated[Union[str, None], typer.Argument(help="Name of configurat
                 f"No configurations found. Please run adb config create <name>")
             return
         else:
-            if name is None:
-                console.log(all_configs)
-            else:
-                config = all_configs["global"][name] if name in all_configs["global"] else all_configs["local"][name]
-                console.log(config)
+            console.log(all_configs)
+
     else:
         console.log(all_configs)
         # Tried to parse global config as well as local, but failed.
@@ -121,7 +121,7 @@ def create(
     config_path = _config_file_path(as_global)
     configs = {}
     try:
-        configs = get_configurations(config_path.as_posix())
+        configs, ac = get_configurations(config_path.as_posix())
     except FileNotFoundError as e:
         config_path: Path = _config_file_path(as_global)
         parent_dir = os.path.dirname(config_path)
@@ -153,7 +153,9 @@ def create(
     )
     configs[name] = gen_config
     if active:
-        configs["active"] = gen_config
+        configs["active"] = name
+    else:
+        configs["active"] = ac
 
     with open(config_path.as_posix(), "w") as config_file:
         config_file.write(json.dumps(configs, indent=2, cls=ObjEncoder))
@@ -162,18 +164,21 @@ def create(
 @app.command()
 def activate(
         name: Annotated[str, typer.Argument(help="Name of this configuration for easy reference")],
-        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
+        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = False):
     """
     Set the default configuration.
     """
+    global_config_path = _config_file_path(True)
+    gc, ga = get_configurations(global_config_path)
+
     config_path = _config_file_path(as_global)
     configs = {}
     try:
-        configs = get_configurations(config_path.as_posix())
-        if name not in configs:
+        configs, ac = get_configurations(config_path.as_posix())
+        if name not in configs and name not in gc:
             console.log(f"Configuration {name} not found")
-            return
-        configs["active"] = configs[name]
+            raise typer.Exit(code=2)
+        configs["active"] = name
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
