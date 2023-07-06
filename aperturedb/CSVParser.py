@@ -46,7 +46,7 @@ class CSVParser(Subscriptable):
         self.use_dask = use_dask
         self.filename = filename
         self.strict_response_validation = strict_response_validation
-         self.constraint_keyword = "if_not_found"
+        self.constraint_keyword = "if_not_found"
 
         if not use_dask:
             if df is None:

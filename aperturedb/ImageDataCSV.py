@@ -101,7 +101,6 @@ class ImageDataProcessor():
 
         return False  # When header is not recognized
 
-
     def load_url(self, url):
         retries = 0
         while True:
