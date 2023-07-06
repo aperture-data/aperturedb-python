@@ -237,6 +237,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.do_batch(db, generator[batch_start:batch_end])
             except Exception as e:
                 logger.exception(e)
+                logger.warning(
+                    f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
                 self.error_counter += 1
 
             if thid == 0 and self.stats:
