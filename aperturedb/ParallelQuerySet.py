@@ -25,7 +25,8 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
     # execute_batch_sets - executes multiple sets of queries with optional constraints on follow on sets
     #
     def execute_batch_sets(query_set, blob_set, db, success_statuses: list[int] = [0],
-                           response_handler: Callable = None, commands_per_query: list[int] = -1, blobs_per_query: list[int] = -1):
+                           response_handler: Callable = None, commands_per_query: list[int] = -1,
+                           blobs_per_query: list[int] = -1, strict_response_validation: bool = False):
 
         # pretty printing for errors
         def remove_blobs(item):
@@ -267,7 +268,7 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
             if len(executable_queries) > 0:
                 result_code, db_results, db_blobs = base_executor(executable_queries, used_blobs,
                                                                   db, local_success_statuses,
-                                                                  None, commands_per_query[i], blobs_per_query[i])
+                                                                  None, commands_per_query[i], blobs_per_query[i], strict_response_validation=strict_response_validation)
             else:
                 logger.info(
                     f"Skipped executing set {i}, no executable queries")
