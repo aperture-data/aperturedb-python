@@ -15,27 +15,27 @@ class IdentityModel(BaseModel):
 
 class BlobModel(IdentityModel):
     file: Annotated[str, Field(title="Filepath", description="Path to file")]
-    type = Field(ObjectType.BLOB)
+    type = ObjectType.BLOB
 
 
 class ImageModel(BlobModel):
-    type = Field(ObjectType.IMAGE)
+    type = ObjectType.IMAGE
 
 
 class VideoModel(BlobModel):
-    type = Field(ObjectType.VIDEO)
+    type = ObjectType.VIDEO
 
 
 class DesctiptorModel(BlobModel):
-    type = Field(ObjectType.DESCRIPTOR)
+    type = ObjectType.DESCRIPTOR
 
 
 class PolygonModel(IdentityModel):
-    type = Field(ObjectType.POLYGON)
+    type = ObjectType.POLYGON
 
 
 class FrameModel(IdentityModel):
-    type = Field(ObjectType.FRAME)
+    type = ObjectType.FRAME
 
 
 class DescriptorSetModel(IdentityModel):
