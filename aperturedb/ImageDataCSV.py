@@ -61,15 +61,46 @@ class ImageDataProcessor():
         return False, None
 
     def check_image_buffer(self, img):
-        try:
-            decoded_img = cv2.imdecode(img, cv2.IMREAD_COLOR)
 
-            # Check image is correct
-            decoded_img = decoded_img if decoded_img is not None else img
-
+        if not self.check_image:
             return True
-        except:
+
+        try:
+            # This is a full decoding of the image, a compute intensive operation.
+            # decoded_img = cv2.imdecode(img, cv2.IMREAD_COLOR)
+            # if decoded_img is None:
+            #     logger.error("Error decoding image")
+            #     print(img[0], img[1], img[2], img[3], img[4], img[5], img[6], img[7])
+            #     return False
+
+            # Instead, we do a much lighter check on the header of the image,
+            # which is already in memory.
+            # Check header signature for file format:
+            # https://en.wikipedia.org/wiki/List_of_file_signatures
+
+            # NOTE: Make sure we are checking for the same values
+            #       as Image.cc on ApertureDB
+            # Ideally, we don't want this logic here because it is replicated
+            # on the server side, and we have to maintain it in both places.
+            # But because it is expensive to send the image to the server
+            # only to find out it is bad, we do it here.
+
+            # JPEG
+            if img[0] == 255 and img[1] == 216:
+                return True
+            # PNG
+            if img[0] == 137 and img[1] == 80 and img[2] == 78 and img[3] == 71:
+                return True
+            # TIF
+            if img[0] == 73 and img[1] == 73 and img[2] == 42:
+                return True
+
+        except Exception as e:
+            logger.exception(e)
             return False
+
+        return False  # When header is not recognized
+
 
     def load_url(self, url):
         retries = 0
@@ -77,7 +108,7 @@ class ImageDataProcessor():
             imgdata = requests.get(url)
             if imgdata.ok:
                 imgbuffer = np.frombuffer(imgdata.content, dtype='uint8')
-                if self.check_image and not self.check_image_buffer(imgbuffer):
+                if not self.check_image_buffer(imgbuffer):
                     logger.error(f"IMAGE ERROR: {url}")
                     return False, None
 
@@ -85,7 +116,7 @@ class ImageDataProcessor():
             else:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning(f"WARNING: Retrying object: {url}")
+                logger.warning("Retrying object:", url)
                 retries += 1
                 time.sleep(2)
 
@@ -107,10 +138,10 @@ class ImageDataProcessor():
                     return False, None
 
                 return True, img
-            except:
+            except Exception as e:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning(f"WARNING: Retrying object: {s3_url}")
+                logger.warning(f"Retrying object: {s3_url}")
                 retries += 1
                 time.sleep(2)
 
@@ -129,14 +160,14 @@ class ImageDataProcessor():
                 blob = client.bucket(bucket_name).blob(
                     object_name).download_as_bytes()
                 imgbuffer = np.frombuffer(blob, dtype='uint8')
-                if self.check_image and not self.check_image_buffer(imgbuffer):
-                    logger.error(f"IMAGE ERROR: {gs_url}")
+                if not self.check_image_buffer(imgbuffer):
+                    logger.warning(f"IMAGE ERROR: {gs_url}")
                     return False, None
                 return True, blob
             except:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning(f"WARNING: Retrying object: {gs_url}")
+                logger.warning("Retrying object: {gs_url}")
                 retries += 1
                 time.sleep(2)
 
