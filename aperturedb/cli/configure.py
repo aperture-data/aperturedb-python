@@ -94,6 +94,8 @@ def ls():
         # Show user the error and bail.
         check_configured(as_global=True, show_error=True)
 
+    return all_configs
+
 
 @app.command()
 def create(
