@@ -86,6 +86,7 @@ def ls():
                 f"No configurations found. Please run adb config create <name>")
             return
         else:
+            console.log(f"Available configurations:")
             console.log(all_configs)
 
     else:

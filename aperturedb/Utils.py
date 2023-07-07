@@ -35,6 +35,8 @@ def __create_connector(configuration: Configuration):
             user=configuration.username,
             password=configuration.password,
             config=configuration)
+    console.log(f"Connected Using:")
+    console.log(configuration)
     return connector
 
 
@@ -48,23 +50,6 @@ def create_connector():
     Returns:
         Connector: The connector to the database.
     """
-    # all_configs = {
-    #     "global": {},
-    #     "local" : {}
-    # }
-    # try:
-    #     all_configs["global"] = get_configurations(_config_file_path(True))
-    # except FileNotFoundError as e:
-    #     logger.debug(f"{_config_file_path(True)} does not exist")
-    # except json.JSONDecodeError:
-    #     logger.debug(f"{_config_file_path(True)} is malformed")
-
-    # try:
-    #     all_configs["local"] = get_configurations(_config_file_path(False))
-    # except FileNotFoundError as e:
-    #     logger.critical("adb configuration not found.")
-    # except json.JSONDecodeError as e:
-    #     logger.critical("adb configuration not found.")
     all_configs = ls()
 
     env_config = os.environ.get("APERTUREDB_CONFIG")
@@ -72,6 +57,7 @@ def create_connector():
     config = all_configs["local"][ac] if "local" in all_configs else all_configs["global"]
 
     if env_config is not None:
+        # TODO test me.
         config = all_configs["global"][env_config] if env_config in all_configs["global"] else all_configs["local"][env_config]
         return __create_connector(config)
     # Then check if the local config has active
