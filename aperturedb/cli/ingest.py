@@ -1,6 +1,7 @@
 from enum import Enum
 import logging
 import typer
+from typing_extensions import Annotated
 from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.ImageDataCSV import ImageDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
@@ -23,25 +24,37 @@ IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
 
 
 @app.command()
-def from_csv(filepath: str, batchsize: int = 1, numthreads: int = 1,
-             stats: bool = True,
-             ingest_type: IngestType = IngestType.IMAGE):
+def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for ingestion")],
+             batchsize: Annotated[int, typer.Option(
+                 help="Size of the batch")] = 1,
+             num_workers: Annotated[int, typer.Option(
+                 help="Number of workers for ingestion")] = 1,
+             stats: Annotated[bool, typer.Option(
+                 help="Show realtime statistics with summary")] = True,
+             use_dask: Annotated[bool, typer.Option(
+                 help="Use dask based parallelization")] = True,
+             ingest_type: Annotated[IngestType, typer.Option(
+                 help="Parser for CSV file to be used")] = IngestType.IMAGE,
+             ):
 
     ingest_types = {
         IngestType.BLOB: BlobDataCSV,
         IngestType.BOUNDING_BOX: BBoxDataCSV,
         IngestType.CONNECTION: ConnectionDataCSV,
         IngestType.DESCRIPTOR: DescriptorDataCSV,
-        IngestType.DESCRIPTOR_SET: DescriptorSetDataCSV,
+        IngestType.DESCRIPTORSET: DescriptorSetDataCSV,
         IngestType.ENTITY: EntityDataCSV,
         IngestType.IMAGE: ImageDataCSV,
         IngestType.POLYGON: PolygonDataCSV,
         IngestType.VIDEO: VideoDataCSV
     }
 
-    data = ingest_types[ingest_type](filepath)
+    data = ingest_types[ingest_type](filepath, use_dask=use_dask)
 
     db = create_connector()
+    from aperturedb.cli.console import console
+    console.log(db)
+
     loader = ParallelLoader(db)
     loader.ingest(data, batchsize=batchsize,
-                  numthreads=numthreads, stats=stats)
+                  numthreads=num_workers, stats=stats)

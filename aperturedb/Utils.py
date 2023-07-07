@@ -8,7 +8,8 @@ from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Configuration import Configuration
-from aperturedb.cli.configure import _config_file_path, get_configurations, check_configured
+from aperturedb.cli.configure import _config_file_path, get_configurations, check_configured, ls
+from aperturedb.cli.console import console
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,8 @@ def __create_connector(configuration: Configuration):
             user=configuration.username,
             password=configuration.password,
             config=configuration)
+    console.log(f"Connected Using:")
+    console.log(configuration)
     return connector
 
 
@@ -47,25 +50,19 @@ def create_connector():
     Returns:
         Connector: The connector to the database.
     """
-    all_configs = {}
-    all_configs["global"] = get_configurations(_config_file_path(True))
-    all_configs["local"] = get_configurations(_config_file_path(False))
+    all_configs = ls()
 
     env_config = os.environ.get("APERTUREDB_CONFIG")
-    local_active_config = all_configs["local"]["active"] if "active" in all_configs["local"] else None
-    global_active_config = all_configs["global"]["active"] if "active" in all_configs["global"] else None
-    # First check if the environment variable is set. Oveeride everything else.
+    ac = all_configs["active"]
+    config = all_configs["local"][ac] if "local" in all_configs else all_configs["global"]
+
     if env_config is not None:
+        # TODO test me.
         config = all_configs["global"][env_config] if env_config in all_configs["global"] else all_configs["local"][env_config]
         return __create_connector(config)
     # Then check if the local config has active
-    elif local_active_config is not None:
-        return __create_connector(local_active_config)
-    elif global_active_config is not None:
-        return __create_connector(global_active_config)
     else:
-        check_configured(False, True)
-    return None
+        return __create_connector(config)
 
 
 class Utils(object):

@@ -86,6 +86,7 @@ def ls():
                 f"No configurations found. Please run adb config create <name>")
             return
         else:
+            console.log(f"Available configurations:")
             console.log(all_configs)
 
     else:
@@ -93,6 +94,8 @@ def ls():
         # Tried to parse global config as well as local, but failed.
         # Show user the error and bail.
         check_configured(as_global=True, show_error=True)
+
+    return all_configs
 
 
 @app.command()
