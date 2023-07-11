@@ -1,7 +1,10 @@
 import numpy as np
+import pandas as pd
 import pytest
 from aperturedb.Query import QueryBuilder, Query
 from aperturedb.Entities import Entities
+from aperturedb.Constraints import Constraints
+from aperturedb.Images import Images
 
 import logging
 logger = logging.getLogger(__name__)
@@ -142,6 +145,7 @@ class TestEntityLoader():
         self.assertEqual(
             len(list(filter(lambda p: p['age'] >= 200, all_persons))), len(update_data))
 
+    # Test updating with conditional for > and only some records being updated
     def test_updateif_partial_age(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
@@ -156,8 +160,55 @@ class TestEntityLoader():
             in_csv_file = "./input/persons-update-olderage.adb.csv")
         all_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person"))
-        new_old_age = len(list(filter(lambda p: p['age'] > 200, all_persons)))
+        # 300 should be addded to all that were above 30, so both should match.
+        new_old_age = len(list(filter(lambda p: p['age'] > 300, all_persons)))
         self.assertEqual(previous_old_age, new_old_age)
+
+    # ensure blob adding works.
+    def test_updateif_add_image(self, db, utils, modify_data_from_csv):
+        # load images
+        self.assertTrue(utils.remove_all_objects())
+        data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_updateif_baseload.adb.csv")
+        self.assertEqual(len(data), utils.count_images())
+        # load images with partial existance
+        update_data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_updateif_mixednew.adb.csv")
+        self.assertEqual(len(update_data), utils.count_images())
+    # Test that images are immutable.
+    def test_updateif_image_immutable(self, db, utils, modify_data_from_csv):
+        # load images
+        df = pd.read_csv( "./input/images_updateif_fail_updates.adb.csv" )
+        print(df.loc[0,'filename'])
+
+        big_img_size = 0
+
+        with open( df.loc[0,'filename'] ,"rb") as f:
+            data = f.read()
+            logger.info("fp len {0}".format(len(data)))
+            print("fp len = ",len(data))
+            big_img_size = len(data)
+        self.assertTrue(utils.remove_all_objects())
+        data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_updateif_fail_baseload.adb.csv")
+        self.assertEqual(len(data), utils.count_images())
+        # load images with partial existance
+        update_data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_updateif_fail_updates.adb.csv")
+        # images in the second csv are much bigger than from the first.
+
+
+        images = Images.retrieve(db, 
+                                    spec=Query.spec(with_class="Person",
+                                                    constraints=Constraints().greaterequal("version_id", 2)))
+        # all db images must be less than half the size of a larger changed image.
+        # filter will include any larger, we expect 0.
+        self.assertEqual( 0, len( list(
+                            filter( lambda imglen: imglen > size / 2, [ len(images.get_image_by_id(db_img_id)) for db_img_id in range(len(images.images_ids))] ) 
+                            )))
+        # all images were updated
+        self.assertEqual(len(images),utils.count_images())
+        return
 
 
 # test EntityUpdateCSV with Person entity.

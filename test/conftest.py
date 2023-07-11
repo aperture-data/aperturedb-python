@@ -156,6 +156,8 @@ def modify_data_from_csv(db, request):
             "./input/images_update_and_add.adb.csv": ImageUpdateCSV,
             "./input/images_updateif_baseload.adb.csv":ImageUpdateCSV,
             "./input/images_updateif_mixednew.adb.csv":ImageUpdateCSV,
+            "./input/images_updateif_fail_baseload.adb.csv":ImageUpdateCSV,
+            "./input/images_updateif_fail_updates.adb.csv":ImageUpdateCSV,
             "./input/images_newest_blobs.adb.csv": ImageForceNewestCSV
         }
         use_dask = False
