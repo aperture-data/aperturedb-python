@@ -1,6 +1,7 @@
 import argparse
 import random
 import math
+import subprocess
 
 from datetime import datetime
 
@@ -319,7 +320,7 @@ def generate_update_person():
     df['updateif_<version_id'] = df['version_id']
     df.to_csv("input/persons-update-newversion.adb.csv", index=False)
 
-    # generate other updateif with different direction
+    # generate updateif to test > comparator and partial update
     df = pd.read_csv("input/persons.adb.csv")
     df['age'] = df['age'].apply(lambda age: age + 200)
     # change if age in database is > 30
@@ -440,8 +441,82 @@ def generate_newest_images(multiplier):
     df.to_csv("./input/images_newest_blobs.adb.csv", index=False)
 
 
+def generate_update_image(multiplier):
+    # generate base load
+    # generate images
+    image_count = 100
+    subprocess.run( ["python3", "generateImages.py", "-c", f"{image_count}","-o", "input/images/update_images_%%.png", "-t","png", "-s","256x256", "-m", "input/update_image_list.csv" ])
+    img_df = pd.read_csv( "input/update_image_list.csv", header=None )
+    licence_count = 2
+    multiplier = multiplier // 2
+    path    = "input/images/"
+    img_ids = [i for i in range(image_count)] * multiplier
+    license = [x for x in range(licence_count)] * multiplier
+
+    def filemap(file_num):
+        return img_df.iat[ file_num % image_count,0]
+    images  = list(product(img_ids, license))
+    prop_change_count = len(images) // 10
+    id_range=500000000
+    #id_range=1000000000
+    df = pd.DataFrame(images, columns=['img_id', 'license'])
+    ids      = random.sample(range(id_range), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+
+    df = pd.DataFrame(images, columns=['img_id', 'license'])
+    # we want filename to be first column
+    df.insert(0, "filename", df['img_id'].apply(filemap))
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:date_captured"] = date_cap
+    df["constraint_id"] = ids
+    df["updateif_<version_id"] = version_id
+
+    df.to_csv("./input/images_updateif_baseload.adb.csv", index=False)
+
+    # csv 2: original content plus new to verify blob loading with only partial loads, randomize
+    id_range_start=id_range
+    id_range_end=1000000000
+    new_start = image_count
+    new_end = int(image_count * 1.1);
+    img_ids = [i for i in range(new_start,new_end)] * multiplier
+    images  = list(product(img_ids, license))
+    prop_change_count = len(images) // 10
+    additional_df = pd.DataFrame(images, columns=['img_id', 'license'])
+    ids      = random.sample(range(id_range_start,id_range_end), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+    df2 = pd.DataFrame(images, columns=['img_id', 'license'])
+    # we want filename to be first column
+    additional_df.insert(0, "filename", df['img_id'].apply(filemap))
+    additional_df["id"]       = ids
+    additional_df["age"]      = age
+    additional_df["height"]   = height
+    additional_df["has_dog"]  = dog
+    additional_df["date:date_captured"] = date_cap
+    additional_df["constraint_id"] = ids
+    additional_df["updateif_<version_id"] = version_id
+    
+    # mix the new records in with the old.
+    combined_df = pd.concat([df,additional_df],ignore_index=True).sample( frac=1 )
+
+
+    combined_df.to_csv("./input/images_updateif_mixednew.adb.csv", index=False)
+
+
 def main(params):
 
+    generate_update_image(params.multiplier)
+    return
     persons = generate_person_csv(params.multiplier)
     blobs   = generate_blobs_csv()
     images  = generate_images_csv(int(params.multiplier / 2))
@@ -460,6 +535,7 @@ def main(params):
 
     generate_update_person()
     generate_partial_load()
+    generate_update_image()
 
 
 def get_args():
