@@ -153,12 +153,16 @@ def modify_data_from_csv(db, request):
             "./input/persons-update-oldversion.adb.csv": UpdatePersonEntityCSV,
             "./input/persons-update-newversion.adb.csv": UpdatePersonEntityCSV,
             "./input/persons-update-olderage.adb.csv": UpdatePersonEntityCSV,
-            "./input/images_update_and_add.adb.csv": ImageUpdateCSV,
             "./input/images_updateif_baseload.adb.csv":ImageUpdateCSV,
             "./input/images_updateif_mixednew.adb.csv":ImageUpdateCSV,
             "./input/images_updateif_fail_baseload.adb.csv":ImageUpdateCSV,
             "./input/images_updateif_fail_updates.adb.csv":ImageUpdateCSV,
-            "./input/images_newest_blobs.adb.csv": ImageForceNewestCSV
+            "./input/images_forceupdate_baseload.adb.csv": ImageForceNewestCSV,
+            "./input/images_forceupdate_mixednew.adb.csv": ImageForceNewestCSV,
+            "./input/images_forceupdate_fail_base.adb.csv": ImageForceNewestCSV,
+            "./input/images_forceupdate_fail_updates.adb.csv": ImageForceNewestCSV,
+            "./input/images_forceupdate_baseload.adb.csv": ImageForceNewestCSV,
+            "./input/images_forceupdate_updates.adb.csv": ImageForceNewestCSV
         }
         use_dask = False
         if hasattr(request, "param"):

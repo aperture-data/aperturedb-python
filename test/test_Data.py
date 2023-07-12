@@ -175,19 +175,20 @@ class TestEntityLoader():
         update_data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_updateif_mixednew.adb.csv")
         self.assertEqual(len(update_data), utils.count_images())
+
+    def get_first_image_size(self,file):
+        size = 0
+        df = pd.read_csv( file )
+        with open( df.loc[0,'filename'] ,"rb") as f:
+            data = f.read()
+            size = len(data)
+        return size
     # Test that images are immutable.
     def test_updateif_image_immutable(self, db, utils, modify_data_from_csv):
         # load images
-        df = pd.read_csv( "./input/images_updateif_fail_updates.adb.csv" )
-        print(df.loc[0,'filename'])
 
-        big_img_size = 0
+        big_img_size = self.get_first_image_size( "./input/images_updateif_fail_updates.adb.csv" )
 
-        with open( df.loc[0,'filename'] ,"rb") as f:
-            data = f.read()
-            logger.info("fp len {0}".format(len(data)))
-            print("fp len = ",len(data))
-            big_img_size = len(data)
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_updateif_fail_baseload.adb.csv")
@@ -209,6 +210,54 @@ class TestEntityLoader():
         # all images were updated
         self.assertEqual(len(images),utils.count_images())
         return
+
+    # ensure ImageForceNewestCSV can create images and then only create the additional ones in mixednew.
+    def test_imageforce_load_base(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_objects())
+        data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_forceupdate_baseload.adb.csv")
+        self.assertEqual(len(data), utils.count_images())
+        data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_forceupdate_mixednew.adb.csv")
+        self.assertEqual(len(update_data), utils.count_images())
+
+
+    # ensure ImageForceNewestCSV does not update images when not given a way to see if an image has changed.
+    def test_imageforce_load_nonupdate(self, db, utils, modify_data_from_csv):
+        big_img_size = self.get_first_image_size( "./input/images_updateif_fail_updates.adb.csv" )
+        self.assertTrue(utils.remove_all_objects())
+        data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_forceupdate_fail_base.adb.csv")
+        self.assertEqual(len(data), utils.count_images())
+        update_data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_forceupdate_fail_updates.adb.csv")
+        images = Images.retrieve(db, 
+                                    spec=Query.spec(with_class="Person",
+                                                    constraints=Constraints().greaterequal("version_id", 2)))
+        # all db images must be less than half the size of a larger changed image.
+        # filter will include any larger, we expect 0.
+        self.assertEqual( 0, len( list(
+                            filter( lambda imglen: imglen > size / 2, [ len(images.get_image_by_id(db_img_id)) for db_img_id in range(len(images.images_ids))] ) 
+                            )))
+        # all images were updated
+        self.assertEqual(len(images),utils.count_images())
+
+    def test_imageforce_update(self, db, utils, modify_data_from_csv):
+        big_img_size = self.get_first_image_size( "./input/images_updateif_fail_updates.adb.csv" )
+        self.assertTrue(utils.remove_all_objects())
+        data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_forceupdate_baseload.adb.csv")
+        self.assertEqual(len(data), utils.count_images())
+        update_data, _ = modify_data_from_csv(
+            in_csv_file = "./input/images_forceupdate_updates.adb.csv")
+        images = Images.retrieve(db, 
+                                    spec=Query.spec(with_class="Person",
+                                                    constraints=Constraints().greaterequal("version_id", 2)))
+        self.assertEqual( len(update_data), len( list(
+                            filter( lambda imglen: imglen > size / 2, [ len(images.get_image_by_id(db_img_id)) for db_img_id in range(len(images.images_ids))] ) 
+                            )))
+        # all images were updated
+        self.assertEqual(len(images),utils.count_images())
 
 
 # test EntityUpdateCSV with Person entity.
