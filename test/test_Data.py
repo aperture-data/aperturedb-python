@@ -200,8 +200,8 @@ class TestEntityLoader():
 
 
         images = Images.retrieve(db, 
-                                    spec=Query.spec(with_class="Person",
-                                                    constraints=Constraints().greaterequal("version_id", 2)))
+                                    spec=Query.spec( constraints=Constraints().greaterequal("version_id", 2)))
+        images.search()
         # all db images must be less than half the size of a larger changed image.
         # filter will include any larger, we expect 0.
         self.assertEqual( 0, len( list(
@@ -217,7 +217,7 @@ class TestEntityLoader():
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_forceupdate_baseload.adb.csv")
         self.assertEqual(len(data), utils.count_images())
-        data, _ = modify_data_from_csv(
+        update_data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_forceupdate_mixednew.adb.csv")
         self.assertEqual(len(update_data), utils.count_images())
 
@@ -232,12 +232,12 @@ class TestEntityLoader():
         update_data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_forceupdate_fail_updates.adb.csv")
         images = Images.retrieve(db, 
-                                    spec=Query.spec(with_class="Person",
-                                                    constraints=Constraints().greaterequal("version_id", 2)))
+                                    spec=Query.spec(constraints=Constraints().greaterequal("version_id", 2)))
+        images.search()
         # all db images must be less than half the size of a larger changed image.
         # filter will include any larger, we expect 0.
         self.assertEqual( 0, len( list(
-                            filter( lambda imglen: imglen > size / 2, [ len(images.get_image_by_id(db_img_id)) for db_img_id in range(len(images.images_ids))] ) 
+                            filter( lambda imglen: imglen > big_img_size / 2, [ len(images.get_image_by_id(db_img_id)) for db_img_id in range(len(images.images_ids))] ) 
                             )))
         # all images were updated
         self.assertEqual(len(images),utils.count_images())
@@ -246,17 +246,17 @@ class TestEntityLoader():
         big_img_size = self.get_first_image_size( "./input/images_updateif_fail_updates.adb.csv" )
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
-            in_csv_file = "./input/images_forceupdate_baseload.adb.csv")
+            in_csv_file = "./input/images_forceupdate_blob_baseload.adb.csv")
         self.assertEqual(len(data), utils.count_images())
         update_data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_forceupdate_updates.adb.csv")
         images = Images.retrieve(db, 
-                                    spec=Query.spec(with_class="Person",
-                                                    constraints=Constraints().greaterequal("version_id", 2)))
-        self.assertEqual( len(update_data), len( list(
-                            filter( lambda imglen: imglen > size / 2, [ len(images.get_image_by_id(db_img_id)) for db_img_id in range(len(images.images_ids))] ) 
-                            )))
+                                    spec=Query.spec(constraints=Constraints().greaterequal("version_id", 2)))
+        images.search()
         # all images were updated
+        self.assertEqual( len(update_data), len( list(
+                            filter( lambda imglen: imglen > big_img_size / 2, [ len(images.get_image_by_index(db_img_id)) for db_img_id in range(len(images.images_ids))] ) 
+                            )))
         self.assertEqual(len(images),utils.count_images())
 
 

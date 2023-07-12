@@ -507,6 +507,7 @@ def generate_update_image(multiplier):
     additional_df["version_id"] = version_id
     additional_df["updateif_<version_id"] = version_id
     
+    additional_df.to_csv("./input/images_updateif_mixednew1.adb.csv", index=False)
     # mix the new records in with the old.
     combined_df = pd.concat([df,additional_df],ignore_index=True).sample( frac=1 )
 
@@ -591,13 +592,11 @@ def generate_forceimage_load(multiplier):
     # required to detect blob change and remove and re-add.
     changeimage_modified["updateif_blobsha1_imagesha"] = empty_column
 
-    changeimage_base.to_csv("./input/images_forceupdate_baseload.adb.csv", index=False )
+    changeimage_base.to_csv("./input/images_forceupdate_blob_baseload.adb.csv", index=False )
     # with a modified id, the id will change, but not the images.
     changeimage_modified.to_csv("./input/images_forceupdate_updates.adb.csv", index=False )
 def main(params):
 
-    generate_forceimage_load(params.multiplier)
-    return
     persons = generate_person_csv(params.multiplier)
     blobs   = generate_blobs_csv()
     images  = generate_images_csv(int(params.multiplier / 2))
@@ -616,8 +615,9 @@ def main(params):
 
     generate_update_person()
     generate_partial_load()
-    generate_update_image(params.multiplier)
+    generate_update_image(params.multipler)
     generate_update_image_fail(params.multiplier)
+    generate_update_image(params.multiplier)
 
 
 def get_args():
