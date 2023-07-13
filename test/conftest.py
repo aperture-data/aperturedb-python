@@ -9,6 +9,7 @@ from aperturedb.ConnectionDataCSV import ConnectionDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.ImageDataCSV import ImageDataCSV, ImageUpdateCSV, ImageForceNewestCSV
+from aperturedb.SparseAddingCSV import ImageSparseAddCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
@@ -162,7 +163,9 @@ def modify_data_from_csv(db, request):
             "./input/images_forceupdate_fail_base.adb.csv": ImageForceNewestCSV,
             "./input/images_forceupdate_fail_updates.adb.csv": ImageForceNewestCSV,
             "./input/images_forceupdate_blob_baseload.adb.csv": ImageForceNewestCSV,
-            "./input/images_forceupdate_updates.adb.csv": ImageForceNewestCSV
+            "./input/images_forceupdate_updates.adb.csv": ImageForceNewestCSV,
+            "./input/images_sparseload_base.adb.csv": ImageSparseAddCSV,
+            "./input/images_sparseload_full.adb.csv": ImageSparseAddCSV
         }
         use_dask = False
         if hasattr(request, "param"):
