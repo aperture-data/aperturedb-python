@@ -611,6 +611,7 @@ def generate_forceimage_load(multiplier):
     changeimage_modified.to_csv(
         "./input/images_forceupdate_updates.adb.csv", index=False)
 
+
 def generate_sparse_add(multiplier):
     # generate base load, small images.
     image_count = 100
@@ -645,19 +646,17 @@ def generate_sparse_add(multiplier):
     df["version_id"] = version_id
     df["updateif_<version_id"] = version_id
     # create load with first half
-    half = len(df)/2
+    half = len(df) / 2
     # won't work with uneven, since we are going to expect to be able to double number to check.
-    assert( int(half) == half)
-    df.head( int(half)).to_csv("./input/images_sparseload_base.adb.csv", index=False)
+    assert(int(half) == half)
+    df.head(int(half)).to_csv(
+        "./input/images_sparseload_base.adb.csv", index=False)
 
     # then load with all, which half will not be sent, as they exist.
     df.to_csv("./input/images_sparseload_full.adb.csv", index=False)
 
 
 def main(params):
-
-    generate_sparse_add(params.multiplier)
-    return
 
     persons = generate_person_csv(params.multiplier)
     blobs   = generate_blobs_csv()
@@ -680,6 +679,7 @@ def main(params):
     generate_update_image(params.multiplier)
     generate_update_image_fail(params.multiplier)
     generate_update_image(params.multiplier)
+    generate_sparse_add(params.multiplier)
 
 
 def get_args():
