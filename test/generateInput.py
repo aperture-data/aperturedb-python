@@ -445,19 +445,20 @@ def generate_update_image(multiplier):
     # generate base load
     # generate images
     image_count = 100
-    subprocess.run( ["python3", "generateImages.py", "-c", f"{image_count}","-o", "input/images/update_images_%%.png", "-t","png", "-s","256x256", "-m", "input/update_image_list.csv" ])
-    img_df = pd.read_csv( "input/update_image_list.csv", header=None )
+    subprocess.run(["python3", "generateImages.py", "-c",
+                   f"{image_count}", "-o", "input/images/update_images_%%.png", "-t", "png", "-s", "256x256", "-m", "input/update_image_list.csv"])
+    img_df = pd.read_csv("input/update_image_list.csv", header=None)
     licence_count = 2
     multiplier = multiplier // 2
     img_ids = [i for i in range(image_count)] * multiplier
     license = [x for x in range(licence_count)] * multiplier
 
     def filemap(file_num):
-        return img_df.iat[ file_num % image_count,0]
+        return img_df.iat[file_num % image_count, 0]
     images  = list(product(img_ids, license))
     prop_change_count = len(images) // 10
-    id_range=500000000
-    #id_range=1000000000
+    id_range = 500000000
+    # id_range=1000000000
     df = pd.DataFrame(images, columns=['img_id', 'license'])
     ids      = random.sample(range(id_range), len(images))
     age      = [int(100 * random.random()) for i in range(len(images))]
@@ -481,15 +482,15 @@ def generate_update_image(multiplier):
     df.to_csv("./input/images_updateif_baseload.adb.csv", index=False)
 
     # csv 2: original content plus new to verify blob loading with only partial loads, randomize
-    id_range_start=id_range
-    id_range_end=1000000000
+    id_range_start = id_range
+    id_range_end = 1000000000
     new_start = image_count
-    new_end = int(image_count * 1.1);
-    img_ids = [i for i in range(new_start,new_end)] * multiplier
+    new_end = int(image_count * 1.1)
+    img_ids = [i for i in range(new_start, new_end)] * multiplier
     images  = list(product(img_ids, license))
     prop_change_count = len(images) // 10
     additional_df = pd.DataFrame(images, columns=['img_id', 'license'])
-    ids      = random.sample(range(id_range_start,id_range_end), len(images))
+    ids      = random.sample(range(id_range_start, id_range_end), len(images))
     age      = [int(100 * random.random()) for i in range(len(images))]
     height   = [float(200 * random.random()) for i in range(len(images))]
     dog      = [x > 100 for x in height]
@@ -506,29 +507,32 @@ def generate_update_image(multiplier):
     additional_df["constraint_id"] = ids
     additional_df["version_id"] = version_id
     additional_df["updateif_<version_id"] = version_id
-    
-    additional_df.to_csv("./input/images_updateif_mixednew1.adb.csv", index=False)
-    # mix the new records in with the old.
-    combined_df = pd.concat([df,additional_df],ignore_index=True).sample( frac=1 )
 
+    additional_df.to_csv(
+        "./input/images_updateif_mixednew1.adb.csv", index=False)
+    # mix the new records in with the old.
+    combined_df = pd.concat([df, additional_df],
+                            ignore_index=True).sample(frac=1)
 
     combined_df.to_csv("./input/images_updateif_mixednew.adb.csv", index=False)
+
 
 def generate_update_image_fail(multiplier):
     # generate base load, small images.
     image_count = 100
-    subprocess.run( ["python3", "generateImages.py", "-c", f"{image_count}","-o", "input/images/update_fail_images_%%.png", "-t","png", "-s","32x32", "-m", "input/update_fail_image_list.csv" ])
-    img_df = pd.read_csv( "input/update_fail_image_list.csv", header=None )
+    subprocess.run(["python3", "generateImages.py", "-c",
+                   f"{image_count}", "-o", "input/images/update_fail_images_%%.png", "-t", "png", "-s", "32x32", "-m", "input/update_fail_image_list.csv"])
+    img_df = pd.read_csv("input/update_fail_image_list.csv", header=None)
     licence_count = 2
     multiplier = multiplier // 2
     img_ids = [i for i in range(image_count)] * multiplier
     license = [x for x in range(licence_count)] * multiplier
 
     def filemap(file_num):
-        return img_df.iat[ file_num % image_count,0]
+        return img_df.iat[file_num % image_count, 0]
     images  = list(product(img_ids, license))
     prop_change_count = len(images) // 10
-    id_range=500000000
+    id_range = 500000000
     df = pd.DataFrame(images, columns=['img_id', 'license'])
     ids      = random.sample(range(id_range), len(images))
     age      = [int(100 * random.random()) for i in range(len(images))]
@@ -550,17 +554,22 @@ def generate_update_image_fail(multiplier):
 
     # 2nd csv - original data, but new bigger images. update_id will increase, but image will remain the same. ( as blobs are not modifable )
     # 300x300 is chosen to allow twice as large
-    subprocess.run( ["python3", "generateImages.py", "-c", f"{image_count}","-o", "input/images/update_fail_big_images_%%.png", "-t","png", "-s","300x300", "-m", "input/update_fail_big_image_list.csv" ])
-    big_img_df = pd.read_csv( "input/update_fail_big_image_list.csv", header=None )
+    subprocess.run(["python3", "generateImages.py", "-c", f"{image_count}", "-o", "input/images/update_fail_big_images_%%.png",
+                   "-t", "png", "-s", "300x300", "-m", "input/update_fail_big_image_list.csv"])
+    big_img_df = pd.read_csv(
+        "input/update_fail_big_image_list.csv", header=None)
     failing_update = df.copy()
 
     def fail_filemap(file_num):
-        return big_img_df.iat[ file_num % image_count,0]
+        return big_img_df.iat[file_num % image_count, 0]
     new_version_id = [1 for x in range(len(images))]
     failing_update["filename"] = failing_update["img_id"].apply(fail_filemap)
-    failing_update['version_id'] = failing_update['version_id'].apply(lambda ver: ver + 1)
+    failing_update['version_id'] = failing_update['version_id'].apply(
+        lambda ver: ver + 1)
     failing_update["updateif_<version_id"] = failing_update["version_id"]
-    failing_update.to_csv("./input/images_updateif_fail_updates.adb.csv", index=False)
+    failing_update.to_csv(
+        "./input/images_updateif_fail_updates.adb.csv", index=False)
+
 
 def generate_forceimage_load(multiplier):
     # copy from imageupdate.
@@ -572,12 +581,16 @@ def generate_forceimage_load(multiplier):
     mixednew.to_csv("./input/images_forceupdate_mixednew.adb.csv", index=False)
 
     # test loading of modified image
-    changeimage_base = pd.read_csv("./input/images_updateif_fail_baseload.adb.csv" )
+    changeimage_base = pd.read_csv(
+        "./input/images_updateif_fail_baseload.adb.csv")
     # with a modified id, the id will change, but not the images.
-    changeimage_modified = pd.read_csv("./input/images_updateif_fail_updates.adb.csv" )
+    changeimage_modified = pd.read_csv(
+        "./input/images_updateif_fail_updates.adb.csv")
 
-    changeimage_base.to_csv("./input/images_forceupdate_fail_base.adb.csv", index=False)
-    changeimage_modified.to_csv("./input/images_forceupdate_fail_updates.adb.csv", index=False)
+    changeimage_base.to_csv(
+        "./input/images_forceupdate_fail_base.adb.csv", index=False)
+    changeimage_modified.to_csv(
+        "./input/images_forceupdate_fail_updates.adb.csv", index=False)
 
     # now change load to add column to verify image.
     empty_column = ["" for x in range(len(changeimage_base))]
@@ -592,9 +605,13 @@ def generate_forceimage_load(multiplier):
     # required to detect blob change and remove and re-add.
     changeimage_modified["updateif_blobsha1_imagesha"] = empty_column
 
-    changeimage_base.to_csv("./input/images_forceupdate_blob_baseload.adb.csv", index=False )
+    changeimage_base.to_csv(
+        "./input/images_forceupdate_blob_baseload.adb.csv", index=False)
     # with a modified id, the id will change, but not the images.
-    changeimage_modified.to_csv("./input/images_forceupdate_updates.adb.csv", index=False )
+    changeimage_modified.to_csv(
+        "./input/images_forceupdate_updates.adb.csv", index=False)
+
+
 def main(params):
 
     persons = generate_person_csv(params.multiplier)
