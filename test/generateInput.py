@@ -615,7 +615,7 @@ def main(params):
 
     generate_update_person()
     generate_partial_load()
-    generate_update_image(params.multipler)
+    generate_update_image(params.multiplier)
     generate_update_image_fail(params.multiplier)
     generate_update_image(params.multiplier)
 
