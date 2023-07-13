@@ -264,6 +264,7 @@ class TestEntityLoader():
                 db_img_id)) for db_img_id in range(len(images.images_ids))])
         )))
         self.assertEqual(len(images), utils.count_images())
+
     def test_image_sparse(self, db, utils, modify_data_from_csv):
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
@@ -272,8 +273,7 @@ class TestEntityLoader():
         self.assertEqual(len(data), utils.count_images())
         fulldata, _ = modify_data_from_csv(
             in_csv_file = "./input/images_sparseload_full.adb.csv")
-        self.assertEqual(len(data)*2, utils.count_images())
-
+        self.assertEqual(len(data) * 2, utils.count_images())
 
 
 # test EntityUpdateCSV with Person entity.

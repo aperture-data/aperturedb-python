@@ -1,5 +1,5 @@
 from aperturedb import CSVParser
-from aperturedb.ImageDataCSV import ImageDataProcessor,IMG_FORMAT
+from aperturedb.ImageDataCSV import ImageDataProcessor, IMG_FORMAT
 import logging
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,8 @@ class SparseAddingCSV(CSVParser.CSVParser):
         self.props_keys = []
         self.command = "Find" + self.entity
         self.constraint_keyword = "constraints"
-        entity_find = self._basic_command(idx, custom_fields = {"results":{"count":True}})
+        entity_find = self._basic_command(
+            idx, custom_fields = {"results": {"count": True}})
         # proceed to second command if count == 0
         condition_find_failed = {"results": {0: {"count": ["==", 0]}}}
         self.props_keys = hold_props_keys
@@ -60,7 +61,8 @@ class SparseAddingCSV(CSVParser.CSVParser):
                 valid = False
         return valid
 
-class ImageSparseAddCSV(SparseAddingCSV,ImageDataProcessor):
+
+class ImageSparseAddCSV(SparseAddingCSV, ImageDataProcessor):
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
@@ -77,6 +79,7 @@ class ImageSparseAddCSV(SparseAddingCSV,ImageDataProcessor):
         self.source_loader    = {
             st: sl for st, sl in zip(self.source_types, self.loaders)
         }
+
     def getitem(self, idx):
         blob_set = []
         [query_set, empty_blobs] = super().getitem(idx)
@@ -89,4 +92,3 @@ class ImageSparseAddCSV(SparseAddingCSV,ImageDataProcessor):
         blob_set = [[], [img]]
         # must wrap the blob return for this item in a list
         return [query_set, [blob_set]]
-

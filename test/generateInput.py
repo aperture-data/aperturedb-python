@@ -611,8 +611,53 @@ def generate_forceimage_load(multiplier):
     changeimage_modified.to_csv(
         "./input/images_forceupdate_updates.adb.csv", index=False)
 
+def generate_sparse_add(multiplier):
+    # generate base load, small images.
+    image_count = 100
+    subprocess.run(["python3", "generateImages.py", "-c",
+                   f"{image_count}", "-o", "input/images/spare_add_image_%%.png", "-t", "png", "-s", "32x32", "-m", "input/sparse_add_image_list.csv"])
+    img_df = pd.read_csv("input/sparse_add_image_list.csv", header=None)
+    licence_count = 2
+    multiplier = multiplier // 2
+    img_ids = [i for i in range(image_count)] * multiplier
+    license = [x for x in range(licence_count)] * multiplier
+
+    def filemap(file_num):
+        return img_df.iat[file_num % image_count, 0]
+    images  = list(product(img_ids, license))
+    prop_change_count = len(images) // 10
+    id_range = 500000000
+    df = pd.DataFrame(images, columns=['img_id', 'license'])
+    ids      = random.sample(range(id_range), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+
+    df.insert(0, "filename", df['img_id'].apply(filemap))
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:date_captured"] = date_cap
+    df["constraint_id"] = ids
+    df["version_id"] = version_id
+    df["updateif_<version_id"] = version_id
+    # create load with first half
+    half = len(df)/2
+    # won't work with uneven, since we are going to expect to be able to double number to check.
+    assert( int(half) == half)
+    df.head( int(half)).to_csv("./input/images_sparseload_base.adb.csv", index=False)
+
+    # then load with all, which half will not be sent, as they exist.
+    df.to_csv("./input/images_sparseload_full.adb.csv", index=False)
+
 
 def main(params):
+
+    generate_sparse_add(params.multiplier)
+    return
 
     persons = generate_person_csv(params.multiplier)
     blobs   = generate_blobs_csv()
