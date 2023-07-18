@@ -11,7 +11,8 @@ from unittest.mock import MagicMock, patch
 pytestmark = [pytest.mark.kaggle, pytest.mark.remote_credentials]
 
 if mark_checker.is_enabled(("kaggle", "remote_credentials")):
-    import os
+    global KaggleApi
+    global KaggleData
     from kaggle.api.kaggle_api_extended import KaggleApi
     from aperturedb.KaggleData import KaggleData
 else:
