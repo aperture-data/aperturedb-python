@@ -54,7 +54,7 @@ def create_connector():
 
     env_config = os.environ.get("APERTUREDB_CONFIG")
     ac = all_configs["active"]
-    config = all_configs["local"][ac] if "local" in all_configs else all_configs["global"]
+    config = all_configs["local"][ac] if "local" in all_configs else all_configs["global"][ac]
 
     if env_config is not None:
         # TODO test me.
