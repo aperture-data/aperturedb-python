@@ -29,6 +29,5 @@ def is_enabled(test_mark):
     # pytest/mark modifies items based on supplied args.
     local_config.hook.pytest_collection_modifyitems(
         session=s, config=c, items=items)
-    # if pymark has removed them all of them, that means either positive selections or negative selections
-    # have disabled this test
-    return len(items) == required
+    # if item is remaining, test would be run.
+    return len(items) == 1
