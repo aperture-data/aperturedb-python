@@ -13,15 +13,18 @@ def is_enabled(test_mark):
     #raise Exception( str(c.getini("filterwarnings")) + " vs " + str(local_config.getini("filterwarnings")))
     s = Session.from_config(c)
     test_item = Item.from_parent( s, name= f"modulehere_test_{test_mark}")
+    required = 0
     # add marker with given mark to this test.
     if isinstance( test_mark, (list,tuple)):
         for iter_mark in test_mark:
             test_item.add_marker(iter_mark)
+        required = len(test_mark)
     else:
         test_item.add_marker(test_mark)
+        required = 1
     items = [test_item]
     # pytest/mark modifies items based on supplied args.
     local_config.hook.pytest_collection_modifyitems(session=s,config=c,items=items)
     # if pymark has removed them all of them, that means either positive selections or negative selections
     # have disabled this test
-    return len(items) > 0
+    return len(items) == required
