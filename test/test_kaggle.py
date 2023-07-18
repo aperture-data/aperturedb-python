@@ -1,13 +1,23 @@
+import pytest
+import mark_checker
+
 from collections import namedtuple
 import os
 from typing import List, Tuple
 import zipfile
 import pandas as pd
-import os
-from kaggle.api.kaggle_api_extended import KaggleApi
-from aperturedb.KaggleData import KaggleData
 from unittest.mock import MagicMock, patch
 
+pytestmark = [ pytest.mark.kaggle, pytest.mark.remote_credentials ]
+
+if mark_checker.is_enabled( ("kaggle","remote_credentials") ):
+    import os
+    from kaggle.api.kaggle_api_extended import KaggleApi
+    from aperturedb.KaggleData import KaggleData
+else:
+    # mock class so it will load, we aren't using it.
+    class KaggleData():
+        pass
 kf = namedtuple("files", ["files"])
 file = namedtuple("file", ["fileType", "totalBytes", "name"])
 

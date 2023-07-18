@@ -1,4 +1,5 @@
 import pytest
+import mark_checker
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.ParallelLoader import ParallelLoader
@@ -147,3 +148,5 @@ def retired_persons(db, insert_data_from_csv, utils):
     retired_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person", constraints=constraints))
     return retired_persons
+def pytest_configure(config):
+    mark_checker.store_config(config)
