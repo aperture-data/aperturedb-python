@@ -1,6 +1,6 @@
 import typer
 
-from aperturedb.cli import configure, ingest, utilities
+from aperturedb.cli import configure, ingest, utilities, transact
 
 app = typer.Typer()
 
@@ -8,6 +8,8 @@ app.add_typer(ingest.app, name="ingest", help="Ingest data into ApertureDB.")
 app.add_typer(configure.app, name="config",
               help="Configure ApertureDB client.")
 app.add_typer(utilities.app, name="utils", help="Utilities")
+app.add_typer(transact.app, name="transact",
+              help="Run a transaction against ApertureDB.")
 
 
 @app.callback()

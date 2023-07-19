@@ -1,0 +1,9 @@
+[
+    { "FindImage" : {
+        "blobs": false,
+        "results" : {
+            "list": ["_uniqueid"],
+            "limit": 10
+        }
+    }}
+]

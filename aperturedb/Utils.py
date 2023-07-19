@@ -1,4 +1,3 @@
-from calendar import c
 import logging
 import json
 import os
@@ -8,7 +7,7 @@ from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Configuration import Configuration
-from aperturedb.cli.configure import _config_file_path, get_configurations, check_configured, ls
+from aperturedb.cli.configure import ls
 from aperturedb.cli.console import console
 
 
