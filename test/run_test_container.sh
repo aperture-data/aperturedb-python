@@ -9,7 +9,7 @@ rm -rf output
 mkdir -m 777 output
 docker compose up -d
 
-LOG_PATH="$(pwd)/aperturedb/logs"
+LOG_PATH="$(pwd)/aperturedb/log"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
 
 REPOSITORY="aperturedata/aperturedb-python-tests"
