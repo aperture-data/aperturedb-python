@@ -31,6 +31,7 @@ if [[ $RESULT != 0 ]]; then
 	else
 		echo "Unable to output log, APERTUREDB_LOG_PATH not set."
 	fi
+	exit 1
 else
 	echo "Generating coverage..."
 	coverage html -i --directory=output
