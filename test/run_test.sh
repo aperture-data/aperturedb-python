@@ -31,9 +31,10 @@ if [[ $RESULT != 0 ]]; then
 
 		BUCKET=python-ci-runs
 		NOW=$(date -Iseconds)
+		ARCHIVE_NAME=logs.tar.gz
 
-		tar cvjf logs.tgz ${APERTUREDB_LOG_PATH}
-		aws s3 cp logs.tgz s3://${BUCKET}/aperturedb-${NOW}.tgz
+		tar czf ${ARCHIVE_NAME} -C ${APERTUREDB_LOG_PATH} .
+		aws s3 cp ${ARCHIVE_NAME} s3://${BUCKET}/aperturedb-${NOW}.tgz
 
 	else
 		echo "Unable to output log, APERTUREDB_LOG_PATH not set."

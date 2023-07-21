@@ -618,7 +618,6 @@ class Utils(object):
         cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
 
         transaction = [
-            {"DeleteEntity": cmd},
             {"DeleteImage": cmd},
             {"DeleteVideo": cmd},
             {"DeleteBlob": cmd},
@@ -631,6 +630,7 @@ class Utils(object):
             {"DeleteBoundingBox": cmd},
             {"DeletePolygon": cmd},
             {"DeleteFrame": cmd},
+            {"DeleteEntity": cmd},
             {"GetSchema": {"refresh": True}}
         ]
 
