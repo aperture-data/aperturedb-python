@@ -13,6 +13,5 @@
     "kvgd_db_size": 204800,
 
     "more-info": "ApertureDB Server",
-    "log_level": 6,
-    "log_path": "logs"
+    "log_level": 6
 }
