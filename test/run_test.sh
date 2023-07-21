@@ -21,7 +21,7 @@ echo $GCP_SERVICE_ACCOUNT_KEY > $CREDENTIALS_FILE
 export GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE
 # capture errors
 set +e
-PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_fails.py -v
+PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_*.py -v
 RESULT=$?
 
 if [[ $RESULT != 0 ]]; then
