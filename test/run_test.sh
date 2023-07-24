@@ -31,7 +31,7 @@ if [[ $RESULT != 0 ]]; then
 			echo "===================="
 			echo "Log file: $i"
 			echo "===================="
-			cat $i
+			cat -n $i
 		done
 
 		BUCKET=python-ci-runs
