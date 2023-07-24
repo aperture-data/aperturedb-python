@@ -27,7 +27,12 @@ RESULT=$?
 if [[ $RESULT != 0 ]]; then
 	echo "Test failed; outputting db log:"
 	if [[ "${APERTUREDB_LOG_PATH}" != "" ]]; then
-		cat -n "${APERTUREDB_LOG_PATH}"/aperturedb.INFO
+		for i in $(ls "${APERTUREDB_LOG_PATH}"/*); do
+			echo "===================="
+			echo "Log file: $i"
+			echo "===================="
+			cat $i
+		done
 
 		BUCKET=python-ci-runs
 		NOW=$(date -Iseconds)
