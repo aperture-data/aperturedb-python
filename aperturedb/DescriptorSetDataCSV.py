@@ -16,10 +16,9 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
     This class loads the Descriptor Set Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Is backed by a csv file with the following columns:
-
-            ``name``, ``dimensions``, ``engine``, ``metric``, ``PROP_NAME_N``, ``constraint_PROP1``
+    :::note Is backed by a csv file with the following columns:
+    ``name``, ``dimensions``, ``engine``, ``metric``, ``PROP_NAME_N``, ``constraint_PROP1``
+    :::
 
     Example csv file::
 

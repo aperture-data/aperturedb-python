@@ -11,10 +11,9 @@ class EntityDataCSV(CSVParser.CSVParser):
     This class loads the Entity Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Expects a csv file with the following columns:
-
-            ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::note Is backed by a csv file with the following columns:
+    ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::
 
     Example csv file::
 

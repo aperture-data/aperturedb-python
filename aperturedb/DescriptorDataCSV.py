@@ -19,11 +19,9 @@ class DescriptorDataCSV(CSVParser.CSVParser):
     This class loads the Descriptor Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Is backed by a csv file with the following columns, and a numpy
-        array file "npz" for the descriptors:
-
-            ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
+    :::note Is backed by a csv file with the following columns, and a numpy array file "npz" for the descriptors:
+    ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
+    :::
 
     **filename**: Path to a npz file which comprises of np arrays.
 
