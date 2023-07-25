@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from aperturedb.Query import QueryBuilder
 
@@ -5,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.slow
 class TestEntityLoader():
     def assertEqual(self, expected, actual):
         if expected != actual:
@@ -107,6 +109,8 @@ class TestEntityLoader():
         self.assertEqual(1, utils.count_bboxes())
 
 
+@pytest.mark.external_network
+@pytest.mark.remote_credentials
 class TestURILoader():
     def assertEqual(self, expected, actual):
         if expected != actual:

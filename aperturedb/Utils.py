@@ -95,7 +95,7 @@ class Utils(object):
             raise e
 
         if rc != 0:
-            raise Exception("query failed with result {rc}")
+            raise Exception(f"query failed with result {rc}")
 
         return r, b
 
@@ -667,45 +667,30 @@ class Utils(object):
 
         cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
 
-        queries = [
-            [{"DeleteEntity": cmd}],
-            [{"DeleteImage": cmd}],
-            [{"DeleteVideo": cmd}],
-            [{"DeleteBlob": cmd}],
+        transaction = [
+            {"DeleteImage": cmd},
+            {"DeleteVideo": cmd},
+            {"DeleteBlob": cmd},
             # DeleteDescriptorSet also deletes the descriptors
-            [{"DeleteDescriptorSet": cmd}],
+            {"DeleteDescriptorSet": cmd},
 
             # All the following should be deleted automatically once the
             # related objects are deleted.
             # We keep them here until ApertureDB fully implements this.
-            [{"DeleteBoundingBox": cmd}],
-            [{"DeletePolygon": cmd}],
-            [{"DeleteFrame": cmd}],
+            {"DeleteBoundingBox": cmd},
+            {"DeletePolygon": cmd},
+            {"DeleteFrame": cmd},
+            {"DeleteEntity": cmd},
+            {"GetSchema": {"refresh": True}}
         ]
 
         try:
-            try:
-                for q in queries:
-                    self.execute(q)
-                response, _ = self.execute(
-                    [{"GetSchema": {"refresh": True}}])
-            except:
-                return False
-
-            schema = response[0]["GetSchema"]
-
-            if "entities" in schema and schema["entities"] is not None:
-                logger.error("Entities not removed completely")
-                logger.error(self.connector.get_last_response_str())
-                return False
-
-            if "connections" in schema and schema["connections"] is not None:
-                logger.error("Connections not removed completely")
-                logger.error(self.connector.get_last_response_str())
-                return False
-
+            response, _ = self.execute(transaction)
+            schema = response[-1]["GetSchema"]
+            check_keys = ["connections", "entities"]
+            return schema["status"] == 0 and \
+                all(map(lambda k: schema[k] is None, check_keys))
         except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+            logger.exception(e)
 
-        return True
+        return False

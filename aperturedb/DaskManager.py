@@ -11,6 +11,8 @@ import multiprocessing as mp
 
 from aperturedb.Stats import Stats
 
+dask.config.set({"dataframe.convert-string": False})
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +43,7 @@ class DaskManager:
             # values as 'foo'. This is for sampling the column names and types. Should not process
             # those rows.
             if len(df) == 2:
-                if df.iloc[0, 0] == "foo":
+                if (df.iloc[0, 0] == "a" and df.isna().iloc[1, 0]) or df.iloc[0, 0] == "foo":
                     return
             count = 0
             try:
