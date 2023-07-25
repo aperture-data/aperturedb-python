@@ -166,5 +166,6 @@ def config():
     }
     return config
 
+
 def pytest_configure(config):
     mark_checker.store_config(config)
