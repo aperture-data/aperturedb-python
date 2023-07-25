@@ -31,11 +31,12 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
 
     Example code to create an instance:
 
-    .. code-block:: python
+    ``` python
 
         data = DescriptorSetDataCSV("/path/to/DescriptorSetData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
     .. important::

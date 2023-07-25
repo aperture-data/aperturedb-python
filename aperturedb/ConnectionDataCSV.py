@@ -37,12 +37,12 @@ class ConnectionDataCSV(CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = ConnectionDataCSV("/path/to/ConnectionData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
-
+    ```
 
 
     .. important::

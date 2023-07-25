@@ -53,11 +53,12 @@ class ImageDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = ImageDataCSV("/path/to/ImageData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
     .. important::

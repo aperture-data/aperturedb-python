@@ -47,11 +47,12 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = DescriptorDataCSV("/path/to/DescriptorData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
 

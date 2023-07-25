@@ -25,11 +25,12 @@ class EntityDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = EntityDataCSV("/path/to/EntityData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
     .. important::

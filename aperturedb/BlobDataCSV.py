@@ -34,12 +34,12 @@ class BlobDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = BlobDataCSV("/path/to/BlobData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
-
+    ```
 
 
     .. important::

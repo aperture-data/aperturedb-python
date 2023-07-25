@@ -17,10 +17,10 @@ class BBoxDataCSV(CSVParser.CSVParser):
     This class loads the Bounding Box Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Is backed by a csv file with the following columns:
-
-            ``IMG_KEY``, ``x_pos``, ``y_pos``, ``width``, ``height``, ``BBOX_PROP_NAME_1``, ... ``BBOX_PROP_NAME_N``, ``constraint_BBOX_PROP_NAME_1``
+    :::note
+    Is backed by a csv file with the following columns:
+    ``IMG_KEY``, ``x_pos``, ``y_pos``, ``width``, ``height``, ``BBOX_PROP_NAME_1``, ... ``BBOX_PROP_NAME_N``, ``constraint_BBOX_PROP_NAME_1``
+    :::
 
     **IMG_KEY**: column has the property name of the image property that
     the bounding box will be connected to, and each row has the value
@@ -44,12 +44,12 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = BBoxDataCSV("/path/to/BoundingBoxesData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
-
+    ```
 
     .. important::
         In the above example, the constraint_dataset_id ensures that a bounding box with the specified

@@ -44,11 +44,12 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = PolygonDataCSV("/path/to/PolygonData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
     """
 
