@@ -44,13 +44,13 @@ class ConnectionDataCSV(CSVParser):
     ```
 
 
-    .. important::
-        This example csv's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
-        It also connects the images and descriptors in the subsequent rows.
+    :::info
+    This example csv's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
+    It also connects the images and descriptors in the subsequent rows.
 
-        In the above example, the constraint_id ensures that a connection with the specified
-        id would be only inserted if it does not already exist in the database.
-
+    In the above example, the constraint_id ensures that a connection with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
     """
 
     def __init__(self, filename, df=None, use_dask=False):

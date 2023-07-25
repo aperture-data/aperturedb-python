@@ -54,16 +54,16 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
 
 
-    .. important::
-        In the above example, the index uniqely identiifes the actual np array from the many arrays in the npz file
-        which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
+    :::info
+    In the above example, the index uniqely identiifes the actual np array from the many arrays in the npz file
+    which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
 
-        Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
-        using :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV`
+    Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
+    using :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV`
 
-        In the above example, the constraint_UUID ensures that a connection with the specified
-        UUID would be only inserted if it does not already exist in the database.
-
+    In the above example, the constraint_UUID ensures that a connection with the specified
+    UUID would be only inserted if it does not already exist in the database.
+    :::
 
     """
 

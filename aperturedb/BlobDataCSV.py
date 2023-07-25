@@ -41,9 +41,10 @@ class BlobDataCSV(CSVParser.CSVParser):
     ```
 
 
-    .. important::
-        In the above example, the constraint_id ensures that a blob with the specified
-        id would be only inserted if it does not already exist in the database.
+    :::info
+    In the above example, the constraint_id ensures that a blob with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
     """
 
     def __init__(self, filename, df=None, use_dask=False):

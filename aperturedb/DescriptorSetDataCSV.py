@@ -38,11 +38,12 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
     ```
 
 
-    .. important::
-        In the above example, the first row implies to create a Descriptor set called dining_chairs.
-        The Descriptors in that set wouldb be expected to be an array of float64, of length 2048.
-        When performing a search on this set, FaissIVFFlat engine would be used and the metric to compute
-        the distance would be L2.
+    :::info
+    In the above example, the first row implies to create a Descriptor set called dining_chairs.
+    The Descriptors in that set wouldb be expected to be an array of float64, of length 2048.
+    When performing a search on this set, FaissIVFFlat engine would be used and the metric to compute
+    the distance would be L2.
+    :::
     """
 
     def __init__(self, filename, df=None, use_dask=False):

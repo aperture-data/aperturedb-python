@@ -50,9 +50,10 @@ class BBoxDataCSV(CSVParser.CSVParser):
         loader.ingest(data)
     ```
 
-    .. important::
-        In the above example, the constraint_dataset_id ensures that a bounding box with the specified
-        dataset_id would be only inserted if it does not already exist in the database.
+    :::info
+    In the above example, the constraint_dataset_id ensures that a bounding box with the specified
+    dataset_id would be only inserted if it does not already exist in the database.
+    :::
 
     """
 
