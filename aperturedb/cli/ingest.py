@@ -13,8 +13,10 @@ from aperturedb.VideoDataCSV import VideoDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 
+
 from aperturedb.Utils import create_connector
 from aperturedb.Query import ObjectType
+from aperturedb.cli.console import console
 
 logger = logging.getLogger(__file__)
 app = typer.Typer()
@@ -50,9 +52,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for inges
     }
 
     data = ingest_types[ingest_type](filepath, use_dask=use_dask)
-
     db = create_connector()
-    from aperturedb.cli.console import console
     console.log(db)
 
     loader = ParallelLoader(db)

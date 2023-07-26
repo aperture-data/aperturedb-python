@@ -1,5 +1,6 @@
 import cv2
 import logging
+import os
 from aperturedb import CSVParser
 
 logger = logging.getLogger(__name__)
@@ -59,7 +60,9 @@ class VideoDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        filename   = self.df.loc[idx, HEADER_PATH]
+        relative_path_prefix = os.path.dirname(self.filename)
+        filename = os.path.join(relative_path_prefix,
+                                self.df.loc[idx, HEADER_PATH])
         video_ok, video = self.load_video(filename)
 
         if not video_ok:

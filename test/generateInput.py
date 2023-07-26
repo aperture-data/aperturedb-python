@@ -1,6 +1,7 @@
 import argparse
 import random
 import math
+import os
 
 from datetime import datetime
 
@@ -46,7 +47,7 @@ def generate_person_csv(multiplier):
 
 def generate_blobs_csv():
 
-    path       = "input/blobs/"
+    path       = "blobs/"
     blob_paths = [path + str(x).zfill(4) + ".blob" for x in range(20)]
     license    = [x for x in range(10)]
     blobs      = list(product(blob_paths, license))
@@ -55,9 +56,8 @@ def generate_blobs_csv():
     arr = [1.5, 2.4, 3.3, 5.5, 9.9, 111.12, 1000.20]
     nparr = np.array(arr)
     for blob in blob_paths:
-        blobfile = open(blob, 'wb')
-        nparr.tofile(blobfile)
-        blobfile.close()
+        with open(os.path.join("input", blob), 'wb') as blobfile:
+            nparr.tofile(blobfile)
 
     entity   = ["segmentation" for x in range(len(blobs))]
     ids      = random.sample(range(1000000000), len(blobs))

@@ -11,6 +11,10 @@ from aperturedb.Configuration import Configuration
 
 
 class ObjEncoder(JSONEncoder):
+    """
+    A bit of boiler plate to allow us to serialize our Configuration object.
+    """
+
     def default(self, o):
         return o.__dict__
 

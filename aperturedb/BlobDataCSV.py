@@ -1,4 +1,5 @@
 import logging
+import os
 from aperturedb import CSVParser
 
 PROPERTIES  = "properties"
@@ -66,7 +67,9 @@ class BlobDataCSV(CSVParser.CSVParser):
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
-        filename = self.df.loc[idx, BLOB_PATH]
+        relative_path_prefix = os.path.dirname(self.filename)
+        filename = os.path.join(relative_path_prefix,
+                                self.df.loc[idx, BLOB_PATH])
         blob_ok, blob = self.load_blob(filename)
         if not blob_ok:
             logger.error("Error loading blob: " + filename)
