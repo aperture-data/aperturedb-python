@@ -178,6 +178,9 @@ class Connector(object):
 
         response, _ = self._query(query)
 
+        if not isinstance( response, (list,tuple) ) or not "Authenticate" in response[0]:
+            raise Exception(
+                    "Unexpected response from server upon authenticate request: " + str(response))
         session_info = response[0]["Authenticate"]
         if session_info["status"] != 0:
             raise Exception(session_info["info"])
