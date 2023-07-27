@@ -2,7 +2,7 @@ version: '3'
 
 services:
   aperturedb:
-    image: aperturedata/aperturedb:v0.15.1
+    image: aperturedata/aperturedb
     volumes:
       - ./aperturedb:/aperturedb
     ports:
@@ -10,7 +10,7 @@ services:
     restart: always
 
   webui:
-    image: aperturedata/aperturedb-webui:1.14.2-sta
+    image: aperturedata/aperturedb-webui
     ports:
       - 8087:80
     restart: always

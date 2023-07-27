@@ -162,7 +162,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         - responses
         - output_blobs
         Example usage:
-        .. code-block:: python
+        ``` python
             class MyQueries(QueryGenerator):
                 def process_responses(requests, input_blobs, responses, output_blobs):
                     self.requests.extend(requests)
@@ -170,6 +170,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             loader = ParallelLoader(self.db)
             generator = MyQueries()
             loader.ingest(generator)
+        ```
         """
 
         q, blobs = self.generate_batch(data)

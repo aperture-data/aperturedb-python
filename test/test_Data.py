@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import pandas as pd
 import pytest
@@ -10,6 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.slow
 class TestEntityLoader():
     def assertEqual(self, expected, actual):
         if expected != actual:
@@ -329,6 +331,8 @@ class TestImageForceNewestCSV():
         self.assertEqual(True, True)  # how to verify.
 
 
+@pytest.mark.external_network
+@pytest.mark.remote_credentials
 class TestURILoader():
     def assertEqual(self, expected, actual):
         if expected != actual:

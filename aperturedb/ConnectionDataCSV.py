@@ -15,10 +15,9 @@ class ConnectionDataCSV(CSVParser):
     This class loads the Connection Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Is backed by a csv file with the following columns:
-
-            ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::note Is backed by a csv file with the following columns:
+    ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::
 
     Example csv file::
 
@@ -29,7 +28,7 @@ class ConnectionDataCSV(CSVParser):
 
     **ConnectionClass**: Arbitrary class name for the entity this would be saved as.
 
-    **<ClassName>@<PropertyName>**: This is a special combination of Class Name and Property Name that can uniquely identify an entity. ‘@’ is a delimeter, so should not be used in a property name.
+    **``ClassName``@``PropertyName``**: This is a special combination of Class Name and Property Name that can uniquely identify an entity. ‘@’ is a delimeter, so should not be used in a property name.
 
     **PROP_NAME_1 .. PROP_NAME_N**: Arbitraty property names.
 
@@ -37,21 +36,21 @@ class ConnectionDataCSV(CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = ConnectionDataCSV("/path/to/ConnectionData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
+    :::info
+    This example csv's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
+    It also connects the images and descriptors in the subsequent rows.
 
-    .. important::
-        This example csv's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
-        It also connects the images and descriptors in the subsequent rows.
-
-        In the above example, the constraint_id ensures that a connection with the specified
-        id would be only inserted if it does not already exist in the database.
-
+    In the above example, the constraint_id ensures that a connection with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
     """
 
     def __init__(self, filename, df=None, use_dask=False):
