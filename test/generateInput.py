@@ -7,6 +7,7 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
+from generateImages import ImageGenerator
 
 from itertools import product
 
@@ -410,9 +411,8 @@ def generate_newest_images(multiplier):
     df["date:date_captured"] = date_cap
     df["constraint_id"] = ids
     df["version_id"] = version_id
-    df["prop_blobsha1_imagesha"] = empty_column
+    df["gen_blobsha1_imagesha"] = empty_column
     df["updateif_<version_id"] = version_id
-    df["updateif_blobsha1_imagesha"] = empty_column
 
     df = df.sort_values("id")
 
@@ -445,8 +445,8 @@ def generate_update_image(multiplier):
     # generate base load
     # generate images
     image_count = 100
-    subprocess.run(["python3", "generateImages.py", "-c",
-                   f"{image_count}", "-o", "input/images/update_images_%%.png", "-t", "png", "-s", "256x256", "-m", "input/update_image_list.csv"])
+    img_gen = ImageGenerator( count=image_count, output="input/images/update_images_%%.png", image_type="png",
+                                size=(256,256), manifest="input/update_image_list.csv"])
     img_df = pd.read_csv("input/update_image_list.csv", header=None)
     licence_count = 2
     multiplier = multiplier // 2
@@ -520,8 +520,8 @@ def generate_update_image(multiplier):
 def generate_update_image_fail(multiplier):
     # generate base load, small images.
     image_count = 100
-    subprocess.run(["python3", "generateImages.py", "-c",
-                   f"{image_count}", "-o", "input/images/update_fail_images_%%.png", "-t", "png", "-s", "32x32", "-m", "input/update_fail_image_list.csv"])
+    img_gen = ImageGenerator( count=image_count, output="input/images/update_fail_images_%%.png", image_type="png",
+                                size=(32,32), manifest="input/update_fail_image_list.csv"])
     img_df = pd.read_csv("input/update_fail_image_list.csv", header=None)
     licence_count = 2
     multiplier = multiplier // 2
@@ -554,8 +554,8 @@ def generate_update_image_fail(multiplier):
 
     # 2nd csv - original data, but new bigger images. update_id will increase, but image will remain the same. ( as blobs are not modifable )
     # 300x300 is chosen to allow twice as large
-    subprocess.run(["python3", "generateImages.py", "-c", f"{image_count}", "-o", "input/images/update_fail_big_images_%%.png",
-                   "-t", "png", "-s", "300x300", "-m", "input/update_fail_big_image_list.csv"])
+    img_gen = ImageGenerator( count=image_count, output="input/images/update_fail_big_images_%%.png", image_type="png",
+                                size=(300,300), manifest="input/update_fail_big_image_list.csv"])
     big_img_df = pd.read_csv(
         "input/update_fail_big_image_list.csv", header=None)
     failing_update = df.copy()
@@ -615,8 +615,8 @@ def generate_forceimage_load(multiplier):
 def generate_sparse_add(multiplier):
     # generate base load, small images.
     image_count = 100
-    subprocess.run(["python3", "generateImages.py", "-c",
-                   f"{image_count}", "-o", "input/images/spare_add_image_%%.png", "-t", "png", "-s", "32x32", "-m", "input/sparse_add_image_list.csv"])
+    img_gen = ImageGenerator( count=image_count, output="input/images/spare_add_image_%%.png", image_type="png",
+                                size=(32,32), manifest="input/spare_add_image_list.csv"])
     img_df = pd.read_csv("input/sparse_add_image_list.csv", header=None)
     licence_count = 2
     multiplier = multiplier // 2
