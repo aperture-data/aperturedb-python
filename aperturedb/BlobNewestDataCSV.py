@@ -119,7 +119,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
                 self.constraints_keys       = [x for x in self.header[1:]
                                                if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
                 self.search_keys       = [x for x in self.header[1:]
-                                          if x.startswith(BlobNewestDatatCSV.UPDATE_CONSTRAINT_PREFIX)]
+                                          if x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)]
 
     # derived class interface for retrieving blob
     def read_blob(self, idx):
@@ -250,7 +250,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
             idx, match = True)
         update_constraints.update(search_constraints)
         update_constraints.update(generated_positive_constraints)
-        properties = self.parse_properties(self.df, idx)
+        properties = self.parse_properties(idx)
         self.constraint_keyword = "constraints"
         entity_update = self._parsed_command(
             idx, None, update_constraints, properties)

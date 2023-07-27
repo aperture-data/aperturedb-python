@@ -211,7 +211,7 @@ class TestEntityLoader():
             filter(lambda imglen: imglen > big_img_size / 2, [len(images.get_image_by_index(
                 db_img_id)) for db_img_id in range(len(images.images_ids))])
         )))
-        # all images were updated
+        # all images were updated - images with version_id >= 2 is all images in db.
         self.assertEqual(len(images), utils.count_images())
         return
 
