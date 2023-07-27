@@ -13,7 +13,7 @@ class TestBadResponses():
         def failed_auth_query(conn_obj, ignored_query):
             # generate a response from the server which is not the expected Auth result.
             # _query returns the server response json and an array of blobs.
-            return ({ "info": "Internal Server Error 42", "status":-1, "ignored": ignored_query },[])
+            return ({"info": "Internal Server Error 42", "status": -1, "ignored": ignored_query}, [])
 
         monkeypatch.setattr(Connector, "_query", failed_auth_query)
 
@@ -26,4 +26,3 @@ class TestBadResponses():
                 use_ssl = True)
 
         assert "Unexpected response" in str(conn_exception.value)
-
