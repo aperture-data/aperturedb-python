@@ -102,7 +102,7 @@ class CSVParser(Subscriptable):
 
         constraints = {}
         if len(self.constraints_keys) > 0:
-            for key in self.props_keys:
+            for key in self.constraints_keys:
                 prop, value = self._parse_prop(key, self.df.loc[idx,key])
                 constraints[prop] = ["==", self.df.loc[idx, key]]
         return constraints
