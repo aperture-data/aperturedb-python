@@ -162,8 +162,8 @@ class TestEntityLoader():
             in_csv_file = "./input/persons-update-olderage.adb.csv")
         all_persons = Entities.retrieve(db,
                                         spec=Query.spec(with_class="Person"))
-        # 300 should be addded to all that were above 30, so both should match.
-        new_old_age = len(list(filter(lambda p: p['age'] > 300, all_persons)))
+        # 200 should be addded to all that were above 30, so both should match.
+        new_old_age = len(list(filter(lambda p: p['age'] > 200, all_persons)))
         self.assertEqual(previous_old_age, new_old_age)
 
     # ensure blob adding works.
@@ -208,7 +208,7 @@ class TestEntityLoader():
         # all db images must be less than half the size of a larger changed image.
         # filter will include any larger, we expect 0.
         self.assertEqual(0, len(list(
-            filter(lambda imglen: imglen > size / 2, [len(images.get_image_by_id(
+            filter(lambda imglen: imglen > big_img_size / 2, [len(images.get_image_by_index(
                 db_img_id)) for db_img_id in range(len(images.images_ids))])
         )))
         # all images were updated
@@ -242,7 +242,7 @@ class TestEntityLoader():
         # all db images must be less than half the size of a larger changed image.
         # filter will include any larger, we expect 0.
         self.assertEqual(0, len(list(
-            filter(lambda imglen: imglen > big_img_size / 2, [len(images.get_image_by_id(
+            filter(lambda imglen: imglen > big_img_size / 2, [len(images.get_image_by_index(
                 db_img_id)) for db_img_id in range(len(images.images_ids))])
         )))
         # all images were updated

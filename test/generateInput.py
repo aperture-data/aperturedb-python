@@ -326,7 +326,7 @@ def generate_update_person():
     df['age'] = df['age'].apply(lambda age: age + 200)
     # change if age in database is > 30
     df['updateif_>age'] = [30 for x in range(len(df))]
-    df = df.to_csv("input/persons-update-olderage.adb.csv")
+    df = df.to_csv("input/persons-update-olderage.adb.csv", index=False)
 
 
 def generate_partial_load():
