@@ -11,13 +11,15 @@ logger = logging.getLogger(__name__)
 # Turn on to debug constraints ( produces a lot of output )
 DEBUG_CONSTRAINTS = True
 
-# if blob_set is None, or an empty list, it is ignored.
-# if blob_set is a list, it will be given to the seed query
-# if blob_set is a list of lists, each inner list will be given to the inner
-#  execution
-
-# function to create a batch set runner which injects values from the base class.
-
+# removes blobs from a list or tuple for pretty printing 
+def remove_blobs(item):
+    if isinstance(item, list):
+        item = list(map(remove_blobs, item))
+    elif isinstance(item, tuple):
+        item = list(map(remove_blobs, item))
+    elif isinstance(item, bytes):
+        item = "*BLOB*"
+    return item
 
 def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable = None):
 
@@ -32,19 +34,15 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
     #  blobs_per_query: list of how many blobs each query has.
     #  strict_response_validation: same as execute_batch.
     #
+    # if blob_set is None, or an empty list, it is ignored.
+    # if blob_set is a list, it will be given to the seed query
+    # if blob_set is a list of lists, each inner list will be given to the inner
+    #  execution
+    #
     def execute_batch_sets(query_set, blob_set, db, success_statuses: list[int] = [0],
                            response_handler: Callable = None, commands_per_query: list[int] = -1,
                            blobs_per_query: list[int] = -1, strict_response_validation: bool = False):
 
-        # pretty printing for errors
-        def remove_blobs(item):
-            if isinstance(item, list):
-                item = list(map(remove_blobs, item))
-            elif isinstance(item, tuple):
-                item = list(map(remove_blobs, item))
-            elif isinstance(item, bytes):
-                item = "*BLOB*"
-            return item
 
         logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
             len(query_set), commands_per_query, blobs_per_query))
@@ -66,8 +64,10 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
         if per_set_blobs:
             first_element_blobs = blob_set[0]
             first_query_blobs = first_element_blobs[0]
-            print(remove_blobs(blob_set[0]))
-            print(remove_blobs(blob_set[0][0]))
+            # If someone is looking for info logging from PQS, it is likely that blobs are not being set properly.
+            #  The wrapping of blobs in general can be confusing. Best suggestion is looking at a loader.
+            logger.info("Blobs for first set = " + str(remove_blobs(blob_set[0])))
+            logger.info("First Blob for first set = " + remove_blobs(blob_set[0][0])))
             if not isinstance(first_query_blobs, list):
                 logger.error(
                     "Expected a list of lists for the first element's blob sets")
@@ -308,9 +308,9 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
 
 class ParallelQuerySet(ParallelQuery):
     """
-    **Parallel and Batch Set Querier for ApertureDB**
-    This class provides the abstraction for partitioning sets of data into batches,
-    so that they may be processed using different threads.
+    **Parallel and Batch Set Multi-Querier for ApertureDB**
+    This class provides the mechanism to run multiple queries over a single csv.
+     Per-query actions are done by ParallelQuery.
     """
 
     def __init__(self, db, dry_run=False):
