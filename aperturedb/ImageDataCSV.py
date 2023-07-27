@@ -290,16 +290,16 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
 class ImageUpdateDataCSV(EntityUpdateDataCSV, ImageDataProcessor):
     """
     **ApertureDB Image CSV Parser for Adding an Image and updating the properties on the image.**
-    Usage is in SingleEntityUpdateCSV.
+    Usage is in EntityUpdateDataCSV.
 
     Note that this class will not change a blob in an existing entity. If looking to change a blob in
-     an existing entity, look at ImageForceNewestCSV, but be careful of all caveats.
+     an existing entity, look at ImageForceNewestDataCSV, but be careful of all caveats.
 
     """
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
-        SingleEntityUpdateCSV.__init__(self, "Image", filename, df, use_dask)
+        EntityUpdateDataCSV.__init__(self, "Image", filename, df, use_dask)
 
         source_type = self.header[0]
         self.set_processor(use_dask, source_type)
@@ -340,15 +340,15 @@ class ImageUpdateDataCSV(EntityUpdateDataCSV, ImageDataProcessor):
             SingleEntityUpdateCSV.validate(self)
 
 
-class ImageForceNewestDataCSV(SingleEntityBlobNewestDataCSV, ImageDataProcessor):
+class ImageForceNewestDataCSV(BlobNewestDataCSV, ImageDataProcessor):
     """
     **ApertureDB Image CSV Parser for Maintaining a Blob set with changing blob data.**
-    See SingleEntityBlobNewestCSV for usage.
+    See BlobNewestDataCSV for usage.
     """
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
-        SingleEntityBlobNewestCSV.__init__(
+        BlobNewestDataCSV.__init__(
             self, "Image", filename, df, use_dask)
 
         source_type = self.header[0]
@@ -399,7 +399,7 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
-        SparseAddingCSV.__init__(self, "Image", filename, df, use_dask)
+        SparseAddingDataCSV.__init__(self, "Image", filename, df, use_dask)
         source_type = self.header[0]
         self.set_processor(use_dask, source_type)
 

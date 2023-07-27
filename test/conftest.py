@@ -4,12 +4,12 @@ from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.ParallelQuerySet import ParallelQuerySet
 from aperturedb.BlobDataCSV import BlobDataCSV
-from aperturedb.EntityDataCSV import EntityDataCSV, EntityUpdateCSV
+from aperturedb.EntityDataCSV import EntityDataCSV 
+from aperturedb.EntityUpdateDataCSV import  EntityUpdateDataCSV
 from aperturedb.ConnectionDataCSV import ConnectionDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
-from aperturedb.ImageDataCSV import ImageDataCSV, ImageUpdateCSV, ImageForceNewestCSV
-from aperturedb.SparseAddingCSV import ImageSparseAddCSV
+from aperturedb.ImageDataCSV import ImageDataCSV, ImageUpdateDataCSV, ImageForceNewestDataCSV, ImageSparseAddDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
@@ -138,7 +138,7 @@ def insert_data_from_csv(db, request):
     return insert_data_from_csv
 
 
-class UpdatePersonEntityCSV(EntityUpdateCSV):
+class UpdatePersonEntityCSV(EntityUpdateDataCSV):
     def __init__(self, filename, df=None, use_dask = False):
         super().__init__("Person", filename, df=df, use_dask = use_dask)
 
@@ -150,22 +150,22 @@ def modify_data_from_csv(db, request):
             request.param = False
             print("Not enough records to test parallel loader. Using serial loader.")
         file_data_pair = {
-            "./input/persons-update.adb.csv": UpdatePersonEntityCSV,
-            "./input/persons-update-oldversion.adb.csv": UpdatePersonEntityCSV,
-            "./input/persons-update-newversion.adb.csv": UpdatePersonEntityCSV,
-            "./input/persons-update-olderage.adb.csv": UpdatePersonEntityCSV,
-            "./input/images_updateif_baseload.adb.csv": ImageUpdateCSV,
-            "./input/images_updateif_mixednew.adb.csv": ImageUpdateCSV,
-            "./input/images_updateif_fail_baseload.adb.csv": ImageUpdateCSV,
-            "./input/images_updateif_fail_updates.adb.csv": ImageUpdateCSV,
-            "./input/images_forceupdate_baseload.adb.csv": ImageForceNewestCSV,
-            "./input/images_forceupdate_mixednew.adb.csv": ImageForceNewestCSV,
-            "./input/images_forceupdate_fail_base.adb.csv": ImageForceNewestCSV,
-            "./input/images_forceupdate_fail_updates.adb.csv": ImageForceNewestCSV,
-            "./input/images_forceupdate_blob_baseload.adb.csv": ImageForceNewestCSV,
-            "./input/images_forceupdate_updates.adb.csv": ImageForceNewestCSV,
-            "./input/images_sparseload_base.adb.csv": ImageSparseAddCSV,
-            "./input/images_sparseload_full.adb.csv": ImageSparseAddCSV
+            "./input/persons-update.adb.csv": UpdatePersonEntityDataCSV,
+            "./input/persons-update-oldversion.adb.csv": UpdatePersonEntityDataCSV,
+            "./input/persons-update-newversion.adb.csv": UpdatePersonEntityDataCSV,
+            "./input/persons-update-olderage.adb.csv": UpdatePersonEntityDataCSV,
+            "./input/images_updateif_baseload.adb.csv": ImageUpdateDataCSV,
+            "./input/images_updateif_mixednew.adb.csv": ImageUpdateDataCSV,
+            "./input/images_updateif_fail_baseload.adb.csv": ImageUpdateDataCSV,
+            "./input/images_updateif_fail_updates.adb.csv": ImageUpdateDataCSV,
+            "./input/images_forceupdate_baseload.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_mixednew.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_fail_base.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_fail_updates.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_blob_baseload.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_updates.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_sparseload_base.adb.csv": ImageSparseAddDataCSV,
+            "./input/images_sparseload_full.adb.csv": ImageSparseAddDataCSV
         }
         use_dask = False
         if hasattr(request, "param"):

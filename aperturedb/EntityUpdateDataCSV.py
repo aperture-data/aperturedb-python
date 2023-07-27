@@ -84,11 +84,11 @@ class EntityUpdateDataCSV(CSVParser.CSVParser):
                 self.keys_set = True
                 self.props_keys       = [x for x in self.header[1:]
                                          if not (x.startswith(CSVParser.CONSTRAINTS_PREFIX)
-                                                 or x.startswith(SingleEntityUpdateCSV.UPDATE_CONSTRAINT_PREFIX))]
+                                                 or x.startswith(EntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX))]
                 self.constraints_keys       = [x for x in self.header[1:]
                                                if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
                 self.search_keys       = [x for x in self.header[1:]
-                                          if x.startswith(SingleEntityUpdateCSV.UPDATE_CONSTRAINT_PREFIX)]
+                                          if x.startswith(EntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX)]
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
@@ -101,7 +101,7 @@ class EntityUpdateDataCSV(CSVParser.CSVParser):
         self.command = "Update" + self.entity
         update_constraints = self.parse_constraints(self.df, idx)
         search_constraints = self.parse_other_constraint(
-            SingleEntityUpdateCSV.UPDATE_CONSTRAINT_PREFIX, self.search_keys, self.df, idx)
+            EntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX, self.search_keys, self.df, idx)
         update_constraints.update(search_constraints)
         properties = self.parse_properties(self.df, idx)
         self.constraint_keyword = "constraints"

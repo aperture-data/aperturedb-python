@@ -5,10 +5,7 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# SingleEntityBlobNewestCSV
-
-
-class SingleEntityBlobNewestDataCSV(CSVParser.CSVParser):
+class BlobNewestDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB General CSV Parser for Maintaining a Blob set with changing blob data.**
 
@@ -115,19 +112,19 @@ class SingleEntityBlobNewestDataCSV(CSVParser.CSVParser):
                 self.keys_set = True
                 self.props_keys       = [x for x in self.header[1:]
                                          if not (x.startswith(CSVParser.CONSTRAINTS_PREFIX)
-                                                 or x.startswith(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX)
-                                                 or x.startswith(SingleEntityBlobNewestCSV.GENERATE_PROP_PREFIX))]
+                                                 or x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)
+                                                 or x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX))]
                 self.generated_keys = [x for x in self.header[1:]
-                                       if x.startswith(SingleEntityBlobNewestCSV.GENERATE_PROP_PREFIX)]
+                                       if x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX)]
                 self.constraints_keys       = [x for x in self.header[1:]
                                                if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
                 self.search_keys       = [x for x in self.header[1:]
-                                          if x.startswith(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX)]
+                                          if x.startswith(BlobNewesDatatCSV.UPDATE_CONSTRAINT_PREFIX)]
 
     # derived class interface for retrieving blob
     def read_blob(self, idx):
         raise Exception(
-            "No Blob Defined for SingleEntityBlobNewestCSV ( requires subclass )")
+            "No Blob Defined for BlobNewestDataCSV ( requires subclass )")
 
     # creates generated data for an index based on supplied action
     def parse_generated(self, idx, action):
@@ -147,7 +144,7 @@ class SingleEntityBlobNewestDataCSV(CSVParser.CSVParser):
     # filter in or out generated constraints
     def filter_generated_constraints(self, return_generated=False):
         filtered = []
-        prefix_len = len(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX)
+        prefix_len = len(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)
         for key in self.search_keys:
             key_postfix = key[prefix_len:]
             if "_" in key_postfix:
@@ -176,7 +173,7 @@ class SingleEntityBlobNewestDataCSV(CSVParser.CSVParser):
         constraints = {}
         generated_keys = self.filter_generated_constraints(
             return_generated=True)
-        prefix_len = len(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX)
+        prefix_len = len(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)
         for key in generated_keys:
             (action, *proplist) = key[prefix_len:].split('_')
             prop = '_'.join(proplist)
@@ -194,7 +191,7 @@ class SingleEntityBlobNewestDataCSV(CSVParser.CSVParser):
 
     # create generated props for specific index
     def create_generated_props(self, idx):
-        prefix_len = len(SingleEntityBlobNewestCSV.GENERATE_PROP_PREFIX)
+        prefix_len = len(BlobNewestDataCSV.GENERATE_PROP_PREFIX)
         properties = {}
         blob = None
         for generate in self.generated_keys:
@@ -246,7 +243,7 @@ class SingleEntityBlobNewestDataCSV(CSVParser.CSVParser):
         condition_add_failed = {"results": {0: {"status": ["==", 2]}}}
         self.command = "Update" + self.entity
         update_constraints = self.parse_constraints(self.df, idx)
-        search_constraints = self.parse_other_constraint(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX,
+        search_constraints = self.parse_other_constraint(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX,
                                                          self.filter_generated_constraints(), self.df, idx)
         # we test generated constraints here as they will stop an update from happening.
         generated_positive_constraints = self.create_generated_constraints(
