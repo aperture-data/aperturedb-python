@@ -20,7 +20,7 @@ class KaggleData(Subscriptable):
 
     Example subclass:
 
-    .. code-block:: python
+    ``` python
 
         class CelebADataKaggle(KaggleData):
            def __init__(self, **kwargs) -> None:
@@ -91,6 +91,7 @@ class KaggleData(Subscriptable):
                embedding = self.embedding_generator(Image.open(image_file_name))
                serialized = embedding.cpu().detach().numpy().tobytes()
                return q, [blob, serialized]
+    ```
 
         Args:
             dataset_ref (str): URL of kaggle dataset, for example 'https://www.kaggle.com/datasets/crawford/cat-dataset'

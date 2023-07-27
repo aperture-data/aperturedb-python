@@ -11,10 +11,9 @@ class EntityDataCSV(CSVParser.CSVParser):
     This class loads the Entity Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Expects a csv file with the following columns:
-
-            ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::note Is backed by a csv file with the following columns:
+    ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::
 
     Example csv file::
 
@@ -25,17 +24,18 @@ class EntityDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = EntityDataCSV("/path/to/EntityData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
-    .. important::
-        In the above example, the constraint_id ensures that a Entity with the specified
-        id would be only inserted if it does not already exist in the database.
-
+    :::info
+    In the above example, the constraint_id ensures that a Entity with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
 
     """
 

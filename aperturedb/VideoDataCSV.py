@@ -33,11 +33,12 @@ class VideoDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = ImageDataCSV("/path/to/VideoData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
     """
 
     def __init__(self, filename, check_video=True):
