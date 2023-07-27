@@ -6,8 +6,9 @@ import numpy as np
 import cv2
 
 from aperturedb import CSVParser
-from aperturedb.SingleEntityUpdateCSV import SingleEntityUpdateCSV
-from aperturedb.SingleEntityBlobNewestCSV import SingleEntityBlobNewestCSV
+from aperturedb.EntityUpdateDataCSV import EntityUpdateDataCSV
+from aperturedb.BlobNewestDataCSV import EntityBlobNewestDataCSV
+from aperturedb.SparseAddingDataCSV import SparseAddingDataCSV
 import logging
 
 logger = logging.getLogger(__name__)
@@ -286,10 +287,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
             raise Exception(
                 f"Error with CSV file field: {self.header[0]}. Must be first field")
 
-# Update and Add Images
-
-
-class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
+class ImageUpdateDataCSV(EntityUpdateDataCSV, ImageDataProcessor):
     """
     **ApertureDB Image CSV Parser for Adding an Image and updating the properties on the image.**
     Usage is in SingleEntityUpdateCSV.
@@ -373,3 +371,57 @@ class ImageForceNewestDataCSV(SingleEntityBlobNewestDataCSV, ImageDataProcessor)
             logger.error("Error loading image: " + image_path)
             raise Exception("Error loading image: " + image_path)
         return img
+
+class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
+    """
+    **ApertureDB Spare Loading Image Data.**
+
+    ImageSparseAddDataCSV should be used the same as ImageDataCSV.
+
+    See SparseAddingDataCSV for description of when to use this versus ImageDataCSV.
+    
+
+    Example csv file::
+
+        filename,id,label,constraint_id,format
+        /home/user/file1.jpg,321423532,dog,321423532,jpg
+        /home/user/file2.jpg,42342522,cat,42342522,png
+        ...
+
+    Example usage:
+
+    .. code-block:: python
+
+        data = ImageSparseAddDataCSV("/path/to/ImageData.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data)
+    """
+    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+        ImageDataProcessor.__init__(
+            self, check_image, n_download_retries)
+        SparseAddingCSV.__init__(self, "Image", filename, df, use_dask)
+        source_type = self.header[0]
+        self.set_processor(use_dask, source_type)
+
+        self.format_given     = IMG_FORMAT in self.header
+        self.props_keys = list(filter(lambda prop: prop not in [
+                               IMG_FORMAT, "filename"], self.props_keys))
+        if self.source_type not in self.source_types:
+            logger.error("Source not recognized: " + self.source_type)
+            raise Exception("Error loading image: " + filename)
+        self.source_loader    = {
+            st: sl for st, sl in zip(self.source_types, self.loaders)
+        }
+
+    def getitem(self, idx):
+        blob_set = []
+        [query_set, empty_blobs] = super().getitem(idx)
+        image_path = self.df.loc[idx, self.source_type]
+        img_ok, img = self.source_loader[self.source_type](image_path)
+        if not img_ok:
+            logger.error("Error loading image: " + image_path)
+            raise Exception("Error loading image: " + image_path)
+        # element has 2 queries, only second has blob
+        blob_set = [[], [img]]
+        # must wrap the blob return for this item in a list
+        return [query_set, [blob_set]]

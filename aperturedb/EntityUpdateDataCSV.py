@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 # find_<prop> is the column form to bind
 
 
-class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
+class EntityUpdateDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB General CSV Parser for Adding and Updateing Properties in an Entity**
 
