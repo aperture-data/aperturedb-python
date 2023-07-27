@@ -59,7 +59,8 @@ class DaskManager:
             for i in range(0, len(df), batchsize):
                 end = min(i + batchsize, len(df))
                 slice = df[i:end]
-                data = generator.__class__(filename="", df=slice)
+                data = generator.__class__(
+                    filename=generator.filename, df=slice)
                 loader.ingest(generator=data, batchsize=len(
                     slice), numthreads=1, stats=False)
                 count += 1
