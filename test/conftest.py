@@ -5,8 +5,8 @@ from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.ParallelQuerySet import ParallelQuerySet
 from aperturedb.BlobDataCSV import BlobDataCSV
-from aperturedb.EntityDataCSV import EntityDataCSV 
-from aperturedb.EntityUpdateDataCSV import  EntityUpdateDataCSV
+from aperturedb.EntityDataCSV import EntityDataCSV
+from aperturedb.EntityUpdateDataCSV import  SingleEntityUpdateDataCSV
 from aperturedb.ConnectionDataCSV import ConnectionDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
@@ -139,7 +139,7 @@ def insert_data_from_csv(db, request):
     return insert_data_from_csv
 
 
-class UpdatePersonEntityCSV(EntityUpdateDataCSV):
+class UpdatePersonEntityDataCSV(SingleEntityUpdateDataCSV):
     def __init__(self, filename, df=None, use_dask = False):
         super().__init__("Person", filename, df=df, use_dask = use_dask)
 

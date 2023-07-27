@@ -6,8 +6,8 @@ import numpy as np
 import cv2
 
 from aperturedb import CSVParser
-from aperturedb.EntityUpdateDataCSV import EntityUpdateDataCSV
-from aperturedb.BlobNewestDataCSV import EntityBlobNewestDataCSV
+from aperturedb.EntityUpdateDataCSV import SingleEntityUpdateDataCSV
+from aperturedb.BlobNewestDataCSV import BlobNewestDataCSV
 from aperturedb.SparseAddingDataCSV import SparseAddingDataCSV
 import logging
 
@@ -179,7 +179,7 @@ class ImageDataProcessor():
 
 
 class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
-   """**ApertureDB Image Data.**
+    """**ApertureDB Image Data.**
 
     This class loads the Image Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
@@ -223,7 +223,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     In the above example, the constraint_id ensures that an Image with the specified
     id would be only inserted if it does not already exist in the database.
     :::
-
+    """
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
 
         ImageDataProcessor.__init__(
@@ -285,7 +285,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
             raise Exception(
                 f"Error with CSV file field: {self.header[0]}. Must be first field")
 
-class ImageUpdateDataCSV(EntityUpdateDataCSV, ImageDataProcessor):
+class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
     """
     **ApertureDB Image CSV Parser for Adding an Image and updating the properties on the image.**
     Usage is in EntityUpdateDataCSV.
@@ -297,7 +297,7 @@ class ImageUpdateDataCSV(EntityUpdateDataCSV, ImageDataProcessor):
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
-        EntityUpdateDataCSV.__init__(self, "Image", filename, df, use_dask)
+        SingleEntityUpdateDataCSV.__init__(self, "Image", filename, df, use_dask)
 
         source_type = self.header[0]
         self.set_processor(use_dask, source_type)
@@ -335,7 +335,7 @@ class ImageUpdateDataCSV(EntityUpdateDataCSV, ImageDataProcessor):
             raise Exception(
                 f"Error with CSV file field: {self.header[0]}. Must be first field")
         else:
-            SingleEntityUpdateCSV.validate(self)
+            SingleEntityUpdateDataCSV.validate(self)
 
 
 class ImageForceNewestDataCSV(BlobNewestDataCSV, ImageDataProcessor):

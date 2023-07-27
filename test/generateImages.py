@@ -142,17 +142,25 @@ class ImageGenerator:
         except Exception as e:
             raise Exception( f"Bad output path {str(output)}: {e} ")
         try:
-            image_size = ImageSize(size)
+            image_size = ImageSize(size[0],size[1])
         except Exception as e:
             raise Exception( f"Bad image size {str(size)}: {e} ")
 
-        self.options = { "count": count,
-                         "size": image_size,
-                         "output": output_path,
-                         "zerofill": zerofill,
-                         "imagetype": image_type,
-                         "manifest": manifest
-                         }
+        
+
+        options_map = {
+               "count": count,
+               "size": image_size,
+               "output": output_path,
+               "zerofill": zerofill,
+               "imagetype": image_type,
+               "manifest": manifest
+               }
+        class Options:
+            def __init__(self, opt_in):
+                for key in opt_in:
+                   setattr(self,key,opt_in[key])
+        self.options = Options( options_map )
 
     def run(self,input_params=None):
         params = self.options if input_params is None else input_params

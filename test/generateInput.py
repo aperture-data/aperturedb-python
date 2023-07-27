@@ -446,7 +446,8 @@ def generate_update_image(multiplier):
     # generate images
     image_count = 100
     img_gen = ImageGenerator( count=image_count, output="input/images/update_images_%%.png", image_type="png",
-                                size=(256,256), manifest="input/update_image_list.csv"])
+                                size=(256,256), manifest="input/update_image_list.csv")
+    img_gen.run()
     img_df = pd.read_csv("input/update_image_list.csv", header=None)
     licence_count = 2
     multiplier = multiplier // 2
@@ -521,7 +522,8 @@ def generate_update_image_fail(multiplier):
     # generate base load, small images.
     image_count = 100
     img_gen = ImageGenerator( count=image_count, output="input/images/update_fail_images_%%.png", image_type="png",
-                                size=(32,32), manifest="input/update_fail_image_list.csv"])
+                                size=(32,32), manifest="input/update_fail_image_list.csv")
+    img_gen.run()
     img_df = pd.read_csv("input/update_fail_image_list.csv", header=None)
     licence_count = 2
     multiplier = multiplier // 2
@@ -555,7 +557,8 @@ def generate_update_image_fail(multiplier):
     # 2nd csv - original data, but new bigger images. update_id will increase, but image will remain the same. ( as blobs are not modifable )
     # 300x300 is chosen to allow twice as large
     img_gen = ImageGenerator( count=image_count, output="input/images/update_fail_big_images_%%.png", image_type="png",
-                                size=(300,300), manifest="input/update_fail_big_image_list.csv"])
+                                size=(300,300), manifest="input/update_fail_big_image_list.csv")
+    img_gen.run()
     big_img_df = pd.read_csv(
         "input/update_fail_big_image_list.csv", header=None)
     failing_update = df.copy()
@@ -616,7 +619,8 @@ def generate_sparse_add(multiplier):
     # generate base load, small images.
     image_count = 100
     img_gen = ImageGenerator( count=image_count, output="input/images/spare_add_image_%%.png", image_type="png",
-                                size=(32,32), manifest="input/spare_add_image_list.csv"])
+                                size=(32,32), manifest="input/sparse_add_image_list.csv")
+    img_gen.run()
     img_df = pd.read_csv("input/sparse_add_image_list.csv", header=None)
     licence_count = 2
     multiplier = multiplier // 2

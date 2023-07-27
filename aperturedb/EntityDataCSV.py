@@ -1,5 +1,5 @@
 from aperturedb import CSVParser
-from aperturedb.SingleEntityUpdateCSV import SingleEntityUpdateCSV
+from aperturedb.EntityUpdateDataCSV import SingleEntityUpdateDataCSV
 import logging
 
 logger = logging.getLogger(__name__)
@@ -77,35 +77,38 @@ class EntityDataCSV(CSVParser.CSVParser):
 
 
 class EntityDeleteDataCSV(CSVParser.CSVParser):
-    """**ApertureDB Entity Data.**
+    """**ApertureDB Entity Delete Data.**
 
     This class loads the Entity Data which is present in a csv file,
-    and converts it into a series of aperturedb queries.
+    and converts it into a series of aperturedb deletes.
 
     .. note::
         Expects a csv file with the following columns:
 
-            ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+            ``constraint_PROP1``
 
     Example csv file::
 
-        EntityClass,name,lastname,age,id,constraint_id
-        Person,John,Salchi,69,321423532,321423532
-        Person,Johna,Salchi,63,42342522,42342522
+        constraint_id
+        321423532
+        42342522
         ...
 
     Example usage:
 
     .. code-block:: python
 
-        data = EntityDataCSV("/path/to/EntityData.csv")
-        loader = ParallelLoader(db)
-        loader.ingest(data)
+        data = ImageDeleteDataCSV("/path/to/UnusedImages.csv")
+        loader = ParallelQuery(db)
+        loader.query(data)
 
 
     .. important::
         In the above example, the constraint_id ensures that a Entity with the specified
-        id would be only inserted if it does not already exist in the database.
+        id would be only deleted.
+
+        Note that you can take a csv with normal prop data and this will ignore it, so you
+        could use input to a loader to this.
 
 
     """
@@ -130,17 +133,11 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
 
 
 class ImageDeleteDataCSV(EntityDeleteDataCSV):
+    """
+    ***ApertureData CSV Loader class for deleting images***
+    Usage details in EntityDeleteDataCSV
+    """
     def __init__(self, filename, df=None, use_dask=False):
         super().__init__("Image", filename, df=df, use_dask=use_dask)
 
 
-class EntityUpdateCSV(EntityUpdateDataCSV):
-    def __init__(self, entity_type, filename, df=None, use_dask=False):
-        super().__init__("Entity", filename, df, use_dask)
-        self.entity_type = entity_type
-        # Add had blob and update has blob.
-        self.blobs_per_query = [0, 0]
-
-    def modify_item(self, query_set, idx):
-        query_set[0]["AddEntity"]["class"] = self.entity_type
-        return query_set

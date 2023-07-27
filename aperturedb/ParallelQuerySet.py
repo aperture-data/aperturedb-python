@@ -67,7 +67,7 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
             # If someone is looking for info logging from PQS, it is likely that blobs are not being set properly.
             #  The wrapping of blobs in general can be confusing. Best suggestion is looking at a loader.
             logger.info("Blobs for first set = " + str(remove_blobs(blob_set[0])))
-            logger.info("First Blob for first set = " + remove_blobs(blob_set[0][0])))
+            logger.info("First Blob for first set = " + str(remove_blobs(blob_set[0][0])))
             if not isinstance(first_query_blobs, list):
                 logger.error(
                     "Expected a list of lists for the first element's blob sets")
