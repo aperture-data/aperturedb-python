@@ -88,38 +88,27 @@ class CSVParser(Subscriptable):
             val = {"_date": val}
         return key, val
 
-    def parse_properties(self, df, idx):
+    def parse_properties(self, idx):
 
         properties = {}
         if len(self.props_keys) > 0:
             for key in self.props_keys:
-                # Handle Date data type
-                if key.startswith("date:"):
-                    prop = key[len("date:"):]  # remove prefix
-                    properties[prop] = {"_date": self.df.loc[idx, key]}
-                else:
-                    value = self.df.loc[idx, key]
-                    if value == value:  # skips nan values
-                        properties[key] = value
-
+                prop, value = self._parse_prop(key, self.df.loc[idx,key])
+                if value == value: # skips nan valies
+                    properties[prop] = value
         return properties
 
-    def parse_constraints(self, df, idx):
+    def parse_constraints(self, idx):
 
         constraints = {}
         if len(self.constraints_keys) > 0:
-            for key in self.constraints_keys:
-                if key.startswith("constraint_date:"):
-                    prop = key[len("constraint_date:"):]  # remove prefix
-                    constraints[prop] = [
-                        "==", {"_date": self.df.loc[idx, key]}]
-                else:
-                    prop = key[len(CONSTRAINTS_PREFIX):]  # remove "prefix
-                    constraints[prop] = ["==", self.df.loc[idx, key]]
-
+            for key in self.props_keys:
+                prop, value = self._parse_prop(key, self.df.loc[idx,key])
+                constraints[prop] = ["==", self.df.loc[idx, key]]
         return constraints
 
-    def parse_other_constraint(self, constraint_name, keys, df, idx):
+
+    def parse_other_constraint(self, constraint_name, keys, idx):
 
         other_constraints = {}
         if len(keys) > 0:
@@ -160,8 +149,8 @@ class CSVParser(Subscriptable):
         return query
 
     def _basic_command(self, idx, custom_fields: dict = None):
-        properties = self.parse_properties(self.df, idx)
-        constraints = self.parse_constraints(self.df, idx)
+        properties = self.parse_properties(idx)
+        constraints = self.parse_constraints(idx)
         return self._parsed_command(idx, custom_fields, constraints, properties)
 
     def validate(self):

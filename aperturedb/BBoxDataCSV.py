@@ -110,7 +110,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
         }
         abb = self._basic_command(idx, custom_fields)
 
-        properties = self.parse_properties(self.df, idx)
+        properties = self.parse_properties(idx)
         if properties:
             props = properties
             if "_label" in props:
