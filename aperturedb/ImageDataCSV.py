@@ -22,6 +22,9 @@ IMG_FORMAT    = "format"
 
 
 class ImageDataProcessor():
+    """
+    Processing for Image Data used for Loading
+    """
     def __init__(self, check_image, n_download_retries):
         self.loaders = [self.load_image, self.load_url,
                         self.load_s3_url, self.load_gs_url]
@@ -286,7 +289,15 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
 # Update and Add Images
 
 
-class ImageUpdateCSV(SingleEntityUpdateCSV, ImageDataProcessor):
+class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
+    """
+    **ApertureDB Image CSV Parser for Adding an Image and updating the properties on the image.**
+    Usage is in SingleEntityUpdateCSV.
+
+    Note that this class will not change a blob in an existing entity. If looking to change a blob in
+     an existing entity, look at ImageForceNewestCSV, but be careful of all caveats.
+
+    """
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
@@ -295,6 +306,7 @@ class ImageUpdateCSV(SingleEntityUpdateCSV, ImageDataProcessor):
         source_type = self.header[0]
         self.set_processor(use_dask, source_type)
 
+        # this class loads a blob, so must set the first query to have a blob.
         self.blobs_per_query = [1, 0]
         self.format_given     = IMG_FORMAT in self.header
         self.props_keys = list(filter(lambda prop: prop not in [
@@ -330,7 +342,11 @@ class ImageUpdateCSV(SingleEntityUpdateCSV, ImageDataProcessor):
             SingleEntityUpdateCSV.validate(self)
 
 
-class ImageForceNewestCSV(SingleEntityBlobNewestCSV, ImageDataProcessor):
+class ImageForceNewestDataCSV(SingleEntityBlobNewestDataCSV, ImageDataProcessor):
+    """
+    **ApertureDB Image CSV Parser for Maintaining a Blob set with changing blob data.**
+    See SingleEntityBlobNewestCSV for usage.
+    """
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)

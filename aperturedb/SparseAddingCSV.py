@@ -3,12 +3,21 @@ from aperturedb.ImageDataCSV import ImageDataProcessor, IMG_FORMAT
 import logging
 
 logger = logging.getLogger(__name__)
-# SparseAddingCSV
+# SparseAddingDataCSV
 # Check for item existance using constraints before adding
 # Useful when adding larger resources where a portion already exist
 
 
-class SparseAddingCSV(CSVParser.CSVParser):
+class SparseAddingDataCSV(CSVParser.CSVParser):
+    """
+    **ApertureDB General CSV Parser for Loading Blob data where a large amount of the blobs already exist.
+
+    This is a blob loader where the entity is searched for first, before the blob data is passed to the server.
+    This can be useful speedup if blob data is large in comparison to the amount of data actually causing loads
+
+    This is an abstract class, ImageSparseAddDataCSV loads Images.
+
+    """
 
     def __init__(self, entity_class, filename, df=None, use_dask=False):
         self.entity = entity_class
@@ -63,6 +72,29 @@ class SparseAddingCSV(CSVParser.CSVParser):
 
 
 class ImageSparseAddCSV(SparseAddingCSV, ImageDataProcessor):
+    """
+    **ApertureDB Spare Loading Image Data.**
+
+    ImageSparseAddDataCSV should be used the same as ImageDataCSV.
+
+    See SparseAddingDataCSV for description of when to use this versus ImageDataCSV.
+    
+
+    Example csv file::
+
+        filename,id,label,constraint_id,format
+        /home/user/file1.jpg,321423532,dog,321423532,jpg
+        /home/user/file2.jpg,42342522,cat,42342522,png
+        ...
+
+    Example usage:
+
+    .. code-block:: python
+
+        data = ImageSparseAddDataCSV("/path/to/ImageData.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data)
+    """
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)

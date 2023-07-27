@@ -8,13 +8,72 @@ logger = logging.getLogger(__name__)
 # find_<prop> is the column form to bind
 
 
-class SingleEntityUpdateCSV(CSVParser.CSVParser):
+class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
+    """
+    **ApertureDB General CSV Parser for Adding and Updateing Properties in an Entity**
+
+    
+      Update an Entity to the data in the CSV
+      What this means is:
+      - If it doesn't exist, add it.
+      - If it exsits, update the properties.
+
+
+      
+       This class utilizes 2 conditionals
+       - normal constraint_ to select the element
+       - a series of updateif_ to determine if an update is necessary
+      
+       Conditionals:
+         updateif>_prop - updates if the csv value is > database
+         updateif<_prop - updates if the csv value is < database
+         updateif!_prop - updates if the csv value is != database
+
+    .. note::
+        Is backed by a csv file with the following columns (format optional):
+
+            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+            ...
+
+    Example csv file::
+
+        filename,id,label,constraint_id,format,dataset_ver,updateif>_dataset_ver,gen_blobsha1_sha
+        /home/user/file1.jpg,321423532,dog,321423532,jpg,2,2,
+        /home/user/file2.jpg,42342522,cat,42342522,png,2,2,
+        ...
+
+    Example usage:
+
+    .. code-block:: python
+
+        data = ImageForceNewestDataCSV("/path/to/ImageData.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data)
+
+
+    .. important::
+        In the above example, the constraint_id ensures that an Image with the specified
+        id would be only inserted if it does not already exist in the database.
+    """
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
 
     def __init__(self, entity_class, filename, df=None, use_dask=False):
         self.entity = entity_class
         self.keys_set = False
         super().__init__(filename, df=df, use_dask=use_dask)
+        # We do not expect a blob in either query, if a subclass adds blob, the first query will need a blob.
         self.blobs_per_query = [0, 0]
         self.commands_per_query = [1, 1]
         self._setupkeys()

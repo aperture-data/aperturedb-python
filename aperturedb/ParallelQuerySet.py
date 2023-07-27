@@ -23,6 +23,14 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
 
     #
     # execute_batch_sets - executes multiple sets of queries with optional constraints on follow on sets
+    #  query_set: list of queries that get passed to ParallelLoader's execute_batch
+    #  blob_set:  list of blobs ( or list of list of blobs ) that get passed to execute_batch
+    #  db: Connection object
+    #  success_statutes: list of return values from ApertureDB to be considered 'success'
+    #  response_handler: optional function to return after an execution ( not active yet )
+    #  commands_per_query : list of how many commands each query has.
+    #  blobs_per_query: list of how many blobs each query has.
+    #  strict_response_validation: same as execute_batch.
     #
     def execute_batch_sets(query_set, blob_set, db, success_statuses: list[int] = [0],
                            response_handler: Callable = None, commands_per_query: list[int] = -1,
@@ -265,6 +273,9 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
             used_blobs = filter(lambda b: b is not None,
                                 blob_filter(blob_set, blob_strike_list, i))
 
+            # TODO: add wrapped response_handler.
+            if response_handler != None:
+                logger.warning("ParallelQuerySet does not yet support a response_handler which will identify which set is being worked on")
             if len(executable_queries) > 0:
                 result_code, db_results, db_blobs = base_executor(executable_queries, used_blobs,
                                                                   db, local_success_statuses,
@@ -308,11 +319,6 @@ class ParallelQuerySet(ParallelQuery):
 
         self.base_batch_command = self.batch_command
 
-        # set self.blobs_per_query
-        # self.commands_per_query
-        # if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
-        #    response_handler = self.generator.response_handler
-
     def verify_generator(self, generator):
         # first level should be grouping of commands
         # first cmd should have a list of query sets
@@ -328,23 +334,9 @@ class ParallelQuerySet(ParallelQuery):
 
     def do_batch(self, db, data):
         """
-        It also provides a way for invoking a user defined function to handle the
-        responses of each of the queries executed. This function can be used to process
-        the responses from each of the corresponding queries in :class:`~aperturedb.Parallelizer.Parallelizer`.
-        It will be called once per query, and it needs to have 4 parameters:
-        - requests
-        - input_blobs
-        - responses
-        - output_blobs
-        Example usage:
-        .. code-block:: python
-            class MyQueries(QueryGenerator):
-                def process_responses(requests, input_blobs, responses, output_blobs):
-                    self.requests.extend(requests)
-                    self.responses.extend(responses)
-            loader = ParallelLoader(self.db)
-            generator = MyQueries()
-            loader.ingest(generator)
+        This is an override of ParallelQuery.do_batch.
+
+        This is the per-worker function which is the entry-point to a unit of work.
         """
         if not hasattr(self.generator, "commands_per_query"):
             raise Exception(

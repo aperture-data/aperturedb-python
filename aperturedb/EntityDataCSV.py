@@ -76,7 +76,39 @@ class EntityDataCSV(CSVParser.CSVParser):
 # Used when a csv has a single entity type that needs to be deleted
 
 
-class SingleEntityDeleteCSV(CSVParser.CSVParser):
+class EntityDeleteDataCSV(CSVParser.CSVParser):
+    """**ApertureDB Entity Data.**
+
+    This class loads the Entity Data which is present in a csv file,
+    and converts it into a series of aperturedb queries.
+
+    .. note::
+        Expects a csv file with the following columns:
+
+            ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+
+    Example csv file::
+
+        EntityClass,name,lastname,age,id,constraint_id
+        Person,John,Salchi,69,321423532,321423532
+        Person,Johna,Salchi,63,42342522,42342522
+        ...
+
+    Example usage:
+
+    .. code-block:: python
+
+        data = EntityDataCSV("/path/to/EntityData.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data)
+
+
+    .. important::
+        In the above example, the constraint_id ensures that a Entity with the specified
+        id would be only inserted if it does not already exist in the database.
+
+
+    """
     def __init__(self, entity_class, filename, df=None, use_dask=False):
         super().__init__(filename, df=df, use_dask=use_dask)
         self.command = "Delete" + entity_class
@@ -97,12 +129,12 @@ class SingleEntityDeleteCSV(CSVParser.CSVParser):
         return True
 
 
-class ImageDeleteCSV(SingleEntityDeleteCSV):
+class ImageDeleteDataCSV(EntityDeleteDataCSV):
     def __init__(self, filename, df=None, use_dask=False):
         super().__init__("Image", filename, df=df, use_dask=use_dask)
 
 
-class EntityUpdateCSV(SingleEntityUpdateCSV):
+class EntityUpdateCSV(EntityUpdateDataCSV):
     def __init__(self, entity_type, filename, df=None, use_dask=False):
         super().__init__("Entity", filename, df, use_dask)
         self.entity_type = entity_type

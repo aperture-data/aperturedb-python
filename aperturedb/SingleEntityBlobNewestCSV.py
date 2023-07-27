@@ -6,39 +6,103 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 # SingleEntityBlobNewestCSV
-# Update an Entity which has an associated blob to the data in the CSV
-# What this means is:
-# - If it doesn't exist, add it.
-# - If it exsits and the blob hasn't changed, update it.
-# - If it exists and the blobl has changed, delete and re-add it.
-
-# This means if these elements are part of a graph where they are linked by connections
-#  these connections will be need to be regenerated afterwards.
-
-# This class utilizes 3 conditionals
-# - normal constraint_ to select the element
-# - a series of updateif_ to determine if an update is necessary
-# - one or more prop_ and the assocaited updateif blob conditonals
-#   to determine if a update or an delete/add is appropriate
-
-# Generated fields
-#  currently blobsha1 and blobsize are the generated fields
-#  which this class creates and manages for you that allow it to make the determination
-#  - blobsha1 - the sha1 for the blob is calculated
-#  - blobsize - the length in bytes of the blob is calcualte
-#
-#  the result is then used to identify if a blob has changed.
 
 
-class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
+class SingleEntityBlobNewestDataCSV(CSVParser.CSVParser):
+    """
+    **ApertureDB General CSV Parser for Maintaining a Blob set with changing blob data.**
+
+      Use this only when deleting entities is ok.
+    
+      Update an Entity which has an associated blob to the data in the CSV
+      What this means is:
+      - If it doesn't exist, add it.
+      - If it exsits and the blob hasn't changed, update it.
+      - If it exists and the blobl has changed, delete and re-add it.
+
+       This means if these elements are part of a graph where they are linked by connections
+        these connections will be need to be regenerated afterwards.
+
+       Additionally note that this loader does not notice if a entity is removed.
+       - If you wish to clean up removed entities, an increasing load id will cause
+         all existing entities to be updated to the newest, and you can delete
+         using the old load id.
+      
+       This class utilizes 3 conditionals
+       - normal constraint_ to select the element
+       - a series of updateif_ to determine if an update is necessary
+       - one or more prop_ and the assocaited updateif blob conditonals
+         to determine if a update or an delete/add is appropriate
+      
+       Generated fields
+        Format is: gen_<type>_name
+
+        type:
+        - blobsha1 - the sha1 for the blob is calculated
+        - blobsize - the length in bytes of the blob is calcualte
+        - insertdate - ISO Format of date ( this will always change! )
+      
+        the result is then used to identify if a blob has changed.
+
+        The generated fields are to be left empty in the csv input.
+
+        Summary
+         This requires a constraint to be able to check if an id exists, and a generated prop
+          to be able to detect if the blob matches. It will ensure only one entity exists with
+          the constraints and matching the managed blob constraints.
+
+    .. note::
+        Is backed by a csv file with the following columns (format optional):
+
+            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+            OR
+
+            ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+            ...
+
+    Example csv file::
+
+        filename,id,label,constraint_id,format,dataset_ver,updateif>_dataset_ver,gen_blobsha1_sha
+        /home/user/file1.jpg,321423532,dog,321423532,jpg,2,2,
+        /home/user/file2.jpg,42342522,cat,42342522,png,2,2,
+        ...
+
+    Example usage:
+
+    .. code-block:: python
+
+        data = ImageForceNewestDataCSV("/path/to/WorkingImageDataset.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data)
+
+
+    .. important::
+        In the above example, the constraint_id ensures that an Image with the specified
+        id would be only inserted if it does not already exist in the database.
+    """
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
-    GENERATE_PROP_PREFIX = "prop_"
+    GENERATE_PROP_PREFIX = "gen_"
 
     def __init__(self, entity_class, filename, df=None, use_dask=False):
         self.known_generators = ["blobsize", "blobsha1", "insertdate"]
         self.entity = entity_class
         self.keys_set = False
         super().__init__(filename, df=df, use_dask=use_dask)
+        # these tell the query set code how many blobs and commands to expect in each query
+        # query #1 = 1 blob, 1 command.
+        # query #2 = 0 blobs, 1 command.
+        # query 33 = 1 blob, 2 commands.
+
+        # defintion of how many blobs and commands to expect per query, for ParallelQuerySet.
         self.blobs_per_query = [1, 0, 1]
         self.commands_per_query = [1, 1, 2]
         self._setupkeys()
@@ -63,9 +127,9 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
     # derived class interface for retrieving blob
     def read_blob(self, idx):
         raise Exception(
-            "No Blob Defined for SingleEnttityBlobNewestCSV ( requires subclass )")
+            "No Blob Defined for SingleEntityBlobNewestCSV ( requires subclass )")
 
-    # creates generated data
+    # creates generated data for an index based on supplied action
     def parse_generated(self, idx, action):
         generated = None
         if action == "blobsize":
@@ -107,6 +171,7 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
         return filtered
 
     # creat generated constraints for specific index
+    # match controls if constrain will be a positive selection (True) or negative(False)
     def create_generated_constraints(self, idx, match=True):
         constraints = {}
         generated_keys = self.filter_generated_constraints(
@@ -158,12 +223,20 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
         # delete ( Pt 3 )
         # re-add ( Pt 4 )
 
+        # In terms of the blobs/commands per query -
+        # query #1 - add, 1 blob, 1 command.
+        # query #2 - update. 0 blobs, 1 command.
+        # query # - delete/re-add 1 blob( for re-add )  2 commands.
+
+
         self.constraint_keyword = "if_not_found"
         self.command = "Add" + self.entity
 
         # Part 1
         properties = self.parse_properties(self.df, idx)
         constraints = self.parse_constraints(self.df, idx)
+        # we add generated prop, but do not test generated constraints, as they are used to differentiate between
+        # an existing entity.
         gen_props = self.create_generated_props(idx)
         properties.update(gen_props)
 
@@ -175,6 +248,7 @@ class SingleEntityBlobNewestCSV(CSVParser.CSVParser):
         update_constraints = self.parse_constraints(self.df, idx)
         search_constraints = self.parse_other_constraint(SingleEntityBlobNewestCSV.UPDATE_CONSTRAINT_PREFIX,
                                                          self.filter_generated_constraints(), self.df, idx)
+        # we test generated constraints here as they will stop an update from happening.
         generated_positive_constraints = self.create_generated_constraints(
             idx, match = True)
         update_constraints.update(search_constraints)
