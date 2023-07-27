@@ -97,23 +97,7 @@ def complementary_color(orig_color):
     return tuple(int(v) for v in hsv_to_rgb((hsv[0] + 0.5) % 1, hsv[1], abs(1 - hsv[2])))
 
 
-write_log = []
 
-
-def draw_and_save(of, ot, os, text):
-    global write_log
-    # choose color based on hash output
-    bg_color = tuple(random.randint(0, 255) for _ in range(3))
-    fg_color = complementary_color(bg_color)
-    color_white = (255, 255, 255, 255)
-    color_red = (255, 0, 0, 255)
-    canvas = Image.new("RGBA", os.size(), bg_color)
-    fnt = load_preferred_font('DejaVuSans-Bold.ttf', 16)
-    d = ImageDraw.Draw(canvas)
-    d.text((10, 10), text, font=fnt, fill=fg_color)
-    canvas.save(of, ot)
-    write_log.append(of)
-    print(f"* Saved {of} of size {os} of type {ot} with text {text}")
 
 
 def getoptions():
@@ -127,6 +111,7 @@ def getoptions():
     parser.add_argument('-t', '--imagetype',
                         choices=['jpg', 'png'], default='png')
     parser.add_argument('-m', '--manifest', type=str, default=None)
+    parser.add_argument('-a', '--append_text', type=str, default="")
     return parser.parse_args()
 
 
@@ -136,7 +121,8 @@ if __name__ == '__main__':
     prog.run(params)
 
 class ImageGenerator:
-    def __init__(self, count=1,size=(256,256),output="/tmp/generated_image%%",zerofill=0,image_type="png",manifest=None):
+    def __init__(self, count=1,size=(256,256),output="/tmp/generated_image%%",zerofill=0,image_type="png",manifest=None,append_text=""):
+        self.write_log = []
         try:
             output_path = OutputFilePath(output)
         except Exception as e:
@@ -154,13 +140,29 @@ class ImageGenerator:
                "output": output_path,
                "zerofill": zerofill,
                "imagetype": image_type,
-               "manifest": manifest
+               "manifest": manifest,
+               "append_text": append_text
                }
         class Options:
             def __init__(self, opt_in):
                 for key in opt_in:
                    setattr(self,key,opt_in[key])
         self.options = Options( options_map )
+
+    def draw_and_save(self, of, ot, os, text):
+        # choose color based on hash output
+        bg_color = tuple(random.randint(0, 255) for _ in range(3))
+        fg_color = complementary_color(bg_color)
+        color_white = (255, 255, 255, 255)
+        color_red = (255, 0, 0, 255)
+        canvas = Image.new("RGBA", os.size(), bg_color)
+        fnt = load_preferred_font('DejaVuSans-Bold.ttf', 16)
+        d = ImageDraw.Draw(canvas)
+        d.text((10, 10), text, font=fnt, fill=fg_color)
+        canvas.save(of, ot)
+        self.write_log.append(of)
+        print(f"* Saved {of} of size {os} of type {ot} with text {text}")
+
 
     def run(self,input_params=None):
         params = self.options if input_params is None else input_params
@@ -172,13 +174,13 @@ class ImageGenerator:
         random.seed(
             int(hashlib.md5(params.output.get_file(ext, 0, params.zerofill).encode()).hexdigest(), 16))
         for i in range(0, params.count):
-            draw_and_save(params.output.get_file(ext, i, params.zerofill),
-                          params.imagetype, params.size, f"{i}")
+            self.draw_and_save(params.output.get_file(ext, i, params.zerofill),
+                          params.imagetype, params.size, f"{i}{params.append_text}")
 
         if params.manifest:
             print(f"Writing manifest to {params.manifest}")
             with open(params.manifest, "w") as fp:
-                for line in write_log:
+                for line in self.write_log:
                     fp.write(line + "\n")
 
 

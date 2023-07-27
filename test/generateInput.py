@@ -555,18 +555,17 @@ def generate_update_image_fail(multiplier):
     df.to_csv("./input/images_updateif_fail_baseload.adb.csv", index=False)
 
     # 2nd csv - original data, but new bigger images. update_id will increase, but image will remain the same. ( as blobs are not modifable )
-    # 300x300 is chosen to allow twice as large
+    # 300x300 is chosen to allow twice as large - we also add some more text to ensure the image is more complex ( and thus larger )
     img_gen = ImageGenerator( count=image_count, output="input/images/update_fail_big_images_%%.png", image_type="png",
-                                size=(300,300), manifest="input/update_fail_big_image_list.csv")
+                                size=(300,300), manifest="input/update_fail_big_image_list.csv", append_text="_bigimage")
     img_gen.run()
     big_img_df = pd.read_csv(
         "input/update_fail_big_image_list.csv", header=None)
     failing_update = df.copy()
 
-    def fail_filemap(file_num):
+    def big_fail_filemap(file_num):
         return big_img_df.iat[file_num % image_count, 0]
-    new_version_id = [1 for x in range(len(images))]
-    failing_update["filename"] = failing_update["img_id"].apply(fail_filemap)
+    failing_update["filename"] = failing_update["img_id"].apply(big_fail_filemap)
     failing_update['version_id'] = failing_update['version_id'].apply(
         lambda ver: ver + 1)
     failing_update["updateif_<version_id"] = failing_update["version_id"]
@@ -682,7 +681,6 @@ def main(params):
     generate_partial_load()
     generate_update_image(params.multiplier)
     generate_update_image_fail(params.multiplier)
-    generate_update_image(params.multiplier)
     generate_sparse_add(params.multiplier)
 
 
