@@ -29,23 +29,24 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
          updateif<_prop - updates if the database value < csv value 
          updateif!_prop - updates if the database value is != csv value 
 
-    .. note::
-        Is backed by a csv file with the following columns (format optional):
+    :::note
+    Is backed by a csv file with the following columns (format optional):
 
-            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-            OR
+        OR
 
-            ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-            OR
+        OR
 
-            ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-            OR
+        OR
 
-            ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
-            ...
+        ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        ..
+    :::
 
     Example csv file::
 
@@ -56,16 +57,17 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
-
+    ```python
         data = ImageForceNewestDataCSV("/path/to/ImageData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
-    .. important::
-        In the above example, the constraint_id ensures that an Image with the specified
-        id would be only inserted if it does not already exist in the database.
+    :::info
+    In the above example, the constraint_id ensures that an Image with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
     """
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
 
@@ -121,6 +123,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
         if hasattr(self, "modify_item") and callable(self.modify_item):
             query_set = self.modify_item(query_set, idx)
 
+#        raise Exception("State = " +str(query_set))
         return [query_set], []
 
     def validate(self):

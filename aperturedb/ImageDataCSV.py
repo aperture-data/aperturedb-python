@@ -388,11 +388,12 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
 
     Example usage:
 
-    .. code-block:: python
+    ```python
 
         data = ImageSparseAddDataCSV("/path/to/ImageData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
     """
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(

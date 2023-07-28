@@ -15,7 +15,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
       What this means is:
       - If it doesn't exist, add it.
       - If it exsits and the blob hasn't changed, update it.
-      - If it exists and the blobl has changed, delete and re-add it.
+      - If it exists and the blob has changed, delete and re-add it.
 
        This means if these elements are part of a graph where they are linked by connections
         these connections will be need to be regenerated afterwards.
@@ -48,23 +48,24 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
           to be able to detect if the blob matches. It will ensure only one entity exists with
           the constraints and matching the managed blob constraints.
 
-    .. note::
-        Is backed by a csv file with the following columns (format optional):
+    :::note
+    Is backed by a csv file with the following columns (format optional):
 
-            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-            OR
+        OR
 
-            ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-            OR
+        OR
 
-            ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-            OR
+        OR
 
-            ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
-            ...
+        ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        ...
+    :::
 
     Example csv file::
 
@@ -75,16 +76,17 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = ImageForceNewestDataCSV("/path/to/WorkingImageDataset.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
-
-    .. important::
-        In the above example, the constraint_id ensures that an Image with the specified
-        id would be only inserted if it does not already exist in the database.
+    :::info
+    In the above example, the constraint_id ensures that an Image with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
     """
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
     GENERATE_PROP_PREFIX = "gen_"
@@ -97,7 +99,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
         # these tell the query set code how many blobs and commands to expect in each query
         # query #1 = 1 blob, 1 command.
         # query #2 = 0 blobs, 1 command.
-        # query 33 = 1 blob, 2 commands.
+        # query #3 = 1 blob, 2 commands.
 
         # defintion of how many blobs and commands to expect per query, for ParallelQuerySet.
         self.blobs_per_query = [1, 0, 1]

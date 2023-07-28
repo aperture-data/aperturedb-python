@@ -82,10 +82,11 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
     This class loads the Entity Data which is present in a csv file,
     and converts it into a series of aperturedb deletes.
 
-    .. note::
-        Expects a csv file with the following columns:
+    :::note::
+    Expects a csv file with the following columns:
 
-            ``constraint_PROP1``
+        ``constraint_PROP1``
+    :::
 
     Example csv file::
 
@@ -96,19 +97,21 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+   ```python
 
         data = ImageDeleteDataCSV("/path/to/UnusedImages.csv")
         loader = ParallelQuery(db)
         loader.query(data)
+    ```
 
 
-    .. important::
-        In the above example, the constraint_id ensures that a Entity with the specified
-        id would be only deleted.
+    :::info
+    In the above example, the constraint_id ensures that a Entity with the specified
+    id would be only deleted.
 
-        Note that you can take a csv with normal prop data and this will ignore it, so you
-        could use input to a loader to this.
+    Note that you can take a csv with normal prop data and this will ignore it, so you
+    could use input to a loader to this.
+    :::
 
 
     """
