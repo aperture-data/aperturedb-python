@@ -10,6 +10,7 @@ from aperturedb.EntityUpdateDataCSV import SingleEntityUpdateDataCSV
 from aperturedb.BlobNewestDataCSV import BlobNewestDataCSV
 from aperturedb.SparseAddingDataCSV import SparseAddingDataCSV
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -415,9 +416,13 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     def getitem(self, idx):
         blob_set = []
         [query_set, empty_blobs] = super().getitem(idx)
-        image_path = self.df.loc[idx, self.source_type]
+         relative_path_prefix = os.path.dirname(self.filename) \
+            if self.source_type == HEADER_PATH else ""
+        image_path = os.path.join(
+            relative_path_prefix, self.df.loc[idx, self.source_type])
         img_ok, img = self.source_loader[self.source_type](image_path)
-        if not img_ok:
+
+           if not img_ok:
             logger.error("Error loading image: " + image_path)
             raise Exception("Error loading image: " + image_path)
         # element has 2 queries, only second has blob

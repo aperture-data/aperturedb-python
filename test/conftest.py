@@ -208,5 +208,22 @@ def retired_persons(db, insert_data_from_csv, utils):
     return retired_persons
 
 
+@pytest.fixture()
+def config():
+    config = {
+        "first": {
+            "host": "localhost",
+            "port": 55555,
+            "username": "admin",
+            "password": "admin",
+            "name": "first",
+            "use_ssl": True,
+            "use_rest": False
+        },
+        "active": "first"
+    }
+    return config
+
+
 def pytest_configure(config):
     mark_checker.store_config(config)

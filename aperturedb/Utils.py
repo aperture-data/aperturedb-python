@@ -1,10 +1,15 @@
-from calendar import c
 import logging
 import json
+import os
 
 from aperturedb.Connector import Connector
+from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
+from aperturedb.Configuration import Configuration
+from aperturedb.cli.configure import ls
+from aperturedb.cli.console import console
+
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +17,51 @@ DESCRIPTOR_CLASS = "_Descriptor"
 DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
 
 DEFAULT_METADATA_BATCH_SIZE = 100_000
+
+
+def __create_connector(configuration: Configuration):
+    if configuration.use_rest:
+        connector = ConnectorRest(
+            host=configuration.host,
+            port=configuration.port,
+            user=configuration.username,
+            password=configuration.password,
+            config=configuration)
+    else:
+        connector = Connector(
+            host=configuration.host,
+            port=configuration.port,
+            user=configuration.username,
+            password=configuration.password,
+            config=configuration)
+    console.log(f"Connected Using:")
+    console.log(configuration)
+    return connector
+
+
+def create_connector():
+    """
+    **Create a connector to the database.**
+
+    Args:
+        None
+
+    Returns:
+        Connector: The connector to the database.
+    """
+    all_configs = ls()
+
+    env_config = os.environ.get("APERTUREDB_CONFIG")
+    ac = all_configs["active"]
+    config = all_configs["local"][ac] if "local" in all_configs else all_configs["global"][ac]
+
+    if env_config is not None:
+        # TODO test me.
+        config = all_configs["global"][env_config] if env_config in all_configs["global"] else all_configs["local"][env_config]
+        return __create_connector(config)
+    # Then check if the local config has active
+    else:
+        return __create_connector(config)
 
 
 class Utils(object):
