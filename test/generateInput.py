@@ -682,6 +682,7 @@ def main(params):
     generate_update_image(params.multiplier)
     generate_update_image_fail(params.multiplier)
     generate_sparse_add(params.multiplier)
+    generate_forceimage_load(params.multiplier)
 
 
 def get_args():
