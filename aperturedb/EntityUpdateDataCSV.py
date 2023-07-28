@@ -26,8 +26,8 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
 
        Conditionals:
          updateif>_prop - updates if the databset value > csv value
-         updateif<_prop - updates if the database value < csv value 
-         updateif!_prop - updates if the database value is != csv value 
+         updateif<_prop - updates if the database value < csv value
+         updateif!_prop - updates if the database value is != csv value
 
     :::note
     Is backed by a csv file with the following columns (format optional):
