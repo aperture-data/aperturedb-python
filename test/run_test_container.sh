@@ -29,3 +29,10 @@ docker run \
     -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
     -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
     $REPOSITORY
+
+echo "Tests completed"
+echo "aperturedb log:"
+docker compose logs aperturedb
+echo "===================="
+echo "webui test log:"
+docker compose logs webui
