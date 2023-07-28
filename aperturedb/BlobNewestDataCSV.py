@@ -5,12 +5,13 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+
 class BlobNewestDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB General CSV Parser for Maintaining a Blob set with changing blob data.**
 
       Use this only when deleting entities is ok.
-    
+
       Update an Entity which has an associated blob to the data in the CSV
       What this means is:
       - If it doesn't exist, add it.
@@ -24,13 +25,13 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
        - If you wish to clean up removed entities, an increasing load id will cause
          all existing entities to be updated to the newest, and you can delete
          using the old load id.
-      
+
        This class utilizes 3 conditionals
        - normal constraint_ to select the element
        - a series of updateif_ to determine if an update is necessary
        - one or more prop_ and the assocaited updateif blob conditonals
          to determine if a update or an delete/add is appropriate
-      
+
        Generated fields
         Format is: gen_<type>_name
 
@@ -38,7 +39,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
         - blobsha1 - the sha1 for the blob is calculated
         - blobsize - the length in bytes of the blob is calcualte
         - insertdate - ISO Format of date ( this will always change! )
-      
+
         the result is then used to identify if a blob has changed.
 
         The generated fields are to be left empty in the csv input.
@@ -226,7 +227,6 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
         # query #1 - add, 1 blob, 1 command.
         # query #2 - update. 0 blobs, 1 command.
         # query # - delete/re-add 1 blob( for re-add )  2 commands.
-
 
         self.constraint_keyword = "if_not_found"
         self.command = "Add" + self.entity

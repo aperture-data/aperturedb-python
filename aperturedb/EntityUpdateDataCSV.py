@@ -12,18 +12,18 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB General CSV Parser for Adding and Updateing Properties in an Entity**
 
-    
+
       Update an Entity to the data in the CSV
       What this means is:
       - If it doesn't exist, add it.
       - If it exsits, update the properties.
 
 
-      
+
        This class utilizes 2 conditionals
        - normal constraint_ to select the element
        - a series of updateif_ to determine if an update is necessary
-      
+
        Conditionals:
          updateif>_prop - updates if the databset value > csv value
          updateif<_prop - updates if the database value < csv value 
@@ -73,7 +73,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
 
     def __init__(self, entity_class, filename, df=None, use_dask=False):
 
-        if entity_class in ("Image","Video","Blob","BoundingBox","Connection","Polygon","Descriptor","DescriptorSet","Frame"):
+        if entity_class in ("Image", "Video", "Blob", "BoundingBox", "Connection", "Polygon", "Descriptor", "DescriptorSet", "Frame"):
             self.entity = entity_class
             self.entity_selection = None
         else:
@@ -104,17 +104,19 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
 
         self.constraint_keyword = "if_not_found"
         self.command = "Add" + self.entity
-        selector = {} if self.entity_selection is None else { "class" : self.entity_selection }
+        selector = {} if self.entity_selection is None else {
+            "class": self.entity_selection}
         entity_add = self._basic_command(idx, custom_fields = selector)
         condition_add_failed = {"results": {0: {"status": ["==", 2]}}}
         self.command = "Update" + self.entity
         update_constraints = self.parse_constraints(idx)
         search_constraints = self.parse_other_constraint(
-            SingleEntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX, self.search_keys,idx)
+            SingleEntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX, self.search_keys, idx)
         update_constraints.update(search_constraints)
         properties = self.parse_properties(idx)
         self.constraint_keyword = "constraints"
-        selector = {} if self.entity_selection is None else { "with_class" : self.entity_selection }
+        selector = {} if self.entity_selection is None else {
+            "with_class": self.entity_selection}
         entity_update = self._parsed_command(
             idx, selector, update_constraints, properties)
         query_set.append(entity_add)
@@ -139,6 +141,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
                              "; no update constraint keys")
                 valid = False
         return valid
+
 
 class EntityUpdatDataCSV(SingleEntityUpdateDataCSV):
     def __init__(self, entity_type, filename, df=None, use_dask=False):

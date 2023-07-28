@@ -68,5 +68,3 @@ class SparseAddingDataCSV(CSVParser.CSVParser):
                              self.entity + "; no constraint keys")
                 valid = False
         return valid
-
-

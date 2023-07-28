@@ -27,6 +27,7 @@ class ImageDataProcessor():
     """
     Processing for Image Data used for Loading
     """
+
     def __init__(self, check_image, n_download_retries):
         self.loaders = [self.load_image, self.load_url,
                         self.load_s3_url, self.load_gs_url]
@@ -225,6 +226,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     id would be only inserted if it does not already exist in the database.
     :::
     """
+
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
 
         ImageDataProcessor.__init__(
@@ -286,6 +288,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
             raise Exception(
                 f"Error with CSV file field: {self.header[0]}. Must be first field")
 
+
 class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
     """
     **ApertureDB Image CSV Parser for Adding an Image and updating the properties on the image.**
@@ -295,10 +298,12 @@ class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
      an existing entity, look at ImageForceNewestDataCSV, but be careful of all caveats.
 
     """
+
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
-        SingleEntityUpdateDataCSV.__init__(self, "Image", filename, df, use_dask)
+        SingleEntityUpdateDataCSV.__init__(
+            self, "Image", filename, df, use_dask)
 
         source_type = self.header[0]
         self.set_processor(use_dask, source_type)
@@ -344,6 +349,7 @@ class ImageForceNewestDataCSV(BlobNewestDataCSV, ImageDataProcessor):
     **ApertureDB Image CSV Parser for Maintaining a Blob set with changing blob data.**
     See BlobNewestDataCSV for usage.
     """
+
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
@@ -371,6 +377,7 @@ class ImageForceNewestDataCSV(BlobNewestDataCSV, ImageDataProcessor):
             raise Exception("Error loading image: " + image_path)
         return img
 
+
 class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     """
     **ApertureDB Spare Loading Image Data.**
@@ -378,7 +385,7 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     ImageSparseAddDataCSV should be used the same as ImageDataCSV.
 
     See SparseAddingDataCSV for description of when to use this versus ImageDataCSV.
-    
+
 
     Example csv file::
 
@@ -396,6 +403,7 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
         loader.ingest(data)
     ```
     """
+
     def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
@@ -416,13 +424,13 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     def getitem(self, idx):
         blob_set = []
         [query_set, empty_blobs] = super().getitem(idx)
-         relative_path_prefix = os.path.dirname(self.filename) \
+        relative_path_prefix = os.path.dirname(self.filename) \
             if self.source_type == HEADER_PATH else ""
         image_path = os.path.join(
             relative_path_prefix, self.df.loc[idx, self.source_type])
         img_ok, img = self.source_loader[self.source_type](image_path)
 
-           if not img_ok:
+        if not img_ok:
             logger.error("Error loading image: " + image_path)
             raise Exception("Error loading image: " + image_path)
         # element has 2 queries, only second has blob

@@ -115,6 +115,7 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
 
 
     """
+
     def __init__(self, entity_class, filename, df=None, use_dask=False):
         super().__init__(filename, df=df, use_dask=use_dask)
         self.command = "Delete" + entity_class
@@ -140,7 +141,6 @@ class ImageDeleteDataCSV(EntityDeleteDataCSV):
     ***ApertureData CSV Loader class for deleting images***
     Usage details in EntityDeleteDataCSV
     """
+
     def __init__(self, filename, df=None, use_dask=False):
         super().__init__("Image", filename, df=df, use_dask=use_dask)
-
-

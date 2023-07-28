@@ -444,8 +444,8 @@ def generate_update_image(multiplier):
     # generate base load
     # generate images
     image_count = 100
-    img_gen = ImageGenerator( count=image_count, output="input/images/update_images_%%.png", image_type="png",
-                                size=(256,256), manifest="input/update_image_list.csv")
+    img_gen = ImageGenerator(count=image_count, output="input/images/update_images_%%.png", image_type="png",
+                             size=(256, 256), manifest="input/update_image_list.csv")
     img_gen.run()
     img_df = pd.read_csv("input/update_image_list.csv", header=None)
     licence_count = 2
@@ -520,8 +520,8 @@ def generate_update_image(multiplier):
 def generate_update_image_fail(multiplier):
     # generate base load, small images.
     image_count = 100
-    img_gen = ImageGenerator( count=image_count, output="input/images/update_fail_images_%%.png", image_type="png",
-                                size=(32,32), manifest="input/update_fail_image_list.csv")
+    img_gen = ImageGenerator(count=image_count, output="input/images/update_fail_images_%%.png", image_type="png",
+                             size=(32, 32), manifest="input/update_fail_image_list.csv")
     img_gen.run()
     img_df = pd.read_csv("input/update_fail_image_list.csv", header=None)
     licence_count = 2
@@ -555,8 +555,8 @@ def generate_update_image_fail(multiplier):
 
     # 2nd csv - original data, but new bigger images. update_id will increase, but image will remain the same. ( as blobs are not modifable )
     # 300x300 is chosen to allow twice as large - we also add some more text to ensure the image is more complex ( and thus larger )
-    img_gen = ImageGenerator( count=image_count, output="input/images/update_fail_big_images_%%.png", image_type="png",
-                                size=(300,300), manifest="input/update_fail_big_image_list.csv", append_text="_bigimage")
+    img_gen = ImageGenerator(count=image_count, output="input/images/update_fail_big_images_%%.png", image_type="png",
+                             size=(300, 300), manifest="input/update_fail_big_image_list.csv", append_text="_bigimage")
     img_gen.run()
     big_img_df = pd.read_csv(
         "input/update_fail_big_image_list.csv", header=None)
@@ -564,7 +564,8 @@ def generate_update_image_fail(multiplier):
 
     def big_fail_filemap(file_num):
         return big_img_df.iat[file_num % image_count, 0]
-    failing_update["filename"] = failing_update["img_id"].apply(big_fail_filemap)
+    failing_update["filename"] = failing_update["img_id"].apply(
+        big_fail_filemap)
     failing_update['version_id'] = failing_update['version_id'].apply(
         lambda ver: ver + 1)
     failing_update["updateif_<version_id"] = failing_update["version_id"]
@@ -616,8 +617,8 @@ def generate_forceimage_load(multiplier):
 def generate_sparse_add(multiplier):
     # generate base load, small images.
     image_count = 100
-    img_gen = ImageGenerator( count=image_count, output="input/images/spare_add_image_%%.png", image_type="png",
-                                size=(32,32), manifest="input/sparse_add_image_list.csv")
+    img_gen = ImageGenerator(count=image_count, output="input/images/spare_add_image_%%.png", image_type="png",
+                             size=(32, 32), manifest="input/sparse_add_image_list.csv")
     img_gen.run()
     img_df = pd.read_csv("input/sparse_add_image_list.csv", header=None)
     licence_count = 2

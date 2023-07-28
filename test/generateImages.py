@@ -97,9 +97,6 @@ def complementary_color(orig_color):
     return tuple(int(v) for v in hsv_to_rgb((hsv[0] + 0.5) % 1, hsv[1], abs(1 - hsv[2])))
 
 
-
-
-
 def getoptions():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--count', type=int, default=1)
@@ -120,34 +117,34 @@ if __name__ == '__main__':
     prog = ImageGenerator()
     prog.run(params)
 
+
 class ImageGenerator:
-    def __init__(self, count=1,size=(256,256),output="/tmp/generated_image%%",zerofill=0,image_type="png",manifest=None,append_text=""):
+    def __init__(self, count=1, size=(256, 256), output="/tmp/generated_image%%", zerofill=0, image_type="png", manifest=None, append_text=""):
         self.write_log = []
         try:
             output_path = OutputFilePath(output)
         except Exception as e:
-            raise Exception( f"Bad output path {str(output)}: {e} ")
+            raise Exception(f"Bad output path {str(output)}: {e} ")
         try:
-            image_size = ImageSize(size[0],size[1])
+            image_size = ImageSize(size[0], size[1])
         except Exception as e:
-            raise Exception( f"Bad image size {str(size)}: {e} ")
-
-        
+            raise Exception(f"Bad image size {str(size)}: {e} ")
 
         options_map = {
-               "count": count,
-               "size": image_size,
-               "output": output_path,
-               "zerofill": zerofill,
-               "imagetype": image_type,
-               "manifest": manifest,
-               "append_text": append_text
-               }
+            "count": count,
+            "size": image_size,
+            "output": output_path,
+            "zerofill": zerofill,
+            "imagetype": image_type,
+            "manifest": manifest,
+            "append_text": append_text
+        }
+
         class Options:
             def __init__(self, opt_in):
                 for key in opt_in:
-                   setattr(self,key,opt_in[key])
-        self.options = Options( options_map )
+                    setattr(self, key, opt_in[key])
+        self.options = Options(options_map)
 
     def draw_and_save(self, of, ot, os, text):
         # choose color based on hash output
@@ -163,8 +160,7 @@ class ImageGenerator:
         self.write_log.append(of)
         print(f"* Saved {of} of size {os} of type {ot} with text {text}")
 
-
-    def run(self,input_params=None):
+    def run(self, input_params=None):
         params = self.options if input_params is None else input_params
 
         images = "image" if params.count == 1 else "images"
@@ -175,13 +171,10 @@ class ImageGenerator:
             int(hashlib.md5(params.output.get_file(ext, 0, params.zerofill).encode()).hexdigest(), 16))
         for i in range(0, params.count):
             self.draw_and_save(params.output.get_file(ext, i, params.zerofill),
-                          params.imagetype, params.size, f"{i}{params.append_text}")
+                               params.imagetype, params.size, f"{i}{params.append_text}")
 
         if params.manifest:
             print(f"Writing manifest to {params.manifest}")
             with open(params.manifest, "w") as fp:
                 for line in self.write_log:
                     fp.write(line + "\n")
-
-
-

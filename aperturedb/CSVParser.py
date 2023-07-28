@@ -93,8 +93,8 @@ class CSVParser(Subscriptable):
         properties = {}
         if len(self.props_keys) > 0:
             for key in self.props_keys:
-                prop, value = self._parse_prop(key, self.df.loc[idx,key])
-                if value == value: # skips nan valies
+                prop, value = self._parse_prop(key, self.df.loc[idx, key])
+                if value == value:  # skips nan valies
                     properties[prop] = value
         return properties
 
@@ -103,10 +103,9 @@ class CSVParser(Subscriptable):
         constraints = {}
         if len(self.constraints_keys) > 0:
             for key in self.constraints_keys:
-                prop, value = self._parse_prop(key, self.df.loc[idx,key])
+                prop, value = self._parse_prop(key, self.df.loc[idx, key])
                 constraints[prop] = ["==", self.df.loc[idx, key]]
         return constraints
-
 
     def parse_other_constraint(self, constraint_name, keys, idx):
 

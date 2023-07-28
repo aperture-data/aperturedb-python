@@ -6,7 +6,7 @@ from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.ParallelQuerySet import ParallelQuerySet
 from aperturedb.BlobDataCSV import BlobDataCSV
 from aperturedb.EntityDataCSV import EntityDataCSV
-from aperturedb.EntityUpdateDataCSV import  SingleEntityUpdateDataCSV
+from aperturedb.EntityUpdateDataCSV import SingleEntityUpdateDataCSV
 from aperturedb.ConnectionDataCSV import ConnectionDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
