@@ -28,12 +28,11 @@ class SparseAddingDataCSV(CSVParser.CSVParser):
 
     def _setupkeys(self):
         if not self.keys_set:
-            if not self.use_dask:
-                self.keys_set = True
-                self.props_keys       = [x for x in self.header[1:]
-                                         if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-                self.constraints_keys       = [x for x in self.header[1:]
-                                               if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+            self.keys_set = True
+            self.props_keys       = [x for x in self.header[1:]
+                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+            self.constraints_keys       = [x for x in self.header[1:]
+                                           if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
