@@ -111,18 +111,17 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
 
     def _setupkeys(self):
         if not self.keys_set:
-            if not self.use_dask:
-                self.keys_set = True
-                self.props_keys       = [x for x in self.header[1:]
-                                         if not (x.startswith(CSVParser.CONSTRAINTS_PREFIX)
-                                                 or x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)
-                                                 or x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX))]
-                self.generated_keys = [x for x in self.header[1:]
-                                       if x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX)]
-                self.constraints_keys       = [x for x in self.header[1:]
-                                               if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-                self.search_keys       = [x for x in self.header[1:]
-                                          if x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)]
+            self.keys_set = True
+            self.props_keys       = [x for x in self.header[1:]
+                                     if not (x.startswith(CSVParser.CONSTRAINTS_PREFIX)
+                                             or x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)
+                                             or x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX))]
+            self.generated_keys = [x for x in self.header[1:]
+                                   if x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX)]
+            self.constraints_keys       = [x for x in self.header[1:]
+                                           if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+            self.search_keys       = [x for x in self.header[1:]
+                                      if x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)]
 
     # derived class interface for retrieving blob
     def read_blob(self, idx):
