@@ -376,7 +376,10 @@ class ImageForceNewestDataCSV(BlobNewestDataCSV, ImageDataProcessor):
         }
 
     def read_blob(self, idx):
-        image_path = self.df.loc[idx, self.source_type]
+        relative_path_prefix = os.path.dirname(self.filename) \
+            if self.source_type == HEADER_PATH else ""
+        image_path = os.path.join(
+            relative_path_prefix, self.df.loc[idx, self.source_type])
         img_ok, img = self.source_loader[self.source_type](image_path)
         if not img_ok:
             logger.error("Error loading image: " + image_path)

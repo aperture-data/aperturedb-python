@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-import pytest
+import os.path as osp
 from aperturedb.Query import QueryBuilder, Query
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
@@ -181,7 +181,8 @@ class TestEntityLoader():
     def get_first_image_size(self, file):
         size = 0
         df = pd.read_csv(file)
-        with open(df.loc[0, 'filename'], "rb") as f:
+        csv_dir = osp.dirname(file)
+        with open(osp.join(csv_dir, df.loc[0, 'filename']), "rb") as f:
             data = f.read()
             size = len(data)
         return size
