@@ -11,7 +11,8 @@ from generateImages import ImageGenerator
 
 from itertools import product
 
-def remove_prefix(text,prefix):
+
+def remove_prefix(text, prefix):
     if text.startswith(prefix):
         return text[len(prefix):]
     else:
@@ -460,7 +461,7 @@ def generate_update_image(multiplier):
     license = [x for x in range(licence_count)] * multiplier
 
     def filemap(file_num):
-        return remove_prefix( img_df.iat[file_num % image_count, 0], "input/")
+        return remove_prefix(img_df.iat[file_num % image_count, 0], "input/")
     images  = list(product(img_ids, license))
     prop_change_count = len(images) // 10
     id_range = 500000000
@@ -536,7 +537,7 @@ def generate_update_image_fail(multiplier):
     license = [x for x in range(licence_count)] * multiplier
 
     def filemap(file_num):
-        return remove_prefix( img_df.iat[file_num % image_count, 0], "input/")
+        return remove_prefix(img_df.iat[file_num % image_count, 0], "input/")
     images  = list(product(img_ids, license))
     prop_change_count = len(images) // 10
     id_range = 500000000
@@ -569,7 +570,7 @@ def generate_update_image_fail(multiplier):
     failing_update = df.copy()
 
     def big_fail_filemap(file_num):
-        return remove_prefix( big_img_df.iat[file_num % image_count, 0], "input/")
+        return remove_prefix(big_img_df.iat[file_num % image_count, 0], "input/")
     failing_update["filename"] = failing_update["img_id"].apply(
         big_fail_filemap)
     failing_update['version_id'] = failing_update['version_id'].apply(
@@ -633,7 +634,7 @@ def generate_sparse_add(multiplier):
     license = [x for x in range(licence_count)] * multiplier
 
     def filemap(file_num):
-        return remove_prefix( img_df.iat[file_num % image_count, 0], "input/")
+        return remove_prefix(img_df.iat[file_num % image_count, 0], "input/")
     images  = list(product(img_ids, license))
     prop_change_count = len(images) // 10
     id_range = 500000000
