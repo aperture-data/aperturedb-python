@@ -3,12 +3,14 @@ import mark_checker
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.ParallelLoader import ParallelLoader
+from aperturedb.ParallelQuerySet import ParallelQuerySet
 from aperturedb.BlobDataCSV import BlobDataCSV
 from aperturedb.EntityDataCSV import EntityDataCSV
+from aperturedb.EntityUpdateDataCSV import SingleEntityUpdateDataCSV
 from aperturedb.ConnectionDataCSV import ConnectionDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
-from aperturedb.ImageDataCSV import ImageDataCSV
+from aperturedb.ImageDataCSV import ImageDataCSV, ImageUpdateDataCSV, ImageForceNewestDataCSV, ImageSparseAddDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
@@ -29,18 +31,20 @@ def pytest_generate_tests(metafunc):
                 port = dbinfo.DB_TCP_PORT,
                 user = dbinfo.DB_USER,
                 password = dbinfo.DB_PASSWORD,
-                use_ssl = True)},
-            {"db": ConnectorRest(
-                host = dbinfo.DB_REST_HOST,
-                port = dbinfo.DB_REST_PORT,
-                user = dbinfo.DB_USER,
-                password = dbinfo.DB_PASSWORD,
-                use_ssl = False
-            )}
-        ], indirect=True, ids=["TCP", "HTTP"])
-    if "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
+                use_ssl = True)}
+
+        ], indirect=True, ids=["TCP"])
+    if all(func in metafunc.fixturenames for func in ["insert_data_from_csv", "modify_data_from_csv"]) and \
+            metafunc.module.__name__ in ["test.test_Data"]:
+        metafunc.parametrize("insert_data_from_csv,modify_data_from_csv", [
+                             [True, True], [False, False]], indirect=True, ids=["with_dask", "without_dask"])
+    elif "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
+                             True, False], indirect=True, ids=["with_dask", "without_dask"])
+    elif "modify_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
+            ["test.test_Data"]:
+        metafunc.parametrize("modify_data_from_csv", [
                              True, False], indirect=True, ids=["with_dask", "without_dask"])
 
 
@@ -48,7 +52,7 @@ def pytest_generate_tests(metafunc):
 def db(request):
     db = request.param['db']
     utils = Utils(db)
-    assert utils.remove_all_objects() == True
+    assert utils.remove_all_objects()
     return db
 
 
@@ -83,6 +87,8 @@ def insert_data_from_csv(db, request):
             "./input/http_images.adb.csv": ImageDataCSV,
             "./input/bboxes-constraints.adb.csv": BBoxDataCSV,
             "./input/gs_images.adb.csv": ImageDataCSV,
+            "./input/images_to_modify.adb.csv": ImageDataCSV,
+            "./input/images_to_modify.adb.csv": ImageDataCSV,
             "./input/persons-exist-base.adb.csv": EntityDataCSV,
             "./input/persons-some-exist.adb.csv": EntityDataCSV
         }
@@ -117,6 +123,10 @@ def insert_data_from_csv(db, request):
             loader.get_suceeded_queries() == expected_error_count
         if loader_result_lambda is not None:
             loader_result_lambda(loader, data)
+        assert len(data) - \
+            loader.get_suceeded_queries() == expected_error_count
+        if loader_result_lambda is not None:
+            loader_result_lambda(loader, data)
 
         # Preserve loader so that dask manager is not auto deleted.
         # ---------------
@@ -127,6 +137,53 @@ def insert_data_from_csv(db, request):
         return data, loader
 
     return insert_data_from_csv
+
+
+class UpdatePersonEntityDataCSV(SingleEntityUpdateDataCSV):
+    def __init__(self, filename, df=None, use_dask = False):
+        super().__init__("Person", filename, df=df, use_dask = use_dask)
+
+
+@pytest.fixture()
+def modify_data_from_csv(db, request):
+    def modify_data_from_csv(in_csv_file, rec_count=-1):
+        if rec_count > 0 and rec_count < 80:
+            request.param = False
+            print("Not enough records to test parallel loader. Using serial loader.")
+        file_data_pair = {
+            "./input/persons-update.adb.csv": UpdatePersonEntityDataCSV,
+            "./input/persons-update-oldversion.adb.csv": UpdatePersonEntityDataCSV,
+            "./input/persons-update-newversion.adb.csv": UpdatePersonEntityDataCSV,
+            "./input/persons-update-olderage.adb.csv": UpdatePersonEntityDataCSV,
+            "./input/images_updateif_baseload.adb.csv": ImageUpdateDataCSV,
+            "./input/images_updateif_mixednew.adb.csv": ImageUpdateDataCSV,
+            "./input/images_updateif_fail_baseload.adb.csv": ImageUpdateDataCSV,
+            "./input/images_updateif_fail_updates.adb.csv": ImageUpdateDataCSV,
+            "./input/images_forceupdate_baseload.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_mixednew.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_fail_base.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_fail_updates.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_blob_baseload.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_forceupdate_updates.adb.csv": ImageForceNewestDataCSV,
+            "./input/images_sparseload_base.adb.csv": ImageSparseAddDataCSV,
+            "./input/images_sparseload_full.adb.csv": ImageSparseAddDataCSV
+        }
+        use_dask = False
+        if hasattr(request, "param"):
+            use_dask = request.param
+        data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask)
+        if rec_count != -1:
+            data = data[:rec_count]
+
+        loader = ParallelQuerySet(db)
+        loader.query(data, batchsize=99,
+                     numthreads=1,
+                     stats=True,
+                     )
+        assert loader.error_counter == 0
+        return data, loader
+
+    return modify_data_from_csv
 
 
 @pytest.fixture()
@@ -145,8 +202,9 @@ def retired_persons(db, insert_data_from_csv, utils):
     loaded = insert_data_from_csv("./input/persons.adb.csv")
     constraints = Constraints()
     constraints.greaterequal("age", 60)
-    retired_persons = Entities.retrieve(db,
-                                        spec=Query.spec(with_class="Person", constraints=constraints))
+    retired_persons = Entities.retrieve(
+        db, spec=Query.spec(
+            with_class="Person", constraints=constraints))
     return retired_persons
 
 

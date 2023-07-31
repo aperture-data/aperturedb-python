@@ -143,10 +143,12 @@ examples/*/classification.txt
 kaggleds/
 examples/*/kaggleds/
 docs/*/*.svg
-test/aperturedb/log*
+test/aperturedb/logs
 adb-python/*
 docker/notebook/aperturedata/*
 docker/tests/aperturedata/*
 docker/pytorch-gpu/aperturedata/*
+/test/input/
+/test/input/images/
 
 .aperturedb
