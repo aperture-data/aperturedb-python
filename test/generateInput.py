@@ -263,7 +263,7 @@ def generate_bboxes_constraints_csv(images):
 
 def generate_descriptors(images, setname, dims):
 
-    filename = "input/" + setname + "_desc.npy"
+    filename = setname + "_desc.npy"
 
     images  = images["id"]
 

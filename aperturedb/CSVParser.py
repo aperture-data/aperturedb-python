@@ -40,15 +40,23 @@ class CSVParser(Subscriptable):
 
     def __init__(self,
                  filename: str,
-                 df=None,
-                 use_dask: bool = False,
-                 strict_response_validation: bool = False):
-        self.use_dask = use_dask
+                 strict_response_validation: bool = False,
+                 **kwargs):
+
         self.filename = filename
         self.strict_response_validation = strict_response_validation
         self.constraint_keyword = "if_not_found"
 
-        if not use_dask:
+        # The following are extracted from the kwargs.
+        self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
+            "blobs_relative_to_csv"]
+        self.use_dask = "use_dask" in kwargs and kwargs["use_dask"]
+        df = kwargs["df"] if "df" in kwargs else None
+
+        self.relative_path_prefix = os.path.dirname(self.filename) if self.blobs_relative_to_csv \
+            else ""
+
+        if not self.use_dask:
             if df is None:
                 self.df = pd.read_csv(filename)
             else:
@@ -62,7 +70,7 @@ class CSVParser(Subscriptable):
                 blocksize = os.path.getsize(self.filename) // (cores_used * PARTITIONS_PER_CORE))
 
         # len for dask dataframe needs a client.
-        if not use_dask and len(self.df) == 0:
+        if not self.use_dask and len(self.df) == 0:
             logger.error("Dataframe empty. Is the CSV file ok?")
 
         self.df = self.df.astype('object')

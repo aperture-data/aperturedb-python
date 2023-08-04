@@ -48,9 +48,9 @@ class BlobDataCSV(CSVParser.CSVParser):
     :::
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
+    def __init__(self, filename, **kwargs):
 
-        super().__init__(filename, df=df, use_dask=use_dask)
+        super().__init__(filename, **kwargs)
 
         self.props_keys = [x for x in self.header[1:]
                            if not x.startswith(CSVParser.CONSTRAINTS_PREFIX) and x != BLOB_PATH]
@@ -67,8 +67,7 @@ class BlobDataCSV(CSVParser.CSVParser):
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
-        relative_path_prefix = os.path.dirname(self.filename)
-        filename = os.path.join(relative_path_prefix,
+        filename = os.path.join(self.relative_path_prefix,
                                 self.df.loc[idx, BLOB_PATH])
         blob_ok, blob = self.load_blob(filename)
         if not blob_ok:

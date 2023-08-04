@@ -53,8 +53,8 @@ class ConnectionDataCSV(CSVParser):
     :::
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
-        super().__init__(filename, df=df, use_dask=use_dask)
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
 
         self.props_keys       = [x for x in self.header[3:]
                                  if not x.startswith(CONSTRAINTS_PREFIX)]

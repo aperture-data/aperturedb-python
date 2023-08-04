@@ -95,7 +95,8 @@ def insert_data_from_csv(db, request):
         use_dask = False
         if hasattr(request, "param"):
             use_dask = request.param
-        data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask)
+        data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask,
+                                           blobs_relative_to_csv=True)
 
         setattr(data, "response_handler", check_response_regressions)
         data.strict_response_validation = True
@@ -140,8 +141,8 @@ def insert_data_from_csv(db, request):
 
 
 class UpdatePersonEntityDataCSV(SingleEntityUpdateDataCSV):
-    def __init__(self, filename, df=None, use_dask = False):
-        super().__init__("Person", filename, df=df, use_dask = use_dask)
+    def __init__(self, filename, **kwargs):
+        super().__init__("Person", filename, **kwargs)
 
 
 @pytest.fixture()
@@ -171,7 +172,8 @@ def modify_data_from_csv(db, request):
         use_dask = False
         if hasattr(request, "param"):
             use_dask = request.param
-        data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask)
+        data = file_data_pair[in_csv_file](
+            in_csv_file, use_dask=use_dask, blobs_relative_to_csv=True)
         if rec_count != -1:
             data = data[:rec_count]
 

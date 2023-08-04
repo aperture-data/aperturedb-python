@@ -33,6 +33,7 @@ class ImageDataProcessor():
                         self.load_s3_url, self.load_gs_url]
         self.source_types = [HEADER_PATH,
                              HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
+
         self.check_image = check_image
         self.n_download_retries = n_download_retries
         self.s3 = None
@@ -43,6 +44,13 @@ class ImageDataProcessor():
             # The connections by boto3 cause ResourceWarning. Known
             # issue: https://github.com/boto/boto3/issues/454
             self.s3 = boto3.client('s3')
+
+    def get_indices(self):
+        return {
+            "entity": {
+                "_Image": self.get_indexed_properties()
+            }
+        }
 
     def load_image(self, filename):
 
@@ -227,14 +235,14 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     :::
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+    def __init__(self, filename, check_image=True, n_download_retries=3, **kwargs):
 
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
-        CSVParser.CSVParser.__init__(self, filename, df=df, use_dask=use_dask)
+        CSVParser.CSVParser.__init__(self, filename, **kwargs)
 
         source_type = self.header[0]
-        self.set_processor(use_dask, source_type)
+        self.set_processor(self.use_dask, source_type)
 
         self.format_given     = IMG_FORMAT in self.header
         self.props_keys       = [x for x in self.header[1:]
@@ -251,14 +259,16 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
             st: sl for st, sl in zip(self.source_types, self.loaders)
         }
 
+        self.relative_path_prefix = os.path.dirname(self.filename) \
+            if self.source_type == HEADER_PATH and self.blobs_relative_to_csv else ""
+
         self.command = "AddImage"
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
-        relative_path_prefix = os.path.dirname(self.filename) \
-            if self.source_type == HEADER_PATH else ""
+
         image_path = os.path.join(
-            relative_path_prefix, self.df.loc[idx, self.source_type])
+            self.relative_path_prefix, self.df.loc[idx, self.source_type])
         img_ok, img = self.source_loader[self.source_type](image_path)
 
         if not img_ok:
@@ -302,14 +312,14 @@ class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
 
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+    def __init__(self, filename, check_image=True, n_download_retries=3, **kwargs):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
         SingleEntityUpdateDataCSV.__init__(
-            self, "Image", filename, df, use_dask)
+            self, "Image", filename, **kwargs)
 
         source_type = self.header[0]
-        self.set_processor(use_dask, source_type)
+        self.set_processor(self.use_dask, source_type)
 
         # this class loads a blob, so must set the first query to have a blob.
         self.blobs_per_query = [1, 0]
@@ -326,10 +336,9 @@ class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
     def getitem(self, idx):
         blob_set = []
         [query_set, empty_blobs] = super().getitem(idx)
-        relative_path_prefix = os.path.dirname(self.filename) \
-            if self.source_type == HEADER_PATH else ""
+
         image_path = os.path.join(
-            relative_path_prefix, self.df.loc[idx, self.source_type])
+            self.relative_path_prefix, self.df.loc[idx, self.source_type])
         img_ok, img = self.source_loader[self.source_type](image_path)
         if not img_ok:
             logger.error("Error loading image: " + image_path)
@@ -356,14 +365,14 @@ class ImageForceNewestDataCSV(BlobNewestDataCSV, ImageDataProcessor):
     See BlobNewestDataCSV for usage.
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+    def __init__(self, filename, check_image=True, n_download_retries=3, **kwargs):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
         BlobNewestDataCSV.__init__(
-            self, "Image", filename, df, use_dask)
+            self, "Image", filename, **kwargs)
 
         source_type = self.header[0]
-        self.set_processor(use_dask, source_type)
+        self.set_processor(self.use_dask, source_type)
 
         self.format_given     = IMG_FORMAT in self.header
         self.props_keys = list(filter(lambda prop: prop not in [
@@ -413,12 +422,12 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     ```
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3, df=None, use_dask=False):
+    def __init__(self, filename, check_image=True, n_download_retries=3, **kwargs):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
-        SparseAddingDataCSV.__init__(self, "Image", filename, df, use_dask)
+        SparseAddingDataCSV.__init__(self, "Image", filename, **kwargs)
         source_type = self.header[0]
-        self.set_processor(use_dask, source_type)
+        self.set_processor(self.use_dask, source_type)
 
         self.format_given     = IMG_FORMAT in self.header
         self.props_keys = list(filter(lambda prop: prop not in [
@@ -433,10 +442,9 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     def getitem(self, idx):
         blob_set = []
         [query_set, empty_blobs] = super().getitem(idx)
-        relative_path_prefix = os.path.dirname(self.filename) \
-            if self.source_type == HEADER_PATH else ""
+
         image_path = os.path.join(
-            relative_path_prefix, self.df.loc[idx, self.source_type])
+            self.relative_path_prefix, self.df.loc[idx, self.source_type])
         img_ok, img = self.source_loader[self.source_type](image_path)
 
         if not img_ok:
