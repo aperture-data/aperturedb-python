@@ -92,11 +92,11 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
     GENERATE_PROP_PREFIX = "gen_"
 
-    def __init__(self, entity_class, filename, df=None, use_dask=False):
+    def __init__(self, entity_class, filename, **kwargs):
         self.known_generators = ["blobsize", "blobsha1", "insertdate"]
         self.entity = entity_class
         self.keys_set = False
-        super().__init__(filename, df=df, use_dask=use_dask)
+        super().__init__(filename, **kwargs)
         # these tell the query set code how many blobs and commands to expect in each query
         # query #1 = 1 blob, 1 command.
         # query #2 = 0 blobs, 1 command.

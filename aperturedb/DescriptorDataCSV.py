@@ -1,6 +1,7 @@
 import numpy as np
 from aperturedb import CSVParser
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +68,9 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
+    def __init__(self, filename, **kwargs):
 
-        super().__init__(filename, df=df, use_dask=use_dask)
+        super().__init__(filename, **kwargs)
         self.npy_arrays = {}
         self.has_label = False
 
@@ -88,7 +89,8 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
-        filename = self.df.loc[idx, HEADER_PATH]
+        filename = os.path.join(self.relative_path_prefix,
+                                self.df.loc[idx, HEADER_PATH])
         index    = self.df.loc[idx, HEADER_INDEX]
         desc_set = self.df.loc[idx, HEADER_SET]
 

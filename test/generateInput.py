@@ -262,14 +262,12 @@ def generate_bboxes_constraints_csv(images):
 
 
 def generate_descriptors(images, setname, dims):
-
     filename = "input/" + setname + "_desc.npy"
-
     images  = images["id"]
-
     descriptors = np.random.rand(len(images), dims)
-
     np.save(filename, descriptors)
+
+    filename = setname + "_desc.npy"
 
     labels = ["dog", "cat", "catdog", "rocko", "philip", "froghead", "drog"]
     confidence  = [random.random() for x in range(len(images))]

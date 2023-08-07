@@ -18,10 +18,10 @@ class SparseAddingDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, entity_class, filename, df=None, use_dask=False):
+    def __init__(self, entity_class, filename, **kwargs):
         self.entity = entity_class
         self.keys_set = False
-        super().__init__(filename, df=df, use_dask=use_dask)
+        super().__init__(filename, **kwargs)
         self.blobs_per_query = [0, 1]
         self.commands_per_query = [1, 1]
         self._setupkeys()

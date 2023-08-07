@@ -5,10 +5,11 @@ class Wrapper():
     that will be a part of generator.
     """
 
-    def __init__(self, list, response_handler, strict_response_validation):
+    def __init__(self, list, response_handler, strict_response_validation, blobs_relative_to_csv):
         self.list = list
         self.response_handler = response_handler
         self.strict_response_validation = strict_response_validation
+        self.blobs_relative_to_csv = blobs_relative_to_csv
 
     def __len__(self):
         return len(self.list)
@@ -28,13 +29,17 @@ class Subscriptable():
             start = len(self) + start if start < 0 else start
             stop = subscript.stop if subscript.stop else len(self)
             step = subscript.step if subscript.step else 1
-            return Wrapper(
+            wrapper = Wrapper(
                 [self.getitem(i) for i in range(start, stop, step)],
                 self.response_handler if hasattr(
                     self, "response_handler") else None,
                 self.strict_response_validation if hasattr(
-                    self, "strict_response_validation") else None
+                    self, "strict_response_validation") else None,
+                self.blobs_relative_to_csv if hasattr(
+                    self, "blobs_relative_to_csv") else False
             )
+            return wrapper
+
         else:
             if subscript < len(self):
                 return self.getitem(subscript)
