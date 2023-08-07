@@ -31,13 +31,14 @@ class TestStats():
                     first, second = line.split(":")
                     print(first, second)
                     if first in assertions:
-                        assert assertions[first.strip()](second.strip()) == True,\
+                        assert assertions[first.strip()](second.strip()) == True, \
                             f"Assertion failed for '{first}' with value {second}"
 
     def test_stats_all_errors_non_equal_last_batch(self, db, utils):
         utils.remove_all_objects()
         # Try to ingest descriptors, with no descriptor set, so all queries fail
-        data = DescriptorDataCSV("./input/setA.adb.csv")
+        data = DescriptorDataCSV(
+            "./input/setA.adb.csv", blobs_relative_to_csv=True)
         out = self.ingest_with_capture(data, db)
         assertions = {
             "Total inserted elements": lambda x: float(x) == 0,
