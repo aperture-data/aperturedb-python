@@ -1,5 +1,6 @@
 import cv2
 import logging
+import os
 from aperturedb import CSVParser
 
 logger = logging.getLogger(__name__)
@@ -32,16 +33,17 @@ class VideoDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = ImageDataCSV("/path/to/VideoData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
     """
 
-    def __init__(self, filename, check_video=True):
+    def __init__(self, filename, check_video=True, **kwargs):
 
-        super().__init__(filename)
+        super().__init__(filename, df=None, **kwargs)
 
         self.check_video = check_video
 
@@ -59,7 +61,8 @@ class VideoDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        filename   = self.df.loc[idx, HEADER_PATH]
+        filename = os.path.join(self.relative_path_prefix,
+                                self.df.loc[idx, HEADER_PATH])
         video_ok, video = self.load_video(filename)
 
         if not video_ok:

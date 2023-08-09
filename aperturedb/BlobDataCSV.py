@@ -1,4 +1,5 @@
 import logging
+import os
 from aperturedb import CSVParser
 
 PROPERTIES  = "properties"
@@ -14,10 +15,9 @@ class BlobDataCSV(CSVParser.CSVParser):
     This class loads the Blob Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Is backed by a csv file with the following columns:
-
-            ``FILENAME``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_1``
+    :::note Is backed by a csv file with the following columns:
+    ``FILENAME``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_1``
+    :::
 
     **FILENAME**: The path of the blob object on the file system.
 
@@ -34,22 +34,23 @@ class BlobDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = BlobDataCSV("/path/to/BlobData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
-
-    .. important::
-        In the above example, the constraint_id ensures that a blob with the specified
-        id would be only inserted if it does not already exist in the database.
+    :::info
+    In the above example, the constraint_id ensures that a blob with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
+    def __init__(self, filename, **kwargs):
 
-        super().__init__(filename, df=df, use_dask=use_dask)
+        super().__init__(filename, **kwargs)
 
         self.props_keys = [x for x in self.header[1:]
                            if not x.startswith(CSVParser.CONSTRAINTS_PREFIX) and x != BLOB_PATH]
@@ -66,7 +67,8 @@ class BlobDataCSV(CSVParser.CSVParser):
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
-        filename = self.df.loc[idx, BLOB_PATH]
+        filename = os.path.join(self.relative_path_prefix,
+                                self.df.loc[idx, BLOB_PATH])
         blob_ok, blob = self.load_blob(filename)
         if not blob_ok:
             logger.error("Error loading blob: " + filename)

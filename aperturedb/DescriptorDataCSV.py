@@ -1,6 +1,7 @@
 import numpy as np
 from aperturedb import CSVParser
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +20,9 @@ class DescriptorDataCSV(CSVParser.CSVParser):
     This class loads the Descriptor Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Is backed by a csv file with the following columns, and a numpy
-        array file "npz" for the descriptors:
-
-            ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
+    :::note Is backed by a csv file with the following columns, and a numpy array file "npz" for the descriptors:
+    ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
+    :::
 
     **filename**: Path to a npz file which comprises of np arrays.
 
@@ -47,30 +46,31 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = DescriptorDataCSV("/path/to/DescriptorData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
 
-    .. important::
-        In the above example, the index uniqely identiifes the actual np array from the many arrays in the npz file
-        which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
+    :::info
+    In the above example, the index uniqely identiifes the actual np array from the many arrays in the npz file
+    which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
 
-        Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
-        using :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV`
+    Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
+    using :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV`
 
-        In the above example, the constraint_UUID ensures that a connection with the specified
-        UUID would be only inserted if it does not already exist in the database.
-
+    In the above example, the constraint_UUID ensures that a connection with the specified
+    UUID would be only inserted if it does not already exist in the database.
+    :::
 
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
+    def __init__(self, filename, **kwargs):
 
-        super().__init__(filename, df=df, use_dask=use_dask)
+        super().__init__(filename, **kwargs)
         self.npy_arrays = {}
         self.has_label = False
 
@@ -89,7 +89,8 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
-        filename = self.df.loc[idx, HEADER_PATH]
+        filename = os.path.join(self.relative_path_prefix,
+                                self.df.loc[idx, HEADER_PATH])
         index    = self.df.loc[idx, HEADER_INDEX]
         desc_set = self.df.loc[idx, HEADER_SET]
 

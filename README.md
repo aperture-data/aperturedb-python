@@ -23,7 +23,7 @@ All the tests can be run with:
 
 Running specefic tests can be accomplished by invoking it with pytest as follows:
 
-``python -m pytest test_Session.py -v --log-cli-level=DEBUG``
+``cd test && docker compose up -d && PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m python -m pytest test_Session.py -v --log-cli-level=DEBUG``
 
 # Reporting bugs.
 Any error in the functionality / documentation / tests maybe reported by creating a

@@ -8,7 +8,7 @@ OPENCV_VERSION = os.getenv("OPENCV_VERSION")
 
 install_requires = ['scikit-image', 'image', 'requests', 'boto3',
                     'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
-                    'dask[complete]', 'ipywidgets', 'pydantic', 'devtools',
+                    'dask[complete]', 'ipywidgets', 'pydantic', 'devtools', 'typer[all]',
                     # Pin to the bridge version.
                     # https://github.com/tensorflow/tensorflow/issues/60320
                     'protobuf==3.20.3',
@@ -22,7 +22,7 @@ if OPENCV_VERSION is None:
 
 setuptools.setup(
     name="aperturedb",
-    version="0.4.5",
+    version="0.4.7",
     description="ApertureDB Client Module",
     install_requires=install_requires,
     long_description=long_description,
@@ -38,4 +38,7 @@ setuptools.setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
+    entry_points = {
+        'console_scripts': ['adb=aperturedb.cli.adb:app'],
+    }
 )

@@ -7,7 +7,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.4.5"
+__version__ = "0.4.7"
 
 # set log level
 logger.setLevel(logging.DEBUG)
@@ -39,6 +39,4 @@ except Exception as e:
     latest_version = None
 if __version__ != latest_version:
     logger.warning(
-        f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
-    print(
         f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")

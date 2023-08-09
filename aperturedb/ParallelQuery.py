@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
-                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0):
+                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0,
+                  strict_response_validation: bool = False):
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -64,6 +65,8 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
                         b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
                 except BaseException as e:
                     logger.exception(e)
+                    if strict_response_validation:
+                        raise e
                 blobs_returned += b_count
     else:
         # Transaction failed entirely.
@@ -130,6 +133,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.commands_per_query = 1
         self.blobs_per_query = 0
         self.daskManager = None
+        self.batch_command = execute_batch
 
     def generate_batch(self, data):
         """
@@ -158,7 +162,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         - responses
         - output_blobs
         Example usage:
-        .. code-block:: python
+        ``` python
             class MyQueries(QueryGenerator):
                 def process_responses(requests, input_blobs, responses, output_blobs):
                     self.requests.extend(requests)
@@ -166,6 +170,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             loader = ParallelLoader(self.db)
             generator = MyQueries()
             loader.ingest(generator)
+        ```
         """
 
         q, blobs = self.generate_batch(data)
@@ -174,10 +179,20 @@ class ParallelQuery(Parallelizer.Parallelizer):
         worker_stats = {}
         if not self.dry_run:
             response_handler = None
+            strict_response_validation = False
             if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
                 response_handler = self.generator.response_handler
-            result, r, b = execute_batch(
-                q, blobs, db, ParallelQuery.success_statuses, response_handler, self.commands_per_query, self.blobs_per_query)
+            if hasattr(self.generator, "strict_response_validation") and isinstance(self.generator.strict_response_validation, bool):
+                strict_response_validation = self.generator.strict_response_validation
+            result, r, b = self.batch_command(
+                q,
+                blobs,
+                db,
+                ParallelQuery.success_statuses,
+                response_handler,
+                self.commands_per_query,
+                self.blobs_per_query,
+                strict_response_validation=strict_response_validation)
             if result == 0:
                 query_time = db.get_last_query_time()
                 worker_stats["suceeded_commands"] = len(q)
@@ -224,10 +239,24 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.do_batch(db, generator[batch_start:batch_end])
             except Exception as e:
                 logger.exception(e)
+                logger.warning(
+                    f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
                 self.error_counter += 1
 
             if thid == 0 and self.stats:
                 self.pb.update((i + 1) / total_batches)
+
+    def get_objects_existed(self):
+        return sum([stat["objects_existed"]
+                    for stat in self.actual_stats])
+
+    def get_suceeded_queries(self):
+        return sum([stat["suceeded_queries"]
+                    for stat in self.actual_stats])
+
+    def get_suceeded_commands(self):
+        return sum([stat["suceeded_commands"]
+                    for stat in self.actual_stats])
 
     def query(self, generator, batchsize=1, numthreads=4, stats=False):
         """
@@ -250,7 +279,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
-                self.db, generator, batchsize, stats=stats)
+                self.__class__, self.db, generator, batchsize, stats=stats)
             self.actual_stats = []
             for result in results:
                 if result is not None:
@@ -265,7 +294,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if stats:
                 self.print_stats()
         else:
-            if len(generator) > 0:
+            # allow subclass to do verification
+            if issubclass(type(self), ParallelQuery) and hasattr(self, 'verify_generator') and callable(self.verify_generator):
+                self.verify_generator(generator)
+            elif len(generator) > 0:
                 if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
                     # if len(generator[0]) > 0:
                     #

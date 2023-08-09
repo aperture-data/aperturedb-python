@@ -3,6 +3,7 @@ FROM gcr.io/deeplearning-platform-release/pytorch-gpu.1-13
 RUN mkdir /aperturedata
 ADD docker/pytorch-gpu/aperturedata /aperturedata
 
+RUN pip install awscli
 RUN cd /aperturedata && pip install -e . && pip install -r requirements.txt
 RUN pip install opencv-python
 RUN apt-get update && apt-get install -y libopencv-dev python3-opencv

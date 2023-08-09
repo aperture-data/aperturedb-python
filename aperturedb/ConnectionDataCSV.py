@@ -1,6 +1,6 @@
 import logging
 from aperturedb.CSVParser import CSVParser, CONSTRAINTS_PREFIX
-from aperturedb.Query import QueryBuilder
+from aperturedb.Query import QueryBuilder, ObjectType
 
 logger = logging.getLogger(__name__)
 
@@ -15,10 +15,9 @@ class ConnectionDataCSV(CSVParser):
     This class loads the Connection Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Is backed by a csv file with the following columns:
-
-            ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::note Is backed by a csv file with the following columns:
+    ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::
 
     Example csv file::
 
@@ -29,7 +28,7 @@ class ConnectionDataCSV(CSVParser):
 
     **ConnectionClass**: Arbitrary class name for the entity this would be saved as.
 
-    **<ClassName>@<PropertyName>**: This is a special combination of Class Name and Property Name that can uniquely identify an entity. ‘@’ is a delimeter, so should not be used in a property name.
+    **``ClassName``@``PropertyName``**: This is a special combination of Class Name and Property Name that can uniquely identify an entity. ‘@’ is a delimeter, so should not be used in a property name.
 
     **PROP_NAME_1 .. PROP_NAME_N**: Arbitraty property names.
 
@@ -37,25 +36,25 @@ class ConnectionDataCSV(CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = ConnectionDataCSV("/path/to/ConnectionData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
+    :::info
+    This example csv's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
+    It also connects the images and descriptors in the subsequent rows.
 
-    .. important::
-        This example csv's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
-        It also connects the images and descriptors in the subsequent rows.
-
-        In the above example, the constraint_id ensures that a connection with the specified
-        id would be only inserted if it does not already exist in the database.
-
+    In the above example, the constraint_id ensures that a connection with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
-        super().__init__(filename, df=df, use_dask=use_dask)
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
 
         self.props_keys       = [x for x in self.header[3:]
                                  if not x.startswith(CONSTRAINTS_PREFIX)]
@@ -83,6 +82,7 @@ class ConnectionDataCSV(CSVParser):
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]
         q = []
+        members = ["_Image", "_Blob", "_Video", "_Descriptor"]
 
         try:
             ref_src = (2 * idx) % 100000 + 1
@@ -93,6 +93,9 @@ class ConnectionDataCSV(CSVParser):
                     self.src_key: ["==", src_value]
                 }
             }
+            # Special case for objects with blobs
+            if self.src_class in members:
+                cmd_params["blobs"] = False
             q.append(QueryBuilder.find_command(self.src_class, cmd_params))
 
             ref_dst = ref_src + 1
@@ -103,6 +106,9 @@ class ConnectionDataCSV(CSVParser):
                     self.dst_key: ["==", dst_value]
                 }
             }
+            # Special case for objects with blobs
+            if self.dst_class in members:
+                cmd_params["blobs"] = False
             q.append(QueryBuilder.find_command(self.dst_class, cmd_params))
 
             ae = self._basic_command(idx,

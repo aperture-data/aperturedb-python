@@ -1,10 +1,15 @@
-from calendar import c
 import logging
 import json
+import os
 
 from aperturedb.Connector import Connector
+from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
+from aperturedb.Configuration import Configuration
+from aperturedb.cli.configure import ls
+from aperturedb.cli.console import console
+
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +17,51 @@ DESCRIPTOR_CLASS = "_Descriptor"
 DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
 
 DEFAULT_METADATA_BATCH_SIZE = 100_000
+
+
+def __create_connector(configuration: Configuration):
+    if configuration.use_rest:
+        connector = ConnectorRest(
+            host=configuration.host,
+            port=configuration.port,
+            user=configuration.username,
+            password=configuration.password,
+            config=configuration)
+    else:
+        connector = Connector(
+            host=configuration.host,
+            port=configuration.port,
+            user=configuration.username,
+            password=configuration.password,
+            config=configuration)
+    console.log(f"Connected Using:")
+    console.log(configuration)
+    return connector
+
+
+def create_connector():
+    """
+    **Create a connector to the database.**
+
+    Args:
+        None
+
+    Returns:
+        Connector: The connector to the database.
+    """
+    all_configs = ls()
+
+    env_config = os.environ.get("APERTUREDB_CONFIG")
+    ac = all_configs["active"]
+    config = all_configs["local"][ac] if "local" in all_configs else all_configs["global"][ac]
+
+    if env_config is not None:
+        # TODO test me.
+        config = all_configs["global"][env_config] if env_config in all_configs["global"] else all_configs["local"][env_config]
+        return __create_connector(config)
+    # Then check if the local config has active
+    else:
+        return __create_connector(config)
 
 
 class Utils(object):
@@ -45,7 +95,7 @@ class Utils(object):
             raise e
 
         if rc != 0:
-            raise Exception("query failed with result {rc}")
+            raise Exception(f"query failed with result {rc}")
 
         return r, b
 
@@ -617,45 +667,30 @@ class Utils(object):
 
         cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
 
-        queries = [
-            [{"DeleteEntity": cmd}],
-            [{"DeleteImage": cmd}],
-            [{"DeleteVideo": cmd}],
-            [{"DeleteBlob": cmd}],
+        transaction = [
+            {"DeleteImage": cmd},
+            {"DeleteVideo": cmd},
+            {"DeleteBlob": cmd},
             # DeleteDescriptorSet also deletes the descriptors
-            [{"DeleteDescriptorSet": cmd}],
+            {"DeleteDescriptorSet": cmd},
 
             # All the following should be deleted automatically once the
             # related objects are deleted.
             # We keep them here until ApertureDB fully implements this.
-            [{"DeleteBoundingBox": cmd}],
-            [{"DeletePolygon": cmd}],
-            [{"DeleteFrame": cmd}],
+            {"DeleteBoundingBox": cmd},
+            {"DeletePolygon": cmd},
+            {"DeleteFrame": cmd},
+            {"DeleteEntity": cmd},
+            {"GetSchema": {"refresh": True}}
         ]
 
         try:
-            try:
-                for q in queries:
-                    self.execute(q)
-                response, _ = self.execute(
-                    [{"GetSchema": {"refresh": True}}])
-            except:
-                return False
-
-            schema = response[0]["GetSchema"]
-
-            if "entities" in schema and schema["entities"] is not None:
-                logger.error("Entities not removed completely")
-                logger.error(self.connector.get_last_response_str())
-                return False
-
-            if "connections" in schema and schema["connections"] is not None:
-                logger.error("Connections not removed completely")
-                logger.error(self.connector.get_last_response_str())
-                return False
-
+            response, _ = self.execute(transaction)
+            schema = response[-1]["GetSchema"]
+            check_keys = ["connections", "entities"]
+            return schema["status"] == 0 and \
+                all(map(lambda k: schema[k] is None, check_keys))
         except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
-            raise e
+            logger.exception(e)
 
-        return True
+        return False

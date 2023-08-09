@@ -1,5 +1,8 @@
 from aperturedb import CSVParser
+from aperturedb.EntityUpdateDataCSV import SingleEntityUpdateDataCSV
+import logging
 
+logger = logging.getLogger(__name__)
 ENTITY_CLASS = "EntityClass"
 PROPERTIES   = "properties"
 CONSTRAINTS  = "constraints"
@@ -11,10 +14,9 @@ class EntityDataCSV(CSVParser.CSVParser):
     This class loads the Entity Data which is present in a csv file,
     and converts it into a series of aperturedb queries.
 
-    .. note::
-        Expects a csv file with the following columns:
-
-            ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::note Is backed by a csv file with the following columns:
+    ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+    :::
 
     Example csv file::
 
@@ -25,22 +27,23 @@ class EntityDataCSV(CSVParser.CSVParser):
 
     Example usage:
 
-    .. code-block:: python
+    ``` python
 
         data = EntityDataCSV("/path/to/EntityData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
+    ```
 
 
-    .. important::
-        In the above example, the constraint_id ensures that a Entity with the specified
-        id would be only inserted if it does not already exist in the database.
-
+    :::info
+    In the above example, the constraint_id ensures that a Entity with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
 
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
-        super().__init__(filename, df=df, use_dask=use_dask)
+    def __init__(self, filename, **kwargs):
+        super().__init__(filename, **kwargs)
 
         self.props_keys = [x for x in self.header[1:]
                            if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
@@ -70,3 +73,75 @@ class EntityDataCSV(CSVParser.CSVParser):
     def validate(self):
         if self.header[0] != ENTITY_CLASS:
             raise Exception("Error with CSV file field: " + ENTITY_CLASS)
+
+# Used when a csv has a single entity type that needs to be deleted
+
+
+class EntityDeleteDataCSV(CSVParser.CSVParser):
+    """**ApertureDB Entity Delete Data.**
+
+    This class loads the Entity Data which is present in a csv file,
+    and converts it into a series of aperturedb deletes.
+
+    :::note::
+    Expects a csv file with the following columns:
+
+        ``constraint_PROP1``
+    :::
+
+    Example csv file::
+
+        constraint_id
+        321423532
+        42342522
+        ...
+
+    Example usage:
+
+   ```python
+
+        data = ImageDeleteDataCSV("/path/to/UnusedImages.csv")
+        loader = ParallelQuery(db)
+        loader.query(data)
+    ```
+
+
+    :::info
+    In the above example, the constraint_id ensures that a Entity with the specified
+    id would be only deleted.
+
+    Note that you can take a csv with normal prop data and this will ignore it, so you
+    could use input to a loader to this.
+    :::
+
+
+    """
+
+    def __init__(self, entity_class, filename, df=None, use_dask=False):
+        super().__init__(filename, df=df, use_dask=use_dask)
+        self.command = "Delete" + entity_class
+        self.constraint_keyword = "constraints"
+        if not use_dask:
+            self.constraint_keys       = [x for x in self.header[0:]]
+
+    def getitem(self, idx):
+        idx = self.df.index.start + idx
+        q = []
+        entity_delete = self._basic_command(idx)
+
+        q.append(entity_delete)
+        return q, []
+
+    def validate(self):
+        # all we require is a valid csv with 1 or more columns.
+        return True
+
+
+class ImageDeleteDataCSV(EntityDeleteDataCSV):
+    """
+    ***ApertureData CSV Loader class for deleting images***
+    Usage details in EntityDeleteDataCSV
+    """
+
+    def __init__(self, filename, df=None, use_dask=False):
+        super().__init__("Image", filename, df=df, use_dask=use_dask)

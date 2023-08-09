@@ -35,6 +35,7 @@ from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Connector import Connector
+from aperturedb.Configuration import Configuration
 
 logger = logging.getLogger(__name__)
 
@@ -82,16 +83,32 @@ class ConnectorRest(Connector):
 
     def __init__(self, host="localhost", port=None,
                  user="", password="", token="",
-                 use_ssl=True, shared_data=None):
+                 use_ssl=True, shared_data=None,
+                 config: Configuration = None):
 
-        self.host = host
+        if config is None:
+            self.host = host
 
-        if port is None:
-            self.port = 443 if use_ssl else 80
+            if port is None:
+                self.port = 443 if use_ssl else 80
+            else:
+                self.port = port
+
+            self.use_ssl = use_ssl
+            self.config = Configuration(
+                host=self.host,
+                port=self.port,
+                use_ssl=self.use_ssl,
+                username=user,
+                password=password,
+                name="runtime"
+            )
         else:
-            self.port = port
+            self.config = config
+            self.host = config.host
+            self.port = config.port
+            self.use_ssl = config.use_ssl
 
-        self.use_ssl = use_ssl
         self.connected = False
         # Session is useful because it does not add "Connection: close header"
         # Since we will be making same call to the same URL, making a session
@@ -164,5 +181,5 @@ class ConnectorRest(Connector):
 
         if tries == 3:
             raise Exception(
-                f"Could not query apertureDB using REST.")
+                f"Could not query apertureDB {self.config} using REST.")
         return (self.last_response, response_blob_array)
