@@ -1,8 +1,9 @@
 import setuptools
 import sys
-from os.path import dirname,abspath,join
+from os.path import dirname, abspath, join
 
-sys.path.insert(1, dirname( abspath( join( dirname( __file__ ), ".." ))))
+# noqa: E402
+sys.path.insert(1, dirname(abspath(join(dirname(__file__), ".."))))
 from shared_setup import PACKAGE_VERSION, minimal_install_requires
 
 
