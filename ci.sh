@@ -55,13 +55,13 @@ update_version() {
     echo "Updating version $BUILD_VERSION to $VERSION_BUMP"
     # Replace version in __init__.py
     printf '%s\n' "%s/__version__ = .*/__version__ = \"$VERSION_BUMP\"/g" 'x' | ex aperturedb/__init__.py
-    printf '%s\n' "%s/version=.*/version=\"$VERSION_BUMP\",/g" 'x' | ex setup.py
+    printf '%s\n' "%s/version=.*/version=\"$VERSION_BUMP\",/g" 'x' | ex shared_setup.py
 
     # Commit and push version bump
     git config --local user.name "github-actions[bot]"
     git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
     git add ./aperturedb/__init__.py
-    git add ./setup.py
+    git add ./shared_setup.py
     git commit -m "Version bump: ${BUILD_VERSION} to ${VERSION_BUMP}"
     git push --set-upstream origin $BRANCH_NAME
     BUILD_VERSION=$VERSION_BUMP
@@ -135,7 +135,7 @@ build_tests(){
     TESTS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:latest
     mkdir -p docker/tests/aperturedata
     sudo rm -rf test/aperturedb/db
-    cp -r aperturedb minimal setup.py README.md requirements.txt docker/tests/aperturedata
+    cp -r aperturedb minimal setup.py shared_setup.py README.md requirements.txt docker/tests/aperturedata
     mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
     cp test/aperturedb/config.json docker/tests/aperturedata/test/aperturedb
@@ -160,7 +160,7 @@ build_notebook_dependencies_image(){
 build_notebook_image(){
     NOTEBOOK_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_WITH_VERSION}
     mkdir -p docker/notebook/aperturedata
-    cp -r aperturedb minimal setup.py README.md docker/notebook/aperturedata
+    cp -r aperturedb minimal setup.py shared_setup.py README.md docker/notebook/aperturedata
     LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
     echo "Building image $NOTEBOOK_IMAGE"
     docker build -t $NOTEBOOK_IMAGE -t $LATEST_IMAGE -f docker/notebook/Dockerfile .
@@ -174,7 +174,7 @@ build_notebook_image(){
 build_docs_image(){
     echo "Preping docs image"
     mkdir -p docs/docker/build/{docs,examples}
-    cp -r ./{setup.py,README.md,aperturedb} docs/docker/build
+    cp -r ./{setup.py,shared_setup.py,README.md,aperturedb} docs/docker/build
     cp -r ./docs/{*.*,Makefile,_static} docs/docker/build/docs
     find examples/ -name *.ipynb | xargs -i cp {} docs/docker/build/examples
     DOCS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-docs${IMAGE_EXTENSION_WITH_VERSION}
