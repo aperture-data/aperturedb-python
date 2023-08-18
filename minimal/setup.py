@@ -1,17 +1,20 @@
-import os
 import setuptools
-from shared_setup import PACKAGE_VERSION, install_requires
+import sys
+from os.path import dirname,abspath,join
 
-PACKAGE_VERSION="0.4.6"
+sys.path.insert(1, dirname( abspath( join( dirname( __file__ ), ".." ))))
+from shared_setup import PACKAGE_VERSION, minimal_install_requires
+
+
 with open("README.md", "r") as fh:
-    long_description = fh.read()
+    minimal_long_description = fh.read()
 
 setuptools.setup(
-    name="aperturedb",
+    name="aperturedb-minimal",
     version=PACKAGE_VERSION,
-    description="ApertureDB Client Module",
-    install_requires=install_requires,
-    long_description=long_description,
+    description="ApertureDB Client Module ( Minimal )",
+    install_requires=minimal_install_requires,
+    long_description=minimal_long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/aperture-data/aperturedb-python",
     license="Apache",
@@ -24,8 +27,4 @@ setuptools.setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    entry_points = {
-        'console_scripts': ['adb=aperturedb.cli.adb:app'],
-    }
 )
-
