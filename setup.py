@@ -2,7 +2,6 @@ import os
 import setuptools
 from shared_setup import PACKAGE_VERSION, install_requires
 
-PACKAGE_VERSION="0.4.6"
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
@@ -28,4 +27,3 @@ setuptools.setup(
         'console_scripts': ['adb=aperturedb.cli.adb:app'],
     }
 )
-
