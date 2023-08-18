@@ -71,7 +71,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
         pip3 install twine
-        bash publish.sh
+        bash publish.sh && ( cd minimal && bash ../publish.sh )
 
     - name: Tag release version
       run: './tag.sh'
