@@ -94,7 +94,7 @@ class KaggleData(Subscriptable):
     ```
 
         Args:
-            dataset_ref (str): URL of kaggle dataset, for example 'https://www.kaggle.com/datasets/crawford/cat-dataset'
+            dataset_ref (str): URL of kaggle dataset, for example https://www.kaggle.com/datasets/jessicali9530/celeba-dataset
             records_count (int): number of records to provide to generate.
 
     """
