@@ -31,9 +31,15 @@ def pytest_generate_tests(metafunc):
                 port = dbinfo.DB_TCP_PORT,
                 user = dbinfo.DB_USER,
                 password = dbinfo.DB_PASSWORD,
-                use_ssl = True)}
-
-        ], indirect=True, ids=["TCP"])
+                use_ssl = True)},
+            {"db": ConnectorRest(
+                host = dbinfo.DB_REST_HOST,
+                port = dbinfo.DB_REST_PORT,
+                user = dbinfo.DB_USER,
+                password = dbinfo.DB_PASSWORD,
+                use_ssl = False
+            )}
+        ], indirect=True, ids=["TCP", "HTTP"])
     if all(func in metafunc.fixturenames for func in ["insert_data_from_csv", "modify_data_from_csv"]) and \
             metafunc.module.__name__ in ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv,modify_data_from_csv", [
