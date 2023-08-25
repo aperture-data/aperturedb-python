@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-test:
+  build_and_test:
 
     runs-on:
     - self-hosted
@@ -14,7 +14,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -38,9 +38,9 @@ jobs:
       run: 'EXCLUDE_DOCUMENTATION=1 EXCLUDE_DEPLOY=1 ./ci.sh'
       shell: bash
 
-  build_and_deploy_docs:
+  build_notebooks_and_publish_pypi:
     needs:
-    - build-test
+    - build_and_test
 
     runs-on:
     - self-hosted
@@ -48,7 +48,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -56,13 +56,13 @@ jobs:
         username: ${{ secrets.DOCKER_USER }}
         password: ${{ secrets.DOCKER_PASS }}
 
-    - name: Build Notebook,docs Docker
+    - name: Build Notebook
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: |
-        EXCLUDE_TESTING=1 EXCLUDE_DEPLOY=1 ./ci.sh
+        EXCLUDE_TESTING=1 EXCLUDE_DOCUMENTATION=1 EXCLUDE_DEPLOY=1 ./ci.sh
       shell: bash
 
     - name: Publish to PyPi
@@ -83,14 +83,14 @@ jobs:
 
   deploy_web_services:
     needs:
-    - build-test
-    - build_and_deploy_docs
+    - build_and_test
+    - build_notebooks_and_publish_pypi
 
     runs-on: ubuntu-latest
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -110,7 +110,7 @@ jobs:
   trigger_demos_buils:
     runs-on: ubuntu-latest
     needs:
-      - build_and_deploy_docs
+      - build_notebooks_and_publish_pypi
     steps:
     - uses: actions/checkout@v3
     - name: repository dispatch
@@ -126,7 +126,7 @@ jobs:
   trigger_docs_deploy:
     runs-on: ubuntu-latest
     needs:
-      - build_and_deploy_docs
+      - build_notebooks_and_publish_pypi
     steps:
     - uses: actions/checkout@v3
     - name: repository dispatch

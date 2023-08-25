@@ -14,7 +14,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -46,7 +46,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -86,7 +86,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -95,5 +95,5 @@ jobs:
         password: ${{ secrets.DOCKER_PASS }}
 
     - name: Build documentation
-      run: 'EXCLUDE_TESTING=1 EXCLUDE_DEPLOY=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
+      run: 'EXCLUDE_TESTING=1 EXCLUDE_DOCUMENTATION=1 EXCLUDE_DEPLOY=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
       shell: bash
