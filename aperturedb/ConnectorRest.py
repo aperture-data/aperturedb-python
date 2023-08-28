@@ -136,7 +136,7 @@ class ConnectorRest(Connector):
         logger.info("Done with connector")
         self.http_session.close()
 
-    def _query(self, query, blob_array = []):
+    def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
