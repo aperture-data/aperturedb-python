@@ -35,7 +35,7 @@ jobs:
         AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-      run: 'EXCLUDE_DOCUMENTATION=1 EXCLUDE_DEPLOY=1 NO_PUSH=1 UPDATE_BRANCH=1 ./ci.sh'
+      run: 'EXCLUDE_DEPLOY=1 NO_PUSH=1 UPDATE_BRANCH=1 ./ci.sh'
       shell: bash
 
   build_and_deploy_docs:

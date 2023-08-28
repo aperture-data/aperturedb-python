@@ -170,28 +170,6 @@ build_notebook_image(){
     fi
 }
 
-# Build docks image
-build_docs_image(){
-    echo "Preping docs image"
-    mkdir -p docs/docker/build/{docs,examples}
-    cp -r ./{setup.py,README.md,aperturedb} docs/docker/build
-    cp -r ./docs/{*.*,Makefile,_static} docs/docker/build/docs
-    find examples/ -name *.ipynb | xargs -i cp {} docs/docker/build/examples
-    DOCS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-docs${IMAGE_EXTENSION_WITH_VERSION}
-    LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-docs${IMAGE_EXTENSION_LATEST}
-    echo "Building image $DOCS_IMAGE"
-    docker build -t $DOCS_IMAGE -f docs/docker/Dockerfile .
-    if [ -z ${NO_PUSH+x} ]
-    then
-        docker push $DOCS_IMAGE
-
-        ECR_REPO_NAME=aperturedb-python-docs
-        DOCS_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
-        ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
-        push_aws_ecr $DOCS_IMAGE $ECR_NAME $ECR_REPO_NAME
-    fi
-}
-
 build_coverage_image(){
     COV_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-coverage${IMAGE_EXTENSION_WITH_VERSION}
     echo "Building image $COV_IMAGE"
@@ -256,10 +234,6 @@ then
     popd
 fi
 
-if [ -z ${EXCLUDE_DOCUMENTATION+x} ]
-then
-    build_docs_image
-fi
 
 if [ -z ${EXCLUDE_DEPLOY+x} ]
 then

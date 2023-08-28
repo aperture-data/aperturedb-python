@@ -35,7 +35,7 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-      run: 'EXCLUDE_DOCUMENTATION=1 EXCLUDE_DEPLOY=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
+      run: 'EXCLUDE_DEPLOY=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
       shell: bash
 
   run_test_conda_gpu:
@@ -93,7 +93,3 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USER }}
         password: ${{ secrets.DOCKER_PASS }}
-
-    - name: Build documentation
-      run: 'EXCLUDE_TESTING=1 EXCLUDE_DOCUMENTATION=1 EXCLUDE_DEPLOY=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
-      shell: bash
