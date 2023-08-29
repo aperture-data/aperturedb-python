@@ -16,7 +16,7 @@ class KaggleData(Subscriptable):
     where the iteration over Dataset elements yields an atomic record.
 
     .. note::
-        This class should be subclassed with specefic implementations of generate_index and generate_query.
+        This class should be subclassed with specific implementations of generate_index and generate_query.
 
     Example subclass:
 
