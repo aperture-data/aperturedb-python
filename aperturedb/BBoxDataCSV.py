@@ -57,9 +57,9 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
+    def __init__(self, filename, **kwargs):
 
-        super().__init__(filename, df=df, use_dask=use_dask)
+        super().__init__(filename, **kwargs)
 
         self.props_keys = [x for x in self.header[5:]
                            if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]

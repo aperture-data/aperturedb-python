@@ -37,6 +37,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for inges
                  help="Use dask based parallelization")] = True,
              ingest_type: Annotated[IngestType, typer.Option(
                  help="Parser for CSV file to be used")] = IngestType.IMAGE,
+             blobs_relative_to_csv: Annotated[bool, typer.Option(
+                 help="If true, the blob path is relative to the csv file")] = True,
              ):
 
     ingest_types = {
@@ -51,7 +53,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for inges
         IngestType.VIDEO: VideoDataCSV
     }
 
-    data = ingest_types[ingest_type](filepath, use_dask=use_dask)
+    data = ingest_types[ingest_type](filepath, use_dask=use_dask,
+                                     blobs_relative_to_csv=blobs_relative_to_csv)
     db = create_connector()
     console.log(db)
 

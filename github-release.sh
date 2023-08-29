@@ -17,9 +17,9 @@ create_release() {
 
     command="curl -s -o release.json -w '%{http_code}' \
          --request POST \
-         --header 'Accept: application/vnd.github.v3+json' \
-         --header 'Authorization: token ${token}' \
-         --header 'content-type: application/json' \
+         --header 'Accept: application/vnd.github+json' \
+         --header 'Authorization: Bearer ${token}' \
+         --header 'X-GitHub-Api-Version: 2022-11-28' \
          --data '{\"tag_name\": \"${tag}\", \"name\": \"${tag}\", \"body\":\"Release ${tag}\"}' \
          https://api.github.com/repos/$user/$repo/releases"
     http_code=`eval $command`

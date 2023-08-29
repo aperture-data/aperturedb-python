@@ -41,9 +41,9 @@ class VideoDataCSV(CSVParser.CSVParser):
     ```
     """
 
-    def __init__(self, filename, check_video=True):
+    def __init__(self, filename, check_video=True, **kwargs):
 
-        super().__init__(filename)
+        super().__init__(filename, df=None, **kwargs)
 
         self.check_video = check_video
 
@@ -61,8 +61,7 @@ class VideoDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        relative_path_prefix = os.path.dirname(self.filename)
-        filename = os.path.join(relative_path_prefix,
+        filename = os.path.join(self.relative_path_prefix,
                                 self.df.loc[idx, HEADER_PATH])
         video_ok, video = self.load_video(filename)
 

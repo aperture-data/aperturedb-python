@@ -7,8 +7,16 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
+from generateImages import ImageGenerator
 
 from itertools import product
+
+
+def remove_prefix(text, prefix):
+    if text.startswith(prefix):
+        return text[len(prefix):]
+    else:
+        return text
 
 
 def generate_person_csv(multiplier):
@@ -254,14 +262,12 @@ def generate_bboxes_constraints_csv(images):
 
 
 def generate_descriptors(images, setname, dims):
-
     filename = "input/" + setname + "_desc.npy"
-
     images  = images["id"]
-
     descriptors = np.random.rand(len(images), dims)
-
     np.save(filename, descriptors)
+
+    filename = setname + "_desc.npy"
 
     labels = ["dog", "cat", "catdog", "rocko", "philip", "froghead", "drog"]
     confidence  = [random.random() for x in range(len(images))]
@@ -298,6 +304,35 @@ def generate_descriptorset(names, dims):
     df.to_csv("input/descriptorset.adb.csv", index=False)
 
 
+def generate_update_person():
+    # generate 3 testing csvs for update testing
+    # cvs 1 - base load with version.
+    df = pd.read_csv("input/persons.adb.csv")
+
+    # set version column to 1.
+    version_id = [1 for x in range(len(df))]
+    df["updateif_<version_id"] = version_id
+    df["version_id"] = version_id
+    df.to_csv("input/persons-update.adb.csv", index=False)
+
+    # csv 2 - modified data, but same version ( will cause no updates )
+    df['age'] = df['age'].apply(lambda age: age + 200)
+    df['version_id'] = df['version_id'].apply(lambda ver: ver + 1)
+    df.to_csv("input/persons-update-oldversion.adb.csv", index=False)
+
+    # csv 3 - modified data, and version ( will update )
+    # update in database if version < 2.
+    df['updateif_<version_id'] = df['version_id']
+    df.to_csv("input/persons-update-newversion.adb.csv", index=False)
+
+    # generate updateif to test > comparator and partial update
+    df = pd.read_csv("input/persons.adb.csv")
+    df['age'] = df['age'].apply(lambda age: age + 200)
+    # change if age in database is > 30
+    df['updateif_>age'] = [30 for x in range(len(df))]
+    df = df.to_csv("input/persons-update-olderage.adb.csv", index=False)
+
+
 def generate_partial_load():
 
     df = pd.read_csv("input/persons.adb.csv")
@@ -306,6 +341,327 @@ def generate_partial_load():
     # causes 3 overlaps
     overlapped = df.head(12).tail(5)
     overlapped.to_csv("input/persons-some-exist.adb.csv", index=False)
+
+
+def generate_update_images(multiplier):
+
+    image_count = 5
+    licence_count = 2
+    multiplier = multiplier // 2
+    path    = "images/"
+    imgs    = [path + "number_" + str(i).zfill(4) +
+               ".png" for i in range(image_count)] * multiplier
+    license = [x for x in range(licence_count)] * multiplier
+
+    images  = list(product(imgs, license))
+    duplicate_count = len(images) // 10
+
+    ids      = random.sample(range(1000000000), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+
+    df = pd.DataFrame(images, columns=['filename', 'license'])
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:date_captured"] = date_cap
+    df["constraint_id"] = ids
+    df["version_id"] = version_id
+    df["updateif_<version_id"] = version_id
+
+    df = df.sort_values("id")
+
+    updates = df.head(duplicate_count).copy()
+    updated_version_id = [2 for i in range(duplicate_count)]
+    updates["version_id"] = updated_version_id
+    updates["updateif_<version_id"] = updated_version_id
+    df = pd.concat([df, updates])
+
+    df.to_csv("./input/images_update_and_add.adb.csv", index=False)
+
+
+def generate_newest_images(multiplier):
+    image_count = 5
+    licence_count = 2
+    multiplier = multiplier // 2
+    path    = "images/"
+    img_ids = [i for i in range(image_count)] * multiplier
+    def filegen(file_num): return path + "number_" + \
+        str(file_num).zfill(4) + ".png"
+    license = [x for x in range(licence_count)] * multiplier
+
+    images  = list(product(img_ids, license))
+    prop_change_count = len(images) // 10
+
+    ids      = random.sample(range(1000000000), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+    empty_column = ["" for x in range(len(images))]
+
+    df = pd.DataFrame(images, columns=['img_id', 'license'])
+    # we want filename to be first column
+    df.insert(0, "filename", df['img_id'].apply(filegen))
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:date_captured"] = date_cap
+    df["constraint_id"] = ids
+    df["version_id"] = version_id
+    df["gen_blobsha1_imagesha"] = empty_column
+    df["updateif_<version_id"] = version_id
+
+    df = df.sort_values("id")
+
+    # temporary
+    df = df.head(4).copy()
+    prop_change_count = 1
+    blob_change_count = 1
+
+    prop_updates = df.head(prop_change_count).copy()
+    prop_updates["version_id"] = prop_updates["version_id"].apply(
+        lambda id: id + 1)
+    prop_updates["updateif_<version_id"] = prop_updates["version_id"]
+    prop_updates["age"] = prop_updates["age"].apply(lambda age: age + 1)
+
+    blob_updates = df.head(prop_change_count + 1).tail(1).copy()
+    blob_updates["version_id"] = blob_updates["version_id"].apply(
+        lambda id: id + 2)
+    blob_updates["updateif_<version_id"] = blob_updates["version_id"]
+    blob_updates["age"] = blob_updates["age"].apply(lambda age: age + 2)
+    blob_updates["img_id"] = blob_updates["img_id"].apply(lambda id: id + 1)
+    blob_updates["filename"] = blob_updates["img_id"].apply(filegen)
+    df = pd.concat([df, prop_updates, blob_updates])
+    print(df)
+    df = df.drop(columns=["img_id"])
+
+    df.to_csv("./input/images_newest_blobs.adb.csv", index=False)
+
+
+def generate_update_image(multiplier):
+    # generate base load
+    # generate images
+    image_count = 100
+    img_gen = ImageGenerator(count=image_count, output="input/images/update_images_%%.png", image_type="png",
+                             size=(256, 256), manifest="input/update_image_list.csv")
+    img_gen.run()
+    img_df = pd.read_csv("input/update_image_list.csv", header=None)
+    licence_count = 2
+    multiplier = multiplier // 2
+    img_ids = [i for i in range(image_count)] * multiplier
+    license = [x for x in range(licence_count)] * multiplier
+
+    def filemap(file_num):
+        return remove_prefix(img_df.iat[file_num % image_count, 0], "input/")
+    images  = list(product(img_ids, license))
+    prop_change_count = len(images) // 10
+    id_range = 500000000
+    # id_range=1000000000
+    df = pd.DataFrame(images, columns=['img_id', 'license'])
+    ids      = random.sample(range(id_range), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+
+    df = pd.DataFrame(images, columns=['img_id', 'license'])
+    # we want filename to be first column
+    df.insert(0, "filename", df['img_id'].apply(filemap))
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:date_captured"] = date_cap
+    df["constraint_id"] = ids
+    df["version_id"] = version_id
+    df["updateif_<version_id"] = version_id
+
+    df.to_csv("./input/images_updateif_baseload.adb.csv", index=False)
+
+    # csv 2: original content plus new to verify blob loading with only partial loads, randomize
+    id_range_start = id_range
+    id_range_end = 1000000000
+    new_start = image_count
+    new_end = int(image_count * 1.1)
+    img_ids = [i for i in range(new_start, new_end)] * multiplier
+    images  = list(product(img_ids, license))
+    prop_change_count = len(images) // 10
+    additional_df = pd.DataFrame(images, columns=['img_id', 'license'])
+    ids      = random.sample(range(id_range_start, id_range_end), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+
+    # we want filename to be first column
+    additional_df.insert(0, "filename", df['img_id'].apply(filemap))
+    additional_df["id"]       = ids
+    additional_df["age"]      = age
+    additional_df["height"]   = height
+    additional_df["has_dog"]  = dog
+    additional_df["date:date_captured"] = date_cap
+    additional_df["constraint_id"] = ids
+    additional_df["version_id"] = version_id
+    additional_df["updateif_<version_id"] = version_id
+
+    additional_df.to_csv(
+        "./input/images_updateif_mixednew1.adb.csv", index=False)
+    # mix the new records in with the old.
+    combined_df = pd.concat([df, additional_df],
+                            ignore_index=True).sample(frac=1)
+
+    combined_df.to_csv("./input/images_updateif_mixednew.adb.csv", index=False)
+
+
+def generate_update_image_fail(multiplier):
+    # generate base load, small images.
+    image_count = 100
+    img_gen = ImageGenerator(count=image_count, output="input/images/update_fail_images_%%.png", image_type="png",
+                             size=(32, 32), manifest="input/update_fail_image_list.csv")
+    img_gen.run()
+    img_df = pd.read_csv("input/update_fail_image_list.csv", header=None)
+    licence_count = 2
+    multiplier = multiplier // 2
+    img_ids = [i for i in range(image_count)] * multiplier
+    license = [x for x in range(licence_count)] * multiplier
+
+    def filemap(file_num):
+        return remove_prefix(img_df.iat[file_num % image_count, 0], "input/")
+    images  = list(product(img_ids, license))
+    prop_change_count = len(images) // 10
+    id_range = 500000000
+    df = pd.DataFrame(images, columns=['img_id', 'license'])
+    ids      = random.sample(range(id_range), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+
+    df.insert(0, "filename", df['img_id'].apply(filemap))
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:date_captured"] = date_cap
+    df["constraint_id"] = ids
+    df["version_id"] = version_id
+    df["updateif_<version_id"] = version_id
+    df.to_csv("./input/images_updateif_fail_baseload.adb.csv", index=False)
+
+    # 2nd csv - original data, but new bigger images. update_id will increase, but image will remain the same. ( as blobs are not modifable )
+    # 300x300 is chosen to allow twice as large - we also add some more text to ensure the image is more complex ( and thus larger )
+    img_gen = ImageGenerator(count=image_count, output="input/images/update_fail_big_images_%%.png", image_type="png",
+                             size=(300, 300), manifest="input/update_fail_big_image_list.csv", append_text="_bigimage")
+    img_gen.run()
+    big_img_df = pd.read_csv(
+        "input/update_fail_big_image_list.csv", header=None)
+    failing_update = df.copy()
+
+    def big_fail_filemap(file_num):
+        return remove_prefix(big_img_df.iat[file_num % image_count, 0], "input/")
+    failing_update["filename"] = failing_update["img_id"].apply(
+        big_fail_filemap)
+    failing_update['version_id'] = failing_update['version_id'].apply(
+        lambda ver: ver + 1)
+    failing_update["updateif_<version_id"] = failing_update["version_id"]
+    failing_update.to_csv(
+        "./input/images_updateif_fail_updates.adb.csv", index=False)
+
+
+def generate_forceimage_load(multiplier):
+    # copy from imageupdate.
+    # ensure normal load.
+    base = pd.read_csv("./input/images_updateif_baseload.adb.csv")
+    base.to_csv("./input/images_forceupdate_baseload.adb.csv", index=False)
+    # ensure loading with partial new works as expected.
+    mixednew = pd.read_csv("./input/images_updateif_mixednew.adb.csv")
+    mixednew.to_csv("./input/images_forceupdate_mixednew.adb.csv", index=False)
+
+    # test loading of modified image
+    changeimage_base = pd.read_csv(
+        "./input/images_updateif_fail_baseload.adb.csv")
+    # with a modified id, the id will change, but not the images.
+    changeimage_modified = pd.read_csv(
+        "./input/images_updateif_fail_updates.adb.csv")
+
+    changeimage_base.to_csv(
+        "./input/images_forceupdate_fail_base.adb.csv", index=False)
+    changeimage_modified.to_csv(
+        "./input/images_forceupdate_fail_updates.adb.csv", index=False)
+
+    # now change load to add column to verify image.
+    empty_column = ["" for x in range(len(changeimage_base))]
+
+    # add autogenerated column ( needed to seed the data )
+    changeimage_base["prop_blobsha1_imagesha"] = empty_column
+    # non should exist in base load, so will not effect anything
+    changeimage_base["updateif_blobsha1_imagesha"] = empty_column
+
+    # add autogenerated column to update.
+    changeimage_modified["prop_blobsha1_imagesha"] = empty_column
+    # required to detect blob change and remove and re-add.
+    changeimage_modified["updateif_blobsha1_imagesha"] = empty_column
+
+    changeimage_base.to_csv(
+        "./input/images_forceupdate_blob_baseload.adb.csv", index=False)
+    # with a modified id, the id will change, but not the images.
+    changeimage_modified.to_csv(
+        "./input/images_forceupdate_updates.adb.csv", index=False)
+
+
+def generate_sparse_add(multiplier):
+    # generate base load, small images.
+    image_count = 100
+    img_gen = ImageGenerator(count=image_count, output="input/images/spare_add_image_%%.png", image_type="png",
+                             size=(32, 32), manifest="input/sparse_add_image_list.csv")
+    img_gen.run()
+    img_df = pd.read_csv("input/sparse_add_image_list.csv", header=None)
+    licence_count = 2
+    multiplier = multiplier // 2
+    img_ids = [i for i in range(image_count)] * multiplier
+    license = [x for x in range(licence_count)] * multiplier
+
+    def filemap(file_num):
+        return remove_prefix(img_df.iat[file_num % image_count, 0], "input/")
+    images  = list(product(img_ids, license))
+    prop_change_count = len(images) // 10
+    id_range = 500000000
+    df = pd.DataFrame(images, columns=['img_id', 'license'])
+    ids      = random.sample(range(id_range), len(images))
+    age      = [int(100 * random.random()) for i in range(len(images))]
+    height   = [float(200 * random.random()) for i in range(len(images))]
+    dog      = [x > 100 for x in height]
+    date_cap = [datetime.now().isoformat() for x in range(len(images))]
+    version_id = [1 for x in range(len(images))]
+
+    df.insert(0, "filename", df['img_id'].apply(filemap))
+    df["id"]       = ids
+    df["age"]      = age
+    df["height"]   = height
+    df["has_dog"]  = dog
+    df["date:date_captured"] = date_cap
+    df["constraint_id"] = ids
+    df["version_id"] = version_id
+    df["updateif_<version_id"] = version_id
+    # create load with first half
+    half = len(df) / 2
+    # won't work with uneven, since we are going to expect to be able to double number to check.
+    assert(int(half) == half)
+    df.head(int(half)).to_csv(
+        "./input/images_sparseload_base.adb.csv", index=False)
+
+    # then load with all, which half will not be sent, as they exist.
+    df.to_csv("./input/images_sparseload_full.adb.csv", index=False)
 
 
 def main(params):
@@ -326,7 +682,12 @@ def main(params):
     for name, dims in zip(desc_name, desc_dims):
         generate_descriptors(images, name, dims)
 
+    generate_update_person()
     generate_partial_load()
+    generate_update_image(params.multiplier)
+    generate_update_image_fail(params.multiplier)
+    generate_sparse_add(params.multiplier)
+    generate_forceimage_load(params.multiplier)
 
 
 def get_args():

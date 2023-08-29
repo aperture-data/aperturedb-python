@@ -22,7 +22,7 @@ if OPENCV_VERSION is None:
 
 setuptools.setup(
     name="aperturedb",
-    version="0.4.6",
+    version="0.4.8",
     description="ApertureDB Client Module",
     install_requires=install_requires,
     long_description=long_description,

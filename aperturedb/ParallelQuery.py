@@ -133,6 +133,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.commands_per_query = 1
         self.blobs_per_query = 0
         self.daskManager = None
+        self.batch_command = execute_batch
 
     def generate_batch(self, data):
         """
@@ -183,7 +184,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 response_handler = self.generator.response_handler
             if hasattr(self.generator, "strict_response_validation") and isinstance(self.generator.strict_response_validation, bool):
                 strict_response_validation = self.generator.strict_response_validation
-            result, r, b = execute_batch(
+            result, r, b = self.batch_command(
                 q,
                 blobs,
                 db,
@@ -245,6 +246,18 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if thid == 0 and self.stats:
                 self.pb.update((i + 1) / total_batches)
 
+    def get_objects_existed(self):
+        return sum([stat["objects_existed"]
+                    for stat in self.actual_stats])
+
+    def get_suceeded_queries(self):
+        return sum([stat["suceeded_queries"]
+                    for stat in self.actual_stats])
+
+    def get_suceeded_commands(self):
+        return sum([stat["suceeded_commands"]
+                    for stat in self.actual_stats])
+
     def query(self, generator, batchsize=1, numthreads=4, stats=False):
         """
         This function takes as input the data to be executed in specified number of threads.
@@ -266,7 +279,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
-                self.db, generator, batchsize, stats=stats)
+                self.__class__, self.db, generator, batchsize, stats=stats)
             self.actual_stats = []
             for result in results:
                 if result is not None:
@@ -281,7 +294,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if stats:
                 self.print_stats()
         else:
-            if len(generator) > 0:
+            # allow subclass to do verification
+            if issubclass(type(self), ParallelQuery) and hasattr(self, 'verify_generator') and callable(self.verify_generator):
+                self.verify_generator(generator)
+            elif len(generator) > 0:
                 if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
                     # if len(generator[0]) > 0:
                     #

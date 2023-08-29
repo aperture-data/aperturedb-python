@@ -52,9 +52,9 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, df=None):
+    def __init__(self, filename, **kwargs):
 
-        super().__init__(filename, df=df)
+        super().__init__(filename, kwargs=kwargs)
 
         self.props_keys = []
         self.constraints_keys = []

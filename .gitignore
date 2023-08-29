@@ -148,5 +148,7 @@ adb-python/*
 docker/notebook/aperturedata/*
 docker/tests/aperturedata/*
 docker/pytorch-gpu/aperturedata/*
+/test/input/
+/test/input/images/
 
 .aperturedb
