@@ -207,7 +207,7 @@ class Connector(object):
             }
         }]
 
-        response, _ = self._query(query, [])
+        response, _ = self._query(query, [], try_resume=False)
 
         logger.info(f"Refresh token response: \r\n{response}")
         if isinstance(response, list):
@@ -281,7 +281,7 @@ class Connector(object):
 
         self.connected = True
 
-    def _query(self, query, blob_array = []):
+    def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
@@ -328,7 +328,12 @@ class Connector(object):
             time.sleep(1)
             self.conn.close()
             self._connect()
-            self._renew_session()
+            # Try to resume the session, in cases where the connection is severed.
+            # For example aperturedb server is restarted, or network is lost.
+            # While this is useful bit of code, when executed in a refresh token
+            # path, this can cause a deadlock. Hence the try_resume flag.
+            if try_resume:
+                self._renew_session()
         if tries == 3:
             raise Exception(
                 f"Could not query apertureDB using TCP.")
