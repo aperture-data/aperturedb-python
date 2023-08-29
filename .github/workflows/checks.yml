@@ -9,12 +9,10 @@ on:
 
 jobs:
   pre-commit:
-
     runs-on: ubuntu-latest
 
     steps:
-
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: actions/setup-python@v3
       with:
@@ -22,6 +20,6 @@ jobs:
 
     - uses: pre-commit/action@v2.0.3
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: luisremis/find-trailing-whitespace@master

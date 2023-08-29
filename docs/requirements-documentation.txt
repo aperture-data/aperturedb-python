@@ -1,8 +1,0 @@
-wheel
-sphinx
-sphinx-autoapi
-sphinx-rtd-theme
-torch
-nbconvert
-ipython
-urllib3<2.0
