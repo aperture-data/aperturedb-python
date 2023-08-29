@@ -11,12 +11,12 @@ class KaggleData(Subscriptable):
     """
     **Class to wrap around a Dataset retrieved from kaggle**
 
-    A DataSet downloaded from kaggle does not implement a standard mechanism to iterate over it's values
-    This class intends to provide an abstracion like that of a pytorch dataset.
-    Where the iteration over Dataset elements yields an atomic record.
+    A DataSet downloaded from kaggle does not implement a standard mechanism to iterate over its values
+    This class intends to provide an abstracion like that of a pytorch dataset
+    where the iteration over Dataset elements yields an atomic record.
 
     .. note::
-        This class should be subclassed with specefic implementations of generate_index and generate_query.
+        This class should be subclassed with specific implementations of generate_index and generate_query.
 
     Example subclass:
 
