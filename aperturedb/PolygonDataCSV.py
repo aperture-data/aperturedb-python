@@ -32,7 +32,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
     **_label**: optionally applies a label to the polygon objects.
 
-    **polygons**: a JSON array of polygon regions. Each polygon region is itself an array of [x,y] vertices that describe the boundary of a single contiguous polygon. See also https://docs.aperturedata.io/parameters/polygons.html.
+    **polygons**: a JSON array of polygon regions. Each polygon region is itself an array of [x,y] vertices that describe the boundary of a single contiguous polygon. See also [Polygon API parameter](query_language/Reference/shared_command_parameters/polygons).
 
     Example csv file::
 
