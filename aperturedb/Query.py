@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 class ObjectType(Enum):
     """
-    Based on : [API description](query_language/Overview/API%20Description)
+    Based on : [API description](/query_language/Overview/API%20Description)
 
     """
     BLOB = "_Blob"
