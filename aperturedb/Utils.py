@@ -129,7 +129,7 @@ class Utils(object):
             }
         }]
 
-        res, _ = self.connector.execute(query)
+        res, _ = self.connector.query(query)
 
         schema = {}
 
