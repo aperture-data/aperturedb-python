@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 class ObjectType(Enum):
     """
-    Based on : https://docs.aperturedata.io/API-Description.html
+    Based on : [API description](/query_language/Overview/API%20Description)
 
     """
     BLOB = "_Blob"

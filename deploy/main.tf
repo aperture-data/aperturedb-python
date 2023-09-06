@@ -58,7 +58,7 @@ data "aws_route53_zone" "domain" {
 
 module "service" {
   source           = "./modules/service"
-  for_each         = toset(["docs", "coverage"])
+  for_each         = toset(["coverage"])
   service          = each.key
   namespace        = kubernetes_namespace.namespace.metadata[0].name
   hosted-zone      = data.aws_route53_zone.domain
