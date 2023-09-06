@@ -25,7 +25,7 @@ IMG_FORMAT    = "format"
 
 class ImageDataProcessor():
     """
-    Processing for Image Data used for Loading
+    **Processing for Image Data used for Loading**
     """
 
     def __init__(self, check_image, n_download_retries):

@@ -20,6 +20,16 @@ logger = logging.getLogger(__name__)
 
 
 class Images(Entities):
+    """
+    **The object mapper representation of images in ApertureDB.**
+
+    This class is a layer on top of the native query.
+    It facilitate interactions with images in the database in pythonic way.
+
+    It abstracts the need to batch the responses, and include utility methods to
+    interconvert the representation into numpy matrices, and find similar images,
+    related bounding boxes, etc.
+    """
     db_object = "_Image"
 
     def inspect(self, use_thumbnails=True) -> Union[Tuple[widgets.IntSlider, widgets.Output], DataFrame]:
@@ -252,11 +262,23 @@ class Images(Entities):
             print(self.db_connector.get_last_response_str())
             raise
 
-    def total_results(self):
+    def total_results(self) -> int:
+        """
+        **Returns the total number of images that matched the query**
+
+        Returns:
+            int: Count of images that match the query.
+        """
 
         return len(self.images_ids)
 
-    def get_image_by_index(self, index):
+    def get_image_by_index(self, index: int):
+        """**Get a single image by it's index in the array of retrieved ids**
+
+        Args:
+            index (int): Position in the image ids retrieved.
+
+        """
 
         if index >= len(self.images_ids):
             logger.info("Index is incorrect")
@@ -273,7 +295,13 @@ class Images(Entities):
 
         return self.images[str(uniqueid)]
 
-    def get_np_image_by_index(self, index):
+    def get_np_image_by_index(self, index: int):
+        """**Retrieves the numpy representation of image from database**
+
+        Args:
+            index (int): Position in the image ids retrieved.
+
+        """
 
         image = self.get_image_by_index(index)
         # Just decode the image from buffer
@@ -284,7 +312,16 @@ class Images(Entities):
 
         return image
 
-    def get_bboxes_by_index(self, index):
+    def get_bboxes_by_index(self, index: int):
+        """
+        **Get related bounding box for the image**
+
+        Args:
+            index (int): Position in the image ids retrieved.
+
+        Returns:
+            _type_: _description_
+        """
         if not self.images_bboxes or not str(self.images_ids[index]) in self.images_bboxes:
             # Fetch when not present in the map.
             self.__retrieve_bounding_boxes(index)
@@ -299,6 +336,16 @@ class Images(Entities):
 
     # A new search will throw away the results of any previous search
     def search(self, constraints=None, operations=None, format=None, limit=None, sort=None):
+        """
+        **Sets a new query to retrieve images parameters as described below**
+
+        Args:
+            constraints (dict, optional): [Constraints](/python_sdk/parameter_wrappers/Constraints). Defaults to None.
+            operations (dict, optional): [Operations](/python_sdk/parameter_wrappers/Operations). Defaults to None.
+            format (str, optional): Format of the returned images. Without this, the images are returned as they are stored. Defaults to None.
+            limit (int, optional): number of values to restrict results to. Defaults to None.
+            sort (dict, optional): [Sort](/python_sdk/parameter_wrappers/Sort). Defaults to None.
+        """
 
         self.constraints = constraints
         self.operations  = operations
@@ -347,7 +394,14 @@ class Images(Entities):
 
         self.search_result = response
 
-    def search_by_property(self, prop_key, prop_values):
+    def search_by_property(self, prop_key: str, prop_values: list):
+        """
+        **Constructs a constraints block and does a new search**
+
+        Args:
+            prop_key (str): Key on which to search
+            prop_values (list): The values that must match for the key.
+        """
         const = Constraints()
         const.is_in(prop_key, prop_values)
         img_sort = {

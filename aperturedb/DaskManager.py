@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class DaskManager:
+    """
+    **Class resposible for setting up a Local cluster and assigning parts
+    of data to each worker**
+    """
+
     def __init__(self, num_workers: int = -1):
         self.__num_workers = num_workers
         # The -1 magic number is to use as many 90% of the cores (1 worker per core).

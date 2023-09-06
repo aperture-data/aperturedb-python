@@ -1,4 +1,9 @@
 class Operations(object):
+    """
+    **Operations that can be performed on the fly on any retrieved images**
+
+    [Supported operations](/query_language/Reference/shared_command_parameters/operations)
+    """
 
     def __init__(self):
 

@@ -73,8 +73,6 @@ class Session():
 
 class Connector(object):
     """
-    .. _connector-label:
-
     **Class to facilitate connections with an instance of aperturedb**
 
     It lets the client execute any query as per the `Native Query specs <https://docs.aperturedata.io/>`_

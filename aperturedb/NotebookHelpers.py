@@ -1,3 +1,7 @@
+"""
+**These are miscelaneous helper methods to render responses from ApertureDB in a jupyter environment.**
+"""
+
 import os
 from typing import List
 import cv2
@@ -23,12 +27,20 @@ class Rectangle:
 
 
 class BoundingBox:
+    """
+    **A class which combines a box and a label.**
+    """
+
     def __init__(self, r: Rectangle = None, label: str = None) -> None:
         self.r = r
         self.label = label
 
 
 class TemporalBoundingBox:
+    """
+    **A class that represents a box, but also associated time in the range of frame start and end**
+    """
+
     def __init__(self, bb: BoundingBox = None, start_frame: int = 0, end_frame = 0) -> None:
         self.bb = bb
         self.start_frame = start_frame
@@ -93,12 +105,25 @@ def save_video(blob, name):
 
 
 def display_video_mp4(blob):
+    """
+    **Display a video using IPython.display**
+
+    Args:
+        blob (bytearray): A blob that is the Video.
+    """
     name = DESTINATION_FOLDER + "/" + "video_tmp.mp4"
     save_video(blob, name)
     ds(Video(name, embed=True))
 
 
-def annotate_video(blob, boxes=[], tags=[], bboxes: List[TemporalBoundingBox] = []):
+def annotate_video(blob, bboxes: List[TemporalBoundingBox] = []):
+    """
+    **Place annotations on a video framewise**
+
+    Args:
+        blob (bytearray): Video blob returned from the database
+        bboxes (List[TemporalBoundingBox], optional): List of boxes to be drawn. Defaults to [].
+    """
     name = DESTINATION_FOLDER + "/" + "video_tmp.mp4"
     save_video(blob, name)
     cap = cv2.VideoCapture(name)

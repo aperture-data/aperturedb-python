@@ -14,8 +14,11 @@ class Entities(Subscriptable):
     """
     This class is the common class to query any entity from apertureDB.
     The specialized subclasses, which provide a more userfriendly interface, are:
-    :class:`~aperturedb.Entities.Images`
-    :class:`~aperturedb.Entities.Polygons`
+    * [Blobs](/python_sdk/object_wrappers/Blobs)
+    * [Bounding Boxes](/python_sdk/object_wrappers/BoundingBoxes)
+    * [Images](/python_sdk/object_wrappers/Images)
+    * [Plygons](/python_sdk/object_wrappers/Polygons)
+    * [Videos](/python_sdk/object_wrappers/Videos)
     """
     db_object = "Entity"
     find_command = f"Find{db_object}"

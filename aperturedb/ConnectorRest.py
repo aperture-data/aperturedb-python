@@ -68,8 +68,6 @@ class Session():
 
 class ConnectorRest(Connector):
     """
-    .. _connector-label:
-
     **Class to use aperturedb's REST interface**
 
     Args:
