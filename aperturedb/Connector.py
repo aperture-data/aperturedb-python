@@ -86,7 +86,7 @@ class Connector(object):
         str (password): Password to specify while connecting to the db.
         str (token): Token to use while connecting to the database.
         bool (use_ssl): Use SSL to encrypt communication with the database.
-        bool (use_keepalive): Set keepalive on the connection with the database.  
+        bool (use_keepalive): Set keepalive on the connection with the database.
             This has two benefits: It reduces the chance of disconnection for a long-running query,
             and it means that diconnections are detected sooner.
             Turn this off to reduce traffic on high-cost network connections.
