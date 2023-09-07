@@ -239,7 +239,6 @@ class Connector(object):
         if self.use_keepalive:
             keepalive.set(self.conn)
 
-
         # TCP_QUICKACK only supported in Linux 2.4.4+.
         # We use startswith for checking the platform following Python's
         # documentation:
