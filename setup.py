@@ -15,7 +15,8 @@ install_requires = ['scikit-image', 'image', 'requests', 'boto3',
                     # Pinning this to be able to install google-cloud-bigquery
                     'grpcio-status==1.48.2',
                     # Pinning this to resolve test errors temporarily
-                    'ipywidgets==8.0.4'
+                    'ipywidgets==8.0.4',
+                    'keepalive-socket==0.0.1'
                     ]
 if OPENCV_VERSION is None:
     install_requires.append('opencv-python')
