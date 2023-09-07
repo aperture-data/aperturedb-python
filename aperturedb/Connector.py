@@ -75,7 +75,7 @@ class Connector(object):
     """
     **Class to facilitate connections with an instance of aperturedb**
 
-    It lets the client execute any query as per the `Native Query specs <https://docs.aperturedata.io/>`_
+    It lets the client execute any query as per the `Native Query specs </category/aperturedb-query-language>`_
 
     Args:
         str (host): Address of the host to connect to.
