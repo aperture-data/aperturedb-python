@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class DaskManager:
     """
-    **Class resposible for setting up a Local cluster and assigning parts
+    **Class responsible for setting up a local cluster and assigning parts
     of data to each worker**
     """
 

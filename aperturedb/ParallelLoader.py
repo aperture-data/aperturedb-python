@@ -10,7 +10,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     """
     **Parallel and Batch Loader for ApertureDB**
 
-    This takes a dataset (which is collection of homogenous objects)
+    This takes a dataset (which is a collection of homogeneous objects)
     or a derived class, and optimally inserts them into databse by splitting them
     into batches, and passing the batches to multiple workers.
     """

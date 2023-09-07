@@ -12,8 +12,8 @@ import pandas as pd
 
 class Entities(Subscriptable):
     """
-    This class is the common class to query any entity from apertureDB.
-    The specialized subclasses, which provide a more userfriendly interface, are:
+    This class is the common class to query any entity from ApertureDB.
+    The specialized subclasses, which provide a more user friendly interface, are:
     * [Blobs](/python_sdk/object_wrappers/Blobs)
     * [Bounding Boxes](/python_sdk/object_wrappers/BoundingBoxes)
     * [Images](/python_sdk/object_wrappers/Images)

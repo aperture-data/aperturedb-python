@@ -12,7 +12,7 @@ class Videos(Entities):
     **The object mapper representation of videos in ApertureDB.**
 
     This class is a layer on top of the native query.
-    It facilitate interactions with videos in the database in pythonic way.
+    It facilitates interactions with videos in the database in the pythonic way.
     """
     db_object = "_Video"
 

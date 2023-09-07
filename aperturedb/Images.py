@@ -26,7 +26,7 @@ class Images(Entities):
     This class is a layer on top of the native query.
     It facilitate interactions with images in the database in pythonic way.
 
-    It abstracts the need to batch the responses, and include utility methods to
+    It abstracts the need to batch the responses, and includes utility methods to
     interconvert the representation into numpy matrices, and find similar images,
     related bounding boxes, etc.
     """
