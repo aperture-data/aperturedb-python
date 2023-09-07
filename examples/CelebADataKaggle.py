@@ -9,6 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class CelebADataKaggle(KaggleData):
+    """
+    **ApertureDB ingestable Dataset based off
+    [CelebA on kaggle](https://www.kaggle.com/datasets/jessicali9530/celeba-dataset)**
+    """
+
     def __init__(self, **kwargs) -> None:
         self.records_count = kwargs["records_count"]
         self.embedding_generator = kwargs["embedding_generator"]

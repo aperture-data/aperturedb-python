@@ -3,6 +3,9 @@ from dataclasses import dataclass
 
 @dataclass(repr=False)
 class Configuration:
+    """
+    **Configuration object for aperturedb sdk to be able to connect to ApertureDB**
+    """
     host: str
     port: int
     username: str

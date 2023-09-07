@@ -10,6 +10,9 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     """
     **Parallel and Batch Loader for ApertureDB**
 
+    This takes a dataset (which is a collection of homogeneous objects)
+    or a derived class, and optimally inserts them into databse by splitting them
+    into batches, and passing the batches to multiple workers.
     """
 
     def __init__(self, db, dry_run=False):
@@ -70,6 +73,15 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             self.create_indices(generator.get_indices())
 
     def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
+        """
+        **Method to ingest data into the database**
+
+        Args:
+            generator (_type_): The list of data, or a class derived from [Subscriptable](/python_sdk/helpers/Subscriptable) to be ingested.
+            batchsize (int, optional): The size of batch to be ussed. Defaults to 1.
+            numthreads (int, optional): Number of workers to create. Defaults to 4.
+            stats (bool, optional): If stats need to be presented, realtime. Defaults to False.
+        """
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
         self.query(generator, batchsize, numthreads, stats)
