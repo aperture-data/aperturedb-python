@@ -138,7 +138,6 @@ build_tests(){
     cp -r aperturedb setup.py README.md requirements.txt docker/tests/aperturedata
     mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
-    cp test/aperturedb/config.json docker/tests/aperturedata/test/aperturedb
 
     echo "Building image $TESTS_IMAGE"
     docker build -t $TESTS_IMAGE --cache-from $TESTS_IMAGE -f docker/tests/Dockerfile .
