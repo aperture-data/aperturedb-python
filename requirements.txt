@@ -11,3 +11,4 @@ facenet-pytorch
 pytest
 coverage
 protobuf
+keepalive-socket==0.0.1
