@@ -60,7 +60,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
     which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
 
     Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
-    using :class:`~aperturedb.ConnectionDataCSV.ConnectionDataCSV`
+    using [ConnectionDataCSV](/python_sdk/data_loaders/csv_wrappers/ConnectionDataCSV)
 
     In the above example, the constraint_UUID ensures that a connection with the specified
     UUID would be only inserted if it does not already exist in the database.

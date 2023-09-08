@@ -8,6 +8,9 @@ class Conjunction(Enum):
 
 
 class Constraints(object):
+    """
+    **Constraints object for the Object mapper API**
+    """
 
     def __init__(self, conjunction: Conjunction = Conjunction.AND):
         self._conjunction = conjunction.value

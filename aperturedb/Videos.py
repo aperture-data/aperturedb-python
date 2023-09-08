@@ -8,6 +8,12 @@ from ipywidgets import widgets
 
 
 class Videos(Entities):
+    """
+    **The object mapper representation of videos in ApertureDB.**
+
+    This class is a layer on top of the native query.
+    It facilitates interactions with videos in the database in the pythonic way.
+    """
     db_object = "_Video"
 
     def getitem(self, idx):

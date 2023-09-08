@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 class ImageDownloaderCSV(CSVParser.CSVParser):
     """**ApertureDB Image Downloader.**
 
-    .. note::
-
-        Expects a csv file with AT LEAST a "url" column, and
-        optionally a "filename" field.
-        If "filename" is not present, it is taken from the url.
+    :::note
+    Expects a csv file with AT LEAST a "url" column, and
+    optionally a "filename" field.
+    If "filename" is not present, it is taken from the url.
+    :::
 
     """
 

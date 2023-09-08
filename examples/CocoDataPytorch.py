@@ -12,10 +12,17 @@ def image_to_byte_array(image: Image) -> bytes:
 
 
 class CocoDataPytorch(PytorchData):
+    """
+    **ApertureDB ingestable Dataset, which is sourced from
+    [CocoDetection (torchvision.datasets)](https://pytorch.org/vision/main/generated/torchvision.datasets.CocoDetection.html#torchvision.datasets.CocoDetection)**
+    """
+
     def __init__(self, dataset_name: str) -> None:
-        # coco dataset loads as an iterable with Tuple (X, [y1, y2 .... yn])
-        # where X is the image (PIL.Image) and y's are multiple dicts with properties like:
-        # area, bbox, category_id, image_id, id, iscrowd, keypoints, num_keypoints, segmentation
+        """
+        COCO dataset loads as an iterable with Tuple (X, [y1, y2 .... yn])
+        where X is the image (PIL.Image) and y's are multiple dicts with properties like:
+        area, bbox, category_id, image_id, id, iscrowd, keypoints, num_keypoints, segmentation
+        """
         coco_detection = CocoDetection(
             root="coco/val2017",
             annFile="coco/annotations/person_keypoints_val2017.json")

@@ -36,6 +36,8 @@ import json
 import ssl
 import logging
 
+import keepalive
+
 from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
@@ -73,11 +75,9 @@ class Session():
 
 class Connector(object):
     """
-    .. _connector-label:
-
     **Class to facilitate connections with an instance of aperturedb**
 
-    It lets the client execute any query as per the `Native Query specs <https://docs.aperturedata.io/>`_
+    It lets the client execute any query as per the `Native Query specs </category/aperturedb-query-language>`_
 
     Args:
         str (host): Address of the host to connect to.
@@ -86,12 +86,17 @@ class Connector(object):
         str (password): Password to specify while connecting to the db.
         str (token): Token to use while connecting to the database.
         bool (use_ssl): Use SSL to encrypt communication with the database.
+        bool (use_keepalive): Set keepalive on the connection with the database.
+            This has two benefits: It reduces the chance of disconnection for a long-running query,
+            and it means that diconnections are detected sooner.
+            Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
     """
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
                  use_ssl=True, shared_data=None, authenticate=True,
+                 use_keepalive=True,
                  config: Configuration = None):
         self.connected = False
         self.last_response   = ''
@@ -101,19 +106,22 @@ class Connector(object):
             self.host = host
             self.port = port
             self.use_ssl = use_ssl
+            self.use_keepalive = use_keepalive
             self.config = Configuration(
                 host=self.host,
                 port=self.port,
                 use_ssl=self.use_ssl,
                 username=user,
                 password=password,
-                name="runtime"
+                name="runtime",
+                use_keepalive=use_keepalive
             )
         else:
             self.config = config
             self.host = config.host
             self.port = config.port
             self.use_ssl = config.use_ssl
+            self.use_keepalive = config.use_keepalive
 
         self._connect()
 
@@ -228,6 +236,8 @@ class Connector(object):
 
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+        if self.use_keepalive:
+            keepalive.set(self.conn)
 
         # TCP_QUICKACK only supported in Linux 2.4.4+.
         # We use startswith for checking the platform following Python's
