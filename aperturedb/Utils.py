@@ -440,7 +440,7 @@ class Utils(object):
             }
         }]
 
-        res, _ = self.query(q)
+        res, _ = self.execute(q)
         total_descriptor_sets = res[0]["FindDescriptorSet"]["count"]
 
         return total_descriptor_sets
