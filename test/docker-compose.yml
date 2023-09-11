@@ -4,10 +4,15 @@ services:
   aperturedb:
     image: aperturedata/aperturedb
     volumes:
-      - ./aperturedb:/aperturedb
+      - ./aperturedb/db:/aperturedb/db
+      - ./aperturedb/logs:/aperturedb/logs
     ports:
       - 55557:55555
     restart: always
+    environment:
+      ADB_KVGD_DB_SIZE: "204800"
+      ADB_LOG_PATH: "logs"
+      ADB_ENABLE_DEBUG: 1
 
   webui:
     image: aperturedata/aperturedb-webui
