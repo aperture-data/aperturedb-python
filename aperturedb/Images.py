@@ -77,6 +77,9 @@ class Images(Entities):
 
         self.images          = {}
         self.images_ids      = []
+        if response is not None:
+            self.images_ids = list(map(lambda x: x["_uniqueid"], response))
+
         self.image_sizes     = []
         self.images_bboxes   = {}
         self.images_polygons = {}
