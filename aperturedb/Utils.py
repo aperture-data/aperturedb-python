@@ -688,8 +688,14 @@ class Utils(object):
             response, _ = self.execute(transaction)
             schema = response[-1]["GetSchema"]
             check_keys = ["connections", "entities"]
-            return schema["status"] == 0 and \
-                all(map(lambda k: schema[k] is None, check_keys))
+            if schema["status"] != 0:
+                logger.error("status is non-zero", str(response))
+            elif schema["connections"] is not None:
+                logger.error("connections is not None", str(response))
+            elif schema["entities"] is not None:
+                logger.error("entities is not None", str(response))
+            else:
+                return True
         except BaseException as e:
             logger.exception(e)
 
