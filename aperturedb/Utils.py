@@ -687,7 +687,6 @@ class Utils(object):
         try:
             response, _ = self.execute(transaction)
             schema = response[-1]["GetSchema"]
-            check_keys = ["connections", "entities"]
             if schema["status"] != 0:
                 logger.error("status is non-zero", str(response))
             elif schema["connections"] is not None:
