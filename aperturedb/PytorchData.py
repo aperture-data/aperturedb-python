@@ -4,6 +4,21 @@ from aperturedb.Subscriptable import Subscriptable
 
 
 class PytorchData(Subscriptable):
+    """
+    **Class to wrap around a Dataset retrieved from torchvision.datasets**
+
+    The dataset in this case can be iterated over to yield atomic records.
+    So the only thing that needs to be implemented is generate_query,
+    which takes an index and returns a query.
+
+    :::note
+    This class should be subclassed with specific implementation generate_query.
+    :::
+
+    Example subclass: [CocoDataPytorch](https://github.com/aperture-data/aperturedb-python/blob/develop/examples/CocoDataPytorch.py)
+
+    """
+
     def __init__(self, dataset: Dataset) -> None:
         self.loaded_dataset = [t for t in dataset]
 
