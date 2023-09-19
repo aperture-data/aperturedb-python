@@ -1,0 +1,48 @@
+[project]
+name = "aperturedb"
+version = "0.4.10"
+description = "ApertureDB Python SDK"
+
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE", classifier = "License :: OSI Approved :: MIT License"}
+keywords = ["aperturedb", "graph", "database", "image", "video", "metadata", "search", "indexing",
+    "machine learning", "computer vision", "deep learning", "neural network", "image processing",
+    "video processing", "metadata processing", "search engine", "indexing engine", "image search",
+    "video search", "metadata search", "image indexing", "video indexing", "metadata indexing",
+    "image processing engine", "video processing engine", "metadata processing engine",
+    "image search engine", "video search engine", "metadata search engine", "image indexing engine",
+    "video indexing engine", "metadata indexing engine", "image processing library", "video processing library",
+    "metadata processing library", "image search library", "video search library", "metadata search library",
+    "image indexing library", "video indexing library", "metadata indexing library"]
+
+authors = [
+    {name = "Engineering", email = "engineering@aperturedata.io"}
+]
+
+dependencies = [
+    # Pin to the bridge version.
+    # https://github.com/tensorflow/tensorflow/issues/60320
+    'protobuf==3.20.3'
+]
+
+[tool.setuptools.package-dir]
+aperturedb = "aperturedb"
+
+[project.urls]
+"Homepage" = "https://github.com/aperture-data/aperturedb-python"
+"Bug Tracker" = "https://github.com/aperture-data/aperturedb-python/issues"
+
+[project.optional-dependencies]
+dev = ["coverage"]
+
+# The following would provide a command line executable called `sample`
+# which executes the function `main` from this package when invoked.
+[project.scripts]  # Optional
+adb = "aperturedb.cli.adb:app"
+
+[build-system]
+# These are the assumed default build requirements from pip:
+# https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
+requires = ["setuptools>=43.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
