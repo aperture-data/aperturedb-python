@@ -65,9 +65,15 @@ class CSVParser(Subscriptable):
             # It'll impact the number of partitions, and memory usage.
             # TODO: tune this for the best performance.
             cores_used = int(CORES_USED_FOR_PARALLELIZATION * mp.cpu_count())
+            blocksize = os.path.getsize(
+                self.filename) // (cores_used * PARTITIONS_PER_CORE)
+            if blocksize == 0:
+                cpus = mp.cpu_count()
+                raise Exception(
+                    f"CSV file too small to be read in parallel. Use normal mode. cpus: {cpus}")
             self.df = dataframe.read_csv(
                 self.filename,
-                blocksize = os.path.getsize(self.filename) // (cores_used * PARTITIONS_PER_CORE))
+                blocksize = blocksize)
 
         # len for dask dataframe needs a client.
         if not self.use_dask and len(self.df) == 0:
