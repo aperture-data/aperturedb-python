@@ -5,7 +5,7 @@ from aperturedb.Subscriptable import Subscriptable
 
 class PyTorchData(Subscriptable):
     """
-    **Class to wrap around a Dataset retrieved from torchvision.datasets**
+    **Class to wrap around a Dataset retrieved from [PyTorch datasets](https://pytorch.org/vision/0.15/datasets.html)**
 
     The dataset in this case can be iterated over.
     So the only thing that needs to be implemented is generate_query,
