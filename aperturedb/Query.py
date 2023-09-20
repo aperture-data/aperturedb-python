@@ -224,7 +224,7 @@ class Query():
         The [specification](/query_language/Overview/API%20Description) for a command to be used in a query.
 
         Args:
-            constraints (Constraints, optional): [Constriants](/query_language/Reference/shared_command_parameters/constraints) . Defaults to None.
+            constraints (Constraints, optional): [Constraints](/query_language/Reference/shared_command_parameters/constraints) . Defaults to None.
             with_class (ObjectType, optional): _description_. Defaults to ObjectType.CUSTOM.
             limit (int, optional): _description_. Defaults to -1.
             sort (Sort, optional): _description_. Defaults to None.
