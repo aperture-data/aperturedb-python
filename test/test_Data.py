@@ -24,6 +24,7 @@ class TestEntityLoader():
 
     def test_Loader(self, utils, insert_data_from_csv):
         classes = ["_Image", "_Descriptor", "Person", "_BoundingBox"]
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
 
         results = [utils.create_entity_index(
@@ -49,6 +50,7 @@ class TestEntityLoader():
         self.assertEqual(len(data), utils.count_bboxes())
 
     def test_LoaderDescriptorsImages(self, utils, insert_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
 
         # Insert Images, images may be there already, and that case should
@@ -76,6 +78,7 @@ class TestEntityLoader():
 
     def test_BlobLoader(self, db, utils, insert_data_from_csv):
         # Assert that we have a clean slate to begin with.
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
 
         data, _ = insert_data_from_csv(in_csv_file = "./input/blobs.adb.csv")
@@ -99,6 +102,7 @@ class TestEntityLoader():
 
     def test_conditional_add(self, utils, insert_data_from_csv):
         logger.debug(f"Cleaning existing data")
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         # insert one of the images from image csv, for bboxes to refer to.
         images, _ = insert_data_from_csv(
@@ -114,6 +118,7 @@ class TestEntityLoader():
         self.assertEqual(1, utils.count_bboxes())
 
     def test_updateif_fails(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         # verifies loading with empty database.
         data, _ = modify_data_from_csv(
@@ -132,6 +137,7 @@ class TestEntityLoader():
             len(list(filter(lambda p: p['age'] >= 200, all_persons))), 0)
 
     def test_updateif_passes(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/persons-update.adb.csv")
@@ -149,6 +155,7 @@ class TestEntityLoader():
 
     # Test updating with conditional for > and only some records being updated
     def test_updateif_partial_age(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/persons-update.adb.csv")
@@ -169,6 +176,7 @@ class TestEntityLoader():
     # ensure blob adding works.
     def test_updateif_add_image(self, db, utils, modify_data_from_csv):
         # load images
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_updateif_baseload.adb.csv")
@@ -194,6 +202,7 @@ class TestEntityLoader():
         big_img_size = self.get_first_image_size(
             "./input/images_updateif_fail_updates.adb.csv")
 
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_updateif_fail_baseload.adb.csv")
@@ -218,6 +227,7 @@ class TestEntityLoader():
 
     # ensure ImageForceNewestCSV can create images and then only create the additional ones in mixednew.
     def test_imageforce_load_base(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_forceupdate_baseload.adb.csv")
@@ -231,6 +241,7 @@ class TestEntityLoader():
     def test_imageforce_load_nonupdate(self, db, utils, modify_data_from_csv):
         big_img_size = self.get_first_image_size(
             "./input/images_updateif_fail_updates.adb.csv")
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_forceupdate_fail_base.adb.csv")
@@ -252,6 +263,7 @@ class TestEntityLoader():
     def test_imageforce_update(self, db, utils, modify_data_from_csv):
         big_img_size = self.get_first_image_size(
             "./input/images_updateif_fail_updates.adb.csv")
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_forceupdate_blob_baseload.adb.csv")
@@ -269,6 +281,7 @@ class TestEntityLoader():
         self.assertEqual(len(images), utils.count_images())
 
     def test_image_sparse(self, db, utils, modify_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())
         data, _ = modify_data_from_csv(
             in_csv_file = "./input/images_sparseload_base.adb.csv")
@@ -341,18 +354,21 @@ class TestURILoader():
                 "Expected {}, got {}".format(expected, actual))
 
     def test_S3Loader(self, utils, insert_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertEqual(utils.remove_all_objects(), True)
         data, _ = insert_data_from_csv(
             in_csv_file = "./input/s3_images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
 
     def test_HttpImageLoader(self, utils, insert_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertEqual(utils.remove_all_objects(), True)
         data, _ = insert_data_from_csv(
             in_csv_file = "./input/http_images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
 
     def test_GSImageLoader(self, utils, insert_data_from_csv):
+        self.assertTrue(utils.remove_all_indexes())
         self.assertEqual(utils.remove_all_objects(), True)
         data, _ = insert_data_from_csv(
             in_csv_file = "./input/gs_images.adb.csv")

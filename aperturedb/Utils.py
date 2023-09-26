@@ -663,6 +663,42 @@ class Utils(object):
 
         return total
 
+    def remove_all_indexes(self):
+        """Remove all indexes from the database.
+
+        This may improve the performance of remove_all_objects.
+        It may improve or degrade the performance of other operations.
+
+        Note that this only removes populated indexes.
+        """
+        def find_indexes(schema):
+            typemap = dict(entities="entity", connections="connection")
+            for typ, data in schema['GetSchema'].items():
+                if typ in typemap and type(data) == dict and 'classes' in data:
+                    for clas, classdata in data['classes'].items():
+                        if 'properties' in classdata and classdata['properties']:
+                            for property_key, (_, indexed, _) in classdata['properties'].items():
+                                if indexed:
+                                    yield {"index_type": typemap[typ], "class": clas, "property_key": property_key}
+
+        try:
+            r, _  = self.execute([{"GetSchema": {}}])
+            schema = r[0]
+            indexes = list(find_indexes(schema))
+            query = [{"RemoveIndex": index} for index in indexes]
+            query.append({"GetSchema": {}})
+            r2, _ = self.execute(query)
+            schema2 = r2[-1]
+            indexes2 = list(find_indexes(schema2))
+            if indexes2:
+                logger.error("Failed to remove all indexes", indexes2)
+                return False
+        except BaseException as e:
+            logger.exception(e)
+            return False
+
+        return True
+
     def remove_all_objects(self):
 
         cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
