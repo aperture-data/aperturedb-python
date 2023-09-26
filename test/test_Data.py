@@ -354,21 +354,21 @@ class TestURILoader():
                 "Expected {}, got {}".format(expected, actual))
 
     def test_S3Loader(self, utils, insert_data_from_csv):
-        self.assertTrue(utils.remove_all_indexes())
+        self.assertEqual(utils.remove_all_indexes(), True)
         self.assertEqual(utils.remove_all_objects(), True)
         data, _ = insert_data_from_csv(
             in_csv_file = "./input/s3_images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
 
     def test_HttpImageLoader(self, utils, insert_data_from_csv):
-        self.assertTrue(utils.remove_all_indexes())
+        self.assertEqual(utils.remove_all_indexes(), True)
         self.assertEqual(utils.remove_all_objects(), True)
         data, _ = insert_data_from_csv(
             in_csv_file = "./input/http_images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
 
     def test_GSImageLoader(self, utils, insert_data_from_csv):
-        self.assertTrue(utils.remove_all_indexes())
+        self.assertEqual(utils.remove_all_indexes(), True)
         self.assertEqual(utils.remove_all_objects(), True)
         data, _ = insert_data_from_csv(
             in_csv_file = "./input/gs_images.adb.csv")
