@@ -17,7 +17,7 @@ RUN  chmod 755 /start.sh
 # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
 # RUN chmod +x /usr/bin/tini
 # ENTRYPOINT ["/usr/bin/tini", "--"]
-RUN cd /aperturedata && pip install -e .
+RUN cd /aperturedata && pip install -e ".[notebook]"
 
 EXPOSE 8888
 CMD ["/start.sh"]
