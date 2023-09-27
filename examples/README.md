@@ -33,7 +33,7 @@ The following files are under *image_classification*
 This needs a bit of extra setup.
 - Install the dependent packages using the commands as shown, in the top level path of this repo.
 ```
-pip install -r requirements.txt && pip install .
+pip install ".[complete]"
 
 ```
 - Setup kaggle account and the API token as per the official [kagggle api guide](https://github.com/Kaggle/kaggle-api).

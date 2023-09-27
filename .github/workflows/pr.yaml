@@ -64,7 +64,7 @@ jobs:
     - name: Build tests on pytorch GPU image
       run: |
         mkdir -p docker/pytorch-gpu/aperturedata
-        cp -r aperturedb setup.py README.md test requirements.txt docker/pytorch-gpu/aperturedata
+        cp -r aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata
         bash docker/pytorch-gpu/build.sh
       shell: bash
 

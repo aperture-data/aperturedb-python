@@ -135,7 +135,7 @@ build_tests(){
     TESTS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:latest
     mkdir -p docker/tests/aperturedata
     sudo rm -rf test/aperturedb/db
-    cp -r aperturedb pyproject.toml README.md requirements.txt docker/tests/aperturedata
+    cp -r aperturedb pyproject.toml README.md docker/tests/aperturedata
     mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
 
