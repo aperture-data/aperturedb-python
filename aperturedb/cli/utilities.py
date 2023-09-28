@@ -30,7 +30,7 @@ def execute(command: CommandTypes):
     available_commands = {
         CommandTypes.SUMMARY: utils.summary,
         CommandTypes.REMOVE_ALL: lambda: confirm(
-            CommandTypes.REMOVE_ALL) and utils.remove_all_objects()
+            CommandTypes.REMOVE_ALL) and utils.remove_all_objects(),
         CommandTypes.REMOVE_INDEXES: lambda: confirm(
             CommandTypes.REMOVE_INDEXES) and utils.remove_all_indexes(),
     }
