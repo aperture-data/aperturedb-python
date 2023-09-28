@@ -12,7 +12,7 @@ elements in ApertureDB at the object level.
 * Images.py provides the Object-Mapper for image related objetcs (images, bounding boxes, etc)
 * NotebookHelpers.py provides helpers to show images/bounding boxes on Jupyter Notebooks
 
-For more information, visit https://python.docs.aperturedata.io
+For more information, visit https://docs.aperturedata.io/category/aperturedb-python-sdk
 
 # Running tests.
 The tests are inside the test dir.
