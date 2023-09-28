@@ -1,6 +1,6 @@
 [project]
 name = "aperturedb"
-version = "0.4.10"
+dynamic = ["version"]
 description = "ApertureDB Python SDK"
 
 readme = "README.md"
@@ -76,3 +76,6 @@ adb = "aperturedb.cli.adb:app"
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
 requires = ["setuptools>=43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "aperturedb.__version__"}

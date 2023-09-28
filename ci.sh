@@ -55,13 +55,11 @@ update_version() {
     echo "Updating version $BUILD_VERSION to $VERSION_BUMP"
     # Replace version in __init__.py
     printf '%s\n' "%s/__version__ = .*/__version__ = \"$VERSION_BUMP\"/g" 'x' | ex aperturedb/__init__.py
-    printf '%s\n' "%s/version=.*/version=\"$VERSION_BUMP\",/g" 'x' | ex setup.py
 
     # Commit and push version bump
     git config --local user.name "github-actions[bot]"
     git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
     git add ./aperturedb/__init__.py
-    git add ./setup.py
     git commit -m "Version bump: ${BUILD_VERSION} to ${VERSION_BUMP}"
     git push --set-upstream origin $BRANCH_NAME
     BUILD_VERSION=$VERSION_BUMP
