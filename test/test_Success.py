@@ -14,6 +14,7 @@ class TestLoaderSuccess():
 
     def test_Loader(self, utils, insert_data_from_csv):
         # Assert that we have a clean slate to begin with.
+        assert utils.remove_all_indexes()
         assert utils.remove_all_objects() == True
         # initial load
         data, _ = insert_data_from_csv(
@@ -32,6 +33,7 @@ class TestLoaderSuccess():
         ParallelQuery.setSuccessStatus([0])
 
         # Assert that we have a clean slate to begin with.
+        assert utils.remove_all_indexes()
         assert utils.remove_all_objects() == True
         # initial load
         data, _ = insert_data_from_csv(
