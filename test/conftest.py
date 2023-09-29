@@ -77,7 +77,7 @@ def insert_data_from_csv(db, request):
     used to parse semantics of the .csv file
     """
     def insert_data_from_csv(in_csv_file, rec_count=-1, expected_error_count=0, loader_result_lambda=None):
-        if rec_count > 0 and rec_count < 80:
+        if rec_count > 0 and rec_count < 80 or "descriptorset" in in_csv_file:
             request.param = False
             print("Not enough records to test parallel loader. Using serial loader.")
         file_data_pair = {
