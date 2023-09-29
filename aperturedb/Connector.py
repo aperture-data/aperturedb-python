@@ -107,6 +107,7 @@ class Connector(object):
             self.port = port
             self.use_ssl = use_ssl
             self.use_keepalive = use_keepalive
+            # Create a configuration object, to show better error messages
             self.config = Configuration(
                 host=self.host,
                 port=self.port,
@@ -123,7 +124,11 @@ class Connector(object):
             self.use_ssl = config.use_ssl
             self.use_keepalive = config.use_keepalive
 
-        self._connect()
+        self.conn = None
+
+        while not self.connected:
+            self.connect(details="Will retry in 10 seconds")
+            time.sleep(10)
 
         if authenticate:
             self.authenticate(shared_data, user, password, token)
@@ -141,8 +146,9 @@ class Connector(object):
             self.shared_data = shared_data
 
     def __del__(self):
-        self.conn.close()
-        self.connected = False
+        if self.connected:
+            self.conn.close()
+            self.connected = False
 
     def _send_msg(self, data):
         sent_len = struct.pack('@I', len(data))  # send size first
@@ -286,10 +292,23 @@ class Connector(object):
             logger.error(f"Error connecting to server: {str(e)} {self.config}")
             self.conn.close()
             self.connected = False
-            raise ConnectionError(
-                f"Failed to connect to ApertureDB {self.config}")
+            raise
 
         self.connected = True
+
+    def connect(self, details: str = None):
+        self.connected = False
+        if not self.connected:
+            # Connection is not established, keep trying.
+            # nothing else will work until this is done.
+            # This can help to get going amidst server restarts.
+            try:
+                self._connect()
+            except socket.error as e:
+                logger.warning(
+                    f"Failed to connect to apertureDB server. \r\n{details}.\r\nDetails: \r\n\
+                        {traceback.format_exc()}\r\nat ")
+                logger.warning("\r\n".join(traceback.format_stack(limit=5)))
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
@@ -298,9 +317,6 @@ class Connector(object):
             query_str = json.dumps(query)
         else:
             query_str = query
-
-        if not self.connected:
-            return "NOT CONNECTED"
 
         query_msg = queryMessage_pb2.queryMessage()
         # query has .json and .blobs
@@ -316,6 +332,7 @@ class Connector(object):
         # Serialize with protobuf and send
         data = query_msg.SerializeToString()
 
+        # this is for session refresh attempts
         tries = 0
         while tries < 3:
             try:
@@ -337,7 +354,12 @@ class Connector(object):
                 f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
             time.sleep(1)
             self.conn.close()
-            self._connect()
+            self.connected = False
+            while self.shared_data.session.valid() and not self.connected:
+                self.connect(
+                    details="Will retry in 10 second, till session expires")
+                time.sleep(10)
+
             # Try to resume the session, in cases where the connection is severed.
             # For example aperturedb server is restarted, or network is lost.
             # While this is useful bit of code, when executed in a refresh token
@@ -383,8 +405,9 @@ class Connector(object):
             self.last_query_time = time.time() - start
             return self.response, self.blobs
         except BaseException as e:
-            logger.critical(e)
-            raise ConnectionError("ApertureDB disconnected")
+            logger.critical(traceback.format_exc(limit=10))
+            logger.critical("\r\n".join(traceback.format_stack(limit=10)))
+            raise
 
     def _renew_session(self):
         count = 0
