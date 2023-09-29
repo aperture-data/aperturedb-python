@@ -66,12 +66,12 @@ resource "kubernetes_ingress_v1" "server" {
     namespace = var.namespace
     name      = var.service
     annotations = {
-      "kubernetes.io/ingress.class"    = "nginx"
       "kubernetes.io/tls-acme"         = true
       "cert-manager.io/cluster-issuer" = local.cluster-issuer
     }
   }
   spec {
+    ingress_class_name = "nginx"
     tls {
       hosts       = [local.url]
       secret_name = var.service
@@ -94,5 +94,4 @@ resource "kubernetes_ingress_v1" "server" {
       }
     }
   }
-  wait_for_load_balancer = true
 }
