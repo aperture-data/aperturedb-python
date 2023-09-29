@@ -46,7 +46,7 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
                 b_count = 0
                 for req, resp in zip(q[start:end], r[start:end]):
                     for k in req:
-                        # Ref to https://docs.aperturedata.io/parameters/blobs.html
+                        # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
                         blobs_where_default_true = \
                             k in ["FindImage", "FindBlob"] and (
                                 "blobs" not in req[k] or req[k]["blobs"])
