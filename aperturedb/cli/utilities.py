@@ -21,6 +21,7 @@ def confirm(command: CommandTypes):
     if response.lower() != "y":
         typer.echo("Aborting...")
         raise typer.Abort()
+    return True
 
 
 @app.command()
@@ -29,9 +30,9 @@ def execute(command: CommandTypes):
     available_commands = {
         CommandTypes.SUMMARY: utils.summary,
         CommandTypes.REMOVE_ALL: lambda: confirm(
-            CommandTypes.REMOVE_ALL) and utils.remove_all_objects,
+            CommandTypes.REMOVE_ALL) and utils.remove_all_objects(),
         CommandTypes.REMOVE_INDEXES: lambda: confirm(
-            CommandTypes.REMOVE_INDEXES) and utils.remove_all_indexes,
+            CommandTypes.REMOVE_INDEXES) and utils.remove_all_indexes(),
     }
 
     available_commands[command]()
