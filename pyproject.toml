@@ -44,15 +44,15 @@ notebook = [
     "tensorflow",
     "facenet-pytorch",
 ]
-# User install requirements
+# User install requirements, guaranteed to be pip installable
 complete = [
-    "torch",
-    "torchvision",
-    "tensorflow",
+    "torch==2.0.1",
+    "torchvision==0.15.2",
+    "tensorflow==2.14.0",
+    "facenet-pytorch==2.5.3",
     "opencv-python",
-    "facenet-pytorch",
 ]
-# Dev install requirements
+# Dev install requirements, bleeding edge, will break CI.
 dev = [
     "torch",
     "torchvision",

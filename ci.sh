@@ -141,6 +141,14 @@ build_tests(){
     docker build -t $TESTS_IMAGE --cache-from $TESTS_IMAGE -f docker/tests/Dockerfile .
 }
 
+build_complete(){
+    COMPLETE_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:complete
+    mkdir -p docker/complete/aperturedata
+    cp -r aperturedb pyproject.toml README.md LICENSE
+
+    echo "Building image $COMPLETE_IMAGE"
+    docker build -t $COMPLETE_IMAGE --cache-from $COMPLETE_IMAGE -f docker/complete/Dockerfile .
+}
 
 build_notebook_dependencies_image(){
     DEPS_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook:dependencies
@@ -235,4 +243,9 @@ fi
 if [ -z ${EXCLUDE_DEPLOY+x} ]
 then
     deploy_terraform
+fi
+
+if [ -z ${EXCLUDE_BUILD_COMPLETE+x} ]
+then
+    build_complete
 fi
