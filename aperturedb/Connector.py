@@ -97,6 +97,8 @@ class Connector(object):
                  user="", password="", token="",
                  use_ssl=True, shared_data=None, authenticate=True,
                  use_keepalive=True,
+                 retry_connect_interval_seconds=10,
+                 retry_connect_max_attempts=0,
                  config: Configuration = None):
         self.connected = False
         self.last_response   = ''
@@ -115,7 +117,9 @@ class Connector(object):
                 username=user,
                 password=password,
                 name="runtime",
-                use_keepalive=use_keepalive
+                use_keepalive=use_keepalive,
+                retry_connect_interval_seconds=retry_connect_interval_seconds,
+                retry_connect_max_attempts=retry_connect_max_attempts
             )
         else:
             self.config = config
@@ -125,10 +129,18 @@ class Connector(object):
             self.use_keepalive = config.use_keepalive
 
         self.conn = None
+        connect_attempts = 1
+        while True:
+            self.connect(
+                details=f"Will retry in {self.config.retry_connect_interval_seconds} seconds")
+            if self.connected or connect_attempts == self.config.retry_connect_max_attempts:
+                break
+            time.sleep(self.config.retry_connect_interval_seconds)
+            connect_attempts += 1
 
-        while not self.connected:
-            self.connect(details="Will retry in 10 seconds")
-            time.sleep(10)
+        if not self.connected:
+            raise Exception(
+                f"Could not connect to apertureDB server: {self.config}")
 
         if authenticate:
             self.authenticate(shared_data, user, password, token)
@@ -305,6 +317,8 @@ class Connector(object):
             try:
                 self._connect()
             except socket.error as e:
+                logger.error(
+                    f"Error connecting to server: {self.config}. See error log for details.\r\n{details}")
                 logger.warning(
                     f"Failed to connect to apertureDB server. \r\n{details}.\r\nDetails: \r\n\
                         {traceback.format_exc()}\r\nat ")
@@ -355,10 +369,12 @@ class Connector(object):
             time.sleep(1)
             self.conn.close()
             self.connected = False
-            while self.shared_data.session.valid() and not self.connected:
+            while True:
                 self.connect(
-                    details="Will retry in 10 second, till session expires")
-                time.sleep(10)
+                    details=f"Will retry in {self.config.retry_connect_interval_seconds} second, till session expires")
+                if self.connected or not self.shared_data.session.valid():
+                    break
+                time.sleep(self.config.retry_connect_interval_seconds)
 
             # Try to resume the session, in cases where the connection is severed.
             # For example aperturedb server is restarted, or network is lost.
