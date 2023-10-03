@@ -358,11 +358,15 @@ class Connector(object):
                         response_blob_array = [b for b in querRes.blobs]
                         self.last_response = json.loads(querRes.json)
                         break
-            except ssl.SSLError as e:
+            except ssl.SSLError as ssle:
                 # This can happen in a scenario where multiple
                 # processes might be accessing a single connection.
                 # The copy does not make usable connections.
-                logger.warning(f"Socket error on process {os.getpid()}")
+                logger.exception(ssle)
+                logger.warning(f"SSL error on process {os.getpid()}")
+            except OSError as ose:
+                logger.exception(ose)
+                logger.warning(f"OS error on process {os.getpid()}")
             tries += 1
             logger.warning(
                 f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
