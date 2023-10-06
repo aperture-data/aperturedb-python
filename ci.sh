@@ -144,7 +144,7 @@ build_tests(){
 build_complete(){
     COMPLETE_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:complete
     mkdir -p docker/complete/aperturedata
-    cp -r aperturedb pyproject.toml README.md LICENSE
+    cp -r aperturedb pyproject.toml README.md LICENSE docker/complete/aperturedata
 
     echo "Building image $COMPLETE_IMAGE"
     docker build -t $COMPLETE_IMAGE --cache-from $COMPLETE_IMAGE -f docker/complete/Dockerfile .
