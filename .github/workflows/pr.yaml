@@ -35,7 +35,7 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-      run: 'EXCLUDE_DEPLOY=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
+      run: 'EXCLUDE_BUILD_COMPLETE=1 EXCLUDE_DEPLOY=1 NO_PUSH=1 BRANCH_NAME=${{ github.event.pull_request.head.ref }} ./ci.sh'
       shell: bash
 
   run_test_conda_gpu:
@@ -64,7 +64,7 @@ jobs:
     - name: Build tests on pytorch GPU image
       run: |
         mkdir -p docker/pytorch-gpu/aperturedata
-        cp -r aperturedb setup.py README.md test requirements.txt docker/pytorch-gpu/aperturedata
+        cp -r aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata
         bash docker/pytorch-gpu/build.sh
       shell: bash
 

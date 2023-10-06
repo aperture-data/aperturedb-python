@@ -1,29 +1,49 @@
 # ApertureDB Client Python Module
 
-This is the python client module for ApertureDB.
+This is the python sdk for building applications with [ApertureDB](https://docs.aperturedata.io/Introduction/WhatIsAperture).
 
-It provides a connector to AperetureDB instances using
-the open source connector for [VDMS](https://github.com/IntelLabs/vdms).
+This comprises of utilities to get Data in and out of ApertureDB in an optimal manner.
+A quick [getting started guide](https://docs.aperturedata.io/HowToGuides/start/Setup) is useful to start building with this sdk.
+For more concrete examples, please refer to:
+* [Simple examples and concepts](https://docs.aperturedata.io/category/simple-usage-examples)
+* [Advanced usage examples](https://docs.aperturedata.io/category/advanced-usage-examples)
 
-It also implements an Object-Mapper API to interact with
-elements in ApertureDB at the object level.
+# Installing in a custom virtual enviroment.
+```bash
+pip install aperturedb[complete]
+```
 
-* Utils.py provides helper methods to retrieve information about the db.
-* Images.py provides the Object-Mapper for image related objetcs (images, bounding boxes, etc)
-* NotebookHelpers.py provides helpers to show images/bounding boxes on Jupyter Notebooks
+or an installation with only the core part of the SDK
+```bash
+pip install aperturedb
+```
 
-For more information, visit https://docs.aperturedata.io/category/aperturedb-python-sdk
+A complete [reference](https://docs.aperturedata.io/category/aperturedb-python-sdk) of this SDK is available on the offical [ApertureDB Documentation](https://docs.aperturedata.io)
+
+
+# Dvelopment setup.
+The recommended way is to clone this repo, and do an editable install as follows:
+```bash
+git clone https://github.com/aperture-data/aperturedb-python.git
+cd aperturedb-python
+pip install -e .[dev]
+```
+
 
 # Running tests.
 The tests are inside the test dir.
 
 All the tests can be run with:
 
-``bash run_test.sh``
+```bash
+bash run_test.sh
+```
 
 Running specefic tests can be accomplished by invoking it with pytest as follows:
 
-``cd test && docker compose up -d && PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m python -m pytest test_Session.py -v --log-cli-level=DEBUG``
+```bash
+cd test && docker compose up -d && PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m python -m pytest test_Session.py -v --log-cli-level=DEBUG
+```
 
 # Reporting bugs.
 Any error in the functionality / documentation / tests maybe reported by creating a
