@@ -13,16 +13,55 @@ from aperturedb.VideoDataCSV import VideoDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 
-
 from aperturedb.Utils import create_connector
 from aperturedb.Query import ObjectType
 from aperturedb.cli.console import console
+
+import importlib
+import os
+import sys
 
 logger = logging.getLogger(__file__)
 app = typer.Typer()
 
 
 IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
+
+
+@app.command()
+def from_data(filepath: Annotated[str, typer.Argument(help="Path to python module for ingestion")],
+              sample_count: Annotated[int, typer.Option(
+                  help="Number of samples to ingest")] = 1,
+              debug: Annotated[bool, typer.Option(
+                  help="Debug mode")] = False,
+              batchsize: Annotated[int, typer.Option(
+                  help="Size of the batch")] = 1,
+              num_workers: Annotated[int, typer.Option(
+                  help="Number of workers for ingestion")] = 1,
+              ):
+    """
+    Ingest data from a python file.
+    """
+    db = create_connector()
+    loader = ParallelLoader(db)
+    module_name = os.path.basename(filepath)[:-3]
+    spec = importlib.util.spec_from_file_location(module_name, filepath)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    mclass = getattr(module, module_name)
+    data = mclass()
+
+    if debug:
+        import json
+        print(f"len(data)={len(data)}")
+        for q, b in data[0:sample_count]:
+            with open(module_name + ".json", "w") as f:
+                f.write(json.dumps(q[0]))
+            b[0].save(module_name + ".jpg")
+    else:
+        loader.ingest(data[:sample_count], stats=True,
+                      batchsize=batchsize, numthreads=num_workers)
 
 
 @app.command()
