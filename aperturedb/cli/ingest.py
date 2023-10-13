@@ -29,18 +29,19 @@ IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
 
 
 @app.command()
-def from_data(filepath: Annotated[str, typer.Argument(help="Path to python module for ingestion")],
-              sample_count: Annotated[int, typer.Option(
-                  help="Number of samples to ingest")] = 1,
-              debug: Annotated[bool, typer.Option(
-                  help="Debug mode")] = False,
-              batchsize: Annotated[int, typer.Option(
-                  help="Size of the batch")] = 1,
-              num_workers: Annotated[int, typer.Option(
-                  help="Number of workers for ingestion")] = 1,
-              ):
+def from_data(filepath: Annotated[str, typer.Argument(
+    help="Path to python module for ingestion [BETA]")],
+    sample_count: Annotated[int, typer.Option(
+        help="Number of samples to ingest")] = 1,
+    debug: Annotated[bool, typer.Option(
+        help="Debug mode")] = False,
+    batchsize: Annotated[int, typer.Option(
+        help="Size of the batch")] = 1,
+    num_workers: Annotated[int, typer.Option(
+        help="Number of workers for ingestion")] = 1,
+):
     """
-    Ingest data from a python file.
+    Ingest data from a Data generator.
     """
     db = create_connector()
     loader = ParallelLoader(db)
@@ -55,13 +56,20 @@ def from_data(filepath: Annotated[str, typer.Argument(help="Path to python modul
     if debug:
         import json
         print(f"len(data)={len(data)}")
-        for q, b in data[0:sample_count]:
-            with open(module_name + ".json", "w") as f:
-                f.write(json.dumps(q[0]))
-            b[0].save(module_name + ".jpg")
+        for i, r in enumerate(data[0:sample_count]):
+            q, b = r
+            with open(module_name + f"_{i}" + ".json", "w") as f:
+                f.write(json.dumps(q))
+            for j, blob in enumerate(b):
+                with open(module_name + f"_{i}_{j}" + ".jpg", "wb") as f:
+                    f.write(blob)
+                # blob.save(module_name + f"_{i}_{j}" + ".jpg")
     else:
-        loader.ingest(data[:sample_count], stats=True,
-                      batchsize=batchsize, numthreads=num_workers)
+        loader.ingest(
+            data[:sample_count],
+            stats=True,
+            batchsize=batchsize,
+            numthreads=num_workers)
 
 
 @app.command()
@@ -79,6 +87,9 @@ def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for inges
              blobs_relative_to_csv: Annotated[bool, typer.Option(
                  help="If true, the blob path is relative to the csv file")] = True,
              ):
+    """
+    Ingest data from a pre generated CSV file.
+    """
 
     ingest_types = {
         IngestType.BLOB: BlobDataCSV,
