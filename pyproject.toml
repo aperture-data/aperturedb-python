@@ -63,7 +63,8 @@ dev = [
     "autopep8",
     "pre-commit",
     "pytest",
-    "build"
+    "build",
+    "fuse-python ; platform_system == 'Linux'"
 ]
 
 # The following would provide a command line executable called `sample`

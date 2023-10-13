@@ -37,16 +37,19 @@ def generate_coco_meta_data(images: Images):
     ]
 
     # Hardcoded for now
-    meta_categories = [{
-        "id": 1,
-        "name": "celebreties",
-        "supercategory": "people"
-    }, {
-        "id": 2,
-        "name": "Face points",
-        "keypoints": ["lefteye", "righteyee", "nose", "leftmouth", "rightmouth"],
-        "skeleton": [[0, 1, 3, 4], [2, 3, 4]]
-    }]
+
+    # meta_categories = [{
+    #     "id": 1,
+    #     "name": "celebreties",
+    #     "supercategory": "people"
+    # }, {
+    #     "id": 2,
+    #     "name": "Face points",
+    #     "keypoints": ["lefteye", "righteyee", "nose", "leftmouth", "rightmouth"],
+    #     "skeleton": [[0, 1, 3, 4], [2, 3, 4]]
+    # }]
+
+    meta_categories = []
 
     for i, p in enumerate(images.get_props_names()):
         meta_categories.append({
@@ -83,22 +86,23 @@ def generate_coco_meta_data(images: Images):
             } for ind, info in enumerate(images.images_ids)
         ]
 
-        for i, p in enumerate(properties):
-            ckps = []
-            kps = properties[p]["keypoints"].split(" ")[1:]
-            for i in range(0, len(kps), 2):
-                ckps.append(float(kps[i]))
-                ckps.append(float(kps[i + 1]))
-                ckps.append(2)
-            meta_annotations.append(
-                {
-                    "id": 2 * i + 1,
-                    "image_id": p,
-                    "keypoints": ckps,
-                    "num_keypoints": 5,
-                    "category_id": 2
-                }
-            )
+        if "keypoints" in properties:
+            for i, p in enumerate(properties):
+                ckps = []
+                kps = properties[p]["keypoints"].split(" ")[1:]
+                for i in range(0, len(kps), 2):
+                    ckps.append(float(kps[i]))
+                    ckps.append(float(kps[i + 1]))
+                    ckps.append(2)
+                meta_annotations.append(
+                    {
+                        "id": 2 * i + 1,
+                        "image_id": p,
+                        "keypoints": ckps,
+                        "num_keypoints": 5,
+                        "category_id": 2
+                    }
+                )
 
         meta_data = bytes(json.dumps({
             "licenses": meta_licenses,

@@ -1,0 +1,12 @@
+[
+    { "FindImage" : {
+        "blobs": false,
+        "constraints": {
+            "Bald": ["!=", null]
+        },
+        "results" : {
+            "list": ["_uniqueid"],
+            "limit": 10
+        }
+    }}
+]
