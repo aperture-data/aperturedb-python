@@ -1,0 +1,26 @@
+[
+    { "FindImage" : {
+        "blobs": false,
+        "constraints": {
+            "any": {
+                "Bald": ["!=", null]
+            }
+        },
+        "results" : {
+            "list": ["_uniqueid"],
+            "limit": 10
+        }
+    }},
+    { "FindImage" : {
+        "blobs": false,
+        "constraints": {
+            "any": {
+                "yfcc_id": ["!=", null]
+            }
+        },
+        "results" : {
+            "list": ["_uniqueid"],
+            "limit": 10
+        }
+    }}
+]
