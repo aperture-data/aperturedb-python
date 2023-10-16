@@ -252,9 +252,10 @@ class Images(Entities):
 
             bboxes = []
             tags   = []
-            for bbox in res[1]["FindBoundingBox"]["entities"]:
-                bboxes.append(bbox["_coordinates"])
-                tags.append(bbox[self.bbox_label_prop])
+            if "entities" in res[1]["FindBoundingBox"]:
+                for bbox in res[1]["FindBoundingBox"]["entities"]:
+                    bboxes.append(bbox["_coordinates"])
+                    tags.append(bbox[self.bbox_label_prop])
 
             uniqueid_str = str(uniqueid)
             self.images_bboxes[uniqueid_str] = {}
