@@ -176,7 +176,7 @@ class ADFS(Fuse):
             filegen = set()
             for iid in self.properties:
                 filegen.add((f"{iid}.jpg",
-                             self.properties[iid]["image_size"]))
+                             self.properties[iid]["adb_image_size"]))
 
             direntries = [('.', 4096), ('..', 4096)] + [f for f in filegen]
         print(direntries)
