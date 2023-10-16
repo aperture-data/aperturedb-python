@@ -63,7 +63,6 @@ def from_data(filepath: Annotated[str, typer.Argument(
             for j, blob in enumerate(b):
                 with open(module_name + f"_{i}_{j}" + ".jpg", "wb") as f:
                     f.write(blob)
-                # blob.save(module_name + f"_{i}_{j}" + ".jpg")
     else:
         loader.ingest(
             data[:sample_count],
