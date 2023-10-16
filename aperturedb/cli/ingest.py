@@ -16,6 +16,7 @@ from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.Utils import create_connector
 from aperturedb.Query import ObjectType
 from aperturedb.cli.console import console
+from aperturedb.transformers.adb_image_properties import ADBImageProperties
 
 import importlib
 import os
@@ -29,7 +30,7 @@ IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
 
 
 @app.command()
-def from_data(filepath: Annotated[str, typer.Argument(
+def from_generator(filepath: Annotated[str, typer.Argument(
     help="Path to python module for ingestion [BETA]")],
     sample_count: Annotated[int, typer.Option(
         help="Number of samples to ingest")] = 1,
@@ -39,6 +40,8 @@ def from_data(filepath: Annotated[str, typer.Argument(
         help="Size of the batch")] = 1,
     num_workers: Annotated[int, typer.Option(
         help="Number of workers for ingestion")] = 1,
+    apply_image_properties: Annotated[bool, typer.Option(
+        help="Apply image properties to the AddImage command")] = True,
 ):
     """
     Ingest data from a Data generator.
@@ -52,6 +55,8 @@ def from_data(filepath: Annotated[str, typer.Argument(
     spec.loader.exec_module(module)
     mclass = getattr(module, module_name)
     data = mclass()
+    if apply_image_properties:
+        data = ADBImageProperties(data)
 
     if debug:
         import json
@@ -85,6 +90,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for inges
                  help="Parser for CSV file to be used")] = IngestType.IMAGE,
              blobs_relative_to_csv: Annotated[bool, typer.Option(
                  help="If true, the blob path is relative to the csv file")] = True,
+             apply_image_properties: Annotated[bool, typer.Option(
+                 help="Apply image properties to the AddImage command")] = True,
              ):
     """
     Ingest data from a pre generated CSV file.
@@ -104,6 +111,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for inges
 
     data = ingest_types[ingest_type](filepath, use_dask=use_dask,
                                      blobs_relative_to_csv=blobs_relative_to_csv)
+    if apply_image_properties:
+        data = ADBImageProperties(data)
     db = create_connector()
     console.log(db)
 
