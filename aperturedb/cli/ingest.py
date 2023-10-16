@@ -29,6 +29,18 @@ app = typer.Typer()
 IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
 
 
+def _debug_samples(data, sample_count, module_name):
+    import json
+    print(f"len(data)={len(data)}")
+    for i, r in enumerate(data[0:sample_count]):
+        q, b = r
+        with open(module_name + f"_{i}" + ".json", "w") as f:
+            f.write(json.dumps(q, indent=2))
+        for j, blob in enumerate(b):
+            with open(module_name + f"_{i}_{j}" + ".jpg", "wb") as f:
+                f.write(blob)
+
+
 @app.command()
 def from_generator(filepath: Annotated[str, typer.Argument(
     help="Path to python module for ingestion [BETA]")],
@@ -59,15 +71,7 @@ def from_generator(filepath: Annotated[str, typer.Argument(
         data = ADBImageProperties(data)
 
     if debug:
-        import json
-        print(f"len(data)={len(data)}")
-        for i, r in enumerate(data[0:sample_count]):
-            q, b = r
-            with open(module_name + f"_{i}" + ".json", "w") as f:
-                f.write(json.dumps(q))
-            for j, blob in enumerate(b):
-                with open(module_name + f"_{i}_{j}" + ".jpg", "wb") as f:
-                    f.write(blob)
+        _debug_samples(data, sample_count, module_name)
     else:
         loader.ingest(
             data[:sample_count],
