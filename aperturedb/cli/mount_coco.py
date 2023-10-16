@@ -36,80 +36,85 @@ def generate_coco_meta_data(images: Images):
         }
     ]
 
-    # Hardcoded for now
+    meta_categories = [{
+        "id": 1,
+        "name": "unknown",
+        "supercategory": "labels"
+    }, {
+        # Hardcoded for now
+        "id": 2,
+        "name": "Face points",
+        "keypoints": ["lefteye", "righteyee", "nose", "leftmouth", "rightmouth"],
+        "skeleton": [[0, 1, 3, 4], [2, 3, 4]]
+    }
+    ]
 
-    # meta_categories = [{
-    #     "id": 1,
-    #     "name": "celebreties",
-    #     "supercategory": "people"
-    # }, {
-    #     "id": 2,
-    #     "name": "Face points",
-    #     "keypoints": ["lefteye", "righteyee", "nose", "leftmouth", "rightmouth"],
-    #     "skeleton": [[0, 1, 3, 4], [2, 3, 4]]
-    # }]
+    meta_images = [{
+        "id": id,
+        "licensce": 1,
+        "file_name": f"{id}.jpg",
+        "height": properties[id]["adb_height"],
+        "width": properties[id]["adb_width"],
+    } for ind, id in enumerate(images.images_ids)]
 
-    meta_categories = []
+    # Add attached bounding boxes
+    categories = []
+    meta_annotations = []
+    for ind, image_id in enumerate(images.images_ids):
+        for bidx, box in enumerate(images.images_bboxes[image_id]['bboxes']):
+            annotation = {
+                "id": 2 * ind,
+                "image_id": image_id,
+                "category_id": 1,
+                "segmentation": [],
+                "tags": [k for k in properties[image_id] if properties[image_id][k] == 1],
+                "bbox": [
+                    box['x'],
+                    box['y'],
+                    box['width'],
+                    box['height']
+                ]
+            }
+            meta_annotations.append(annotation)
+            label = images.images_bboxes[image_id]['tags'][bidx]
+            if label not in categories:
+                categories.append(label)
 
-    for i, p in enumerate(images.get_props_names()):
+            # Figure the category id (offset by 1 for the unknown category)
+            annotation["category_id"] = categories.index(label) + 3
+
+        # Add attached keypoints. This is very DS specific, till we figure out
+        # how to make this generic
+        if "keypoints" in properties[image_id] and properties[image_id]["keypoints"] != None:
+            ckps = []
+            kps = properties[image_id]["keypoints"].split(" ")[1:]
+            for i in range(0, len(kps), 2):
+                ckps.append(float(kps[i]))
+                ckps.append(float(kps[i + 1]))
+                ckps.append(2)
+            meta_annotations.append(
+                {
+                    "id": 2 * ind + 1,
+                    "image_id": image_id,
+                    "keypoints": ckps,
+                    "num_keypoints": 5,
+                    "category_id": 2
+                }
+            )
+
+    for i, c in enumerate(categories):
         meta_categories.append({
-            "id": 3 + i,
-            "name": p,
-            "supercategory": "classes"
+            "id": i + 3,
+            "name": c,
+            "supercategory": "labels"
         })
 
-        meta_images = [{
-            "id": id,
-            "licensce": 1,
-            "file_name": f"{id}.jpg",
-            "height": 218,
-            "width": 178
-        } for ind, id in enumerate(images.images_ids)]
-
-        # logger.debug(self._images.images_bboxes)
-
-        meta_annotations = [
-            {
-                "id": 2 * ind,
-                "image_id": info,
-                "category_id": 1,
-                "bbox": [
-                    images.images_bboxes[str(info)]['bboxes'][0]['x'],
-                    images.images_bboxes[str(info)]['bboxes'][0]['y'],
-                    images.images_bboxes[str(
-                        info)]['bboxes'][0]['width'],
-                    images.images_bboxes[str(
-                        info)]['bboxes'][0]['height'],
-                ],
-                "segmentation": [],
-                "tags": [k for k in properties[str(info)] if properties[str(info)][k] == 1]
-            } for ind, info in enumerate(images.images_ids)
-        ]
-
-        if "keypoints" in properties:
-            for i, p in enumerate(properties):
-                ckps = []
-                kps = properties[p]["keypoints"].split(" ")[1:]
-                for i in range(0, len(kps), 2):
-                    ckps.append(float(kps[i]))
-                    ckps.append(float(kps[i + 1]))
-                    ckps.append(2)
-                meta_annotations.append(
-                    {
-                        "id": 2 * i + 1,
-                        "image_id": p,
-                        "keypoints": ckps,
-                        "num_keypoints": 5,
-                        "category_id": 2
-                    }
-                )
-
-        meta_data = bytes(json.dumps({
-            "licenses": meta_licenses,
-            "categories": meta_categories,
-            "images": meta_images,
-            "annotations": meta_annotations
-        }, indent=2), 'utf-8')
+    meta_data = bytes(json.dumps({
+        "licenses": meta_licenses,
+        "categories": meta_categories,
+        "images": meta_images,
+        "annotations": meta_annotations
+    }, indent=2), 'utf-8')
 
     return meta_data, properties
 
