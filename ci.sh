@@ -36,8 +36,13 @@ update_version() {
     git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
     git add ./aperturedb/__init__.py
     git commit -m "Version bump: ${BUILD_VERSION} to ${VERSION_BUMP}"
-    git push --set-upstream origin ${BRANCH_NAME}
-    BUILD_VERSION=${VERSION_BUMP}
+    git push --set-upstream origin $BRANCH_NAME
+    BUILD_VERSION=$VERSION_BUMP
+}
+
+install_prerequisites() {
+    sudo apt-get update
+    sudo apt-get install -y vim awscli fuse libfuse-dev
 }
 
 # Fetch branch
