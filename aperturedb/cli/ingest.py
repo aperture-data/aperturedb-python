@@ -16,7 +16,8 @@ from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.Utils import create_connector
 from aperturedb.Query import ObjectType
 from aperturedb.cli.console import console
-from aperturedb.transformers.adb_image_properties import ADBImageProperties
+from aperturedb.transformers.common_properties import CommonProperties
+from aperturedb.transformers.image_properties import ImageProperties
 
 import importlib
 import os
@@ -39,6 +40,12 @@ def _debug_samples(data, sample_count, module_name):
         for j, blob in enumerate(b):
             with open(module_name + f"_{i}_{j}" + ".jpg", "wb") as f:
                 f.write(blob)
+
+
+def _apply_pipeline(data):
+    data = CommonProperties(data)
+    data = ImageProperties(data)
+    return data
 
 
 @app.command()
@@ -68,7 +75,7 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     mclass = getattr(module, module_name)
     data = mclass()
     if apply_image_properties:
-        data = ADBImageProperties(data)
+        data = _apply_pipeline(data)
 
     if debug:
         _debug_samples(data, sample_count, module_name)
@@ -116,7 +123,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for inges
     data = ingest_types[ingest_type](filepath, use_dask=use_dask,
                                      blobs_relative_to_csv=blobs_relative_to_csv)
     if apply_image_properties:
-        data = ADBImageProperties(data)
+        data = _apply_pipeline(data)
     db = create_connector()
     console.log(db)
 
