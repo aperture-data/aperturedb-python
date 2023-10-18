@@ -322,7 +322,8 @@ class Connector(object):
                 logger.warning(
                     f"Failed to connect to apertureDB server. \r\n{details}.\r\nDetails: \r\n\
                         {traceback.format_exc()}\r\nat ")
-                logger.warning("\r\n".join(traceback.format_stack(limit=5)))
+                logger.warning("Failed to connect",
+                               exc_info=True, stack_info=True)
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
@@ -369,16 +370,13 @@ class Connector(object):
                 logger.warning(f"OS error on process {os.getpid()}")
             tries += 1
             logger.warning(
-                f"Connection broken. Reconnectng attempt [{tries}/3] .. PID = {os.getpid()}")
-            time.sleep(1)
+                f"Connection broken. Reconnectng attempt [{tries}/{self.config.retry_connect_max_attempts}] .. PID = {os.getpid()}")
             self.conn.close()
             self.connected = False
-            while True:
-                self.connect(
-                    details=f"Will retry in {self.config.retry_connect_interval_seconds} second, till session expires")
-                if self.connected or not self.shared_data.session.valid():
-                    break
-                time.sleep(self.config.retry_connect_interval_seconds)
+
+            self.connect(
+                details=f"Will retry in {self.config.retry_connect_interval_seconds} seconds")
+            time.sleep(self.config.retry_connect_interval_seconds)
 
             # Try to resume the session, in cases where the connection is severed.
             # For example aperturedb server is restarted, or network is lost.
@@ -386,7 +384,7 @@ class Connector(object):
             # path, this can cause a deadlock. Hence the try_resume flag.
             if try_resume:
                 self._renew_session()
-        if tries == 3:
+        if tries == self.config.retry_connect_max_attempts:
             raise Exception(
                 f"Could not query apertureDB using TCP.")
         return (self.last_response, response_blob_array)
@@ -425,8 +423,7 @@ class Connector(object):
             self.last_query_time = time.time() - start
             return self.response, self.blobs
         except BaseException as e:
-            logger.critical(traceback.format_exc(limit=10))
-            logger.critical("\r\n".join(traceback.format_stack(limit=10)))
+            logger.critical("Failed to query", exc_info=True, stack_info=True)
             raise
 
     def _renew_session(self):

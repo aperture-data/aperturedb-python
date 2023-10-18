@@ -169,7 +169,8 @@ class TestSession():
                 nonlocal count
                 count += 1
                 logger.debug(count)
-                if count < 5:
+                if count < 2:
+                    # Fail for the firs 2 attempts
                     db.conn.close()
 
                 result  = original_send_msg(msg)
@@ -187,7 +188,7 @@ class TestSession():
             }]
             response, blobs = db.query(query)
             assert(response[0]["FindImage"]["status"] == 0)
-            assert count == 6
+            assert count == 3
 
     def test_con_close_on_recv_query(self, db: Connector, monkeypatch):
         if not isinstance(db, ConnectorRest):
@@ -198,8 +199,8 @@ class TestSession():
                 nonlocal count
                 count += 1
                 logger.debug(count)
-                if count < 5:
-                    # Fail for the firs 5 attempts
+                if count < 2:
+                    # Fail for the firs 2 attempts
                     db.conn.close()
 
                 result  = original_recv_msg()
@@ -217,4 +218,4 @@ class TestSession():
             }]
             response, blobs = db.query(query)
             assert(response[0]["FindImage"]["status"] == 0)
-            assert count == 6
+            assert count == 3
