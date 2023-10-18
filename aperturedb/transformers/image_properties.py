@@ -19,10 +19,9 @@ class ImageProperties(Transformer):
                     x[1][ic])
 
                 # Compute the image dimensions.
-                # pil_image = Image.open(x[1][ic])
                 pil_image = Image.open(io.BytesIO(x[1][ic]))
-                x[0][ic]["AddImage"]["properties"]["adb_width"] = pil_image.width
-                x[0][ic]["AddImage"]["properties"]["adb_height"] = pil_image.height
+                x[0][ic]["AddImage"]["properties"]["adb_image_width"] = pil_image.width
+                x[0][ic]["AddImage"]["properties"]["adb_image_height"] = pil_image.height
 
         except Exception as e:
             traceback.print_exc(limit=5)

@@ -2,7 +2,6 @@ from typing import List, Tuple
 from aperturedb.KaggleData import KaggleData
 import pandas as pd
 import os
-from PIL import Image
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,13 +14,7 @@ class CelebADataKaggle(KaggleData):
     """
 
     def __init__(self, **kwargs) -> None:
-        # self.records_count = kwargs["records_count"]
         self.records_count = -1
-        # self.embedding_generator = kwargs["embedding_generator"]
-        # self.search_set_name = kwargs["search_set_name"]
-        # self.add_blob_size_metadata = False
-        # if "add_blob_size_metadata" in kwargs:
-        #     self.add_blob_size_metadata = kwargs["add_blob_size_metadata"]
         super().__init__(dataset_ref = "jessicali9530/celeba-dataset",
                          records_count=self.records_count)
 
@@ -48,7 +41,7 @@ class CelebADataKaggle(KaggleData):
     def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
         record = self.collection[idx]
         p = record
-        img_ref = (idx * 2 % 50000) + 1
+        img_ref = (idx * 2 % 99998) + 1
         q = [
             {
                 "AddImage": {
@@ -69,14 +62,6 @@ class CelebADataKaggle(KaggleData):
                     }
                 }
             }
-            # , {
-            #     "AddDescriptor": {
-            #         "set": self.search_set_name,
-            #         "connect": {
-            #             "ref": 1
-            #         }
-            #     }
-            # }
         ]
         q[0]["AddImage"]["properties"]["keypoints"] = f"10 {p['lefteye_x']} {p['lefteye_y']} {p['righteye_x']} {p['righteye_y']} {p['nose_x']} {p['nose_y']} {p['leftmouth_x']} {p['leftmouth_y']} {p['rightmouth_x']} {p['rightmouth_y']}"
 
@@ -86,9 +71,3 @@ class CelebADataKaggle(KaggleData):
             p["image_id"])
         blob = open(image_file_name, "rb").read()
         return q, [blob]
-        # embedding = self.embedding_generator(Image.open(image_file_name))
-        # serialized = embedding.cpu().detach().numpy().tobytes()
-        # if self.add_blob_size_metadata:
-        #     # This is for use with the FUSE api
-        #     q[0]["AddImage"]["properties"]["image_size"] = len(blob)
-        # return q, [blob, serialized]

@@ -63,17 +63,24 @@ def from_generator(filepath: Annotated[str, typer.Argument(
         help="Apply image properties to the AddImage command")] = True,
 ):
     """
-    Ingest data from a Data generator.
+    Ingest data from a Data generator [BETA].
     """
     db = create_connector()
     loader = ParallelLoader(db)
+
+    # not sure if this is the best way to do this.
+    # Hence the BETA tag.
     module_name = os.path.basename(filepath)[:-3]
     spec = importlib.util.spec_from_file_location(module_name, filepath)
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     mclass = getattr(module, module_name)
+
+    # This is the dynamically loaded data generator.
+    # tested with CelebADataKaggle.py, CocoDataPytorch.py and Cifar10DataTensorflow.py in examples
     data = mclass()
+
     if apply_image_properties:
         data = _apply_pipeline(data)
 
@@ -96,7 +103,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(help="Path to csv for inges
              stats: Annotated[bool, typer.Option(
                  help="Show realtime statistics with summary")] = True,
              use_dask: Annotated[bool, typer.Option(
-                 help="Use dask based parallelization")] = True,
+                 help="Use dask based parallelization")] = False,
              ingest_type: Annotated[IngestType, typer.Option(
                  help="Parser for CSV file to be used")] = IngestType.IMAGE,
              blobs_relative_to_csv: Annotated[bool, typer.Option(

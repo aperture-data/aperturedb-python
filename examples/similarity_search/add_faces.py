@@ -4,6 +4,8 @@ from facenet import generate_embedding
 import dbinfo
 from CelebADataKaggle import CelebADataKaggle
 from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPytorchEmbeddings
+from aperturedb.transformers.common_properties import CommonProperties
+from aperturedb.transformers.image_properties import ImageProperties
 
 search_set_name = "similar_celebreties"
 
@@ -17,8 +19,22 @@ def main(params):
         embedding_generator=generate_embedding,
         search_set_name=search_set_name
     )
+
+    # Here's a pipeline that adds extra properties to the celebA dataset
+    dataset = CommonProperties(
+        dataset,
+        adb_data_source="celebA",
+        adb_main_object="Face",
+        adb_annoted=True)
+
+    # some useful properties for the images
+    dataset = ImageProperties(dataset)
+
     # Add the embeddings generated through facenet.
-    dataset = FacenetPytorchEmbeddings(dataset)[:params.images_count]
+    dataset = FacenetPytorchEmbeddings(dataset)
+
+    # Limit the number of images to ingest
+    dataset = dataset[:params.images_count]
     print(len(dataset))
 
     loader = ParallelLoader.ParallelLoader(dbinfo.create_connector())
