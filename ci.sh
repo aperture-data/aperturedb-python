@@ -42,7 +42,7 @@ update_version() {
 
 install_prerequisites() {
     sudo apt-get update
-    sudo apt-get install -y vim awscli fuse libfuse-dev
+    sudo apt-get install -y vim awscli
 }
 
 # Fetch branch
