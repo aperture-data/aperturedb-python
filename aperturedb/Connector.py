@@ -27,7 +27,6 @@
 from __future__ import annotations
 from . import queryMessage_pb2
 import sys
-import traceback
 import os
 import socket
 import struct
@@ -318,12 +317,7 @@ class Connector(object):
                 self._connect()
             except socket.error as e:
                 logger.error(
-                    f"Error connecting to server: {self.config}. See error log for details.\r\n{details}")
-                logger.warning(
-                    f"Failed to connect to apertureDB server. \r\n{details}.\r\nDetails: \r\n\
-                        {traceback.format_exc()}\r\nat ")
-                logger.warning("Failed to connect",
-                               exc_info=True, stack_info=True)
+                    f"Error connecting to server: {self.config} \r\n{details}.", exc_info=True, stack_info=True)
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
@@ -416,7 +410,7 @@ class Connector(object):
                 # Hope is that the query send won't be longer than the session
                 # ttl.
                 logger.warning(
-                    f"Session expired while query was sent. Retrying... \r\n{traceback.format_stack(limit=5)}")
+                    f"Session expired while query was sent. Retrying... {self.config}", stack_info=True)
                 self._renew_session()
                 start = time.time()
                 self.response, self.blobs = self._query(q, blobs)
@@ -434,7 +428,7 @@ class Connector(object):
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of 3] Failed to refresh token. Details: \r\n{traceback.format_exc(limit=5)}")
+                    f"[Attempt {count + 1} of 3] Failed to refresh token.", exc_info=True, stack_info=True)
                 time.sleep(1)
                 count += 1
 

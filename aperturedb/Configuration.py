@@ -14,10 +14,10 @@ class Configuration:
     use_ssl: bool = True
     use_rest: bool = False
     use_keepalive: bool = True
-    retry_connect_interval_seconds: int = 10
+    retry_connect_interval_seconds: int = 1
     # Max number of attempts to retry the initial connection (0 means infinite)
     # This is useful when the aperturedb server is not ready yet.
-    retry_connect_max_attempts: int = 0
+    retry_connect_max_attempts: int = 3
 
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
