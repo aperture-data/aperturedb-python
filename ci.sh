@@ -246,8 +246,15 @@ push_aws_ecr(){
 
 if [ "${RUN_TESTS}" == "true" ] || [ "${BUILD_DEPENDENCIES}" == "true" ]
 then
-    build_notebook_dependencies_image
-fi
+    check_for_changed_docker_files
+    echo "DEPENDENCIES_DOCKER_IMAGE_CHANGED=$DEPENDENCIES_DOCKER_IMAGE_CHANGED"
+    # Dependecies
+    # TODO : Conditionally build.
+    # Check if there is base image change
+    if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
+    then
+        build_notebook_dependencies_image
+    fi
 
 if [ "${RUN_TESTS}" == "true" ]
 then
