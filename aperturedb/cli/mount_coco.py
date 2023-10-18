@@ -53,8 +53,8 @@ def generate_coco_meta_data(images: Images):
         "id": id,
         "licensce": 1,
         "file_name": f"{id}.jpg",
-        "height": properties[id]["adb_height"],
-        "width": properties[id]["adb_width"],
+        "height": properties[id]["adb_image_height"],
+        "width": properties[id]["adb_image_width"],
     } for ind, id in enumerate(images.images_ids)]
 
     # Add attached bounding boxes
