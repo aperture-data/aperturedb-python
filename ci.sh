@@ -6,6 +6,7 @@ check_for_changed_docker_files() {
   echo "Checking for changed docker files..."
 
   # Get files changed on merge
+  git fetch origin ${TARGET_BRANCH_NAME}:refs/remotes/origin/${TARGET_BRANCH_NAME}
   FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only | { grep 'Dockerfile' || true; })
 
   echo "Files Changed: " ${FILES_CHANGED}
