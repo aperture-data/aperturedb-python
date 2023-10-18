@@ -82,6 +82,12 @@ then
     COMMIT_HASH=$(git rev-parse HEAD)
 fi
 
+# Fetch branch
+if [ -z ${TARGET_BRANCH_NAME+x} ]
+then
+    TARGET_BRANCH_NAME=$BRANCH_NAME
+fi
+
 #Install pre requisites
 install_prerequisites
 
