@@ -57,8 +57,17 @@ then
     COMMIT_HASH=$(git rev-parse HEAD)
 fi
 
-echo "Branch: ${BRANCH_NAME}"
-if [ -z "${BRANCH_NAME}" ]
+# Fetch branch
+if [ -z ${TARGET_BRANCH_NAME+x} ]
+then
+    TARGET_BRANCH_NAME=$BRANCH_NAME
+fi
+
+#Install pre requisites
+install_prerequisites
+
+echo "Branch: $BRANCH_NAME"
+if [ -z "$BRANCH_NAME" ]
 then
     echo "This is on a merge branch. Will not continue"
     exit 0
