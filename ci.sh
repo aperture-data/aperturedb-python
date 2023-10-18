@@ -232,7 +232,6 @@ then
     if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
     then
         build_notebook_dependencies_image
-        return
     fi
 
     build_notebook_image
