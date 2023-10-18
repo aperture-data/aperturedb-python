@@ -97,8 +97,8 @@ class Connector(object):
                  user="", password="", token="",
                  use_ssl=True, shared_data=None, authenticate=True,
                  use_keepalive=True,
-                 retry_connect_interval_seconds=10,
-                 retry_connect_max_attempts=0,
+                 retry_connect_interval_seconds=1,
+                 retry_connect_max_attempts=3,
                  config: Configuration = None):
         self.connected = False
         self.last_response   = ''
