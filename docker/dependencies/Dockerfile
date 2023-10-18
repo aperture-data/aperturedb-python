@@ -19,7 +19,7 @@ RUN apt-get -y install build-essential git cmake python3.10-venv\
     pkg-config\
     libavutil-dev libswscale-dev python3-venv\
     libavcodec-extra libavcodec-dev python3-dev\
-    ffmpeg h264enc wget
+    ffmpeg h264enc wget fuse libfuse-dev
 
 #The version of nodejs in ubuntu is very old
 #Installing the LTS as on Feb 23
