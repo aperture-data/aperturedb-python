@@ -20,9 +20,10 @@ class Cifar100DataTensorflow(TensorflowData):
 
     def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
         x, y = self.loaded_dataset[idx]
+        img_ref = (idx % 99998) + 1
         q = [{
             "AddImage": {
-                "_ref": 1
+                "_ref": img_ref
             }
         }]
         q[0]["AddImage"]["properties"] = {

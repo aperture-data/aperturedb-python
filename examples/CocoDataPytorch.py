@@ -26,12 +26,11 @@ class CocoDataPytorch(PyTorchData):
         coco_detection = CocoDetection(
             root="coco/val2017",
             annFile="coco/annotations/person_keypoints_val2017.json")
-        # self._dataset_name = dataset_name
         super().__init__(coco_detection)
 
     def generate_query(self, idx: int):
         item = self.loaded_dataset[idx]
-        img_ref = (idx % 50000) + 1
+        img_ref = (idx % 99998) + 1
         q = [{
             "AddImage": {
                 "_ref": img_ref
@@ -59,6 +58,5 @@ class CocoDataPytorch(PyTorchData):
                         "label": str(meta_info["category_id"])
                     }
                 })
-            # q[0]["AddImage"]["properties"]["dataset_name"] = self._dataset_name
 
         return q, [blob]
