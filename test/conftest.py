@@ -31,13 +31,15 @@ def pytest_generate_tests(metafunc):
                 port = dbinfo.DB_TCP_PORT,
                 user = dbinfo.DB_USER,
                 password = dbinfo.DB_PASSWORD,
-                use_ssl = True)},
+                use_ssl = True,
+                retry_connect_max_attempts=3,
+                retry_connect_interval_seconds=0)},
             {"db": ConnectorRest(
                 host = dbinfo.DB_REST_HOST,
                 port = dbinfo.DB_REST_PORT,
                 user = dbinfo.DB_USER,
                 password = dbinfo.DB_PASSWORD,
-                use_ssl = False
+                use_ssl = False,
             )}
         ], indirect=True, ids=["TCP", "HTTP"])
     if all(func in metafunc.fixturenames for func in ["insert_data_from_csv", "modify_data_from_csv"]) and \
