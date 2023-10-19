@@ -9,7 +9,7 @@ rm -rf output
 mkdir -m 777 output
 docker compose up -d
 
-LOG_PATH="$(pwd)/aperturedb/log"
+LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
 
 REPOSITORY="aperturedata/aperturedb-python-tests"
@@ -29,3 +29,10 @@ docker run \
     -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
     -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
     $REPOSITORY
+
+echo "Tests completed"
+echo "aperturedb log:"
+docker compose logs aperturedb
+echo "===================="
+echo "webui test log:"
+docker compose logs webui

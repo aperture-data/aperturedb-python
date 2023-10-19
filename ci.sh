@@ -55,13 +55,11 @@ update_version() {
     echo "Updating version $BUILD_VERSION to $VERSION_BUMP"
     # Replace version in __init__.py
     printf '%s\n' "%s/__version__ = .*/__version__ = \"$VERSION_BUMP\"/g" 'x' | ex aperturedb/__init__.py
-    printf '%s\n' "%s/version=.*/version=\"$VERSION_BUMP\",/g" 'x' | ex setup.py
 
     # Commit and push version bump
     git config --local user.name "github-actions[bot]"
     git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
     git add ./aperturedb/__init__.py
-    git add ./setup.py
     git commit -m "Version bump: ${BUILD_VERSION} to ${VERSION_BUMP}"
     git push --set-upstream origin $BRANCH_NAME
     BUILD_VERSION=$VERSION_BUMP
@@ -135,15 +133,22 @@ build_tests(){
     TESTS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:latest
     mkdir -p docker/tests/aperturedata
     sudo rm -rf test/aperturedb/db
-    cp -r aperturedb setup.py README.md requirements.txt docker/tests/aperturedata
+    cp -r aperturedb pyproject.toml README.md docker/tests/aperturedata
     mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
-    cp test/aperturedb/config.json docker/tests/aperturedata/test/aperturedb
 
     echo "Building image $TESTS_IMAGE"
     docker build -t $TESTS_IMAGE --cache-from $TESTS_IMAGE -f docker/tests/Dockerfile .
 }
 
+build_complete(){
+    COMPLETE_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:complete
+    mkdir -p docker/complete/aperturedata
+    cp -r aperturedb pyproject.toml README.md LICENSE docker/complete/aperturedata
+
+    echo "Building image $COMPLETE_IMAGE"
+    docker build -t $COMPLETE_IMAGE --cache-from $COMPLETE_IMAGE -f docker/complete/Dockerfile .
+}
 
 build_notebook_dependencies_image(){
     DEPS_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook:dependencies
@@ -160,7 +165,7 @@ build_notebook_dependencies_image(){
 build_notebook_image(){
     NOTEBOOK_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_WITH_VERSION}
     mkdir -p docker/notebook/aperturedata
-    cp -r aperturedb setup.py README.md docker/notebook/aperturedata
+    cp -r aperturedb pyproject.toml LICENSE README.md docker/notebook/aperturedata
     LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
     echo "Building image $NOTEBOOK_IMAGE"
     docker build -t $NOTEBOOK_IMAGE -t $LATEST_IMAGE -f docker/notebook/Dockerfile .
@@ -238,4 +243,9 @@ fi
 if [ -z ${EXCLUDE_DEPLOY+x} ]
 then
     deploy_terraform
+fi
+
+if [ -z ${EXCLUDE_BUILD_COMPLETE+x} ]
+then
+    build_complete
 fi

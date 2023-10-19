@@ -1,0 +1,81 @@
+[project]
+name = "aperturedb"
+dynamic = ["version"]
+description = "ApertureDB Python SDK"
+
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+keywords = ["aperturedb", "graph", "database",
+ "image", "video", "metadata", "search", "indexing"]
+
+authors = [
+    {name = "ApertureData Engineering", email = "team@aperturedata.io"}
+]
+
+dependencies = [
+    # Pin to the bridge version.
+    # https://github.com/tensorflow/tensorflow/issues/60320
+    'protobuf==3.20.3',
+    #Folllowing is needed parallel loaders, and basic things for
+    # making the notebooks.
+    'scikit-image', 'image', 'requests', 'boto3',
+    'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
+    'ipython', 'dask[complete]', 'ipywidgets', 'pydantic', 'devtools', 'typer[all]',
+    # Pinning this to be able to install google-cloud-bigquery
+    'grpcio-status==1.48.2',
+    # Pinning this to resolve test errors temporarily
+    'ipywidgets==8.0.4',
+    'keepalive-socket==0.0.1'
+]
+
+[tool.setuptools.package-dir]
+aperturedb = "aperturedb"
+
+[project.urls]
+"Homepage" = "https://github.com/aperture-data/aperturedb-python"
+"Bug Reports" = "https://github.com/aperture-data/aperturedb-python/issues"
+
+[project.optional-dependencies]
+# This is used when we build the docker image for notebook
+notebook = [
+    "torch",
+    "torchvision",
+    "tensorflow",
+    "facenet-pytorch",
+]
+# User install requirements, guaranteed to be pip installable
+complete = [
+    "torch==2.0.1",
+    "torchvision==0.15.2",
+    "tensorflow==2.14.0",
+    "facenet-pytorch==2.5.3",
+    "opencv-python",
+]
+# Dev install requirements, bleeding edge, will break CI.
+dev = [
+    "torch",
+    "torchvision",
+    "tensorflow",
+    "facenet-pytorch",
+    "opencv-python",
+    "coverage",
+    "autopep8",
+    "pre-commit",
+    "pytest",
+    "build"
+]
+
+# The following would provide a command line executable called `sample`
+# which executes the function `main` from this package when invoked.
+[project.scripts]  # Optional
+adb = "aperturedb.cli.adb:app"
+
+[build-system]
+# These are the assumed default build requirements from pip:
+# https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
+requires = ["setuptools>=43.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "aperturedb.__version__"}
