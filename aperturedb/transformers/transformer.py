@@ -5,6 +5,48 @@ logger = logging.getLogger(__name__)
 
 
 class Transformer(Subscriptable):
+    """
+    Transformer is an abstract class that can be used to transform
+    data before ingestion into aperturedb.
+
+    :::info
+    **Some build in transformers:**
+        - CommonProperties: Add common properties to the data
+        - ImageProperties: Add image properties to the data
+        - Facenet: Add facenet embeddings to the data
+    :::
+
+
+    [Example](https://github.com/aperture-data/aperturedb-python/blob/develop/examples/similarity_search/add_faces.py) of how to use transformers:
+        ```python
+        from CelebADataKaggle import CelebADataKaggle
+        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPytorchEmbeddings
+        from aperturedb.transformers.common_properties import CommonProperties
+        from aperturedb.transformers.image_properties import ImageProperties
+
+        .
+        .
+        .
+
+        dataset = CelebADataKaggle()
+
+        # Here's a pipeline that adds extra properties to the celebA dataset
+        dataset = CommonProperties(
+            dataset,
+            adb_data_source="celebA",
+            adb_main_object="Face",
+            adb_annoted=True)
+
+        # some useful properties for the images
+        dataset = ImageProperties(dataset)
+
+        # Add the embeddings generated through facenet.
+        dataset = FacenetPytorchEmbeddings(dataset)
+
+        ```
+
+    """
+
     def __init__(self, data: Subscriptable) -> None:
         self.data = data
 
@@ -26,6 +68,9 @@ class Transformer(Subscriptable):
         logger.info(f"Found {bc} blobs in the data")
         logger.info(
             f"Found {len(self._add_image_index)} AddImage commands in the data")
+
+    def getitem(self, subscript):
+        raise NotImplementedError("Needs to be subclassed")
 
     def __len__(self):
         return len(self.data)

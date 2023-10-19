@@ -4,7 +4,20 @@ import traceback
 
 
 class CommonProperties(Transformer):
+    """
+    This applies some common properties to the data.
+    """
+
     def __init__(self, data: Subscriptable, **kwargs) -> None:
+        """
+        Args:
+            data: Subscriptable object
+            adb_data_source: Data source for the data
+            adb_timestamp: Timestamp for the data
+            adb_main_object: Main object for the data
+            adb_annoted_by: Annoted by for the data
+            adb_annoted: Annoted for the data
+        """
         super().__init__(data)
 
         # Statically set some properties, these are not in the data

@@ -12,6 +12,11 @@ class FacenetPytorchEmbeddings(Transformer):
     """
 
     def __init__(self, data: Subscriptable, **kwargs) -> None:
+        """
+        Args:
+            data: Subscriptable object
+            search_set_name: Name of the [descriptorset](/query_language/Reference/descriptor_commands/desc_commands/AddDescriptor) to use for the search.
+        """
         super().__init__(data)
         self.search_set_name = kwargs.get(
             "search_set_name", "facenet_pytorch_embeddings")

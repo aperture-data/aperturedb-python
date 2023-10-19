@@ -1,6 +1,5 @@
 import argparse
 from aperturedb import Utils, ParallelLoader
-from facenet import generate_embedding
 import dbinfo
 from CelebADataKaggle import CelebADataKaggle
 from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPytorchEmbeddings
@@ -14,11 +13,7 @@ def main(params):
     utils = Utils.Utils(dbinfo.create_connector())
     utils.remove_descriptorset(search_set_name)
 
-    dataset = CelebADataKaggle(
-        records_count=params.images_count,
-        embedding_generator=generate_embedding,
-        search_set_name=search_set_name
-    )
+    dataset = CelebADataKaggle()
 
     # Here's a pipeline that adds extra properties to the celebA dataset
     dataset = CommonProperties(

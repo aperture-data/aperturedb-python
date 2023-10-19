@@ -1,6 +1,8 @@
 from enum import Enum
 import logging
 import typer
+import os
+
 from typing_extensions import Annotated
 from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.ImageDataCSV import ImageDataCSV
@@ -18,10 +20,7 @@ from aperturedb.Query import ObjectType
 from aperturedb.cli.console import console
 from aperturedb.transformers.common_properties import CommonProperties
 from aperturedb.transformers.image_properties import ImageProperties
-
-import importlib
-import os
-import sys
+from aperturedb.Utils import import_module_by_path
 
 logger = logging.getLogger(__file__)
 app = typer.Typer()
@@ -42,8 +41,8 @@ def _debug_samples(data, sample_count, module_name):
                 f.write(blob)
 
 
-def _apply_pipeline(data):
-    data = CommonProperties(data)
+def _apply_pipeline(data, **kwargs):
+    data = CommonProperties(data, **kwargs)
     data = ImageProperties(data)
     return data
 
@@ -68,13 +67,10 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     db = create_connector()
     loader = ParallelLoader(db)
 
-    # not sure if this is the best way to do this.
-    # Hence the BETA tag.
-    module_name = os.path.basename(filepath)[:-3]
-    spec = importlib.util.spec_from_file_location(module_name, filepath)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
+    module = import_module_by_path(filepath)
+
+    # The assumption is that the class name is same as that of the module name
+    module_name  = os.path.basename(filepath)[:-3]
     mclass = getattr(module, module_name)
 
     # This is the dynamically loaded data generator.
@@ -82,7 +78,8 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     data = mclass()
 
     if apply_image_properties:
-        data = _apply_pipeline(data)
+        data = _apply_pipeline(data,
+                               adb_data_source=f"{module_name}.{mclass.__name__}")
 
     if debug:
         _debug_samples(data, sample_count, module_name)

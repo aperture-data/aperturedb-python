@@ -1,13 +1,16 @@
 from aperturedb.transformers.transformer import Transformer
 from aperturedb.Subscriptable import Subscriptable
 from PIL import Image
-import traceback
 import io
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ImageProperties(Transformer):
-    def __init__(self, data: Subscriptable, **kwargs) -> None:
-        super().__init__(data)
+    """
+    This computes some image properties and adds them to the metadata.
+    """
 
     def getitem(self, subscript):
         x = self.data[subscript]
@@ -24,6 +27,6 @@ class ImageProperties(Transformer):
                 x[0][ic]["AddImage"]["properties"]["adb_image_height"] = pil_image.height
 
         except Exception as e:
-            traceback.print_exc(limit=5)
+            logger.exception(e, stack_info=True)
 
         return x

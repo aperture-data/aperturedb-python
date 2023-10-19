@@ -1,6 +1,8 @@
 import logging
 import json
 import os
+import importlib
+import sys
 
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
@@ -17,6 +19,18 @@ DESCRIPTOR_CLASS = "_Descriptor"
 DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
 
 DEFAULT_METADATA_BATCH_SIZE = 100_000
+
+
+def import_module_by_path(filepath):
+    """
+    This function imports a module given a path to a python file.
+    """
+    module_name = os.path.basename(filepath)[:-3]
+    spec = importlib.util.spec_from_file_location(module_name, filepath)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def __create_connector(configuration: Configuration):
