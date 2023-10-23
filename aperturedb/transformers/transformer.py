@@ -33,7 +33,7 @@ class Transformer(Subscriptable):
         # Here's a pipeline that adds extra properties to the celebA dataset
         dataset = CommonProperties(
             dataset,
-            adb_data_source="celebA",
+            adb_data_source="kaggle-celebA",
             adb_main_object="Face",
             adb_annoted=True)
 
