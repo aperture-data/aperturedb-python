@@ -15,8 +15,6 @@ class CommonProperties(Transformer):
             adb_data_source: Data source for the data
             adb_timestamp: Timestamp for the data
             adb_main_object: Main object for the data
-            adb_annoted_by: Annoted by for the data
-            adb_annoted: Annoted for the data
         """
         super().__init__(data)
 
@@ -24,8 +22,6 @@ class CommonProperties(Transformer):
         self.adb_data_source = kwargs.get("adb_data_source", None)
         self.adb_timestamp = kwargs.get("adb_timestamp", None)
         self.adb_main_object = kwargs.get("adb_main_object", None)
-        self.adb_annoted_by = kwargs.get("adb_annoted_by", None)
-        self.adb_annoted = kwargs.get("adb_annoted_at", False)
 
     def getitem(self, subscript):
         x = self.data[subscript]
@@ -39,9 +35,6 @@ class CommonProperties(Transformer):
                     x[0][ic]["AddImage"]["properties"]["adb_timestamp"] = self.adb_timestamp
                 if self.adb_main_object:
                     x[0][ic]["AddImage"]["properties"]["adb_main_object"] = self.adb_main_object
-                if self.adb_annoted_by:
-                    x[0][ic]["AddImage"]["properties"]["adb_annotated_by"] = self.adb_annoted_by
-                x[0][ic]["AddImage"]["properties"]["adb_annotated"] = self.adb_annoted
 
         except Exception as e:
             traceback.print_exc(limit=5)
