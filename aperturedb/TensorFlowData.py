@@ -3,7 +3,7 @@ from aperturedb.Subscriptable import Subscriptable
 import tensorflow as tf
 
 
-class TensorflowData(Subscriptable):
+class TensorFlowData(Subscriptable):
     """
     **Class to wrap around a Dataset retrieved from [Tensorflow datasets](https://www.tensorflow.org/datasets)**
 

@@ -1,11 +1,16 @@
 import tensorflow as tf
-from aperturedb.TensorflowData import TensorflowData
+from aperturedb.TensorFlowData import TensorFlowData
 from typing import List, Tuple
 from PIL import Image
 import io
 
 
-class Cifar10DataTensorflow(TensorflowData):
+class Cifar10DataTensorFlow(TensorFlowData):
+    """
+    **ApertureDB ingestable Dataset, which is sourced from
+    [Cifar10 (tensorflow.datasets)](https://www.tensorflow.org/datasets/catalog/cifar10)**
+    """
+
     def __init__(self):
         (x_train, y_train), (x_val, y_val) = tf.keras.datasets.cifar10.load_data()
         x = tf.concat([x_train, x_val], axis=0)

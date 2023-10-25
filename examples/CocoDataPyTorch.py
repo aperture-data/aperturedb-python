@@ -11,7 +11,7 @@ def image_to_byte_array(image: Image) -> bytes:
     return imgByteArr
 
 
-class CocoDataPytorch(PyTorchData):
+class CocoDataPyTorch(PyTorchData):
     """
     **ApertureDB ingestable Dataset, which is sourced from
     [CocoDetection (torchvision.datasets)](https://pytorch.org/vision/main/generated/torchvision.datasets.CocoDetection.html#torchvision.datasets.CocoDetection)**
