@@ -5,15 +5,15 @@ from PIL import Image
 import io
 
 
-class Cifar100DataTensorflow(TensorflowData):
+class Cifar10DataTensorflow(TensorflowData):
     def __init__(self):
-        (x_train, y_train), (x_val, y_val) = tf.keras.datasets.cifar100.load_data()
+        (x_train, y_train), (x_val, y_val) = tf.keras.datasets.cifar10.load_data()
         x = tf.concat([x_train, x_val], axis=0)
         y = tf.concat([tf.squeeze(y_train), tf.squeeze(y_val)], axis=0)
         ds = tf.data.Dataset.from_tensor_slices((x, y))
         super().__init__(ds)
 
-    def __image__from__cifar100__(self, arr):
+    def __image__from__cifar10__(self, arr):
         bytes = io.BytesIO()
         Image.fromarray(arr, 'RGB').save(bytes, format='JPEG')
         return bytes.getvalue()
@@ -31,4 +31,4 @@ class Cifar100DataTensorflow(TensorflowData):
             "stage": "train" if idx < 50000 else "val"
         }
 
-        return q, [self.__image__from__cifar100__(x.numpy())]
+        return q, [self.__image__from__cifar10__(x.numpy())]
