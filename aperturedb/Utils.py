@@ -10,7 +10,6 @@ from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Configuration import Configuration
 from aperturedb.cli.configure import ls
-from aperturedb.cli.console import console
 
 
 logger = logging.getLogger(__name__)
@@ -48,8 +47,7 @@ def __create_connector(configuration: Configuration):
             user=configuration.username,
             password=configuration.password,
             config=configuration)
-    console.log(f"Connected Using:")
-    console.log(configuration)
+    logger.info(f"Connected Using: {configuration}")
     return connector
 
 
@@ -63,7 +61,7 @@ def create_connector():
     Returns:
         Connector: The connector to the database.
     """
-    all_configs = ls()
+    all_configs = ls(log_to_console=False)
 
     env_config = os.environ.get("APERTUREDB_CONFIG")
     ac = all_configs["active"]
