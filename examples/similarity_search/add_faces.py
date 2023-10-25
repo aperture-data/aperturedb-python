@@ -2,7 +2,7 @@ import argparse
 from aperturedb import Utils, ParallelLoader
 import dbinfo
 from CelebADataKaggle import CelebADataKaggle
-from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPytorchEmbeddings
+from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
 from aperturedb.transformers.common_properties import CommonProperties
 from aperturedb.transformers.image_properties import ImageProperties
 
@@ -26,7 +26,7 @@ def main(params):
     dataset = ImageProperties(dataset)
 
     # Add the embeddings generated through facenet.
-    dataset = FacenetPytorchEmbeddings(dataset)
+    dataset = FacenetPyTorchEmbeddings(dataset)
 
     # Limit the number of images to ingest
     dataset = dataset[:params.images_count]

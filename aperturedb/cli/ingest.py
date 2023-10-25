@@ -20,6 +20,7 @@ from aperturedb.Query import ObjectType
 from aperturedb.cli.console import console
 from aperturedb.transformers.common_properties import CommonProperties
 from aperturedb.transformers.image_properties import ImageProperties
+from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
 from aperturedb.Utils import import_module_by_path
 
 logger = logging.getLogger(__file__)
@@ -44,6 +45,7 @@ def _debug_samples(data, sample_count, module_name):
 def _apply_pipeline(data, **kwargs):
     data = CommonProperties(data, **kwargs)
     data = ImageProperties(data)
+    data = CLIPPyTorchEmbeddings(data)
     return data
 
 

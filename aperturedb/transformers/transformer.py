@@ -20,7 +20,7 @@ class Transformer(Subscriptable):
     [Example](https://github.com/aperture-data/aperturedb-python/blob/develop/examples/similarity_search/add_faces.py) of how to use transformers:
         ```python
         from CelebADataKaggle import CelebADataKaggle
-        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPytorchEmbeddings
+        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
         from aperturedb.transformers.common_properties import CommonProperties
         from aperturedb.transformers.image_properties import ImageProperties
 
@@ -41,7 +41,7 @@ class Transformer(Subscriptable):
         dataset = ImageProperties(dataset)
 
         # Add the embeddings generated through facenet.
-        dataset = FacenetPytorchEmbeddings(dataset)
+        dataset = FacenetPyTorchEmbeddings(dataset)
 
         ```
 
