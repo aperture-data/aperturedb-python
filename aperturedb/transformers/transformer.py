@@ -47,7 +47,7 @@ class Transformer(Subscriptable):
 
     """
 
-    def __init__(self, data: Subscriptable) -> None:
+    def __init__(self, data: Subscriptable, **kwargs) -> None:
         self.data = data
 
         # Inspect the first element to get the number of queries and blobs
