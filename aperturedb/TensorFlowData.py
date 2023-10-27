@@ -21,13 +21,13 @@ class TensorFlowData(Subscriptable):
     """
 
     def __init__(self, dataset: tf.data.Dataset) -> None:
-        self.loaded_dataset = [t for t in dataset]
+        raise Exception("To be implemented by subclass")
 
     def getitem(self, idx: int):
         return self.generate_query(idx)
 
     def __len__(self):
-        return len(self.loaded_dataset)
+        raise Exception("To be implemented by subclass")
 
     def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
         """
