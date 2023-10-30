@@ -19,8 +19,7 @@ def main(params):
     dataset = CommonProperties(
         dataset,
         adb_data_source="kaggle-celebA",
-        adb_main_object="Face",
-        adb_annoted=True)
+        adb_main_object="Face")
 
     # some useful properties for the images
     dataset = ImageProperties(dataset)
