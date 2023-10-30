@@ -1,6 +1,9 @@
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.transformers.transformer import Transformer
-import traceback
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class CommonProperties(Transformer):
@@ -28,15 +31,15 @@ class CommonProperties(Transformer):
         try:
             # x is a transaction that has an add_image command and a blob
             for ic in self._add_image_index:
+                src_properties = x[0][ic]["AddImage"]["properties"]
                 # Set the static properties, if explicitly set
                 if self.adb_data_source:
-                    x[0][ic]["AddImage"]["properties"]["adb_data_source"] = self.adb_data_source
+                    src_properties["adb_data_source"] = self.adb_data_source
                 if self.adb_timestamp:
-                    x[0][ic]["AddImage"]["properties"]["adb_timestamp"] = self.adb_timestamp
+                    src_properties["adb_timestamp"] = self.adb_timestamp
                 if self.adb_main_object:
-                    x[0][ic]["AddImage"]["properties"]["adb_main_object"] = self.adb_main_object
-
+                    src_properties["adb_main_object"] = self.adb_main_object
         except Exception as e:
-            traceback.print_exc(limit=5)
+            logger.exception(e.with_traceback(), stack_info=True)
 
         return x

@@ -28,6 +28,9 @@ app = typer.Typer()
 
 IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
 
+# This list needs to be updated when new transformers are added
+# This enables CLI params.
+
 
 class TransformerType(str, Enum):
     common_properties = "common_properties"
@@ -63,6 +66,7 @@ def _create_pipeline(transformers: List[str]):
     from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
     from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
 
+    # Actual collection of transformers, packaged with aperturedb.
     built_in_transformers = {
         "common_properties": CommonProperties,
         "image_properties": ImageProperties,
