@@ -17,8 +17,7 @@ try:
     import torch
     import cv2
 except ImportError:
-    logger.critical("")
-    logger.critical("")
+    logger.critical(error_message)
     exit(1)
 
 descriptor_set = "ViT-B/16"
