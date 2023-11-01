@@ -21,9 +21,10 @@ class CLIPPyTorchEmbeddings(Transformer):
             "search_set_name", descriptor_set)
 
         # Let's sample some data to figure out the descriptorset we need.
-        sample = generate_embedding(self.data[0][1][0])
-        utils = Utils(create_connector())
-        utils.add_descriptorset(self.search_set_name, dim=len(sample) // 4)
+        if len(self._add_image_index) > 0:
+            sample = generate_embedding(self.data[0][1][0])
+            utils = Utils(create_connector())
+            utils.add_descriptorset(self.search_set_name, dim=len(sample) // 4)
 
     def getitem(self, subscript):
         x = self.data[subscript]

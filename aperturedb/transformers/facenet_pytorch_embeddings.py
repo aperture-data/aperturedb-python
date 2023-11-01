@@ -22,11 +22,12 @@ class FacenetPyTorchEmbeddings(Transformer):
             "search_set_name", "facenet_pytorch_embeddings")
 
         # Let's sample some data to figure out the descriptorset we need.
-        sample = self.__get_embedding_from_blob(self.data[0][1][0])
-        utils = Utils(create_connector())
-        utils.add_descriptorset(self.search_set_name, dim=len(sample) // 4)
+        if len(self._add_image_index) > 0:
+            sample = self._get_embedding_from_blob(self.data[0][1][0])
+            utils = Utils(create_connector())
+            utils.add_descriptorset(self.search_set_name, dim=len(sample) // 4)
 
-    def __get_embedding_from_blob(self, image_blob: bytes):
+    def _get_embedding_from_blob(self, image_blob: bytes):
         pil_image = Image.open(io.BytesIO(image_blob))
         embedding = generate_embedding(pil_image)
         serialized = embedding.cpu().detach().numpy().tobytes()
@@ -36,7 +37,7 @@ class FacenetPyTorchEmbeddings(Transformer):
         x = self.data[subscript]
 
         for ic in self._add_image_index:
-            serialized = self.__get_embedding_from_blob(x[1][ic])
+            serialized = self._get_embedding_from_blob(x[1][ic])
             x[1].append(serialized)
             x[0].append(
                 {
