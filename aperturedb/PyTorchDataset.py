@@ -8,9 +8,11 @@ from aperturedb import Images
 from torch.utils import data
 
 
-DEFAULT_BATCH_SIZE = 50
-
 logger = logging.getLogger(__name__)
+
+# FIXME: This class needs to be removed or improved.
+# It is used for demos but it is very inefficient.
+# It is better to use ApertureDBDataset, passing the ADB query.
 
 
 class ApertureDBDatasetConstraints(data.Dataset):
@@ -41,20 +43,17 @@ class ApertureDBDatasetConstraints(data.Dataset):
 class ApertureDBDataset(data.Dataset):
 
     # initialise function of class
-    def __init__(self, db, query, label_prop=None):
+    def __init__(self, db, query, label_prop=None, batch_size=1):
 
         self.db = db.create_new_connection()
         self.query = query
         self.find_image_idx = None
         self.total_elements = 0
-        self.batch_size     = DEFAULT_BATCH_SIZE
+        self.batch_size     = batch_size
         self.batch_images   = []
         self.batch_start    = 0
         self.batch_end      = 0
         self.label_prop     = label_prop
-
-        self.prev_requested   = -1
-        self.sequence_counter = DEFAULT_BATCH_SIZE
 
         for i in range(len(query)):
 
@@ -64,7 +63,7 @@ class ApertureDBDataset(data.Dataset):
 
         if self.find_image_idx is None:
             logger.error(
-                "Query error. The query must containt one FindImage command")
+                "Query error. The query must contain one FindImage command")
             raise Exception('Query Error')
 
         if not "results" in self.query[self.find_image_idx]["FindImage"]:
@@ -82,18 +81,6 @@ class ApertureDBDataset(data.Dataset):
             raise
 
     def __getitem__(self, index):
-
-        if index == self.prev_requested + 1:
-            self.sequence_counter += 1
-        else:
-            self.sequence_counter = 0
-
-        if self.sequence_counter >= DEFAULT_BATCH_SIZE:
-            self.batch_size = DEFAULT_BATCH_SIZE
-        else:
-            self.batch_size = 1
-
-        self.prev_requested = index
 
         if index >= self.total_elements:
             raise StopIteration
@@ -126,6 +113,9 @@ class ApertureDBDataset(data.Dataset):
 
         total_batches = math.ceil(self.total_elements / self.batch_size)
         batch_idx     = math.floor(index / self.batch_size)
+
+        if batch_idx >= total_batches:
+            raise Exception("Index out of range")
 
         query  = self.query
         qbatch = query[self.find_image_idx]["FindImage"]["batch"]
