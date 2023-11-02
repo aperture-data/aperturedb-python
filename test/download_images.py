@@ -1,7 +1,5 @@
 import argparse
-import random
-import math
-
+import sys
 from aperturedb import ImageDownloader
 
 
@@ -13,6 +11,7 @@ def main(params):
                    numthreads=32,
                    batchsize=1,
                    stats=True)
+    return downloader.error_counter == 0
 
 
 def get_args():
@@ -28,4 +27,4 @@ def get_args():
 
 if __name__ == "__main__":
     args = get_args()
-    main(args)
+    sys.exit(0 if main(args) else 1)
