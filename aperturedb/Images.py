@@ -19,6 +19,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def np_arr_img_to_bytes(arr, format='JPEG') -> bytes:
+    return image_to_bytes(Image.fromarray(arr, 'RGB'), format=format)
+
+
+def image_to_bytes(image: Image, format="JPEG") -> bytes:
+    with BytesIO() as bytes:
+        image.save(bytes, format=format)
+        return bytes.getvalue()
+
+
 class Images(Entities):
     """
     **The object mapper representation of images in ApertureDB.**

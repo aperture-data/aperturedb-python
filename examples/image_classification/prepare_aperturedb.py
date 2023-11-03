@@ -3,7 +3,7 @@ import io
 from aperturedb.ParallelLoader import ParallelLoader
 from PIL import Image
 import dbinfo
-from CocoDataPytorch import CocoDataPytorch
+from CocoDataPyTorch import CocoDataPyTorch
 import argparse
 
 
@@ -15,7 +15,7 @@ def main(params):
         imgByteArr = imgByteArr.getvalue()
         return imgByteArr
 
-    coco_detection = CocoDataPytorch("prepare_aperturedb")
+    coco_detection = CocoDataPyTorch("prepare_aperturedb")
 
     # Lets use some images from the coco which are annotated for the purpose of the demo
     images = []

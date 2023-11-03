@@ -13,48 +13,28 @@ DEFAULT_BATCH_SIZE = 50
 logger = logging.getLogger(__name__)
 
 
-class ApertureDBDatasetConstraints(data.Dataset):
-
-    # initialise function of class
-    def __init__(self, db, constraints):
-
-        self.imgs_handler = Images.Images(db)
-        self.imgs_handler.search(constraints=constraints)
-
-    def __getitem__(self, index):
-
-        if index >= self.imgs_handler.total_results():
-            raise StopIteration
-
-        img = self.imgs_handler.get_np_image_by_index(index)
-
-        # This is temporary until we define a good, generic way, of
-        # retriving a label associated with the image.
-        label = "none"
-        return img, label
-
-    def __len__(self):
-
-        return self.imgs_handler.total_results()
-
-
 class ApertureDBDataset(data.Dataset):
+    """
+    This class implements a PyTorch Dataset for ApertureDB.
+    It is used to load images from ApertureDB into a PyTorch model.
+    It can be initialised with a query that will be used to retrieve
+    the images from ApertureDB.
+    """
 
-    # initialise function of class
-    def __init__(self, db, query, label_prop=None):
+    def __init__(self, db, query, label_prop=None, batch_size=DEFAULT_BATCH_SIZE):
 
         self.db = db.create_new_connection()
         self.query = query
         self.find_image_idx = None
         self.total_elements = 0
-        self.batch_size     = DEFAULT_BATCH_SIZE
+        self.batch_size     = batch_size
         self.batch_images   = []
         self.batch_start    = 0
         self.batch_end      = 0
         self.label_prop     = label_prop
 
         self.prev_requested   = -1
-        self.sequence_counter = DEFAULT_BATCH_SIZE
+        self.sequence_counter = batch_size
 
         for i in range(len(query)):
 
@@ -88,8 +68,8 @@ class ApertureDBDataset(data.Dataset):
         else:
             self.sequence_counter = 0
 
-        if self.sequence_counter >= DEFAULT_BATCH_SIZE:
-            self.batch_size = DEFAULT_BATCH_SIZE
+        if self.sequence_counter >= self.batch_size:
+            self.batch_size = self.batch_size
         else:
             self.batch_size = 1
 

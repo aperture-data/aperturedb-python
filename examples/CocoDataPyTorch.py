@@ -1,17 +1,9 @@
 from aperturedb.PyTorchData import PyTorchData
 from torchvision.datasets import CocoDetection
-from PIL import Image
-import io
+from aperturedb.Images import image_to_byte_array
 
 
-def image_to_byte_array(image: Image) -> bytes:
-    imgByteArr = io.BytesIO()
-    image.save(imgByteArr, format="JPEG")
-    imgByteArr = imgByteArr.getvalue()
-    return imgByteArr
-
-
-class CocoDataPytorch(PyTorchData):
+class CocoDataPyTorch(PyTorchData):
     """
     **ApertureDB ingestable Dataset, which is sourced from
     [CocoDetection (torchvision.datasets)](https://pytorch.org/vision/main/generated/torchvision.datasets.CocoDetection.html#torchvision.datasets.CocoDetection)**
