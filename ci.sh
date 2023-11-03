@@ -6,7 +6,7 @@ check_for_changed_docker_files() {
   echo "Checking for changed docker files..."
 
   # Get files changed on merge
-  FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only | { grep 'Dockerfile' || true; })
+  FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only -- | { grep 'Dockerfile' || true; })
 
   echo "Files Changed: " ${FILES_CHANGED}
   if [ -z "$FILES_CHANGED" ]
@@ -80,6 +80,12 @@ fi
 if [ -z ${COMMIT_HASH+x} ]
 then
     COMMIT_HASH=$(git rev-parse HEAD)
+fi
+
+# Fetch branch
+if [ -z ${TARGET_BRANCH_NAME+x} ]
+then
+    TARGET_BRANCH_NAME=$BRANCH_NAME
 fi
 
 #Install pre requisites
@@ -226,7 +232,6 @@ then
     if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
     then
         build_notebook_dependencies_image
-        return
     fi
 
     build_notebook_image

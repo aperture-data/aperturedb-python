@@ -64,7 +64,8 @@ dev = [
     "pre-commit",
     "pytest",
     "build",
-    "clip@git+https://github.com/openai/CLIP.git"
+    "clip@git+https://github.com/openai/CLIP.git",
+    "fuse-python ; platform_system == 'Linux'"
 ]
 
 # The following would provide a command line executable called `sample`

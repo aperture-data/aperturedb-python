@@ -87,6 +87,9 @@ class Images(Entities):
 
         self.images          = {}
         self.images_ids      = []
+        if response is not None:
+            self.images_ids = list(map(lambda x: x["_uniqueid"], response))
+
         self.image_sizes     = []
         self.images_bboxes   = {}
         self.images_polygons = {}
@@ -259,9 +262,10 @@ class Images(Entities):
 
             bboxes = []
             tags   = []
-            for bbox in res[1]["FindBoundingBox"]["entities"]:
-                bboxes.append(bbox["_coordinates"])
-                tags.append(bbox[self.bbox_label_prop])
+            if "entities" in res[1]["FindBoundingBox"]:
+                for bbox in res[1]["FindBoundingBox"]["entities"]:
+                    bboxes.append(bbox["_coordinates"])
+                    tags.append(bbox[self.bbox_label_prop])
 
             uniqueid_str = str(uniqueid)
             self.images_bboxes[uniqueid_str] = {}
