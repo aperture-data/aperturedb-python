@@ -11,35 +11,13 @@ from torch.utils import data
 logger = logging.getLogger(__name__)
 
 
-class ApertureDBDatasetConstraints(data.Dataset):
-    # FIXME: This class needs to be removed or improved.
-    # It is used for demos but it is very inefficient.
-    # It is better to use ApertureDBDataset, passing the ADB query.
-
-    # initialise function of class
-    def __init__(self, db, constraints):
-
-        self.imgs_handler = Images.Images(db)
-        self.imgs_handler.search(constraints=constraints)
-
-    def __getitem__(self, index):
-
-        if index >= self.imgs_handler.total_results():
-            raise StopIteration
-
-        img = self.imgs_handler.get_np_image_by_index(index)
-
-        # This is temporary until we define a good, generic way, of
-        # retriving a label associated with the image.
-        label = "none"
-        return img, label
-
-    def __len__(self):
-
-        return self.imgs_handler.total_results()
-
-
 class ApertureDBDataset(data.Dataset):
+    """
+    This class implements a PyTorch Dataset for ApertureDB.
+    It is used to load images from ApertureDB into a PyTorch model.
+    It can be initialised with a query that will be used to retrieve
+    the images from ApertureDB.
+    """
 
     # initialise function of class
     def __init__(self, db, query, label_prop=None, batch_size=1):

@@ -1,6 +1,8 @@
 import logging
 import json
 import os
+import importlib
+import sys
 
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
@@ -8,7 +10,6 @@ from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Configuration import Configuration
 from aperturedb.cli.configure import ls
-from aperturedb.cli.console import console
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,18 @@ DESCRIPTOR_CLASS = "_Descriptor"
 DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
 
 DEFAULT_METADATA_BATCH_SIZE = 100_000
+
+
+def import_module_by_path(filepath):
+    """
+    This function imports a module given a path to a python file.
+    """
+    module_name = os.path.basename(filepath)[:-3]
+    spec = importlib.util.spec_from_file_location(module_name, filepath)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def __create_connector(configuration: Configuration):
@@ -34,8 +47,7 @@ def __create_connector(configuration: Configuration):
             user=configuration.username,
             password=configuration.password,
             config=configuration)
-    console.log(f"Connected Using:")
-    console.log(configuration)
+    logger.info(f"Connected Using: {configuration}")
     return connector
 
 
@@ -49,7 +61,7 @@ def create_connector():
     Returns:
         Connector: The connector to the database.
     """
-    all_configs = ls()
+    all_configs = ls(log_to_console=False)
 
     env_config = os.environ.get("APERTUREDB_CONFIG")
     ac = all_configs["active"]

@@ -105,9 +105,16 @@ class ImageDownloader(Parallelizer.Parallelizer):
             os.makedirs(folder, exist_ok=True)
 
         retries = 0
+        downloaded = False
         while True:
-            imgdata = requests.get(url)
-            if imgdata.ok:
+            try:
+                imgdata = requests.get(url)
+                downloaded = True
+            except requests.exceptions.ConnectionError as e:
+                logger.warning("Error with GET.")
+                logger.exception(e)
+
+            if downloaded and imgdata.ok:
                 break
             else:
                 if retries >= self.n_download_retries:

@@ -17,7 +17,7 @@ class CocoDataPytorch(PyTorchData):
     [CocoDetection (torchvision.datasets)](https://pytorch.org/vision/main/generated/torchvision.datasets.CocoDetection.html#torchvision.datasets.CocoDetection)**
     """
 
-    def __init__(self, dataset_name: str) -> None:
+    def __init__(self) -> None:
         """
         COCO dataset loads as an iterable with Tuple (X, [y1, y2 .... yn])
         where X is the image (PIL.Image) and y's are multiple dicts with properties like:
@@ -26,14 +26,14 @@ class CocoDataPytorch(PyTorchData):
         coco_detection = CocoDetection(
             root="coco/val2017",
             annFile="coco/annotations/person_keypoints_val2017.json")
-        self._dataset_name = dataset_name
         super().__init__(coco_detection)
 
     def generate_query(self, idx: int):
         item = self.loaded_dataset[idx]
+        img_ref = (idx % 99998) + 1
         q = [{
             "AddImage": {
-                "_ref": 1
+                "_ref": img_ref
             }
         }]
         blob = image_to_byte_array(item[0])
@@ -48,7 +48,7 @@ class CocoDataPytorch(PyTorchData):
                 bbox = meta_info["bbox"]
                 q.append({
                     "AddBoundingBox": {
-                        "image_ref": 1,
+                        "image_ref": img_ref,
                         "rectangle": {
                             "x": int(bbox[0]),
                             "y": int(bbox[1]),
@@ -58,6 +58,5 @@ class CocoDataPytorch(PyTorchData):
                         "label": str(meta_info["category_id"])
                     }
                 })
-            q[0]["AddImage"]["properties"]["dataset_name"] = self._dataset_name
 
         return q, [blob]

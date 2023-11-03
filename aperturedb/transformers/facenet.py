@@ -1,6 +1,20 @@
-from facenet_pytorch import MTCNN, InceptionResnetV1
-from PIL import Image
-import torch
+import logging
+
+logger = logging.getLogger(__name__)
+
+error_message = """
+Facenet transformer requires facenet-pytorch and torch
+Install with: pip install aperturedb[complete]
+Alternatively, install with: "pip install facenet-pytorch torch" in the same
+venv as aperturedb.
+"""
+
+try:
+    from facenet_pytorch import MTCNN, InceptionResnetV1
+    import torch
+except ImportError:
+    logger.critical(error_message)
+    exit(1)
 
 # If required, create a face detection pipeline using MTCNN:
 mtcnn = MTCNN(image_size=96, margin=0)

@@ -281,6 +281,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         if self.format_given:
             custom_fields["format"] = self.df.loc[idx, IMG_FORMAT]
         ai = self._basic_command(idx, custom_fields)
+        ai[self.command]["_ref"] = (idx % 99998) + 1
         blobs.append(img)
         q.append(ai)
 

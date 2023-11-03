@@ -24,10 +24,11 @@ file = namedtuple("file", ["fileType", "totalBytes", "name"])
 
 
 def custom_download(workdir, files):
-    def dload_zip(dataset, path, unzip):
+    def dload_zip(dataset, path, quiet, unzip):
         assert(dataset in workdir)
         assert(path == workdir)
         assert(not unzip)
+        assert(not quiet)
         # Simulate a download from kaggle.
         # the kaggle API leads to a zipped dataset downloaded into the dataset_ref path.
         os.makedirs(workdir, exist_ok=True)
