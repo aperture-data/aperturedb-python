@@ -19,7 +19,6 @@ class ApertureDBDataset(data.Dataset):
     the images from ApertureDB.
     """
 
-    # initialise function of class
     def __init__(self, db, query, label_prop=None, batch_size=1):
 
         self.db = db.create_new_connection()
