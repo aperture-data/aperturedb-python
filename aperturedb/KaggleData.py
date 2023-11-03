@@ -48,6 +48,7 @@ class KaggleData(Subscriptable):
         x = kaggle.dataset_download_files(
             dataset=dataset_ref,
             path=workdir,
+            quiet=False,
             unzip=False)
 
         archive = None

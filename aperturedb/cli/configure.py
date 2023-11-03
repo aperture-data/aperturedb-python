@@ -65,7 +65,7 @@ def get_configurations(file: str):
 
 
 @app.command()
-def ls():
+def ls(log_to_console: bool = True):
     """
     List the configurations with their details.
     """
@@ -90,8 +90,9 @@ def ls():
                 f"No configurations found. Please run adb config create <name>")
             return
         else:
-            console.log(f"Available configurations:")
-            console.log(all_configs)
+            if log_to_console:
+                console.log(f"Available configurations:")
+                console.log(all_configs)
 
     else:
         console.log(all_configs)

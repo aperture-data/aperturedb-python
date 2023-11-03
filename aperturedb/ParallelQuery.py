@@ -347,3 +347,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 print(f"Errors (%): {err_perc}")
 
         print("=========================================================")
+
+    def debug_sample(self, **kwargs):
+        """
+        Sample the data to be ingested for debugging purposes.
+        """
+        if "sample_count" in kwargs:
+            sample_count = kwargs["sample_count"]
+        else:
+            sample_count = len(self.generator)
+
+        if sample_count > 0:
+            print("Sample of data to be ingested:")
+            for i in range(sample_count):
+                print(self.generator[i])
