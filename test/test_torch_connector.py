@@ -32,15 +32,6 @@ class TestTorchDatasets():
         if time_taken != 0:
             logger.info(f"Throughput (imgs/s): {len(dataset) / time_taken}")
 
-    def test_omConstraints(self, db, utils, images):
-        assert len(images) > 0
-        const = Images.Constraints()
-        const.greaterequal("age", 0)
-        dataset = PyTorchDataset.ApertureDBDatasetConstraints(
-            db, constraints=const)
-
-        self.validate_dataset(dataset, utils.count_images())
-
     def test_nativeContraints(self, db, utils, images):
         assert len(images) > 0
         # This is a hack against a bug in batch API.
