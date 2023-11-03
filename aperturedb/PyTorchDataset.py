@@ -10,12 +10,11 @@ from torch.utils import data
 
 logger = logging.getLogger(__name__)
 
-# FIXME: This class needs to be removed or improved.
-# It is used for demos but it is very inefficient.
-# It is better to use ApertureDBDataset, passing the ADB query.
-
 
 class ApertureDBDatasetConstraints(data.Dataset):
+    # FIXME: This class needs to be removed or improved.
+    # It is used for demos but it is very inefficient.
+    # It is better to use ApertureDBDataset, passing the ADB query.
 
     # initialise function of class
     def __init__(self, db, constraints):
