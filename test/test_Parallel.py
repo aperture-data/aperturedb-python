@@ -9,8 +9,9 @@ logger = logging.getLogger(__name__)
 
 # Tests for parallel which don't involve data.
 
+
 class GeneratorWithErrors(Subscriptable):
-    def __init__(self, commands_per_query=1, elements=100,error_pct=.5) -> None:
+    def __init__(self, commands_per_query=1, elements=100, error_pct=.5) -> None:
         super().__init__()
         self.commands_per_query = commands_per_query
         self.elements = elements
@@ -23,11 +24,11 @@ class GeneratorWithErrors(Subscriptable):
         query = []
         blobs = []
         for i in range(self.commands_per_query):
-            if random.randint(0,100) < (self.error_pct * 100):
+            if random.randint(0, 100) < (self.error_pct * 100):
                 query.append({
                     "BadCommand": {
                     }
-                    })
+                })
             else:
                 query.append({
                     "FindEntity": {
@@ -38,6 +39,7 @@ class GeneratorWithErrors(Subscriptable):
                 })
 
         return query, blobs
+
 
 class TestParallel():
     """
@@ -55,7 +57,7 @@ class TestParallel():
             querier.query(generator, batchsize=2,
                           numthreads=8,
                           stats=True)
-            logger.info( querier.get_suceeded_commands())
+            logger.info(querier.get_suceeded_commands())
             assert querier.get_suceeded_commands() < elements
         except Exception as e:
             print(e)
@@ -68,15 +70,14 @@ class TestParallel():
         """
         try:
             elements = 100
-            generator = GeneratorWithErrors(elements=elements,error_pct=1)
+            generator = GeneratorWithErrors(elements=elements, error_pct=1)
             querier = ParallelQuery(db, dry_run=False)
             querier.query(generator, batchsize=2,
                           numthreads=8,
                           stats=True)
-            logger.info( querier.get_suceeded_commands())
+            logger.info(querier.get_suceeded_commands())
             assert querier.get_suceeded_commands() == 0
         except Exception as e:
             print(e)
             print("Failed to renew Session")
             assert False
-
