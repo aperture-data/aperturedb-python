@@ -8,7 +8,12 @@ rm -rf output/*
 mkdir -p input/blobs
 
 echo "Downloading images..."
-python3 download_images.py          # Test ImageDownloader
+python3 download_images.py
+RESULT=$?
+if [[ $RESULT != 0 ]]; then
+	echo "Download failed."
+	exit 1
+fi
 echo "Done downloading images."
 
 echo "Generating input files..."
