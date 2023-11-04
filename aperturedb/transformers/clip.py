@@ -7,8 +7,8 @@ logger = logging.getLogger(__name__)
 
 error_message = """
 CLIP transformer requires git+https://github.com/openai/CLIP.git and torch
-Install with: pip install aperturedb[dev]
-Alternatively, install with: "pip install git+https://github.com/openai/CLIP.git" in the same
+Install with: pip install aperturedb[complete], followed by explicit install of CLIP.
+Can be done with : "pip install git+https://github.com/openai/CLIP.git" in the same
 venv as aperturedb.
 """
 
