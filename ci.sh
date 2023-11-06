@@ -12,6 +12,9 @@ check_for_changed_docker_files() {
   if [ -z "$FILES_CHANGED" ]
   then
     echo "No Dockerfile changes."
+    # no files changed is probably an error: print branches.
+    git branch -a --list *${BRANCH_NAME}*
+    git branch -a --list *${TARGET_BRANCH_NAME}*
     return
   fi
 
