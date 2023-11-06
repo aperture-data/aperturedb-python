@@ -208,7 +208,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             elif result == 2:
                 # with result 2, some queries might have failed.
                 def filter_per_group(group):
-                    return i.items() if isinstance(group, dict) else {}
+                    return group.items() if isinstance(group, dict) else {}
                 worker_stats["suceeded_commands"] = sum(
                     [v['status'] == 0 for i in r for k, v in filter_per_group(i)])
                 worker_stats["objects_existed"] = sum(
