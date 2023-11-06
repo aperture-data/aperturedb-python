@@ -12,7 +12,7 @@ check_for_changed_docker_files() {
   if [ -z "$FILES_CHANGED" ]
   then
     echo "No Dockerfile changes."
-    ANY_FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only)
+    ANY_FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only || true )
     if [ -z "$ANY_FILES_CHANGED" ]; then
         echo "No files changed?"
     fi
