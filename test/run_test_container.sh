@@ -4,6 +4,8 @@ set -u
 set -e
 
 docker compose down --remove-orphans
+# ensure latest db
+docker compose pull aperturedb
 rm -rf aperturedb/db
 rm -rf output
 mkdir -m 777 output
