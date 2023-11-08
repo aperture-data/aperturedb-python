@@ -6,12 +6,25 @@ check_for_changed_docker_files() {
   echo "Checking for changed docker files..."
 
   # Get files changed on merge
+  git fetch origin ${BRANCH_NAME}
+  git fetch origin ${TARGET_BRANCH_NAME}
   FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only | { grep 'Dockerfile' || true; })
 
   echo "Files Changed: " ${FILES_CHANGED}
   if [ -z "$FILES_CHANGED" ]
   then
     echo "No Dockerfile changes."
+    ANY_FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only || true )
+    if [ -z "$ANY_FILES_CHANGED" ]; then
+        echo "No files changed?"
+        # no files changed is probably an error: print branches.
+        echo "${BRANCH_NAME}:"
+        git branch -a --list *${BRANCH_NAME}*
+        echo "${TARGET_BRANCH_NAME}:"
+        git branch -a --list *${TARGET_BRANCH_NAME}*
+        echo "All branches"
+        git branch -a | grep -v release
+    fi
     return
   fi
 

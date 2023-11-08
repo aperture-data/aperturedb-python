@@ -106,7 +106,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         else:
             mean = np.mean(times)
             std  = np.std(times)
-            tp = 1 / mean * self.numthreads
+            tp = 0 if mean == 0 else 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")
             print(f"Query time std: {std}")
