@@ -10,8 +10,8 @@ import numpy as np
 from PIL import Image
 from IPython.display import Video
 from IPython.display import display as ds
-from IPython.display import HTML
 from base64 import b64encode
+import matplotlib.pyplot as plt
 
 
 DESTINATION_FOLDER = "results"
@@ -53,12 +53,29 @@ def check_folder(folder):
 
 
 def display(images_array, save=False):
+    """
+    Show images with matplotlib
+    :::note
+    This method was used by ApertureDB to display images, but it is not recommended anymore.
+    It will not draw annotation.
+
+    Instead, when using with JSON queries, make a instance of the Images class and call the display method.
+    :
+
+    ```python
+    from aperturedb.Images import Images
+    result, response, blobs = execute_batch([{"FindImage":{"uniqueids": True}}], [], db)
+    wrapper = Images(db, response=response[0]["FindImage"]["entities"])
+    wrapper.display()
+    ```
+    """
 
     for im in images_array:
         nparr = np.fromstring(im, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        ds(Image.fromarray(image))
+        plt.subplots()
+        plt.imshow(image)
 
     if save:
         check_folder(DESTINATION_FOLDER)
@@ -168,12 +185,12 @@ def annotate_video(blob, bboxes: List[TemporalBoundingBox] = []):
         print("Unable to open cap")
 
 
-def display_annotated_video(blob, boxes=[], tags=[], bboxes: List[TemporalBoundingBox] = []):
+def display_annotated_video(blob, bboxes: List[TemporalBoundingBox] = []):
     """
     Returns a HTML representation with a column filled
     with video entities.
     """
-    annotate_video(blob, boxes, tags, bboxes)
+    annotate_video(blob, bboxes)
     video_path = os.path.join(DESTINATION_FOLDER, 'output.mp4')
     mp4 = open(video_path, "rb").read()
     data_url = "data:video/mp4;base64," + b64encode(mp4).decode()
