@@ -138,10 +138,27 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     def generate_batch(self, data):
         """
-            Here we flatten the individual queries to run them as
-            a single query in a batch
+        Here we flatten the individual queries to run them as
+        a single query in a batch
+        We also update the _ref values and connections refs.
         """
-        q = [cmd for query in data for cmd in query[0]]
+        def update_refs(batched_commands):
+            updates = {}
+            for i, cmd in enumerate(batched_commands):
+                values = cmd[list(cmd.keys())[0]]
+                if "_ref" in values:
+                    updates[values["_ref"]] = i + 1
+                    values["_ref"] = i + 1
+                    assert values["_ref"] < 100000
+                if "image_ref" in values:
+                    values["image_ref"] = updates[values["image_ref"]]
+                if "video_ref" in values:
+                    values["video_ref"] = updates[values["video_ref"]]
+                if "is_connected_to" in values and "_ref" in values["is_connected_to"]:
+                    values["is_connected_to"]["_ref"] = updates[values["is_connected_to"]["_ref"]]
+            return batched_commands
+
+        q = update_refs([cmd for query in data for cmd in query[0]])
         blobs = [blob for query in data for blob in query[1]]
 
         return q, blobs
