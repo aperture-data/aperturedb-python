@@ -66,7 +66,6 @@ class BlobDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx
         filename = os.path.join(self.relative_path_prefix,
                                 self.df.loc[idx, BLOB_PATH])
         blob_ok, blob = self.load_blob(filename)
@@ -75,7 +74,7 @@ class BlobDataCSV(CSVParser.CSVParser):
             raise Exception("Error loading blob: " + filename)
 
         q = []
-        ab = self._basic_command(idx)
+        ab = self._basic_command(1)
         q.append(ab)
 
         return q, [blob]

@@ -77,7 +77,6 @@ class ConnectionDataCSV(CSVParser):
         }
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx
         src_value = self.df.loc[idx, self.header[1]]
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]
@@ -85,7 +84,7 @@ class ConnectionDataCSV(CSVParser):
         members = ["_Image", "_Blob", "_Video", "_Descriptor"]
 
         try:
-            ref_src = (2 * idx) % 99998 + 1
+            ref_src = 1
             cmd_params = {
                 "_ref": ref_src,
                 "unique": True,
@@ -98,7 +97,7 @@ class ConnectionDataCSV(CSVParser):
                 cmd_params["blobs"] = False
             q.append(QueryBuilder.find_command(self.src_class, cmd_params))
 
-            ref_dst = ref_src + 1
+            ref_dst = 2
             cmd_params = {
                 "_ref": ref_dst,
                 "unique": True,
