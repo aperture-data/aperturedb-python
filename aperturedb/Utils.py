@@ -719,6 +719,7 @@ class Utils(object):
             {"DeleteImage": cmd},
             {"DeleteVideo": cmd},
             {"DeleteBlob": cmd},
+            {"DeleteClip": cmd},
             # DeleteDescriptorSet also deletes the descriptors
             {"DeleteDescriptorSet": cmd},
 
