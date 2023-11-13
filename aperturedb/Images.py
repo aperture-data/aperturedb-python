@@ -279,6 +279,9 @@ class Images(Entities):
             uniqueid = self.images_ids[idx]
             self.images[str(uniqueid)] = imgs[i]
 
+    def retrieve_polygons(self, index):
+        return self.__retrieve_polygons(index, constraints=None, tag_key="_label", tag_format="{}")
+
     def __retrieve_polygons(self, index, constraints, tag_key, tag_format):
 
         if index > len(self.images_ids):

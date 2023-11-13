@@ -8,6 +8,7 @@ from aperturedb.Images import Images
 import logging
 from threading import Lock
 import json
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -60,13 +61,18 @@ def generate_coco_meta_data(images: Images):
     # Add attached bounding boxes
     categories = []
     meta_annotations = []
-    for ind, image_id in enumerate(images.images_ids):
-        for bidx, box in enumerate(images.images_bboxes[image_id]['bboxes']):
+
+    for ind, image_id in tqdm(enumerate(images.images_ids)):
+        boxes_segments = zip(images.images_bboxes[image_id]['bboxes'],
+                             images.images_polygons[image_id]['polygons'])
+        for bidx, (box, seg) in enumerate(boxes_segments):
+
+            # for bidx, box in enumerate(images.images_bboxes[image_id]['bboxes']):
             annotation = {
-                "id": 2 * ind,
+                "id": 2 * bidx + 1,
                 "image_id": image_id,
                 "category_id": 1,
-                "segmentation": [],
+                "segmentation": [[x for coords in seg[0] for x in coords]],
                 "tags": [k for k in properties[image_id] if properties[image_id][k] == 1],
                 "bbox": [
                     box['x'],
@@ -144,6 +150,7 @@ class ADFS(Fuse):
             logger.debug(img)
             try:
                 images.get_bboxes_by_index(i)
+                images.retrieve_polygons(i)
             except Exception as e:
                 print(images.images_bboxes)
                 raise
