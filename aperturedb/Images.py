@@ -268,24 +268,21 @@ class Images(Entities):
                 "labels": True
             }
         }]
-
+        uniqueid_str = str(uniqueid)
+        self.images_bboxes[uniqueid_str] = {}
         try:
             res, images = self.db_connector.query(query)
-
             bboxes = []
             tags   = []
-            for bbox in res[1]["FindBoundingBox"]["entities"]:
-                bboxes.append(bbox["_coordinates"])
-                tags.append(bbox[self.bbox_label_prop])
-
-            uniqueid_str = str(uniqueid)
-            self.images_bboxes[uniqueid_str] = {}
+            if "entities" in res[1]["FindBoundingBox"]:
+                for bbox in res[1]["FindBoundingBox"]["entities"]:
+                    bboxes.append(bbox["_coordinates"])
+                    tags.append(bbox[self.bbox_label_prop])
+        except:
+            logger.warn(f"Cannot retrieve bounding boxes for image {uniqueid}")
+        finally:
             self.images_bboxes[uniqueid_str]["bboxes"] = bboxes
             self.images_bboxes[uniqueid_str]["tags"]   = tags
-
-        except:
-            print(self.db_connector.get_last_response_str())
-            raise
 
     def total_results(self) -> int:
         """
