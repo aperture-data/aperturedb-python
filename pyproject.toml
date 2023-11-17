@@ -63,8 +63,7 @@ dev = [
     "autopep8",
     "pre-commit",
     "pytest",
-    "build",
-    "clip@git+https://github.com/openai/CLIP.git"
+    "build"
 ]
 
 # The following would provide a command line executable called `sample`
