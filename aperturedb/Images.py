@@ -45,17 +45,30 @@ class Images(Entities):
     def inspect(self, use_thumbnails=True) -> Union[Tuple[widgets.IntSlider, widgets.Output], DataFrame]:
         df = super(Images, self).inspect()
         if use_thumbnails:
+            def image_base64(im):
+                with BytesIO() as buffer:
+                    im.save(buffer, 'jpeg')
+                    return base64.b64encode(buffer.getvalue()).decode()
+
+            def get_formatters(width):
+                def image_formatter(im):
+                    return f'<img width={width} style="max-width: 400px" src="data:image/jpeg;base64,{image_base64(im)}" >'
+
+                return image_formatter
+
             sizer = widgets.IntSlider(min=1, max=400, value=100)
             op = widgets.Output()
 
-            def widget_interaction(c):
-                def image_base64(im):
-                    with BytesIO() as buffer:
-                        im.save(buffer, 'jpeg')
-                        return base64.b64encode(buffer.getvalue()).decode()
+            with op:
+                image_formatter = get_formatters(sizer.value)
+                display(HTML("<div style='max-width: 100%; overflow: auto;'>" +
+                             df.to_html(
+                                 formatters={'thumbnail': image_formatter}, escape=False)
+                             + "</div>")
+                        )
 
-                def image_formatter(im):
-                    return f'<img width={c["new"]} style="max-width: 400px" src="data:image/jpeg;base64,{image_base64(im)}" >'
+            def widget_interaction(c):
+                image_formatter = get_formatters(c['new'])
                 with op:
                     op.clear_output()
                     display(HTML("<div style='max-width: 100%; overflow: auto;'>" +
@@ -98,8 +111,6 @@ class Images(Entities):
         self.format      = None
         self.limit       = None
 
-        self.search_result = None
-
         self.adjacent = {}
 
         self.batch_size = batch_size
@@ -109,6 +120,10 @@ class Images(Entities):
         self.img_id_prop     = "_uniqueid"
         self.bbox_label_prop = "_label"
         self.get_image = True
+
+        if response is not None:
+            self.images_ids = list(
+                map(lambda x: x[self.img_id_prop], response))
 
     def __retrieve_batch(self, index):
         '''
@@ -253,24 +268,21 @@ class Images(Entities):
                 "labels": True
             }
         }]
-
+        uniqueid_str = str(uniqueid)
+        self.images_bboxes[uniqueid_str] = {}
         try:
             res, images = self.db_connector.query(query)
-
             bboxes = []
             tags   = []
-            for bbox in res[1]["FindBoundingBox"]["entities"]:
-                bboxes.append(bbox["_coordinates"])
-                tags.append(bbox[self.bbox_label_prop])
-
-            uniqueid_str = str(uniqueid)
-            self.images_bboxes[uniqueid_str] = {}
+            if "entities" in res[1]["FindBoundingBox"]:
+                for bbox in res[1]["FindBoundingBox"]["entities"]:
+                    bboxes.append(bbox["_coordinates"])
+                    tags.append(bbox[self.bbox_label_prop])
+        except:
+            logger.warn(f"Cannot retrieve bounding boxes for image {uniqueid}")
+        finally:
             self.images_bboxes[uniqueid_str]["bboxes"] = bboxes
             self.images_bboxes[uniqueid_str]["tags"]   = tags
-
-        except:
-            print(self.db_connector.get_last_response_str())
-            raise
 
     def total_results(self) -> int:
         """
@@ -402,7 +414,7 @@ class Images(Entities):
         except:
             print("Error with search: {}".format(response))
 
-        self.search_result = response
+        self.response = entities
 
     def search_by_property(self, prop_key: str, prop_values: list):
         """
@@ -681,7 +693,7 @@ class Images(Entities):
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             fig1, ax1 = plt.subplots()
-            plt.imshow(image), plt.axis("off")
+            plt.imshow(image)
 
     def get_props_names(self):
 

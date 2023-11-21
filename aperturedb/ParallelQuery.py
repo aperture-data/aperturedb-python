@@ -227,13 +227,16 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["suceeded_commands"] = 0
                 worker_stats["objects_existed"] = 0
             elif result == 2:
+                # with result 2, some queries might have failed.
+                def filter_per_group(group):
+                    return group.items() if isinstance(group, dict) else {}
                 worker_stats["suceeded_commands"] = sum(
-                    [v['status'] == 0 for i in r for k, v in i.items()])
+                    [v['status'] == 0 for i in r for k, v in filter_per_group(i)])
                 worker_stats["objects_existed"] = sum(
-                    [v['status'] == 2 for i in r for k, v in i.items()])
+                    [v['status'] == 2 for i in r for k, v in filter_per_group(i)])
                 sq = 0
                 for i in range(0, len(r), self.commands_per_query):
-                    if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in j.items()]):
+                    if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
                         sq += 1
                 worker_stats["suceeded_queries"] = sq
         else:
@@ -352,7 +355,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         else:
             mean = np.mean(times)
             std = np.std(times)
-            tp = 1 / mean * self.numthreads
+            tp = 0 if mean == 0 else 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")
             print(f"Query time std: {std}")
