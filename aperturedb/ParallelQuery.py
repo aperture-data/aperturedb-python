@@ -145,6 +145,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
         def update_refs(batched_commands):
             updates = {}
             for i, cmd in enumerate(batched_commands):
+                if isinstance(cmd, list):
+                    # Only pralllel queries will work.
+                    break
                 values = cmd[list(cmd.keys())[0]]
                 if "_ref" in values:
                     updates[values["_ref"]] = i + 1

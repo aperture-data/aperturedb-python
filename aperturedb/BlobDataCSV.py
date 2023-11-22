@@ -74,7 +74,7 @@ class BlobDataCSV(CSVParser.CSVParser):
             raise Exception("Error loading blob: " + filename)
 
         q = []
-        ab = self._basic_command(1)
+        ab = self._basic_command(idx)
         q.append(ab)
 
         return q, [blob]
