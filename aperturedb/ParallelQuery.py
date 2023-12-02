@@ -258,6 +258,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         if (end - start) % self.batchsize > 0:
             total_batches += 1
 
+        logger.info(f"Worker {thid} executing {total_batches} batches")
         for i in range(total_batches):
 
             batch_start = start + i * self.batchsize
@@ -330,8 +331,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     # if len(generator[0]) > 0:
                     #
                     #  Not applicable to old style loaders.
-                    self.commands_per_query = min(
-                        len(generator[0][0]), batchsize)
+                    self.commands_per_query = len(generator[0][0])
                     if len(generator[0][1]):
                         self.blobs_per_query = len(generator[0][1])
                 else:

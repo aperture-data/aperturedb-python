@@ -3,6 +3,7 @@ import logging
 from typing import List, Optional
 import typer
 import os
+import time
 
 from typing_extensions import Annotated
 from aperturedb.ParallelLoader import ParallelLoader
@@ -43,10 +44,12 @@ def _debug_samples(data, sample_count, module_name):
     import json
     print(f"len(data)={len(data)}")
     for i, r in enumerate(data[0:sample_count]):
-        q, b = r
+        query, blobs = r
+        with open(module_name + f"_{i}" + ".raw", "w") as f:
+            f.write(str(query))
         with open(module_name + f"_{i}" + ".json", "w") as f:
-            f.write(json.dumps(q, indent=2))
-        for j, blob in enumerate(b):
+            f.write(json.dumps(query, indent=2))
+        for j, blob in enumerate(blobs):
             with open(module_name + f"_{i}_{j}" + ".jpg", "wb") as f:
                 f.write(blob)
 
@@ -57,6 +60,7 @@ def _apply_pipeline(data, transformers: List[str], **kwargs):
                 "\r\n=>".join([f"{stage.__name__}[{kwargs}]" for stage in pipeline]))
     for transformer in pipeline:
         data = transformer(data, **kwargs)
+        data.sample_count = data.data.sample_count
     return data
 
 
@@ -121,7 +125,10 @@ def from_generator(filepath: Annotated[str, typer.Argument(
 
     # This is the dynamically loaded data generator.
     # tested with CelebADataKaggle.py, CocoDataPytorch.py and Cifar10DataTensorflow.py in examples
+    start = time.time()
     data = mclass()
+    data.sample_count = sample_count
+    console.log(f"Data generator loaded in {time.time() - start} seconds")
 
     if transformer or user_transformer:
         transformer = transformer or []
@@ -136,10 +143,15 @@ def from_generator(filepath: Annotated[str, typer.Argument(
         _debug_samples(data, sample_count, module_name)
     else:
         loader.ingest(
-            data[:sample_count],
+            data,
             stats=True,
             batchsize=batchsize,
             numthreads=num_workers)
+
+    while hasattr(data, "ncalls"):
+        console.log(
+            f"Calls to {data}.getitem = {data.ncalls} time={data.cumulative_time}")
+        data = data.data
 
 
 @app.command()
