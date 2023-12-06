@@ -166,8 +166,7 @@ build_complete(){
 build_notebook_dependencies_image(){
     DEPS_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook:dependencies
     echo "Building image $DEPS_IMAGE"
-    docker pull $DEPS_IMAGE
-    docker build -t $DEPS_IMAGE --cache-from $DEPS_IMAGE -f docker/dependencies/Dockerfile .
+    docker build -t $DEPS_IMAGE --no-cache -f docker/dependencies/Dockerfile .
     if [ -z ${NO_PUSH+x} ]
     then
         docker push --all-tags $DOCKER_REPOSITORY/aperturedb-notebook
