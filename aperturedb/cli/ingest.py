@@ -192,6 +192,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
 
     data = ingest_types[ingest_type](filepath, use_dask=use_dask,
                                      blobs_relative_to_csv=blobs_relative_to_csv)
+    data.sample_count = len(data)
     if transformer or user_transformer:
         transformer = transformer or []
         user_transformer = user_transformer or []
