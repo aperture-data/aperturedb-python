@@ -85,7 +85,7 @@ class ConnectionDataCSV(CSVParser):
         members = ["_Image", "_Blob", "_Video", "_Descriptor"]
 
         try:
-            ref_src = (2 * idx) % 99998 + 1
+            ref_src = (2 * idx) % 99997 + 1
             cmd_params = {
                 "_ref": ref_src,
                 "unique": True,
