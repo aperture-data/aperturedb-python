@@ -129,7 +129,7 @@ class ImageDataProcessor():
             else:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("Retrying object:", url)
+                logger.warning(f"Retrying object: {url}")
                 retries += 1
                 time.sleep(2)
 
@@ -147,7 +147,7 @@ class ImageDataProcessor():
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
                 if not self.check_image_buffer(imgbuffer):
-                    logger.error(f"IMAGE ERROR:{s3_url} ")
+                    logger.error(f"IMAGE ERROR: {s3_url}")
                     return False, None
 
                 return True, img

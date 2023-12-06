@@ -703,7 +703,7 @@ class Utils(object):
             schema2 = r2[-1]
             indexes2 = list(find_indexes(schema2))
             if indexes2:
-                logger.error("Failed to remove all indexes", indexes2)
+                logger.error(f"Failed to remove all indexes: {indexes2}")
                 return False
         except BaseException as e:
             logger.exception(e)
@@ -737,11 +737,11 @@ class Utils(object):
             response, _ = self.execute(transaction)
             schema = response[-1]["GetSchema"]
             if schema["status"] != 0:
-                logger.error("status is non-zero", str(response))
+                logger.error(f"status is non-zero: {response}")
             elif schema["connections"] is not None:
-                logger.error("connections is not None", str(response))
+                logger.error(f"connections is not None: {response}")
             elif schema["entities"] is not None:
-                logger.error("entities is not None", str(response))
+                logger.error(f"entities is not None: {response}")
             else:
                 return True
         except BaseException as e:
