@@ -117,7 +117,7 @@ class ApertureDBDataset(data.Dataset):
                 r, b = self.db.query(query)
 
             if len(b) == 0:
-                logger.error("index:", index)
+                logger.error(f"index: {index}")
                 raise Exception("No results returned from ApertureDB")
 
             self.batch_images = b
