@@ -21,7 +21,7 @@ pip install aperturedb
 A complete [reference](https://docs.aperturedata.io/category/aperturedb-python-sdk) of this SDK is available on the offical [ApertureDB Documentation](https://docs.aperturedata.io)
 
 
-# Dvelopment setup.
+# Development setup.
 The recommended way is to clone this repo, and do an editable install as follows:
 ```bash
 git clone https://github.com/aperture-data/aperturedb-python.git
