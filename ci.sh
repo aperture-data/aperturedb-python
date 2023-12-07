@@ -138,6 +138,7 @@ build_notebook_dependencies_image(){
     then
         # Default
         # No need to push
+        echo "Not pushing image $DEPS_IMAGE"
     else
         # Runs from cron-job
         echo "Pushing image $DEPS_IMAGE"
