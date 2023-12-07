@@ -2,44 +2,6 @@ set -e
 
 source $(dirname "$0")/version.sh
 
-check_for_changed_docker_files() {
-  echo "Checking for changed docker files..."
-
-  # Get files changed on merge
-  git fetch origin ${BRANCH_NAME}
-  git fetch origin ${TARGET_BRANCH_NAME}
-  FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only | { grep 'Dockerfile' || true; })
-
-  echo "Files Changed: " ${FILES_CHANGED}
-  if [ -z "$FILES_CHANGED" ]
-  then
-    echo "No Dockerfile changes."
-    ANY_FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only || true )
-    if [ -z "$ANY_FILES_CHANGED" ]; then
-        echo "No files changed?"
-        # no files changed is probably an error: print branches.
-        echo "${BRANCH_NAME}:"
-        git branch -a --list *${BRANCH_NAME}*
-        echo "${TARGET_BRANCH_NAME}:"
-        git branch -a --list *${TARGET_BRANCH_NAME}*
-        echo "All branches"
-        git branch -a | grep -v release
-    fi
-    return
-  fi
-
-  for file in $FILES_CHANGED; do
-
-    # Check if dependencies image changed
-    if [ $file == 'docker/dependencies/Dockerfile' ]
-    then
-      DEPENDENCIES_DOCKER_IMAGE_CHANGED=1
-      echo "Dependencies image changed"
-    fi
-  done
-  echo "Checking for changed docker files...done"
-}
-
 # Check and updates version based on release branch name
 update_version() {
     echo "Checking versions"
@@ -78,11 +40,6 @@ update_version() {
     BUILD_VERSION=$VERSION_BUMP
 }
 
-install_prerequisites() {
-    sudo apt-get update
-    sudo apt-get install -y vim awscli
-}
-
 # Fetch branch
 if [ -z ${BRANCH_NAME+x} ]
 then
@@ -94,9 +51,6 @@ if [ -z ${COMMIT_HASH+x} ]
 then
     COMMIT_HASH=$(git rev-parse HEAD)
 fi
-
-#Install pre requisites
-install_prerequisites
 
 echo "Branch: $BRANCH_NAME"
 if [ -z "$BRANCH_NAME" ]
@@ -112,12 +66,12 @@ BUILD_VERSION=develop
 read_version
 echo "Build version: $BUILD_VERSION"
 
-if [ -z ${UPDATE_BRANCH+x} ]
+if [ "${UPDATE_BRANCH}" == "true" ]
 then
-    echo "UPDATE_BRANCH is not set"
-else
     # Trigger update version
     update_version
+else
+    echo "UPDATE_BRANCH is not set"
 fi
 
 # Set image extension according to branch
@@ -165,11 +119,29 @@ build_complete(){
 
 build_notebook_dependencies_image(){
     DEPS_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook:dependencies
-    echo "Building image $DEPS_IMAGE"
-    docker build -t $DEPS_IMAGE --no-cache -f docker/dependencies/Dockerfile .
-    if [ -z ${NO_PUSH+x} ]
+
+    if [ "${PULL_DEPENDENCIES}" != "false" ]
     then
-        docker push --all-tags $DOCKER_REPOSITORY/aperturedb-notebook
+        # Default
+        # Build will use cache to speed up the process
+        # Runs from github events
+        cache_control="--cache-from $DEPS_IMAGE"
+    else
+        # Build won't use cache to create a fresh image
+        # Runs from cron-job
+        cache_control="--no-cache"
+    fi
+
+    echo "Building image $DEPS_IMAGE"
+    docker build -t $DEPS_IMAGE ${cache_control} -f docker/dependencies/Dockerfile .
+    if [  "${PUSH_DEPENDENCIES}" != "true" ]
+    then
+        # Default
+        # No need to push
+    else
+        # Runs from cron-job
+        echo "Pushing image $DEPS_IMAGE"
+        docker push $DEPS_IMAGE
     fi
 }
 
@@ -181,7 +153,7 @@ build_notebook_image(){
     LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
     echo "Building image $NOTEBOOK_IMAGE"
     docker build -t $NOTEBOOK_IMAGE -t $LATEST_IMAGE -f docker/notebook/Dockerfile .
-    if [ -z ${NO_PUSH+x} ]
+    if [ "${NO_PUSH}" != "true" ]
     then
         docker push --all-tags $DOCKER_REPOSITORY/aperturedb-notebook
     fi
@@ -191,7 +163,7 @@ build_coverage_image(){
     COV_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-coverage${IMAGE_EXTENSION_WITH_VERSION}
     echo "Building image $COV_IMAGE"
     docker build -t $COV_IMAGE -f coverage/Dockerfile .
-    if [ -z ${NO_PUSH+x} ]
+    if [ "${NO_PUSH}" != "true" ]
     then
         docker push $COV_IMAGE
 
@@ -227,20 +199,13 @@ deploy_terraform(){
         popd
     fi
 }
-
-if [ -z ${EXCLUDE_TESTING+x} ]
+if [ "${RUN_TESTS}" == "true" ] || [ "${BUILD_DEPENDENCIES}" == "true" ]
 then
-    check_for_changed_docker_files
-    echo "DEPENDENCIES_DOCKER_IMAGE_CHANGED=$DEPENDENCIES_DOCKER_IMAGE_CHANGED"
-    # Dependecies
-    # TODO : Conditionally build.
-    # Check if there is base image change
-    if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
-    then
-        build_notebook_dependencies_image
-        return
-    fi
+    build_notebook_dependencies_image
+fi
 
+if [ "${RUN_TESTS}" == "true" ]
+then
     build_notebook_image
     build_tests
 
@@ -252,12 +217,12 @@ then
 fi
 
 
-if [ -z ${EXCLUDE_DEPLOY+x} ]
+if [ ${DEPLOY_TERRAFORM} == "true" ]
 then
     deploy_terraform
 fi
 
-if [ -z ${EXCLUDE_BUILD_COMPLETE+x} ]
+if [ "${BUILD_COMPLETE}" == "true" ]
 then
     build_complete
 fi
