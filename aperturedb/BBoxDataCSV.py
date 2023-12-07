@@ -77,17 +77,11 @@ class BBoxDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx
-
         q = []
-
         img_id = self.df.loc[idx, self.img_key]
-
-        img_ref = (idx % 99998) + 1
-
         fi = {
             "FindImage": {
-                "_ref": img_ref,
+                "_ref": 1,
                 "unique": True,
                 "constraints": {
                     self.img_key: ["==", img_id],
@@ -103,7 +97,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
         rect_attrs = ["x", "y", "width", "height"]
         custom_fields = {
-            "image_ref": img_ref,
+            "image_ref": 1,
             "rectangle": {
                 attr: val for attr, val in zip(rect_attrs, box_data)
             },

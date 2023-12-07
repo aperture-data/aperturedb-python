@@ -22,10 +22,9 @@ class CocoDataPyTorch(PyTorchData):
 
     def generate_query(self, idx: int):
         item = self.loaded_dataset[idx]
-        img_ref = (idx % 99998) + 1
         q = [{
             "AddImage": {
-                "_ref": img_ref
+                "_ref": 1
             }
         }]
         blob = image_to_byte_array(item[0])
@@ -40,7 +39,7 @@ class CocoDataPyTorch(PyTorchData):
                 bbox = meta_info["bbox"]
                 q.append({
                     "AddBoundingBox": {
-                        "image_ref": img_ref,
+                        "image_ref": 1,
                         "rectangle": {
                             "x": int(bbox[0]),
                             "y": int(bbox[1]),

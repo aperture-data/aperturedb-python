@@ -41,19 +41,18 @@ class CelebADataKaggle(KaggleData):
     def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
         record = self.collection[idx]
         p = record
-        img_ref = (idx * 2 % 99998) + 1
         q = [
             {
                 "AddImage": {
-                    "_ref": img_ref,
+                    "_ref": 1,
                     "properties": {
                         c: p[c] for c in p.keys()
                     },
                 }
             }, {
                 "AddBoundingBox": {
-                    "_ref": img_ref + 1,
-                    "image_ref": img_ref,
+                    "_ref": 2,
+                    "image_ref": 1,
                     "rectangle": {
                         "x": p["x_1"],
                         "y": p["y_1"],
