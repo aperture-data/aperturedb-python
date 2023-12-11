@@ -1,43 +1,43 @@
 set -e
 
-source $(dirname "$0")/version.sh
+source $(dirname "${0}")/version.sh
 
 # Check and updates version based on release branch name
 update_version() {
     echo "Checking versions"
-    if [[ $BRANCH_NAME != "release"* ]]; then
+    if [[ "${BRANCH_NAME}" != "release"* ]]; then
         echo "Not release branch - skipping version update"
         return
     fi
     IFS=. read MAJOR_V MINOR_V MICRO_V <<<"${BRANCH_NAME##release-}"
-    if [ -z "$MAJOR_V" ]; then
+    if [ -z "${MAJOR_V}" ]; then
         echo "Missing major version"
         exit 1
     fi
-    if [ -z "$MINOR_V" ]; then
+    if [ -z "${MINOR_V}" ]; then
         echo "Missing minor version"
         exit 1
     fi
-    if [ -z "$MICRO_V" ]; then
+    if [ -z "${MICRO_V}" ]; then
         echo "Missing micro version"
         exit 1
     fi
-    VERSION_BUMP=$MAJOR_V.$MINOR_V.$MICRO_V
-    if [ $BUILD_VERSION == $VERSION_BUMP ]; then
+    VERSION_BUMP=${MAJOR_V}.${MINOR_V}.${MICRO_V}
+    if [ "${BUILD_VERSION}" == "${VERSION_BUMP}" ]; then
         echo "Versions match - skipping update"
         return
     fi
-    echo "Updating version $BUILD_VERSION to $VERSION_BUMP"
+    echo "Updating version ${BUILD_VERSION} to ${VERSION_BUMP}"
     # Replace version in __init__.py
-    printf '%s\n' "%s/__version__ = .*/__version__ = \"$VERSION_BUMP\"/g" 'x' | ex aperturedb/__init__.py
+    printf '%s\n' "%s/__version__ = .*/__version__ = \"${VERSION_BUMP}\"/g" 'x' | ex aperturedb/__init__.py
 
     # Commit and push version bump
     git config --local user.name "github-actions[bot]"
     git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
     git add ./aperturedb/__init__.py
     git commit -m "Version bump: ${BUILD_VERSION} to ${VERSION_BUMP}"
-    git push --set-upstream origin $BRANCH_NAME
-    BUILD_VERSION=$VERSION_BUMP
+    git push --set-upstream origin ${BRANCH_NAME}
+    BUILD_VERSION=${VERSION_BUMP}
 }
 
 # Fetch branch
@@ -52,8 +52,8 @@ then
     COMMIT_HASH=$(git rev-parse HEAD)
 fi
 
-echo "Branch: $BRANCH_NAME"
-if [ -z "$BRANCH_NAME" ]
+echo "Branch: ${BRANCH_NAME}"
+if [ -z "${BRANCH_NAME}" ]
 then
     echo "This is on a merge branch. Will not continue"
     exit 0
@@ -64,7 +64,7 @@ BUILD_VERSION=develop
 
 # Trigger read version
 read_version
-echo "Build version: $BUILD_VERSION"
+echo "Build version: ${BUILD_VERSION}"
 
 if [ "${UPDATE_BRANCH}" == "true" ]
 then
@@ -75,12 +75,12 @@ else
 fi
 
 # Set image extension according to branch
-if [ $BRANCH_NAME == 'main' ]
+if [ "${BRANCH_NAME}" == 'main' ]
 then
     IMAGE_EXTENSION_WITH_VERSION=":v${BUILD_VERSION}"
     IMAGE_EXTENSION_LATEST=":latest"
     DEPLOY_SERVER=yes
-elif [ $BRANCH_NAME == 'develop' ]
+elif [ "${BRANCH_NAME}" == 'develop' ]
 then
     IMAGE_EXTENSION_WITH_VERSION="-develop:v${BUILD_VERSION}-${COMMIT_HASH}"
     DEPLOY_SERVER=yes
@@ -94,100 +94,100 @@ if [ -n ${DOCKER_REPOSITORY+x} ]
 then
     DOCKER_REPOSITORY=aperturedata
 fi
-echo "Repository: $DOCKER_REPOSITORY"
+echo "Repository: ${DOCKER_REPOSITORY}"
 
 build_tests(){
-    TESTS_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:latest
+    TESTS_IMAGE=${DOCKER_REPOSITORY}/aperturedb-python-tests:latest
     mkdir -p docker/tests/aperturedata
     sudo rm -rf test/aperturedb/db
     cp -r aperturedb pyproject.toml README.md docker/tests/aperturedata
     mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
 
-    echo "Building image $TESTS_IMAGE"
-    docker build -t $TESTS_IMAGE --cache-from $TESTS_IMAGE -f docker/tests/Dockerfile .
+    echo "Building image ${TESTS_IMAGE}"
+    docker build -t ${TESTS_IMAGE} --cache-from ${TESTS_IMAGE} -f docker/tests/Dockerfile .
 }
 
 build_complete(){
-    COMPLETE_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-tests:complete
+    COMPLETE_IMAGE=${DOCKER_REPOSITORY}/aperturedb-python-tests:complete
     mkdir -p docker/complete/aperturedata
     cp -r aperturedb pyproject.toml README.md LICENSE docker/complete/aperturedata
 
-    echo "Building image $COMPLETE_IMAGE"
-    docker build -t $COMPLETE_IMAGE --cache-from $COMPLETE_IMAGE -f docker/complete/Dockerfile .
+    echo "Building image ${COMPLETE_IMAGE}"
+    docker build -t ${COMPLETE_IMAGE} --cache-from ${COMPLETE_IMAGE} -f docker/complete/Dockerfile .
 }
 
 build_notebook_dependencies_image(){
-    DEPS_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook:dependencies
+    DEPS_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook:dependencies
 
     if [ "${PULL_DEPENDENCIES}" != "false" ]
     then
         # Default
         # Build will use cache to speed up the process
         # Runs from github events
-        cache_control="--cache-from $DEPS_IMAGE"
+        cache_control="--cache-from ${DEPS_IMAGE}"
     else
         # Build won't use cache to create a fresh image
         # Runs from cron-job
         cache_control="--no-cache"
     fi
 
-    echo "Building image $DEPS_IMAGE"
-    docker build -t $DEPS_IMAGE ${cache_control} -f docker/dependencies/Dockerfile .
+    echo "Building image ${DEPS_IMAGE}"
+    docker build -t ${DEPS_IMAGE} ${cache_control} -f docker/dependencies/Dockerfile .
     if [  "${PUSH_DEPENDENCIES}" != "true" ]
     then
         # Default
         # No need to push
-        echo "Not pushing image $DEPS_IMAGE"
+        echo "Not pushing image ${DEPS_IMAGE}"
     else
         # Runs from cron-job
-        echo "Pushing image $DEPS_IMAGE"
-        docker push $DEPS_IMAGE
+        echo "Pushing image ${DEPS_IMAGE}"
+        docker push ${DEPS_IMAGE}
     fi
 }
 
 # Build notebook image
 build_notebook_image(){
-    NOTEBOOK_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_WITH_VERSION}
+    NOTEBOOK_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook${IMAGE_EXTENSION_WITH_VERSION}
     mkdir -p docker/notebook/aperturedata
     cp -r aperturedb pyproject.toml LICENSE README.md docker/notebook/aperturedata
-    LATEST_IMAGE=$DOCKER_REPOSITORY/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
-    echo "Building image $NOTEBOOK_IMAGE"
-    docker build -t $NOTEBOOK_IMAGE -t $LATEST_IMAGE -f docker/notebook/Dockerfile .
+    LATEST_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
+    echo "Building image ${NOTEBOOK_IMAGE}"
+    docker build -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
     if [ "${NO_PUSH}" != "true" ]
     then
-        docker push --all-tags $DOCKER_REPOSITORY/aperturedb-notebook
+        docker push --all-tags ${DOCKER_REPOSITORY}/aperturedb-notebook
     fi
 }
 
 build_coverage_image(){
-    COV_IMAGE=$DOCKER_REPOSITORY/aperturedb-python-coverage${IMAGE_EXTENSION_WITH_VERSION}
-    echo "Building image $COV_IMAGE"
-    docker build -t $COV_IMAGE -f coverage/Dockerfile .
+    COV_IMAGE=${DOCKER_REPOSITORY}/aperturedb-python-coverage${IMAGE_EXTENSION_WITH_VERSION}
+    echo "Building image ${COV_IMAGE}"
+    docker build -t ${COV_IMAGE} -f coverage/Dockerfile .
     if [ "${NO_PUSH}" != "true" ]
     then
-        docker push $COV_IMAGE
+        docker push ${COV_IMAGE}
 
         ECR_REPO_NAME=aperturedb-python-coverage
-        COV_IMAGE=$DOCKER_REPOSITORY/$ECR_REPO_NAME${IMAGE_EXTENSION_WITH_VERSION}
-        ECR_NAME=$ECR_REPO_NAME:v$BUILD_VERSION
-        push_aws_ecr $COV_IMAGE $ECR_NAME $ECR_REPO_NAME
+        COV_IMAGE=${DOCKER_REPOSITORY}/${ECR_REPO_NAME}${IMAGE_EXTENSION_WITH_VERSION}
+        ECR_NAME=${ECR_REPO_NAME}:v${BUILD_VERSION}
+        push_aws_ecr ${COV_IMAGE} ${ECR_NAME} ${ECR_REPO_NAME}
     fi
 }
 
 push_aws_ecr(){
-    SRC_IMAGE=$1
-    DST_IMAGE=$2
-    ECR_REPO_NAME=$3
+    SRC_IMAGE=${1}
+    DST_IMAGE=${2}
+    ECR_REPO_NAME=${3}
     REGION=us-west-2
     PREFIX="aperturedata/"
-    docker tag $SRC_IMAGE \
-        684446431133.dkr.ecr.$REGION.amazonaws.com/$DST_IMAGE
-    aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin 684446431133.dkr.ecr.$REGION.amazonaws.com
+    docker tag ${SRC_IMAGE} \
+        684446431133.dkr.ecr.${REGION}.amazonaws.com/${DST_IMAGE}
+    aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin 684446431133.dkr.ecr.${REGION}.amazonaws.com
 
-    aws ecr create-repository --repository-name $ECR_REPO_NAME --region us-west-2  || true
+    aws ecr create-repository --repository-name ${ECR_REPO_NAME} --region us-west-2  || true
 
-    docker push 684446431133.dkr.ecr.$REGION.amazonaws.com/$DST_IMAGE
+    docker push 684446431133.dkr.ecr.${REGION}.amazonaws.com/${DST_IMAGE}
 }
 
 deploy_terraform(){
@@ -218,7 +218,7 @@ then
 fi
 
 
-if [ ${DEPLOY_TERRAFORM} == "true" ]
+if [ "${DEPLOY_TERRAFORM}" == "true" ]
 then
     deploy_terraform
 fi
