@@ -265,7 +265,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         self.command = "AddImage"
 
     def getitem(self, idx):
-        # idx = self.df.index. + idx
+        idx = self.df.index.start + idx
 
         image_path = os.path.join(
             self.relative_path_prefix, self.df.loc[idx, self.source_type])
@@ -281,7 +281,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         if self.format_given:
             custom_fields["format"] = self.df.loc[idx, IMG_FORMAT]
         ai = self._basic_command(idx, custom_fields)
-        ai[self.command]["_ref"] = (idx % 99998) + 1
+        ai[self.command]["_ref"] = 1
         blobs.append(img)
         q.append(ai)
 
