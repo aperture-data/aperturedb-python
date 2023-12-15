@@ -173,6 +173,10 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         help="Apply transformer to the pipeline [Can be specified multiple times]")] = None,
     user_transformer: Annotated[Optional[List[str]], typer.Option(
         help="Apply user transformer to the pipeline as path to file [Can be specified multiple times.]")] = None,
+    sample_count: Annotated[int, typer.Option(
+        help="Number of samples to ingest")] = -1,
+    debug: Annotated[bool, typer.Option(
+        help="Debug mode")] = False,
 ):
     """
     Ingest data from a pre generated CSV file.
@@ -192,7 +196,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
 
     data = ingest_types[ingest_type](filepath, use_dask=use_dask,
                                      blobs_relative_to_csv=blobs_relative_to_csv)
-    data.sample_count = len(data)
+    data.sample_count = len(data) if sample_count == -1 else sample_count
     if transformer or user_transformer:
         transformer = transformer or []
         user_transformer = user_transformer or []
@@ -205,5 +209,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     console.log(db)
 
     loader = ParallelLoader(db)
-    loader.ingest(data, batchsize=batchsize,
-                  numthreads=num_workers, stats=stats)
+    if debug:
+        _debug_samples(data, sample_count, filepath)
+    else:
+        loader.ingest(data, batchsize=batchsize,
+                      numthreads=num_workers, stats=stats)
