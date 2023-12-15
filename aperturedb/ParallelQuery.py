@@ -159,6 +159,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     values["video_ref"] = updates[values["video_ref"]]
                 if "is_connected_to" in values and "_ref" in values["is_connected_to"]:
                     values["is_connected_to"]["_ref"] = updates[values["is_connected_to"]["_ref"]]
+                if "connect" in values and "ref" in values["connect"]:
+                    values["connect"]["ref"] = updates[values["connect"]["ref"]]
                 if "src" in values:
                     values["src"] = updates[values["src"]]
                 if "dst" in values:
