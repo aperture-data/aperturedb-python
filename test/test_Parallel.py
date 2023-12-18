@@ -24,7 +24,7 @@ class GeneratorWithErrors(Subscriptable):
         query = []
         blobs = []
         for i in range(self.commands_per_query):
-            if random.randint(0, 100) < (self.error_pct * 100):
+            if random.randint(0, 100) <= (self.error_pct * 100):
                 query.append({
                     "BadCommand": {
                     }

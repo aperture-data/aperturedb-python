@@ -60,7 +60,11 @@ class Parallelizer:
         self._reset(batchsize, numthreads)
         self.stats = stats
         self.generator = generator
-        self.total_actions = len(generator)
+        if hasattr(generator, "sample_count"):
+            print("sample_count", generator.sample_count)
+            self.total_actions = generator.sample_count
+        else:
+            self.total_actions = len(generator)
 
         start_time = time.time()
 
