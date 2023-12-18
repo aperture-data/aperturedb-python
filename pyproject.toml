@@ -22,6 +22,7 @@ dependencies = [
     'scikit-image', 'image', 'requests', 'boto3',
     'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
     'ipython', 'dask[complete]', 'ipywidgets', 'pydantic', 'devtools', 'typer[all]',
+    "opencv-python",
     # Pinning this to be able to install google-cloud-bigquery
     'grpcio-status==1.48.2',
     # Pinning this to resolve test errors temporarily
@@ -50,7 +51,6 @@ complete = [
     "torchvision==0.15.2",
     "tensorflow==2.14.0",
     "facenet-pytorch==2.5.3",
-    "opencv-python",
 ]
 # Dev install requirements, bleeding edge, will break CI.
 dev = [
@@ -58,7 +58,6 @@ dev = [
     "torchvision",
     "tensorflow",
     "facenet-pytorch",
-    "opencv-python",
     "coverage",
     "autopep8",
     "pre-commit",
@@ -74,7 +73,7 @@ adb = "aperturedb.cli.adb:app"
 [build-system]
 # These are the assumed default build requirements from pip:
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
-requires = ["setuptools>=43.0.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
