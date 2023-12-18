@@ -281,7 +281,11 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         if self.format_given:
             custom_fields["format"] = self.df.loc[idx, IMG_FORMAT]
         ai = self._basic_command(idx, custom_fields)
-        ai[self.command]["_ref"] = (idx % 99998) + 1
+        # Each getitem query should be properly defined with a ref.
+        # A ref shouldb be added to each of the commands from getitem implementation.
+        # This is because a transformer or ref updater in the PQ
+        # will need to know which command to update.
+        ai[self.command]["_ref"] = 1
         blobs.append(img)
         q.append(ai)
 
