@@ -52,8 +52,8 @@ def generate_save_query(
 
     Returns:
         tuple : Contains 3 items:
-            * List of commands with current node and it's children
-            * List of blobs with current node and it's children
+            * List of commands with current node and its children
+            * List of blobs with current node and its children
             * index, adjusting the count of children + self for the number of commands
               in current query
     """
