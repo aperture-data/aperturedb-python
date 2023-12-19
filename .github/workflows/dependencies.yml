@@ -1,12 +1,11 @@
-name: pr
+name: dependencies
 
 on:
-  pull_request:
-    branches:
-    - develop
+  schedule:
+  - cron: "0 0 * * *"
 
 jobs:
-  run_test:
+  build-dependencies:
 
     runs-on:
     - self-hosted
@@ -22,18 +21,11 @@ jobs:
         username: ${{ secrets.DOCKER_USER }}
         password: ${{ secrets.DOCKER_PASS }}
 
-    - name: Login to Google Cloud
-      uses: google-github-actions/setup-gcloud@v0
-      with:
-        service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-        project_id:          ${{ secrets.GCP_SERVICE_ACCOUNT_PROJECT_ID }}
-        export_default_credentials: true
-
-    - name: Build and Run Tests
+    - name: Build and Push Dependencies Image
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-      run: RUN_TESTS=true NO_PUSH=true BRANCH_NAME=${{ github.event.pull_request.head.ref }} TARGET_BRANCH_NAME=${{ github.event.pull_request.base.ref }} ./ci.sh
+      run: BUILD_DEPENDENCIES=true PULL_DEPENDENCIES=false PUSH_DEPENDENCIES=true ./ci.sh
       shell: bash

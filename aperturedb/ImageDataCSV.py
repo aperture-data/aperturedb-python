@@ -129,7 +129,7 @@ class ImageDataProcessor():
             else:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("Retrying object:", url)
+                logger.warning(f"Retrying object: {url}")
                 retries += 1
                 time.sleep(2)
 
@@ -147,7 +147,7 @@ class ImageDataProcessor():
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
                 if not self.check_image_buffer(imgbuffer):
-                    logger.error(f"IMAGE ERROR:{s3_url} ")
+                    logger.error(f"IMAGE ERROR: {s3_url}")
                     return False, None
 
                 return True, img
@@ -281,7 +281,11 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         if self.format_given:
             custom_fields["format"] = self.df.loc[idx, IMG_FORMAT]
         ai = self._basic_command(idx, custom_fields)
-        ai[self.command]["_ref"] = (idx % 99998) + 1
+        # Each getitem query should be properly defined with a ref.
+        # A ref shouldb be added to each of the commands from getitem implementation.
+        # This is because a transformer or ref updater in the PQ
+        # will need to know which command to update.
+        ai[self.command]["_ref"] = 1
         blobs.append(img)
         q.append(ai)
 

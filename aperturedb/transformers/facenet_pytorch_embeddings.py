@@ -2,6 +2,7 @@ from aperturedb.Subscriptable import Subscriptable
 from aperturedb.transformers.transformer import Transformer
 from PIL import Image
 import io
+import time
 from .facenet import generate_embedding
 from aperturedb.Utils import create_connector, Utils
 
@@ -34,10 +35,13 @@ class FacenetPyTorchEmbeddings(Transformer):
         return serialized
 
     def getitem(self, subscript):
+        start = time.time()
+        self.ncalls += 1
         x = self.data[subscript]
 
         for ic in self._add_image_index:
-            serialized = self._get_embedding_from_blob(x[1][ic])
+            serialized = self._get_embedding_from_blob(
+                x[1][self._add_image_index.index(ic)])
             x[1].append(serialized)
             x[0].append(
                 {
@@ -48,4 +52,5 @@ class FacenetPyTorchEmbeddings(Transformer):
                         }
                     }
                 })
+        self.cumulative_time += time.time() - start
         return x

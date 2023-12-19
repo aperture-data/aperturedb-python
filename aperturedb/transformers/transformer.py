@@ -61,13 +61,16 @@ class Transformer(Subscriptable):
         for i, c in enumerate(x[0]):
             command = list(c.keys())[0]
             if command in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
-                self._blob_index.append(bc)
+                self._blob_index.append(i)
                 if command == "AddImage":
-                    self._add_image_index.append(bc)
+                    self._add_image_index.append(i)
                 bc += 1
         logger.info(f"Found {bc} blobs in the data")
         logger.info(
             f"Found {len(self._add_image_index)} AddImage commands in the data")
+
+        self.ncalls = 0
+        self.cumulative_time = 0
 
     def getitem(self, subscript):
         raise NotImplementedError("Needs to be subclassed")
