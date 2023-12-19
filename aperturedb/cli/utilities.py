@@ -9,6 +9,7 @@ app = typer.Typer()
 
 
 class CommandTypes(str, Enum):
+    STATUS = "status"
     SUMMARY = "summary"
     REMOVE_ALL = "remove_all"
     REMOVE_INDEXES = "remove_indexes"
@@ -24,10 +25,15 @@ def confirm(command: CommandTypes):
     return True
 
 
+def print_utils(utils):
+    print(utils)
+
+
 @app.command()
 def execute(command: CommandTypes):
     utils = Utils(create_connector())
     available_commands = {
+        CommandTypes.STATUS: lambda: print_utils(utils),
         CommandTypes.SUMMARY: utils.summary,
         CommandTypes.REMOVE_ALL: lambda: confirm(
             CommandTypes.REMOVE_ALL) and utils.remove_all_objects(),
