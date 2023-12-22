@@ -84,10 +84,9 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
         img_id = self.df.loc[idx, self.img_key]
 
-        img_ref = (idx % 99998) + 1
         fi = {
             "FindImage": {
-                "_ref": img_ref,
+                "_ref": 1,
                 "constraints": {
                     self.img_key: ["==", img_id],
                 },
@@ -97,7 +96,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
         q.append(fi)
 
         polygon_fields = {
-            "image_ref": img_ref,
+            "image_ref": 1,
             "polygons": json.loads(self.df.loc[idx, HEADER_POLYGONS])
         }
         for key in self.polygon_keys:
