@@ -94,11 +94,16 @@ class Connector(object):
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
-                 use_ssl=True, shared_data=None, authenticate=True,
+                 use_ssl=True,
+                 shared_data=None,
+                 authenticate=True,
                  use_keepalive=True,
                  retry_connect_interval_seconds=1,
                  retry_connect_max_attempts=3,
                  config: Configuration = None):
+        """
+        Constructor for the Connector class.
+        """
         self.connected = False
         self.last_response   = ''
         self.last_query_time = 0
@@ -128,26 +133,33 @@ class Connector(object):
             self.use_keepalive = config.use_keepalive
 
         self.conn = None
+        self.shared_data = shared_data
+        self.token = token
         connect_attempts = 1
-        while True:
-            self.connect(
-                details=f"Will retry in {self.config.retry_connect_interval_seconds} seconds")
-            if self.connected or connect_attempts == self.config.retry_connect_max_attempts:
-                break
-            time.sleep(self.config.retry_connect_interval_seconds)
-            connect_attempts += 1
-
-        if not self.connected:
-            raise Exception(
-                f"Could not connect to apertureDB server: {self.config}")
-
-        if authenticate:
-            self.authenticate(shared_data, user, password, token)
-
-    def authenticate(self, shared_data, user, password, token):
         if shared_data is None:
             self.shared_data = SimpleNamespace()
             self.shared_data.session = None
+            self.shared_data.lock = Lock()
+
+        # while True:
+        #     self.connect(
+        #         details=f"Will retry in {self.config.retry_connect_interval_seconds} seconds")
+        #     if self.connected or connect_attempts == self.config.retry_connect_max_attempts:
+        #         break
+        #     time.sleep(self.config.retry_connect_interval_seconds)
+        #     connect_attempts += 1
+
+        # if not self.connected:
+        #     raise Exception(
+        #         f"Could not connect to apertureDB server: {self.config}")
+
+        # if authenticate:
+        #     self.authenticate(shared_data, user, password, token)
+
+    def authenticate(self, shared_data, user, password, token):
+        if shared_data.session is None:
+            # self.shared_data = SimpleNamespace()
+            # self.shared_data.session = None
             self.shared_data.lock = Lock()
             try:
                 self._authenticate(user, password, token)
@@ -300,7 +312,8 @@ class Connector(object):
                 self.conn = self.context.wrap_socket(self.conn)
 
         except BaseException as e:
-            logger.error(f"Error connecting to server: {str(e)} {self.config}")
+            logger.error(
+                f"Error connecting to server: {str(e)} {self.config}", exc_info=True, stack_info=True)
             self.conn.close()
             self.connected = False
             raise
@@ -399,26 +412,45 @@ class Connector(object):
         Returns:
             _type_: _description_
         """
-        self._renew_session()
-        try:
-            start = time.time()
-            self.response, self.blobs = self._query(q, blobs)
-            if not isinstance(
-                    self.response,
-                    list) and self.response["info"] == "Not Authenticated!":
-                # The case where session is valid, but expires while query is sent.
-                # Hope is that the query send won't be longer than the session
-                # ttl.
-                logger.warning(
-                    f"Session expired while query was sent. Retrying... {self.config}", stack_info=True)
-                self._renew_session()
+        if not self.connected:
+            connect_attempts = 1
+            while True:
+                self.connect(
+                    details=f"Will retry in {self.config.retry_connect_interval_seconds} seconds")
+                if self.connected or connect_attempts == self.config.retry_connect_max_attempts:
+                    break
+                time.sleep(self.config.retry_connect_interval_seconds)
+                connect_attempts += 1
+                # import pdb; pdb.set_trace()
+
+        if self.connected:
+            self.authenticate(
+                shared_data=self.shared_data,
+                user=self.config.username,
+                password=self.config.password,
+                token=self.token)
+
+        if self.connected:
+            try:
                 start = time.time()
                 self.response, self.blobs = self._query(q, blobs)
-            self.last_query_time = time.time() - start
-            return self.response, self.blobs
-        except BaseException as e:
-            logger.critical("Failed to query", exc_info=True, stack_info=True)
-            raise
+                if not isinstance(
+                        self.response,
+                        list) and self.response["info"] == "Not Authenticated!":
+                    # The case where session is valid, but expires while query is sent.
+                    # Hope is that the query send won't be longer than the session
+                    # ttl.
+                    logger.warning(
+                        f"Session expired while query was sent. Retrying... {self.config}", stack_info=True)
+                    self._renew_session()
+                    start = time.time()
+                    self.response, self.blobs = self._query(q, blobs)
+                self.last_query_time = time.time() - start
+                return self.response, self.blobs
+            except BaseException as e:
+                logger.critical("Failed to query",
+                                exc_info=True, stack_info=True)
+                raise
 
     def _renew_session(self):
         count = 0
@@ -436,6 +468,9 @@ class Connector(object):
         return type(self)(
             self.host,
             self.port,
+            self.config.username,
+            self.config.password,
+            self.token,
             use_ssl=self.use_ssl,
             shared_data=self.shared_data)
 
