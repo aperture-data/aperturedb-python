@@ -42,30 +42,6 @@ logger = logging.getLogger(__name__)
 PROTOCOL_VERSION = 1
 
 
-class UnauthorizedException(Exception):
-    pass
-
-
-@dataclass
-class Session():
-
-    session_token:      str
-    refresh_token:      str
-    session_token_ttl:  int
-    refresh_token_ttl:  int
-    session_started:    time.time = time.time()
-
-    def valid(self) -> bool:
-        session_age = time.time() - self.session_started
-
-        # This triggers refresh if the session is about to expire.
-        if session_age > self.session_token_ttl - \
-                int(os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10)):
-            return False
-
-        return True
-
-
 class ConnectorRest(Connector):
     """
     **Class to use aperturedb's REST interface**
@@ -83,29 +59,13 @@ class ConnectorRest(Connector):
                  user="", password="", token="",
                  use_ssl=True, shared_data=None,
                  config: Configuration = None):
+        self.use_keepalive = False
+        super().__init__(host, port, user, password, token, use_ssl, shared_data, config)
 
-        if config is None:
-            self.host = host
-
-            if port is None:
-                self.port = 443 if use_ssl else 80
-            else:
-                self.port = port
-
-            self.use_ssl = use_ssl
-            self.config = Configuration(
-                host=self.host,
-                port=self.port,
-                use_ssl=self.use_ssl,
-                username=user,
-                password=password,
-                name="runtime"
-            )
+        if port is None:
+            self.port = 443 if use_ssl else 80
         else:
-            self.config = config
-            self.host = config.host
-            self.port = config.port
-            self.use_ssl = config.use_ssl
+            self.port = port
 
         self.connected = False
         # Session is useful because it does not add "Connection: close header"
@@ -119,16 +79,7 @@ class ConnectorRest(Connector):
         self.url = ('https' if self.use_ssl else 'http') + \
             '://' + host + ':' + str(port) + '/api/'
 
-        if shared_data is None:
-            self.shared_data = SimpleNamespace()
-            self.shared_data.session = None
-            self.shared_data.lock = Lock()
-            try:
-                self._authenticate(user, password, token)
-            except Exception as e:
-                raise Exception("Authentication failed:", str(e))
-        else:
-            self.shared_data = shared_data
+        self.token = token
 
     def __del__(self):
         logger.info("Done with connector")
@@ -181,3 +132,7 @@ class ConnectorRest(Connector):
             raise Exception(
                 f"Could not query apertureDB {self.config} using REST.")
         return (self.last_response, response_blob_array)
+
+    def _connect(self):
+        logger.info("Connecting to aperturedb using REST")
+        self.connected = True

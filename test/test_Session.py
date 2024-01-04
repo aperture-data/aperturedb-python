@@ -20,32 +20,29 @@ class TestSession():
         """
         Verifies that Session renew works
         """
-        try:
-            # force session token expiry
-            db.shared_data.session.session_token_ttl = 1
-            logging.debug("Connected? {0}".format(
-                "yes" if db.connected else "no"))
 
-            logging.debug(
-                "Session valid? {0}".format(
-                    "yes" if db.shared_data.session.valid() else "no"))
-            logging.debug("Valid length: {0}".format(
-                db.shared_data.session.session_token_ttl))
-            time.sleep(2)
-            query = [{
-                "FindImage": {
-                    "results": {
-                        "limit": 5
-                    }
+        # force session token expiry
+        db.shared_data.session.session_token_ttl = 1
+        logger.debug("Connected? {0}".format(
+            "yes" if db.connected else "no"))
+        logger.debug(
+            "Session valid? {0}".format(
+                "yes" if db.shared_data.session.valid() else "no"))
+        logger.debug("Valid length: {0}".format(
+            db.shared_data.session.session_token_ttl))
+        time.sleep(2)
+        query = [{
+            "FindImage": {
+                "results": {
+                    "limit": 5
                 }
-            }]
-            responses, blobs = db.query(query)
-            logging.debug(responses)
-            assert db.shared_data.session.valid() == True
-        except Exception as e:
-            print(e)
-            print("Failed to renew Session")
-            assert False
+            }
+        }]
+        responses, blobs = db.query(query)
+        logger.debug(responses)
+        logger.debug("Valid : {0}".format(
+            db.shared_data.session.valid()))
+        assert db.shared_data.session.valid() == True
 
     def test_SSL_error_on_query(self, db: Connector, monkeypatch):
 
@@ -100,8 +97,8 @@ class TestSession():
                 dbinfo.DB_TCP_PORT,
                 dbinfo.DB_USER,
                 dbinfo.DB_PASSWORD,
-                retry_connect_max_attempts=3,
-                retry_connect_interval_seconds=0)
+                retry_max_attempts=3,
+                retry_interval_seconds=0)
         except Exception as e:
             # Check the exception is not an obscure one.
             assert str(e).startswith("Could not connect to apertureDB server:")
@@ -125,8 +122,8 @@ class TestSession():
                 dbinfo.DB_TCP_PORT,
                 dbinfo.DB_USER,
                 dbinfo.DB_PASSWORD,
-                retry_connect_max_attempts=3,
-                retry_connect_interval_seconds=0)
+                retry_max_attempts=3,
+                retry_interval_seconds=0)
         except Exception as e:
             # Check the exception is not an obscure one.
             assert str(e).startswith("Could not connect to apertureDB server:")
@@ -151,8 +148,8 @@ class TestSession():
                 dbinfo.DB_TCP_PORT,
                 dbinfo.DB_USER,
                 dbinfo.DB_PASSWORD,
-                retry_connect_max_attempts=3,
-                retry_connect_interval_seconds=0)
+                retry_max_attempts=3,
+                retry_interval_seconds=0)
         except Exception as e:
             # Check the exception is not an obscure one.
             assert str(e).startswith("Could not connect to apertureDB server:")
