@@ -44,8 +44,15 @@ class TestSession():
             db.shared_data.session.valid()))
         assert db.shared_data.session.valid() == True
 
-    def test_SSL_error_on_query(self, db: Connector, monkeypatch):
-
+    def test_SSL_error_on_query(self, monkeypatch):
+        db = Connector(
+            dbinfo.DB_TCP_HOST,
+            dbinfo.DB_TCP_PORT,
+            dbinfo.DB_USER,
+            dbinfo.DB_PASSWORD,
+            retry_max_attempts=3,
+            retry_interval_seconds=0)
+        db.query([{"FindImage": {"results": {"limit": 5}}}])
         original_send_msg = db._send_msg
         count = 0
 
@@ -91,17 +98,19 @@ class TestSession():
                             lambda h, p: mock_connect(h, p))
 
         # Create new db connection.
+
+        new_db = Connector(
+            dbinfo.DB_TCP_HOST,
+            dbinfo.DB_TCP_PORT,
+            dbinfo.DB_USER,
+            dbinfo.DB_PASSWORD,
+            retry_max_attempts=3,
+            retry_interval_seconds=0)
         try:
-            new_db = Connector(
-                dbinfo.DB_TCP_HOST,
-                dbinfo.DB_TCP_PORT,
-                dbinfo.DB_USER,
-                dbinfo.DB_PASSWORD,
-                retry_max_attempts=3,
-                retry_interval_seconds=0)
+            new_db.query([{"FindImage": {"results": {"limit": 5}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
-            assert str(e).startswith("Could not connect to apertureDB server:")
+            assert e.args[0] == "Authentication failed:"
 
         # Check that we tried to connect 3 times.
         assert connect_attempts == 3
@@ -116,17 +125,18 @@ class TestSession():
         monkeypatch.setattr(socket.socket, "send", mock_send)
 
         # Create new db connection.
+        new_db = Connector(
+            dbinfo.DB_TCP_HOST,
+            dbinfo.DB_TCP_PORT,
+            dbinfo.DB_USER,
+            dbinfo.DB_PASSWORD,
+            retry_max_attempts=3,
+            retry_interval_seconds=0)
         try:
-            new_db = Connector(
-                dbinfo.DB_TCP_HOST,
-                dbinfo.DB_TCP_PORT,
-                dbinfo.DB_USER,
-                dbinfo.DB_PASSWORD,
-                retry_max_attempts=3,
-                retry_interval_seconds=0)
+            new_db.query([{"FindImage": {"results": {"limit": 5}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
-            assert str(e).startswith("Could not connect to apertureDB server:")
+            assert e.args[0] == "Authentication failed:"
 
         # Check that we tried to connect 3 times.
         assert connect_attempts == 3
@@ -142,17 +152,19 @@ class TestSession():
         monkeypatch.setattr(socket.socket, "recv", mock_recv)
 
         # Create new db connection.
+
+        new_db = Connector(
+            dbinfo.DB_TCP_HOST,
+            dbinfo.DB_TCP_PORT,
+            dbinfo.DB_USER,
+            dbinfo.DB_PASSWORD,
+            retry_max_attempts=3,
+            retry_interval_seconds=0)
         try:
-            new_db = Connector(
-                dbinfo.DB_TCP_HOST,
-                dbinfo.DB_TCP_PORT,
-                dbinfo.DB_USER,
-                dbinfo.DB_PASSWORD,
-                retry_max_attempts=3,
-                retry_interval_seconds=0)
+            new_db.query([{"FindImage": {"results": {"limit": 5}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
-            assert str(e).startswith("Could not connect to apertureDB server:")
+            assert e.args[0] == "Authentication failed:"
 
         # Check that we tried to connect 3 times.
         assert connect_attempts == 3

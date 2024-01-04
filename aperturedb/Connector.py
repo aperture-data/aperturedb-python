@@ -378,6 +378,7 @@ class Connector(object):
             except AttributeError as ae:
                 if self.connected:
                     # Only log if we got this while connected.
+                    # else it is expected after unification of query/connect
                     logger.exception(ae)
                     logger.warning(f"Attribute error on process {os.getpid()}")
 
@@ -420,12 +421,12 @@ class Connector(object):
         Returns:
             _type_: _description_
         """
-
-        self.authenticate(
-            shared_data=self.shared_data,
-            user=self.config.username,
-            password=self.config.password,
-            token=self.token)
+        if self.should_authenticate:
+            self.authenticate(
+                shared_data=self.shared_data,
+                user=self.config.username,
+                password=self.config.password,
+                token=self.token)
 
         try:
             start = time.time()

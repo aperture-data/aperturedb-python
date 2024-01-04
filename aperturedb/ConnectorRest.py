@@ -109,7 +109,7 @@ class ConnectorRest(Connector):
         tries = 0
         response = SimpleNamespace()
         response.status_code = 0
-        while tries < 3:
+        while tries < self.config.retry_max_attempts:
             tries += 1
             response = self.http_session.post(self.url,
                                               headers = headers,
@@ -126,7 +126,8 @@ class ConnectorRest(Connector):
             logger.error(
                 f"Response not OK = {response.status_code} {response.text[:1000]}\n\
                     attempt [{tries}/3] .. PID = {os.getpid()}")
-            time.sleep(1)
+
+            time.sleep(self.config.retry_interval_seconds)
 
         if tries == 3:
             raise Exception(
