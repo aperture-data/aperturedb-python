@@ -438,7 +438,7 @@ class Connector(object):
                 # Hope is that the query send won't be longer than the session
                 # ttl.
                 logger.warning(
-                    f"Session expired while query was sent. Retrying... {self.config}", stack_info=True)
+                    f"Session expired while query was sent. Retrying... {self.config}")
                 self._renew_session()
                 start = time.time()
                 self.response, self.blobs = self._query(q, blobs)

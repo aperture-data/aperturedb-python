@@ -60,7 +60,15 @@ class ConnectorRest(Connector):
                  use_ssl=True, shared_data=None,
                  config: Configuration = None):
         self.use_keepalive = False
-        super().__init__(host, port, user, password, token, use_ssl, shared_data, config)
+        super().__init__(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            token=token,
+            use_ssl=use_ssl,
+            shared_data=shared_data,
+            config=config)
 
         if port is None:
             self.port = 443 if use_ssl else 80
@@ -82,7 +90,7 @@ class ConnectorRest(Connector):
         self.token = token
 
     def __del__(self):
-        logger.info("Done with connector")
+        logger.info("Done with connector REST.")
         self.http_session.close()
 
     def _query(self, query, blob_array = [], try_resume=True):
@@ -101,7 +109,7 @@ class ConnectorRest(Connector):
             files.append(('blobs', blob))
 
         # Set Auth token, only when not authenticated before
-        if self.shared_data.session:
+        if self.shared_data.session and self.shared_data.session.valid():
             headers = {'Authorization': "Bearer " +
                        self.shared_data.session.session_token}
         else:
@@ -129,7 +137,11 @@ class ConnectorRest(Connector):
 
             time.sleep(self.config.retry_interval_seconds)
 
-        if tries == 3:
+            self.connect()
+            if try_resume:
+                self._renew_session()
+
+        if tries == self.config.retry_max_attempts:
             raise Exception(
                 f"Could not query apertureDB {self.config} using REST.")
         return (self.last_response, response_blob_array)

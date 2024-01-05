@@ -116,11 +116,11 @@ class TestSession():
         assert connect_attempts == 3
 
     def test_socket_send_error_initial(self, monkeypatch):
-        connect_attempts = 0
+        send_attempts = 0
 
         def mock_send(x, buff):
-            nonlocal connect_attempts
-            connect_attempts += 1
+            nonlocal send_attempts
+            send_attempts += 1
             raise socket.error("Connection broke when send")
         monkeypatch.setattr(socket.socket, "send", mock_send)
 
@@ -138,8 +138,8 @@ class TestSession():
             # Check the exception is not an obscure one.
             assert e.args[0] == "Authentication failed:"
 
-        # Check that we tried to connect 3 times.
-        assert connect_attempts == 3
+        # Check that we tried to send 5 (connect hello:2) + query:3) times.
+        assert send_attempts == 5
 
     def test_socket_recv_error_initial(self, monkeypatch):
         connect_attempts = 0
