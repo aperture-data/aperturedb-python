@@ -30,7 +30,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
          updateif!_prop - updates if the database value is != csv value
 
     :::note
-    Is backed by a csv file with the following columns (format optional):
+    Is backed by a CSV file with the following columns (format optional):
 
         ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
@@ -48,7 +48,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
         ..
     :::
 
-    Example csv file::
+    Example CSV file::
 
         filename,id,label,constraint_id,format,dataset_ver,updateif>_dataset_ver,gen_blobsha1_sha
         /home/user/file1.jpg,321423532,dog,321423532,jpg,2,2,
