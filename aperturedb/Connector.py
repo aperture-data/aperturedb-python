@@ -384,7 +384,7 @@ class Connector(object):
 
             tries += 1
             logger.warning(
-                f"Connection broken. Reconnectng attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
+                f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
 
             if self.connected:
                 self.conn.close()
