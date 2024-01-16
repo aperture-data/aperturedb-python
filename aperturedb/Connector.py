@@ -52,6 +52,10 @@ class UnauthorizedException(Exception):
     pass
 
 
+class UnauthenticatedException(Exception):
+    pass
+
+
 @dataclass
 class Session():
 
@@ -94,14 +98,20 @@ class Connector(object):
 
     def __init__(self, host="localhost", port=55555,
                  user="", password="", token="",
-                 use_ssl=True, shared_data=None, authenticate=True,
+                 use_ssl=True,
+                 shared_data=None,
+                 authenticate=True,
                  use_keepalive=True,
-                 retry_connect_interval_seconds=1,
-                 retry_connect_max_attempts=3,
+                 retry_interval_seconds=1,
+                 retry_max_attempts=3,
                  config: Configuration = None):
+        """
+        Constructor for the Connector class.
+        """
         self.connected = False
-        self.last_response   = ''
+        self.last_response = ''
         self.last_query_time = 0
+        self.authenticated = False
 
         if config is None:
             self.host = host
@@ -117,8 +127,8 @@ class Connector(object):
                 password=password,
                 name="runtime",
                 use_keepalive=use_keepalive,
-                retry_connect_interval_seconds=retry_connect_interval_seconds,
-                retry_connect_max_attempts=retry_connect_max_attempts
+                retry_interval_seconds=retry_interval_seconds,
+                retry_max_attempts=retry_max_attempts
             )
         else:
             self.config = config
@@ -128,33 +138,35 @@ class Connector(object):
             self.use_keepalive = config.use_keepalive
 
         self.conn = None
-        connect_attempts = 1
-        while True:
-            self.connect(
-                details=f"Will retry in {self.config.retry_connect_interval_seconds} seconds")
-            if self.connected or connect_attempts == self.config.retry_connect_max_attempts:
-                break
-            time.sleep(self.config.retry_connect_interval_seconds)
-            connect_attempts += 1
 
-        if not self.connected:
-            raise Exception(
-                f"Could not connect to apertureDB server: {self.config}")
+        self.token = token
 
-        if authenticate:
-            self.authenticate(shared_data, user, password, token)
-
-    def authenticate(self, shared_data, user, password, token):
         if shared_data is None:
             self.shared_data = SimpleNamespace()
             self.shared_data.session = None
             self.shared_data.lock = Lock()
-            try:
-                self._authenticate(user, password, token)
-            except Exception as e:
-                raise Exception("Authentication failed:", str(e))
         else:
             self.shared_data = shared_data
+
+        self.should_authenticate = authenticate
+
+    def authenticate(self, shared_data, user, password, token):
+        """
+        Authenticate with the database. This will be called automatically from query.
+        This is separate from session refresh mechanism, and is called only once.
+        Failure leads to exception.
+        """
+        if not self.authenticated:
+            if shared_data.session is None:
+                self.shared_data.lock = Lock()
+                try:
+                    self._authenticate(user, password, token)
+                except Exception as e:
+                    raise UnauthenticatedException(
+                        "Authentication failed:", str(e))
+            else:
+                self.shared_data = shared_data
+            self.authenticated = True
 
     def __del__(self):
         if self.connected:
@@ -300,7 +312,8 @@ class Connector(object):
                 self.conn = self.context.wrap_socket(self.conn)
 
         except BaseException as e:
-            logger.error(f"Error connecting to server: {str(e)} {self.config}")
+            logger.error(
+                f"Error connecting to server: {str(e)} {self.config}", exc_info=True, stack_info=True)
             self.conn.close()
             self.connected = False
             raise
@@ -343,7 +356,7 @@ class Connector(object):
 
         # this is for session refresh attempts
         tries = 0
-        while tries < 3:
+        while tries < self.config.retry_max_attempts:
             try:
                 if self._send_msg(data):
                     response = self._recv_msg()
@@ -362,15 +375,24 @@ class Connector(object):
             except OSError as ose:
                 logger.exception(ose)
                 logger.warning(f"OS error on process {os.getpid()}")
+            except AttributeError as ae:
+                if self.connected:
+                    # Only log if we got this while connected.
+                    # else it is expected after unification of query/connect
+                    logger.exception(ae)
+                    logger.warning(f"Attribute error on process {os.getpid()}")
+
             tries += 1
             logger.warning(
-                f"Connection broken. Reconnectng attempt [{tries}/{self.config.retry_connect_max_attempts}] .. PID = {os.getpid()}")
-            self.conn.close()
-            self.connected = False
+                f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
+
+            if self.connected:
+                self.conn.close()
+                self.connected = False
 
             self.connect(
-                details=f"Will retry in {self.config.retry_connect_interval_seconds} seconds")
-            time.sleep(self.config.retry_connect_interval_seconds)
+                details=f"Will retry in {self.config.retry_interval_seconds} seconds")
+            time.sleep(self.config.retry_interval_seconds)
 
             # Try to resume the session, in cases where the connection is severed.
             # For example aperturedb server is restarted, or network is lost.
@@ -378,7 +400,7 @@ class Connector(object):
             # path, this can cause a deadlock. Hence the try_resume flag.
             if try_resume:
                 self._renew_session()
-        if tries == self.config.retry_connect_max_attempts:
+        if tries == self.config.retry_max_attempts:
             raise Exception(
                 f"Could not query apertureDB using TCP.")
         return (self.last_response, response_blob_array)
@@ -399,7 +421,13 @@ class Connector(object):
         Returns:
             _type_: _description_
         """
-        self._renew_session()
+        if self.should_authenticate:
+            self.authenticate(
+                shared_data=self.shared_data,
+                user=self.config.username,
+                password=self.config.password,
+                token=self.token)
+
         try:
             start = time.time()
             self.response, self.blobs = self._query(q, blobs)
@@ -410,14 +438,15 @@ class Connector(object):
                 # Hope is that the query send won't be longer than the session
                 # ttl.
                 logger.warning(
-                    f"Session expired while query was sent. Retrying... {self.config}", stack_info=True)
+                    f"Session expired while query was sent. Retrying... {self.config}")
                 self._renew_session()
                 start = time.time()
                 self.response, self.blobs = self._query(q, blobs)
             self.last_query_time = time.time() - start
             return self.response, self.blobs
         except BaseException as e:
-            logger.critical("Failed to query", exc_info=True, stack_info=True)
+            logger.critical("Failed to query",
+                            exc_info=True, stack_info=True)
             raise
 
     def _renew_session(self):
@@ -436,6 +465,9 @@ class Connector(object):
         return type(self)(
             self.host,
             self.port,
+            self.config.username,
+            self.config.password,
+            self.token,
             use_ssl=self.use_ssl,
             shared_data=self.shared_data)
 
