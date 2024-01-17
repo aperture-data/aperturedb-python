@@ -42,7 +42,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
 
         the result is then used to identify if a blob has changed.
 
-        The generated fields are to be left empty in the csv input.
+        The generated fields are to be left empty in the CSV input.
 
         Summary
          This requires a constraint to be able to check if an id exists, and a generated prop
@@ -50,7 +50,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
           the constraints and matching the managed blob constraints.
 
     :::note
-    Is backed by a csv file with the following columns (format optional):
+    Is backed by a CSV file with the following columns (format optional):
 
         ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
@@ -68,7 +68,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
         ...
     :::
 
-    Example csv file::
+    Example CSV file::
 
         filename,id,label,constraint_id,format,dataset_ver,updateif>_dataset_ver,gen_blobsha1_sha
         /home/user/file1.jpg,321423532,dog,321423532,jpg,2,2,

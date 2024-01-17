@@ -34,10 +34,10 @@ class Images(Entities):
     **The object mapper representation of images in ApertureDB.**
 
     This class is a layer on top of the native query.
-    It facilitate interactions with images in the database in pythonic way.
+    It facilitate interactions with images in the database in a pythonic way.
 
-    It abstracts the need to batch the responses, and includes utility methods to
-    interconvert the representation into numpy matrices, and find similar images,
+    It abstracts the need to batch the responses and includes utility methods to
+    interconvert the representation into NumPy matrices and find similar images,
     related bounding boxes, etc.
     """
     db_object = "_Image"
@@ -295,7 +295,7 @@ class Images(Entities):
         return len(self.images_ids)
 
     def get_image_by_index(self, index: int):
-        """**Get a single image by it's index in the array of retrieved ids**
+        """**Get a single image by its index in the array of retrieved ids**
 
         Args:
             index (int): Position in the image ids retrieved.
@@ -318,7 +318,7 @@ class Images(Entities):
         return self.images[str(uniqueid)]
 
     def get_np_image_by_index(self, index: int):
-        """**Retrieves the numpy representation of image from database**
+        """**Retrieves the NumPy representation of image from database**
 
         Args:
             index (int): Position in the image ids retrieved.

@@ -76,7 +76,7 @@ class TestKaggleIngest():
 
     def test_builtin_indexer_csv(self):
         """
-        This type of dataset comes wiht 1 csv file, and Kaggle Dataset is able to
+        This type of dataset comes wiht 1 CSV file, and Kaggle Dataset is able to
         process it without the need for a custom indexer.
         """
         self.common_setup()
