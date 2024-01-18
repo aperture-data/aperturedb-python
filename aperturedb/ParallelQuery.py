@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
-                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0,
+                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 1,
                   strict_response_validation: bool = False):
     """
     Execute a batch of queries, doing useful logging around it.
@@ -28,9 +28,9 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
         - 2 : For any other code.
     """
     result = 0
-    logger.debug(f"Query={q}")
+    # logger.debug(f"Query={q}")
     r, b = db.query(q, blobs)
-    logger.debug(f"Response={r}")
+    # logger.debug(f"Response={r}")
 
     if db.last_query_ok():
         if response_handler is not None:
@@ -62,7 +62,8 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
                         q[start:end],
                         blobs[blobs_start:blobs_end],
                         r[start:end],
-                        b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
+                        b)
+                    # b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
                 except BaseException as e:
                     logger.exception(e)
                     if strict_response_validation:
