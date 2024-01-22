@@ -14,10 +14,10 @@ class BBoxDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB BBox Data.**
 
-    This class loads the Bounding Box Data which is present in a csv file,
+    This class loads the Bounding Box Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
-    :::note Is backed by a csv file with the following columns:
+    :::note Is backed by a CSV file with the following columns:
     ``IMG_KEY``, ``x_pos``, ``y_pos``, ``width``, ``height``, ``BBOX_PROP_NAME_1``, ... ``BBOX_PROP_NAME_N``, ``constraint_BBOX_PROP_NAME_1``
     :::
 
@@ -34,7 +34,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
     **constraint_BBOX_PROP_NAME_1**: Constraints against specific property, used for conditionally adding a Bounding Box.
 
-    Example csv file::
+    Example CSV file::
 
         img_unique_id,x_pos,y_pos,width,height,type,dataset_id,constraint_dataset_id
         d5b25253-9c1e,257,154,84,125,manual,12345,12345

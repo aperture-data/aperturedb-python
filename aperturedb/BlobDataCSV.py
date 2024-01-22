@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 class BlobDataCSV(CSVParser.CSVParser):
     """**ApertureDB Blob Data.**
 
-    This class loads the Blob Data which is present in a csv file,
+    This class loads the Blob Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
-    :::note Is backed by a csv file with the following columns:
+    :::note Is backed by a CSV file with the following columns:
     ``FILENAME``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_1``
     :::
 
@@ -25,7 +25,7 @@ class BlobDataCSV(CSVParser.CSVParser):
 
     **constraint_PROP_NAME_1**: Constraints against specific property, used for conditionally adding a Blob.
 
-    Example csv file::
+    Example CSV file::
 
         filename,name,lastname,age,id,constraint_id
         /mnt/blob1,John,Salchi,69,321423532,321423532

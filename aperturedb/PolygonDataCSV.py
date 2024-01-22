@@ -14,10 +14,10 @@ class PolygonDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB Polygon Data.**
 
-    This class loads the Polygon Data which is present in a csv file,
+    This class loads the Polygon Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
-    :::note Is backed by a csv file with the following columns:
+    :::note Is backed by a CSV file with the following columns:
     ``IMG_KEY``, [``POLYGON_PROPERTY_1``, ... ``POLYGON_PROPERTY_N``,] [``constraint_POLYGON_PROPERTY_1``, ... ``constraint_POLYGON_PROPERTY_N``,] [``_label``,] ``polygons``
     :::
 
@@ -34,7 +34,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
     **polygons**: a JSON array of polygon regions. Each polygon region is itself an array of [x,y] vertices that describe the boundary of a single contiguous polygon. See also [Polygon API parameter](query_language/Reference/shared_command_parameters/polygons).
 
-    Example csv file::
+    Example CSV file::
 
         image_id,polygon_id,constraint_polygon_id,category_id,_label,polygons
         397133,82445,82445,44,bottle,"[[[224.24, 297.18], [228.29, 297.18], ...]]"
@@ -84,10 +84,9 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
         img_id = self.df.loc[idx, self.img_key]
 
-        img_ref = (idx % 99998) + 1
         fi = {
             "FindImage": {
-                "_ref": img_ref,
+                "_ref": 1,
                 "constraints": {
                     self.img_key: ["==", img_id],
                 },
@@ -97,7 +96,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
         q.append(fi)
 
         polygon_fields = {
-            "image_ref": img_ref,
+            "image_ref": 1,
             "polygons": json.loads(self.df.loc[idx, HEADER_POLYGONS])
         }
         for key in self.polygon_keys:

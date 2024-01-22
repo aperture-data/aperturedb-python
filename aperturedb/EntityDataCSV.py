@@ -11,14 +11,14 @@ CONSTRAINTS  = "constraints"
 class EntityDataCSV(CSVParser.CSVParser):
     """**ApertureDB Entity Data.**
 
-    This class loads the Entity Data which is present in a csv file,
+    This class loads the Entity Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
-    :::note Is backed by a csv file with the following columns:
+    :::note Is backed by a CSV file with the following columns:
     ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
     :::
 
-    Example csv file::
+    Example CSV file::
 
         EntityClass,name,lastname,age,id,constraint_id
         Person,John,Salchi,69,321423532,321423532
@@ -80,16 +80,16 @@ class EntityDataCSV(CSVParser.CSVParser):
 class EntityDeleteDataCSV(CSVParser.CSVParser):
     """**ApertureDB Entity Delete Data.**
 
-    This class loads the Entity Data which is present in a csv file,
+    This class loads the Entity Data which is present in a CSV file,
     and converts it into a series of aperturedb deletes.
 
     :::note::
-    Expects a csv file with the following columns:
+    Expects a CSV file with the following columns:
 
         ``constraint_PROP1``
     :::
 
-    Example csv file::
+    Example CSV file::
 
         constraint_id
         321423532

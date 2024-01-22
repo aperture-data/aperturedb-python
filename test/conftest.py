@@ -32,8 +32,8 @@ def pytest_generate_tests(metafunc):
                 user = dbinfo.DB_USER,
                 password = dbinfo.DB_PASSWORD,
                 use_ssl = True,
-                retry_connect_max_attempts=3,
-                retry_connect_interval_seconds=0)},
+                retry_max_attempts=3,
+                retry_interval_seconds=0)},
             {"db": ConnectorRest(
                 host = dbinfo.DB_REST_HOST,
                 port = dbinfo.DB_REST_PORT,

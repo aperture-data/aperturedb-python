@@ -85,16 +85,13 @@ class Utils(object):
     """
 
     def __init__(self, connector: Connector, verbose=False):
-
         self.connector = connector.create_new_connection()
         self.verbose = verbose
 
     def __repr__(self):
-
         return self.status()
 
     def print(self, str):
-
         if self.verbose:
             print(str)
 

@@ -12,14 +12,14 @@ CONSTRAINTS = "constraints"
 class ConnectionDataCSV(CSVParser):
     """**ApertureDB Connection Data.**
 
-    This class loads the Connection Data which is present in a csv file,
+    This class loads the Connection Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
-    :::note Is backed by a csv file with the following columns:
+    :::note Is backed by a CSV file with the following columns:
     ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
     :::
 
-    Example csv file::
+    Example CSV file::
 
         ConnectionClass,_Image@id,_Descriptor@UUID,confidence,id,constraint_id
         has_image,321423532,AID-0X3E,0.4354,5432543254,5432543254
@@ -45,7 +45,7 @@ class ConnectionDataCSV(CSVParser):
 
 
     :::info
-    This example csv's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
+    This example CSV's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
     It also connects the images and descriptors in the subsequent rows.
 
     In the above example, the constraint_id ensures that a connection with the specified
