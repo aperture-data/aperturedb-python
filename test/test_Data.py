@@ -6,6 +6,7 @@ from aperturedb.Query import QueryBuilder, Query
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
 from aperturedb.Images import Images
+from aperturedb.Utils import Utils
 
 import logging
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class TestEntityLoader():
         if not condition:
             raise AssertionError("Condition not true")
 
-    def test_Loader(self, utils, insert_data_from_csv):
+    def test_Loader(self, utils: Utils, insert_data_from_csv):
         classes = ["_Image", "_Descriptor", "Person", "_BoundingBox"]
         self.assertTrue(utils.remove_all_indexes())
         self.assertTrue(utils.remove_all_objects())

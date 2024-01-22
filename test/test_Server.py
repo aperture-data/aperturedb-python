@@ -18,11 +18,18 @@ class TestBadResponses():
         monkeypatch.setattr(Connector, "_query", failed_auth_query)
 
         with pytest.raises(Exception) as conn_exception:
-            Connector(
+            db = Connector(
                 host = dbinfo.DB_TCP_HOST,
                 port = dbinfo.DB_TCP_PORT,
                 user = dbinfo.DB_USER,
                 password = dbinfo.DB_PASSWORD,
                 use_ssl = True)
+            db.query([{
+                "FindImage": {
+                    "results": {
+                        "limit": 5
+                    }
+                }
+            }])
 
         assert "Unexpected response" in str(conn_exception.value)

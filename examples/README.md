@@ -1,6 +1,6 @@
 # Code examples with aperturedb.
 
-Following are the table of contents for this folder and it's subfolders.
+Following are the table of contents for this folder and its subfolders.
 There are instructions to run these scripts also.
 
 A part of Coco validation needs to be downloaded.

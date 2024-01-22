@@ -191,11 +191,11 @@ class ImageDataProcessor():
 class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     """**ApertureDB Image Data.**
 
-    This class loads the Image Data which is present in a csv file,
+    This class loads the Image Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
 
-    :::note Is backed by a csv file with the following columns:
+    :::note Is backed by a CSV file with the following columns:
 
     ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
@@ -212,7 +212,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
     :::
 
-    Example csv file::
+    Example CSV file::
 
         filename,id,label,constraint_id,format
         /home/user/file1.jpg,321423532,dog,321423532,jpg
@@ -410,7 +410,7 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     See SparseAddingDataCSV for description of when to use this versus ImageDataCSV.
 
 
-    Example csv file::
+    Example CSV file::
 
         filename,id,label,constraint_id,format
         /home/user/file1.jpg,321423532,dog,321423532,jpg

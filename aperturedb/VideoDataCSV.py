@@ -14,17 +14,17 @@ class VideoDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB Video Data.**
 
-    This class loads the Video Data which is present in a csv file,
+    This class loads the Video Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
 
     .. note::
 
-        Expects a csv file with the following columns:
+        Expects a CSV file with the following columns:
 
             ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
 
-    Example csv file::
+    Example CSV file::
 
         filename,id,label,constaint_id
         /home/user/file1.jpg,321423532,dog,321423532

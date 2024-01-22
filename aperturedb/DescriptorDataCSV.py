@@ -17,10 +17,10 @@ class DescriptorDataCSV(CSVParser.CSVParser):
     """
     **ApertureDB Descriptor Data.**
 
-    This class loads the Descriptor Data which is present in a csv file,
+    This class loads the Descriptor Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
-    :::note Is backed by a csv file with the following columns, and a numpy array file "npz" for the descriptors:
+    :::note Is backed by a CSV file with the following columns, and a NumPy array file "npz" for the descriptors:
     ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
     :::
 
@@ -36,7 +36,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     **constraint_PROP_NAME_1**: A constraint to enusre uniqueness when inserting this descriptor.
 
-    Example csv file::
+    Example CSV file::
 
         filename,index,set,label,isTable,UUID,constraint_UUID
         /mnt/data/embeddings/kitchen.npz,0,kitchen,kitchen_table,True,AID-0X3E,AID-0X3E

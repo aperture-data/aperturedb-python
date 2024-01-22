@@ -168,7 +168,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     ingest_type: Annotated[IngestType, typer.Option(
         help="Parser for CSV file to be used")] = IngestType.IMAGE,
     blobs_relative_to_csv: Annotated[bool, typer.Option(
-        help="If true, the blob path is relative to the csv file")] = True,
+        help="If true, the blob path is relative to the CSV file")] = True,
     transformer: Annotated[Optional[List[TransformerType]], typer.Option(
         help="Apply transformer to the pipeline [Can be specified multiple times]")] = None,
     user_transformer: Annotated[Optional[List[str]], typer.Option(
