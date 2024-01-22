@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Annotated
 
 import typer
 
@@ -14,7 +15,9 @@ class CommandTypes(str, Enum):
     REMOVE_INDEXES = "remove_indexes"
 
 
-def confirm(command: CommandTypes):
+def confirm(command: CommandTypes, force: bool):
+    if force:
+        return True
     console.print("Danger", style="bold red")
     console.log(f"This will execute {command}.")
     response = typer.prompt("Are you sure you want to continue? [y/N]")
@@ -25,14 +28,15 @@ def confirm(command: CommandTypes):
 
 
 @app.command()
-def execute(command: CommandTypes):
+def execute(command: CommandTypes,
+            force: Annotated[bool, typer.Option(help="Do not confirm")] = False):
     utils = Utils(create_connector())
     available_commands = {
         CommandTypes.SUMMARY: utils.summary,
         CommandTypes.REMOVE_ALL: lambda: confirm(
-            CommandTypes.REMOVE_ALL) and utils.remove_all_objects(),
+            CommandTypes.REMOVE_ALL, force) and utils.remove_all_objects(),
         CommandTypes.REMOVE_INDEXES: lambda: confirm(
-            CommandTypes.REMOVE_INDEXES) and utils.remove_all_indexes(),
+            CommandTypes.REMOVE_INDEXES, force) and utils.remove_all_indexes(),
     }
 
     available_commands[command]()
