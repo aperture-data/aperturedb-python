@@ -130,8 +130,6 @@ def query_mocker_factory(response_blobs_count):
 class TestResponseHandler():
     def cleanDB(self, utils):
         logger.debug(f"Cleaning existing data")
-        # assert utils.remove_all_indexes()
-        # assert utils.remove_all_objects() == True
         self.requests = []
         self.responses = []
 
