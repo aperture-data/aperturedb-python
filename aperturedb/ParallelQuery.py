@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
-                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 1,
+                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0,
                   strict_response_validation: bool = False):
     """
     Execute a batch of queries, doing useful logging around it.
