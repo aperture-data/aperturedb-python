@@ -28,9 +28,9 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
         - 2 : For any other code.
     """
     result = 0
-    # logger.debug(f"Query={q}")
+    logger.debug(f"Query={q}")
     r, b = db.query(q, blobs)
-    # logger.debug(f"Response={r}")
+    logger.debug(f"Response={r}")
 
     if db.last_query_ok():
         if response_handler is not None:
