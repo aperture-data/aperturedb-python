@@ -48,7 +48,7 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
                     for k in req:
                         # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
                         blobs_where_default_true = \
-                            k in ["FindImage", "FindBlob"] and (
+                            k in ["FindImage", "FindBlob", "FindVideo"] and (
                                 "blobs" not in req[k] or req[k]["blobs"])
                         blobs_where_default_false = \
                             k in [
@@ -58,11 +58,13 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
                             b_count += count
 
                 try:
+                    # The returned blobs need to be sliced to match the
+                    # returned entities per command in query.
                     response_handler(
                         q[start:end],
                         blobs[blobs_start:blobs_end],
                         r[start:end],
-                        b[blobs_returned:blobs_returned + b_count] if len(b) < blobs_returned + b_count else None)
+                        b[blobs_returned:blobs_returned + b_count] if len(b) >= blobs_returned + b_count else None)
                 except BaseException as e:
                     logger.exception(e)
                     if strict_response_validation:
