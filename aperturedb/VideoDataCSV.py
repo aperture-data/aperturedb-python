@@ -2,12 +2,18 @@ import cv2
 import logging
 import os
 from aperturedb import CSVParser
+from aperturedb.Sources import Sources
+import boto3
+
 
 logger = logging.getLogger(__name__)
 
 HEADER_PATH = "filename"
 PROPERTIES  = "properties"
 CONSTRAINTS = "constraints"
+HEADER_URL    = "url"
+HEADER_S3_URL = "s3_url"
+HEADER_GS_URL = "gs_url"
 
 
 class VideoDataCSV(CSVParser.CSVParser):
@@ -42,9 +48,9 @@ class VideoDataCSV(CSVParser.CSVParser):
     """
 
     def __init__(self, filename, check_video=True, **kwargs):
-
+        self.source_types = [HEADER_PATH,
+                             HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
         super().__init__(filename, df=None, **kwargs)
-
         self.check_video = check_video
 
         self.props_keys       = [x for x in self.header[1:]
@@ -53,6 +59,16 @@ class VideoDataCSV(CSVParser.CSVParser):
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.command = "AddVideo"
 
+        self.sources = Sources(n_download_retries=3,
+                               s3_client=boto3.client('s3'))
+        self.loaders = {
+            HEADER_PATH: self.load_video,
+            HEADER_URL: self.load_url,
+            HEADER_S3_URL: self.load_s3_url,
+            HEADER_GS_URL: self.load_gs_url
+        }
+        self.source_type = self.header[0]
+
     def get_indices(self):
         return {
             "entity": {
@@ -60,14 +76,21 @@ class VideoDataCSV(CSVParser.CSVParser):
             }
         }
 
+    def check_video_buf(self, video):
+        # check if video is valid
+        print(len(video))
+        return True
+
     def getitem(self, idx):
-        filename = os.path.join(self.relative_path_prefix,
-                                self.df.loc[idx, HEADER_PATH])
-        video_ok, video = self.load_video(filename)
+        self.relative_path_prefix = os.path.dirname(self.filename) \
+            if self.source_type == HEADER_PATH and self.blobs_relative_to_csv else ""
+        uri = os.path.join(self.relative_path_prefix,
+                           self.df.loc[idx, self.source_type])
+        video_ok, video = self.loaders[self.source_type](uri)
 
         if not video_ok:
-            logger.error("Error loading video: " + filename)
-            raise Exception("Error loading video: " + filename)
+            logger.error("Error loading video: " + uri)
+            raise Exception("Error loading video: " + uri)
 
         q = []
         blobs = []
@@ -99,10 +122,21 @@ class VideoDataCSV(CSVParser.CSVParser):
 
         return False, None
 
+    def load_url(self, url):
+        return self.sources.load_from_http_url(url, self.check_video_buf)
+
+    def load_s3_url(self, s3_url):
+        return self.sources.load_from_s3_url(s3_url, self.check_video_buf)
+
+    def load_gs_url(self, gs_url):
+        return self.sources.load_from_gs_url(gs_url, self.check_video_buf)
+
     def validate(self):
 
         self.header = list(self.df.columns.values)
 
-        if self.header[0] != HEADER_PATH:
+        if self.header[0] not in self.source_types:
+            field = self.header[0]
+            allowed = ", ".join(self.source_types)
             raise Exception(
-                "Error with CSV file field: filename. Must be first field")
+                f"Error with CSV file field: {field}. Allowed values: {allowed}")

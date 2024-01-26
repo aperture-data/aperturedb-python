@@ -9,6 +9,7 @@ from aperturedb import CSVParser
 from aperturedb.EntityUpdateDataCSV import SingleEntityUpdateDataCSV
 from aperturedb.BlobNewestDataCSV import BlobNewestDataCSV
 from aperturedb.SparseAddingDataCSV import SparseAddingDataCSV
+from aperturedb.Sources import Sources
 import logging
 import os
 
@@ -36,14 +37,18 @@ class ImageDataProcessor():
 
         self.check_image = check_image
         self.n_download_retries = n_download_retries
-        self.s3 = None
 
     def set_processor(self, use_dask, source_type):
         self.source_type = source_type
         if use_dask == False and self.source_type == HEADER_S3_URL:
             # The connections by boto3 cause ResourceWarning. Known
             # issue: https://github.com/boto/boto3/issues/454
-            self.s3 = boto3.client('s3')
+            s3_client = boto3.client('s3')
+            self.sources = Sources(
+                self.n_download_retries,
+                s3_client=s3_client)
+        else:
+            self.sources = Sources(self.n_download_retries)
 
     def get_indices(self):
         return {
@@ -64,15 +69,7 @@ class ImageDataProcessor():
                 logger.error(f"IMAGE ERROR: {filename}")
                 logger.exception(e)
 
-        try:
-            fd = open(filename, "rb")
-            buff = fd.read()
-            fd.close()
-            return True, buff
-        except Exception as e:
-            logger.error(f"IMAGE ERROR: {filename}")
-            logger.exception(e)
-        return False, None
+        return self.sources.load_from_file(filename)
 
     def check_image_buffer(self, img):
 
@@ -116,76 +113,13 @@ class ImageDataProcessor():
         return False  # When header is not recognized
 
     def load_url(self, url):
-        retries = 0
-        while True:
-            imgdata = requests.get(url)
-            if imgdata.ok:
-                imgbuffer = np.frombuffer(imgdata.content, dtype='uint8')
-                if not self.check_image_buffer(imgbuffer):
-                    logger.error(f"IMAGE ERROR: {url}")
-                    return False, None
-
-                return imgdata.ok, imgdata.content
-            else:
-                if retries >= self.n_download_retries:
-                    break
-                logger.warning(f"Retrying object: {url}")
-                retries += 1
-                time.sleep(2)
-
-        return False, None
+        return self.sources.load_from_http_url(url, self.check_image_buffer)
 
     def load_s3_url(self, s3_url):
-        retries = 0
-
-        while True:
-            try:
-                bucket_name = s3_url.split("/")[2]
-                object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
-                s3_response_object = self.s3.get_object(
-                    Bucket=bucket_name, Key=object_name)
-                img = s3_response_object['Body'].read()
-                imgbuffer = np.frombuffer(img, dtype='uint8')
-                if not self.check_image_buffer(imgbuffer):
-                    logger.error(f"IMAGE ERROR: {s3_url}")
-                    return False, None
-
-                return True, img
-            except Exception as e:
-                if retries >= self.n_download_retries:
-                    break
-                logger.warning(f"Retrying object: {s3_url}")
-                retries += 1
-                time.sleep(2)
-
-        logger.error(f"S3 ERROR: {s3_url}")
-        return False, None
+        return self.sources.load_from_s3_url(s3_url, self.check_image_buffer)
 
     def load_gs_url(self, gs_url):
-        retries = 0
-        from google.cloud import storage
-        client = storage.Client()
-        while True:
-            try:
-                bucket_name = gs_url.split("/")[2]
-                object_name = gs_url.split("gs://" + bucket_name + "/")[-1]
-
-                blob = client.bucket(bucket_name).blob(
-                    object_name).download_as_bytes()
-                imgbuffer = np.frombuffer(blob, dtype='uint8')
-                if not self.check_image_buffer(imgbuffer):
-                    logger.warning(f"IMAGE ERROR: {gs_url}")
-                    return False, None
-                return True, blob
-            except:
-                if retries >= self.n_download_retries:
-                    break
-                logger.warning("Retrying object: {gs_url}")
-                retries += 1
-                time.sleep(2)
-
-        logger.error(f"GS ERROR: {gs_url}")
-        return False, None
+        return self.sources.load_from_gs_url(gs_url, self.check_image_buffer)
 
 
 class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
@@ -303,8 +237,10 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         self.header = list(self.df.columns.values)
 
         if self.header[0] not in self.source_types:
+            field = self.header[0]
+            allowed = ", ".join(self.source_types)
             raise Exception(
-                f"Error with CSV file field: {self.header[0]}. Must be first field")
+                f"Error with CSV file field: {field}. Allowed values: {allowed}")
 
 
 class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
