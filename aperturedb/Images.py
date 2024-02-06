@@ -158,6 +158,7 @@ class Images(Entities):
         self.image_sizes     = []
         self.images_bboxes   = {}
         self.images_polygons = {}
+        self.overlays = []
         self.color_for_tag = {}
 
         self.constraints = None
@@ -328,6 +329,17 @@ class Images(Entities):
             logger.warn(
                 f"Cannot retrieve polygons for image {uniqueid}", exc_info=True)
 
+    def __get_box_from_coords(self, coordinates):
+        box = np.array([
+            (coordinates["x"], coordinates["y"]),
+            (coordinates["x"] +
+             coordinates["width"], coordinates["y"]),
+            (coordinates["x"] + coordinates["width"],
+             coordinates["y"] + coordinates["height"]),
+            (coordinates["x"], coordinates["y"] + coordinates["height"])]
+        )
+        return box
+
     def __retrieve_bounding_boxes(self, index, constraints):
         # We should fetch all bounding boxes incrementally.
         if self.images_bboxes is None:
@@ -374,14 +386,7 @@ class Images(Entities):
             if "entities" in res[1]["FindBoundingBox"]:
                 for bbox in res[1]["FindBoundingBox"]["entities"]:
                     coordinates = bbox["_coordinates"]
-                    box = np.array([
-                        (coordinates["x"], coordinates["y"]),
-                        (coordinates["x"] +
-                         coordinates["width"], coordinates["y"]),
-                        (coordinates["x"] + coordinates["width"],
-                         coordinates["y"] + coordinates["height"]),
-                        (coordinates["x"], coordinates["y"] + coordinates["height"])]
-                    )
+                    box = self.__get_box_from_coords(coordinates)
                     operations = self.query["operations"] if self.query and "operations" in self.query else [
                     ]
                     resolved = resolve(
@@ -497,6 +502,7 @@ class Images(Entities):
         self.images_sizes = []
         self.images_bboxes = {}
         self.images_polygons = {}
+        self.overlays = []
         self.color_for_tag = {}
 
         query = {"FindImage": {}}
@@ -548,6 +554,35 @@ class Images(Entities):
             "sequence": prop_values,
         }
         self.search(constraints=const, sort=img_sort)
+
+    def add_polygon_overlay(self, polygons, color=None, alpha=0.4):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "polygons": polygons,
+            "color": color,
+            "alpha": alpha
+        })
+
+    def add_bbox_overlay(self, bbox, color=None):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "bbox": self.__get_box_from_coords(bbox),
+            "color": color,
+        })
+
+    def add_text_overlay(self, text, origin, color=None):
+        if not color:
+            color = self.__random_color()
+        self.overlays.append({
+            "text": text,
+            "color": color,
+            "origin": origin,
+        })
+
+    def clear_overlays(self):
+        self.overlays = []
 
     def get_similar_images(self, set_name, n_neighbors):
 
@@ -632,7 +667,7 @@ class Images(Entities):
         if meta and "adb_image_width" in meta and "adb_image_height" in meta:
             resolved_origin = resolve(resolved_origin, meta, operations)
         else:
-            print(
+            logger.warning(
                 f"Cannot resolve text origin, missing image metadata in {meta}.")
         cv2.putText(image, text, resolved_origin[0], typeface, scale,
                     shadow_color, thickness + shadow_radius, cv2.LINE_AA)
@@ -807,9 +842,18 @@ class Images(Entities):
                     self.__draw_polygon_and_tag(image, polygons[pi], tags[pi] if pi < len(
                         tags) else None, bounds[pi], meta[pi], deferred_tags)
 
+            for ovr in self.overlays:
+                if "polygons" in ovr:
+                    self.__draw_polygon(
+                        image, ovr["polygons"], ovr["color"], ovr["alpha"])
+                elif "bbox" in ovr:
+                    self.__draw_bbox(image, ovr["bbox"], ovr["color"])
+                elif "text" in ovr:
+                    deferred_tags.append(ovr)
+
             for tag in deferred_tags:
                 self.__draw_text_with_shadow(
-                    image, tag["text"], tag["origin"], tag["color"], meta=tag["meta"])
+                    image, tag["text"], tag["origin"], tag["color"], meta=tag["meta"] if "meta" in tag else None)
 
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
