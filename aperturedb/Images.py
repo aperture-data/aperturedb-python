@@ -164,6 +164,7 @@ class Images(Entities):
         self.operations  = None
         self.format      = None
         self.limit       = None
+        self.query       = None
 
         self.adjacent = {}
 
@@ -292,7 +293,7 @@ class Images(Entities):
             tags     = []
             meta = []
             polys = res[1]["FindPolygon"]["entities"]
-            operations = self.query["operations"] if "operations" in self.query else [
+            operations = self.query["operations"] if self.query and "operations" in self.query else [
             ]
             for poly in polys:
                 if tag_key and tag_format:
@@ -381,7 +382,7 @@ class Images(Entities):
                          coordinates["y"] + coordinates["height"]),
                         (coordinates["x"], coordinates["y"] + coordinates["height"])]
                     )
-                    operations = self.query["operations"] if "operations" in self.query else [
+                    operations = self.query["operations"] if self.query and "operations" in self.query else [
                     ]
                     resolved = resolve(
                         box,
@@ -626,7 +627,7 @@ class Images(Entities):
 
         scale = thickness / 3
         resolved_origin = np.array([origin])
-        operations = self.query["operations"] if "operations" in self.query else [
+        operations = self.query["operations"] if self.query and "operations" in self.query else [
         ]
         if meta and "adb_image_width" in meta and "adb_image_height" in meta:
             resolved_origin = resolve(resolved_origin, meta, operations)
