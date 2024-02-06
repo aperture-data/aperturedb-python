@@ -327,7 +327,7 @@ class Images(Entities):
             logger.warn(
                 f"Cannot retrieve polygons for image {uniqueid}", exc_info=True)
 
-    def __retrieve_bounding_boxes(self, index):
+    def __retrieve_bounding_boxes(self, index, constraints):
         # We should fetch all bounding boxes incrementally.
         if self.images_bboxes is None:
             self.images_bboxes = {}
@@ -358,6 +358,10 @@ class Images(Entities):
                 "labels": True
             }
         }]
+        fbbq = query[1]["FindBoundingBox"]
+        if constraints and constraints.constraints:
+            fbbq["constraints"] = constraints.constraints
+
         uniqueid_str = str(uniqueid)
         self.images_bboxes[uniqueid_str] = {}
         try:
@@ -459,7 +463,7 @@ class Images(Entities):
         """
         if not self.images_bboxes or not str(self.images_ids[index]) in self.images_bboxes:
             # Fetch when not present in the map.
-            self.__retrieve_bounding_boxes(index)
+            self.__retrieve_bounding_boxes(index, None)
 
         try:
             bboxes = self.images_bboxes[str(self.images_ids[index])]
@@ -722,7 +726,31 @@ class Images(Entities):
                 "meta": meta
             })
 
-    def display(self, show_bboxes=False, show_polygons=False, limit=None, polygon_constraints=None, polygon_tag_key="_label", polygon_tag_format="{}"):
+    def display(self,
+                show_bboxes: bool = False,
+                bbox_constraints: Constraints = None,
+                show_polygons: bool = False,
+                limit: Union[int, object] = None,
+                polygon_constraints: Constraints = None,
+                polygon_tag_key: str = "_label",
+                polygon_tag_format: str = "{}"):
+        """
+        **Display images with annotations**
+        show_bboxes: bool, optional
+            Show bounding boxes, by default False
+        bbox_constraints: Constraints, optional
+            Constraints for bounding boxes, by default None
+        show_polygons: bool, optional
+            Show polygons, by default False
+        limit: Union[int, object], optional
+            Number of images to display, by default None
+        polygon_constraints: Constraints, optional
+            Constraints for polygons, by default None
+        polygon_tag_key: str, optional
+            Key for the polygon tag, by default "_label"
+        polygon_tag_format: str, optional
+            Format for the polygon tag, by default "{}"
+        """
         if not limit:
             limit = self.display_limit
             if self.display_limit < len(self.images_ids):
@@ -748,7 +776,7 @@ class Images(Entities):
             deferred_tags = []
             if show_bboxes:
                 if not str(uniqueid) in self.images_bboxes:
-                    self.__retrieve_bounding_boxes(i)
+                    self.__retrieve_bounding_boxes(i, bbox_constraints)
 
                 bboxes = self.images_bboxes[uniqueid]["bboxes"]
                 tags   = self.images_bboxes[uniqueid]["tags"]
