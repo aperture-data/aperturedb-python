@@ -1,5 +1,4 @@
 import pytest
-import mark_checker
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.ParallelLoader import ParallelLoader
@@ -233,7 +232,3 @@ def config():
         "active": "first"
     }
     return config
-
-
-def pytest_configure(config):
-    mark_checker.store_config(config)
