@@ -29,15 +29,70 @@ def image_to_bytes(image: Image, format="JPEG") -> bytes:
         return bytes.getvalue()
 
 
+def rotate(points, angle, c_x=None, c_y=None):
+    """
+    **Rotate a set of points around a center**
+    """
+    ANGLE = np.deg2rad(angle)
+    return np.array(
+        [
+            [
+                c_x + np.cos(ANGLE) * (px - c_x) - np.sin(ANGLE) * (py - c_x),
+                c_y + np.sin(ANGLE) * (px - c_y) + np.cos(ANGLE) * (py - c_y)
+            ]
+            for px, py in points
+        ]
+    ).astype(int)
+
+
+def resolve(points: np.array, image_meta, operations) -> np.array:
+    """
+    **Resolve the coordinates of a bounding box to the original image size**
+
+    Args:
+        coordinates (dict): The coordinates of the bounding box
+        image (dict): The image properties
+
+    Returns:
+        dict: The resolved coordinates
+    """
+    resolved = points.copy()
+    if image_meta["adb_image_width"] and image_meta["adb_image_height"]:
+        image_meta_width = image_meta["adb_image_width"]
+        image_meta_height = image_meta["adb_image_height"]
+        # print(f"resolve: {resolved}")
+        for operation in operations:
+            if operation["type"] == "resize":
+                x_ratio = operation["width"] / image_meta_width
+                y_ratio = operation["height"] / image_meta_height
+                np.multiply(resolved, [x_ratio, y_ratio],
+                            out=resolved, casting="unsafe")
+                image_meta_width = operation["width"]
+                image_meta_height = operation["height"]
+            if operation["type"] == "rotate":
+                angle = operation["angle"]
+                resolved = rotate(
+                    resolved, angle, c_x=image_meta_width / 2, c_y=image_meta_height / 2)
+            # print(f"resolve: {resolved}")
+    else:
+        logger.warn(
+            "Cannot resolve bounding box coordinates, missing image metadata.")
+        logger.warn(
+            "Reingest the image with image_properties transformer for this functionality.")
+    return resolved
+
+
 class Images(Entities):
     """
-    **The object mapper representation of images in ApertureDB.**
+    **The python wrapper of images in ApertureDB.**
 
-    This class is a layer on top of the native query.
+    This class serves 2 purposes:
+    ***This class is a layer on top of the native query.***
     It facilitate interactions with images in the database in a pythonic way.
+    Abstracts the complexity of the query language and the communication with the database.
 
-    It abstracts the need to batch the responses and includes utility methods to
-    interconvert the representation into NumPy matrices and find similar images,
+    ***It includes utility methods to visualize image and annotations**
+    Interconvert the representation into NumPy matrices and find similar images,
     related bounding boxes, etc.
     """
     db_object = "_Image"
@@ -103,8 +158,7 @@ class Images(Entities):
         self.image_sizes     = []
         self.images_bboxes   = {}
         self.images_polygons = {}
-
-        self.overlays = []
+        self.color_for_tag = {}
 
         self.constraints = None
         self.operations  = None
@@ -124,6 +178,20 @@ class Images(Entities):
         if response is not None:
             self.images_ids = list(
                 map(lambda x: x[self.img_id_prop], response))
+
+        # Blobs can be passed in addition the response.
+        # This would mean that the images are already retrieved.
+        # This is useful for usage of the class dor it's utility methods.
+        if "blobs" in kwargs:
+            blobs = kwargs["blobs"]
+            for i, id in enumerate(self.images_ids):
+                self.images[id] = blobs[i]
+
+        # If the query is passed, we should save the information
+        # for things like operations, constraints, etc.
+        # This is useful for resolving the coordinates of bounding boxes.
+        if "query" in kwargs:
+            self.query = kwargs["query"]
 
     def __retrieve_batch(self, index):
         '''
@@ -184,6 +252,9 @@ class Images(Entities):
                     self.img_id_prop: ["==", uniqueid]
                 },
                 "blobs": False,
+                "results": {
+                    "list": ["adb_image_width", "adb_image_height"]
+                },
             }
         }, {
             "FindPolygon": {
@@ -219,26 +290,42 @@ class Images(Entities):
             polygons = []
             bounds   = []
             tags     = []
+            meta = []
             polys = res[1]["FindPolygon"]["entities"]
+            operations = self.query["operations"] if "operations" in self.query else [
+            ]
             for poly in polys:
                 if tag_key and tag_format:
                     tag = tag_format.format(poly[tag_key])
                     tags.append(tag)
+                    meta.append(res[0]["FindImage"]["entities"][0])
+
                 bounds.append(poly["_bounds"])
-                polygons.append(poly["_vertices"])
+                converted = []
+                for vert in poly["_vertices"]:
+                    v = resolve(
+                        np.array(vert),
+                        res[0]["FindImage"]["entities"][0],
+                        operations)
+                    converted.append(v)
+                polygons.append(converted)
 
             self.images_polygons[str(uniqueid)] = {
                 "bounds": bounds,
                 "polygons": polygons,
                 "tags": tags,
+                "meta": meta
             }
 
-        except:
+        except Exception as e:
             self.images_polygons[str(uniqueid)] = {
                 "bounds": [],
                 "polygons": [],
-                "tags": []
+                "tags": [],
+                "meta": []
             }
+            logger.warn(
+                f"Cannot retrieve polygons for image {uniqueid}", exc_info=True)
 
     def __retrieve_bounding_boxes(self, index):
         # We should fetch all bounding boxes incrementally.
@@ -257,6 +344,9 @@ class Images(Entities):
                 "constraints": {
                     self.img_id_prop: ["==", uniqueid]
                 },
+                "results": {
+                    "list": ["adb_image_width", "adb_image_height"]
+                },
                 "blobs": False,
             }
         }, {
@@ -274,15 +364,38 @@ class Images(Entities):
             res, images = self.db_connector.query(query)
             bboxes = []
             tags   = []
+            meta = []
+            bounds = []
             if "entities" in res[1]["FindBoundingBox"]:
                 for bbox in res[1]["FindBoundingBox"]["entities"]:
-                    bboxes.append(bbox["_coordinates"])
+                    coordinates = bbox["_coordinates"]
+                    box = np.array([
+                        (coordinates["x"], coordinates["y"]),
+                        (coordinates["x"] +
+                         coordinates["width"], coordinates["y"]),
+                        (coordinates["x"] + coordinates["width"],
+                         coordinates["y"] + coordinates["height"]),
+                        (coordinates["x"], coordinates["y"] + coordinates["height"])]
+                    )
+                    operations = self.query["operations"] if "operations" in self.query else [
+                    ]
+                    resolved = resolve(
+                        box,
+                        # image to bb is 1:n relation
+                        res[0]["FindImage"]["entities"][0],
+                        operations)
+                    bboxes.append(resolved)
                     tags.append(bbox[self.bbox_label_prop])
-        except:
-            logger.warn(f"Cannot retrieve bounding boxes for image {uniqueid}")
+                    meta.append(res[0]["FindImage"]["entities"][0])
+                    bounds.append(box)
+        except Exception as e:
+            logger.warn(
+                f"Cannot retrieve bounding boxes for image {uniqueid}", exc_info=True)
         finally:
             self.images_bboxes[uniqueid_str]["bboxes"] = bboxes
             self.images_bboxes[uniqueid_str]["tags"]   = tags
+            self.images_bboxes[uniqueid_str]["meta"]   = meta
+            self.images_bboxes[uniqueid_str]["bounds"] = bounds
 
     def total_results(self) -> int:
         """
@@ -379,8 +492,7 @@ class Images(Entities):
         self.images_sizes = []
         self.images_bboxes = {}
         self.images_polygons = {}
-
-        self.overlays = []
+        self.color_for_tag = {}
 
         query = {"FindImage": {}}
 
@@ -431,35 +543,6 @@ class Images(Entities):
             "sequence": prop_values,
         }
         self.search(constraints=const, sort=img_sort)
-
-    def add_polygon_overlay(self, polygons, color=None, alpha=0.4):
-        if not color:
-            color = self.__random_color()
-        self.overlays.append({
-            "polygons": polygons,
-            "color": color,
-            "alpha": alpha
-        })
-
-    def add_bbox_overlay(self, polygons, color=None):
-        if not color:
-            color = self.__random_color()
-        self.overlays.append({
-            "bbox": polygons,
-            "color": color,
-        })
-
-    def add_text_overlay(self, text, origin, color=None):
-        if not color:
-            color = self.__random_color()
-        self.overlays.append({
-            "text": text,
-            "color": color,
-            "origin": origin,
-        })
-
-    def clear_overlays(self):
-        self.overlays = []
 
     def get_similar_images(self, set_name, n_neighbors):
 
@@ -531,39 +614,53 @@ class Images(Entities):
 
         return imgs_return
 
-    def __draw_text_with_shadow(self, image, text, origin, color, typeface=cv2.FONT_HERSHEY_SIMPLEX, scale=0.75, thickness=2, shadow_color=None, shadow_radius=4):
+    def __draw_text_with_shadow(self, image, text, origin, color, typeface=cv2.FONT_HERSHEY_SIMPLEX, scale=0.75, thickness=2, shadow_color=None, shadow_radius=4, meta=None):
+        width, height = image.shape[1], image.shape[0]
+        thickness = max(1, int(min(width, height) / 200))
         if not shadow_color:
             shadow_color = self.__contrasting_color(color)
 
-        cv2.putText(image, text, origin, typeface, scale,
+        scale = thickness / 3
+        resolved_origin = np.array([origin])
+        operations = self.query["operations"] if "operations" in self.query else [
+        ]
+        if meta and "adb_image_width" in meta and "adb_image_height" in meta:
+            resolved_origin = resolve(resolved_origin, meta, operations)
+        else:
+            print(
+                f"Cannot resolve text origin, missing image metadata in {meta}.")
+        cv2.putText(image, text, resolved_origin[0], typeface, scale,
                     shadow_color, thickness + shadow_radius, cv2.LINE_AA)
 
-        cv2.putText(image, text, origin, typeface,
+        cv2.putText(image, text, resolved_origin[0], typeface,
                     scale, color, thickness, cv2.LINE_AA)
 
-    def __draw_bbox(self, image, bbox, color, thickness=2):
+    def __draw_bbox(self, image, bbox, color, thickness=1):
+        width, height = image.shape[1], image.shape[0]
+        thickness = max(1, int(min(width, height) / 200))
+        cv2.drawContours(image, [bbox], 0, color, thickness)
 
-        left   = bbox["x"]
-        top    = bbox["y"]
-        right  = bbox["x"] + bbox["width"]
-        bottom = bbox["y"] + bbox["height"]
-        cv2.rectangle(image, (left, top), (right, bottom), color, thickness)
+    def __get_color_for_tag(self, tag: str) -> Tuple[int, int, int]:
+        if tag not in self.color_for_tag:
+            color = self.__random_color()
+            self.color_for_tag[tag] = color
+        return self.color_for_tag[tag]
 
-    def __draw_bbox_and_tag(self, image, bbox, tag, deferred_tags):
-        RED = (0, 0, 255)
-
-        self.__draw_bbox(image, bbox, RED)
+    def __draw_bbox_and_tag(self, image, bbox, tag, bound, meta, deferred_tags):
+        color = self.__get_color_for_tag(tag)
+        self.__draw_bbox(image, bbox, color)
 
         if tag:
-            left   = bbox["x"]
-            top    = bbox["y"]
+            left = bound[0][0]
+            top = bound[0][1]
 
             y = top - 15 if top - 15 > 15 else top + 15
 
             deferred_tags.append({
                 "text": tag,
                 "origin": (left, y),
-                "color": RED
+                "color": color,
+                "meta": meta
             })
 
     def __random_color(self, value=1.0, saturation=0.51):
@@ -589,21 +686,21 @@ class Images(Entities):
         return (desaturate(cont[0]), desaturate(cont[1]), desaturate(cont[2]))
 
     def __draw_polygon(self, image, polygon, color, fill_alpha=0.4, thickness=2, shift=8):
-
-        def as_shift_int(v): return int(v * (1 << shift))
+        width, height = image.shape[1], image.shape[0]
+        thickness = max(1, int(min(width, height) / 200))
 
         for verts in polygon:
-            shift_verts = [[as_shift_int(v) for v in vert] for vert in verts]
-            np_verts = np.array(shift_verts, np.int32)
+            np_verts = np.multiply(verts, 256)
             fill = image.copy()
-            cv2.fillPoly(fill, [np_verts], color, cv2.LINE_4, shift)
+            cv2.fillPoly(fill, [np_verts.astype(int)],
+                         color, cv2.LINE_4, shift)
             cv2.addWeighted(fill, fill_alpha, image, 1 - fill_alpha, 0, image)
-            cv2.polylines(image, [np_verts], True, color,
+            cv2.polylines(image, [np_verts.astype(int)], True, color,
                           thickness, cv2.LINE_4, shift)
 
-    def __draw_polygon_and_tag(self, image, polygon, tag, bounds, deferred_tags):
+    def __draw_polygon_and_tag(self, image, polygon, tag, bounds, meta, deferred_tags):
 
-        color = self.__random_color()
+        color = self.__get_color_for_tag(tag)
 
         self.__draw_polygon(image, polygon, color)
 
@@ -621,11 +718,11 @@ class Images(Entities):
             deferred_tags.append({
                 "text": tag,
                 "origin": org,
-                "color": color
+                "color": color,
+                "meta": meta
             })
 
     def display(self, show_bboxes=False, show_polygons=False, limit=None, polygon_constraints=None, polygon_tag_key="_label", polygon_tag_format="{}"):
-
         if not limit:
             limit = self.display_limit
             if self.display_limit < len(self.images_ids):
@@ -655,11 +752,13 @@ class Images(Entities):
 
                 bboxes = self.images_bboxes[uniqueid]["bboxes"]
                 tags   = self.images_bboxes[uniqueid]["tags"]
+                meta = self.images_bboxes[uniqueid]["meta"]
+                bounds = self.images_bboxes[uniqueid]["bounds"]
 
                 # Draw a rectangle around the faces
                 for bi in range(len(bboxes)):
                     self.__draw_bbox_and_tag(
-                        image, bboxes[bi], tags[bi], deferred_tags)
+                        image, bboxes[bi], tags[bi], bounds[bi], meta[bi], deferred_tags)
 
             if show_polygons:
                 if str(uniqueid) not in self.images_polygons:
@@ -672,23 +771,16 @@ class Images(Entities):
                 ]
                 tags = self.images_polygons[uniqueid]["tags"] if uniqueid in self.images_polygons else [
                 ]
+                meta = self.images_polygons[uniqueid]["meta"] if uniqueid in self.images_polygons else [
+                ]
 
                 for pi in range(len(polygons)):
                     self.__draw_polygon_and_tag(image, polygons[pi], tags[pi] if pi < len(
-                        tags) else None, bounds[pi], deferred_tags)
-
-            for ovr in self.overlays:
-                if "polygons" in ovr:
-                    self.__draw_polygon(
-                        image, ovr["polygons"], ovr["color"], ovr["alpha"])
-                elif "bbox" in ovr:
-                    self.__draw_bbox(image, ovr["bbox"], ovr["color"])
-                elif "text" in ovr:
-                    deferred_tags.append(ovr)
+                        tags) else None, bounds[pi], meta[pi], deferred_tags)
 
             for tag in deferred_tags:
                 self.__draw_text_with_shadow(
-                    image, tag["text"], tag["origin"], tag["color"])
+                    image, tag["text"], tag["origin"], tag["color"], meta=tag["meta"])
 
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
