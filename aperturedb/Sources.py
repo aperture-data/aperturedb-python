@@ -35,7 +35,7 @@ class Sources():
             logger.error(f"VALIDATION ERROR: {filename}")
             logger.exception(e)
         finally:
-            if fd.is_open():
+            if not fd.closed:
                 fd.close()
         return False, None
 
