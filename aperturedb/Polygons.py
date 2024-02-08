@@ -9,7 +9,7 @@ class Polygons(Entities):
     def intersection(self, other: Polygons, threshold: float) -> Polygons:
         """
         Find a set of polygons that intersect with another set of polygons.
-        The threhold is user specified and is used to determine if two polygons
+        The threshold is user specified and is used to determine if two polygons
         sufficiently overlap to be considered intersecting.
 
         Args:

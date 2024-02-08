@@ -15,7 +15,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
     **ApertureDB Polygon Data.**
 
     This class loads the Polygon Data which is present in a CSV file,
-    and converts it into a series of aperturedb queries.
+    and converts it into a series of ApertureDB queries.
 
     :::note Is backed by a CSV file with the following columns:
     ``IMG_KEY``, [``POLYGON_PROPERTY_1``, ... ``POLYGON_PROPERTY_N``,] [``constraint_POLYGON_PROPERTY_1``, ... ``constraint_POLYGON_PROPERTY_N``,] [``_label``,] ``polygons``

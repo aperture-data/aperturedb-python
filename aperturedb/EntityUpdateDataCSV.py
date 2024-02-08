@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
     """
-    **ApertureDB General CSV Parser for Adding and Updateing Properties in an Entity**
+    **ApertureDB General CSV Parser for Adding and Updating Properties in an Entity**
 
 
       Update an Entity to the data in the CSV
       What this means is:
       - If it doesn't exist, add it.
-      - If it exsits, update the properties.
+      - If it exists, update the properties.
 
 
 
