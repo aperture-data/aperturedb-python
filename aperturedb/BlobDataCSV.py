@@ -13,7 +13,7 @@ class BlobDataCSV(CSVParser.CSVParser):
     """**ApertureDB Blob Data.**
 
     This class loads the Blob Data which is present in a CSV file,
-    and converts it into a series of aperturedb queries.
+    and converts it into a series of ApertureDB queries.
 
     :::note Is backed by a CSV file with the following columns:
     ``FILENAME``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_1``

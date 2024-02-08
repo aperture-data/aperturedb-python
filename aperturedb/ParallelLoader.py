@@ -11,7 +11,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     **Parallel and Batch Loader for ApertureDB**
 
     This takes a dataset (which is a collection of homogeneous objects)
-    or a derived class, and optimally inserts them into databse by splitting them
+    or a derived class, and optimally inserts them into database by splitting them
     into batches, and passing the batches to multiple workers.
     """
 
@@ -95,12 +95,12 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         print(f"Total time (s): {self.total_actions_time}")
         print(f"Total queries executed: {total_queries_exec}")
 
-        suceeded_queries = sum([stat["suceeded_queries"]
+        succeeded_queries = sum([stat["succeeded_queries"]
                                 for stat in self.actual_stats])
-        suceeded_commands = sum([stat["suceeded_commands"]
-                                for stat in self.actual_stats])
+        succeeded_commands = sum([stat["succeeded_commands"]
+                                  for stat in self.actual_stats])
 
-        if suceeded_queries == 0:
+        if succeeded_queries == 0:
             print("All queries failed!")
 
         else:
@@ -123,6 +123,6 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
             # TODO this does not take into account that the last
             # batch may be smaller than batchsize
-            print(f"Total inserted elements: {suceeded_queries}")
-            print(f"Total successful commands: {suceeded_commands}")
+            print(f"Total inserted elements: {succeeded_queries}")
+            print(f"Total successful commands: {succeeded_commands}")
         print("=================================================")

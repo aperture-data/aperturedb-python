@@ -17,7 +17,7 @@ class Entities(Subscriptable):
     * [Blobs](/python_sdk/object_wrappers/Blobs)
     * [Bounding Boxes](/python_sdk/object_wrappers/BoundingBoxes)
     * [Images](/python_sdk/object_wrappers/Images)
-    * [Plygons](/python_sdk/object_wrappers/Polygons)
+    * [Polygons](/python_sdk/object_wrappers/Polygons)
     * [Videos](/python_sdk/object_wrappers/Videos)
     """
     db_object = "Entity"
@@ -47,7 +47,7 @@ class Entities(Subscriptable):
 
         # Since adjacent items are usually a way to filter the results,
         # the native query is constructed in the reverse order, with
-        # first filtering out the relevant itmes based on adjacent items.
+        # first filtering out the relevant items based on adjacent items.
         fs = None
         count = 0
         if with_adjacent:

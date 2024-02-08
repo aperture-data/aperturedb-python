@@ -26,7 +26,7 @@ class VideoDataCSV(CSVParser.CSVParser):
 
     Example CSV file::
 
-        filename,id,label,constaint_id
+        filename,id,label,constraint_id
         /home/user/file1.jpg,321423532,dog,321423532
         /home/user/file2.jpg,42342522,cat,4234252
         ...

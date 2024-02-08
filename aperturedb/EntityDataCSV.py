@@ -12,7 +12,7 @@ class EntityDataCSV(CSVParser.CSVParser):
     """**ApertureDB Entity Data.**
 
     This class loads the Entity Data which is present in a CSV file,
-    and converts it into a series of aperturedb queries.
+    and converts it into a series of ApertureDB queries.
 
     :::note Is backed by a CSV file with the following columns:
     ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
@@ -81,7 +81,7 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
     """**ApertureDB Entity Delete Data.**
 
     This class loads the Entity Data which is present in a CSV file,
-    and converts it into a series of aperturedb deletes.
+    and converts it into a series of ApertureDB deletes.
 
     :::note::
     Expects a CSV file with the following columns:

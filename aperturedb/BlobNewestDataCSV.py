@@ -15,7 +15,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
       Update an Entity which has an associated blob to the data in the CSV
       What this means is:
       - If it doesn't exist, add it.
-      - If it exsits and the blob hasn't changed, update it.
+      - If it exists and the blob hasn't changed, update it.
       - If it exists and the blob has changed, delete and re-add it.
 
        This means if these elements are part of a graph where they are linked by connections
@@ -29,7 +29,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
        This class utilizes 3 conditionals
        - normal constraint_ to select the element
        - a series of updateif_ to determine if an update is necessary
-       - one or more prop_ and the assocaited updateif blob conditonals
+       - one or more prop_ and the associated updateif blob conditionals
          to determine if a update or an delete/add is appropriate
 
        Generated fields
@@ -37,7 +37,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
 
         type:
         - blobsha1 - the sha1 for the blob is calculated
-        - blobsize - the length in bytes of the blob is calcualte
+        - blobsize - the length in bytes of the blob is calculate
         - insertdate - ISO Format of date ( this will always change! )
 
         the result is then used to identify if a blob has changed.
@@ -169,7 +169,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
                     filtered.append(key)
         return filtered
 
-    # creat generated constraints for specific index
+    # create generated constraints for specific index
     # match controls if constrain will be a positive selection (True) or negative(False)
     def create_generated_constraints(self, idx, match=True):
         constraints = {}
@@ -218,7 +218,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
         # process is; add if not existing ( # Pt 1 )
         # if existing
         # if blob checks pass ( or there are none ) - update metadata ( Pt 2 )
-        # if blobk check FAILS
+        # if blob check FAILS
         # delete ( Pt 3 )
         # re-add ( Pt 4 )
 

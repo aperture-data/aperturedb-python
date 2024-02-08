@@ -92,7 +92,7 @@ class Images(Entities):
     Abstracts the complexity of the query language and the communication with the database.
 
     ***It includes utility methods to visualize image and annotations**
-    Interconvert the representation into NumPy matrices and find similar images,
+    Inter convert the representation into NumPy matrices and find similar images,
     related bounding boxes, etc.
     """
     db_object = "_Image"

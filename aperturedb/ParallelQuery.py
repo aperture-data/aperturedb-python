@@ -19,7 +19,7 @@ def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
-    This should be used (without the parallel machinery) istead of db.query to keep the
+    This should be used (without the parallel machinery) instead of db.query to keep the
     response handling consistent, better logging, etc.
 
     Returns:
@@ -224,20 +224,20 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 strict_response_validation=strict_response_validation)
             if result == 0:
                 query_time = db.get_last_query_time()
-                worker_stats["suceeded_commands"] = len(q)
-                worker_stats["suceeded_queries"] = len(data)
+                worker_stats["succeeded_commands"] = len(q)
+                worker_stats["succeeded_queries"] = len(data)
                 worker_stats["objects_existed"] = sum(
                     [v['status'] == 2 for i in r for k, v in i.items()])
             elif result == 1:
                 self.error_counter += 1
-                worker_stats["suceeded_queries"] = 0
-                worker_stats["suceeded_commands"] = 0
+                worker_stats["succeeded_queries"] = 0
+                worker_stats["succeeded_commands"] = 0
                 worker_stats["objects_existed"] = 0
             elif result == 2:
                 # with result 2, some queries might have failed.
                 def filter_per_group(group):
                     return group.items() if isinstance(group, dict) else {}
-                worker_stats["suceeded_commands"] = sum(
+                worker_stats["succeeded_commands"] = sum(
                     [v['status'] == 0 for i in r for k, v in filter_per_group(i)])
                 worker_stats["objects_existed"] = sum(
                     [v['status'] == 2 for i in r for k, v in filter_per_group(i)])
@@ -245,7 +245,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 for i in range(0, len(r), self.commands_per_query):
                     if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
                         sq += 1
-                worker_stats["suceeded_queries"] = sq
+                worker_stats["succeeded_queries"] = sq
         else:
             query_time = 1
 
@@ -283,12 +283,12 @@ class ParallelQuery(Parallelizer.Parallelizer):
         return sum([stat["objects_existed"]
                     for stat in self.actual_stats])
 
-    def get_suceeded_queries(self):
-        return sum([stat["suceeded_queries"]
+    def get_succeeded_queries(self):
+        return sum([stat["succeeded_queries"]
                     for stat in self.actual_stats])
 
-    def get_suceeded_commands(self):
-        return sum([stat["suceeded_commands"]
+    def get_succeeded_commands(self):
+        return sum([stat["succeeded_commands"]
                     for stat in self.actual_stats])
 
     def query(self, generator, batchsize=1, numthreads=4, stats=False):
@@ -297,7 +297,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         The generator yields a tuple : (array of commands, array of blobs)
         Args:
             generator (_type_): The class that generates the queries to be executed.
-            batchsize (int, optional): Nummber of queries per transaction. Defaults to 1.
+            batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
@@ -319,8 +319,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     self.times_arr.extend(result.times_arr)
                     self.error_counter += result.error_counter
                     self.actual_stats.append(
-                        {"suceeded_queries": result.suceeded_queries,
-                         "suceeded_commands": result.suceeded_commands,
+                        {"succeeded_queries": result.succeeded_queries,
+                         "succeeded_commands": result.succeeded_commands,
                          "objects_existed": result.objects_existed})
             self.total_actions = len(generator.df)
 
