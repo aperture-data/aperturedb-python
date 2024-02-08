@@ -57,8 +57,8 @@ class TestParallel():
             querier.query(generator, batchsize=2,
                           numthreads=8,
                           stats=True)
-            logger.info(querier.get_suceeded_commands())
-            assert querier.get_suceeded_commands() < elements
+            logger.info(querier.get_succeeded_commands())
+            assert querier.get_succeeded_commands() < elements
         except Exception as e:
             print(e)
             print("Failed to renew Session")
@@ -75,8 +75,8 @@ class TestParallel():
             querier.query(generator, batchsize=2,
                           numthreads=8,
                           stats=True)
-            logger.info(querier.get_suceeded_commands())
-            assert querier.get_suceeded_commands() == 0
+            logger.info(querier.get_succeeded_commands())
+            assert querier.get_succeeded_commands() == 0
         except Exception as e:
             print(e)
             print("Failed to renew Session")
