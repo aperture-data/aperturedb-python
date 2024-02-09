@@ -21,7 +21,7 @@ class VideoDataCSV(CSVParser.CSVParser):
     **ApertureDB Video Data.**
 
     This class loads the Video Data which is present in a CSV file,
-    and converts it into a series of aperturedb queries.
+    and converts it into a series of ApertureDB queries.
 
 
     .. note::
