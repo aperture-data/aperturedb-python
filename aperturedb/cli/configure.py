@@ -174,7 +174,7 @@ def create(
 @app.command()
 def activate(
         name: Annotated[str, typer.Argument(help="Name of this configuration for easy reference")],
-        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = False):
+        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
     """
     Set the default configuration.
     """
