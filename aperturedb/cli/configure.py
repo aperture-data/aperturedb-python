@@ -59,7 +59,9 @@ def get_configurations(file: str):
                 host=config["host"],
                 port=config["port"],
                 username=config["username"],
-                password=config["password"])
+                password=config["password"],
+                use_rest=config["use_rest"],
+                use_ssl=config["use_ssl"])
     active = configurations["active"]
     return configs, active
 
