@@ -70,7 +70,7 @@ class Session():
 
         # This triggers refresh if the session is about to expire.
         if session_age > self.session_token_ttl - \
-                int(os.getenv("SESSION_EXPIRTY_OFFSET_SEC", 10)):
+                int(os.getenv("SESSION_EXPIRY_OFFSET_SEC", 10)):
             return False
 
         return True
@@ -78,7 +78,7 @@ class Session():
 
 class Connector(object):
     """
-    **Class to facilitate connections with an instance of aperturedb**
+    **Class to facilitate connections with an instance of ApertureDB**
 
     It lets the client execute any JSON query based on the [ApertureDB query language specification](/query_language/Overview/API%20Description)
 
@@ -91,7 +91,7 @@ class Connector(object):
         bool (use_ssl): Use SSL to encrypt communication with the database.
         bool (use_keepalive): Set keepalive on the connection with the database.
             This has two benefits: It reduces the chance of disconnection for a long-running query,
-            and it means that diconnections are detected sooner.
+            and it means that disconnections are detected sooner.
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
     """

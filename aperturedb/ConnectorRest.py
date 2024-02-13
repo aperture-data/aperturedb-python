@@ -44,7 +44,7 @@ PROTOCOL_VERSION = 1
 
 class ConnectorRest(Connector):
     """
-    **Class to use aperturedb's REST interface**
+    **Class to use ApertureDB's REST interface**
 
     Args:
         str (host): Address of the host to connect to.
@@ -143,9 +143,9 @@ class ConnectorRest(Connector):
 
         if tries == self.config.retry_max_attempts:
             raise Exception(
-                f"Could not query apertureDB {self.config} using REST.")
+                f"Could not query ApertureDB {self.config} using REST.")
         return (self.last_response, response_blob_array)
 
     def _connect(self):
-        logger.info("Connecting to aperturedb using REST")
+        logger.info("Connecting to ApertureDB using REST")
         self.connected = True

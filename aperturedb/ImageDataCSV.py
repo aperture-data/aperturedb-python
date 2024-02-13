@@ -126,7 +126,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     """**ApertureDB Image Data.**
 
     This class loads the Image Data which is present in a CSV file,
-    and converts it into a series of aperturedb queries.
+    and converts it into a series of ApertureDB queries.
 
 
     :::note Is backed by a CSV file with the following columns:

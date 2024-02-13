@@ -46,7 +46,7 @@ def generate_save_query(
     Args:
         obj (BaseModel): The object from the user domain.
         cached (List[str], optional): helps to optimize sending one blob per node. Defaults to None.
-        source_field (str, optional): Preserves the relavant connection informatio from user objects. Defaults to None.
+        source_field (str, optional): Preserves the relevant connection information from user objects. Defaults to None.
         index (int, optional): The index to start creating references from. Defaults to 1.
         parent (int, optional): The parent of the current node. Defaults to None.
 
@@ -159,7 +159,7 @@ class QueryBuilder():
                 }
             else:
                 raise Exception(
-                    f"Invalid Object type. Should not begin with _, exceept for {members}")
+                    f"Invalid Object type. Should not begin with _, except for {members}")
         else:
             if operation == "Find":
                 params["with_class"] = oclass

@@ -1,5 +1,5 @@
 """
-**These are miscelaneous helper methods to render responses from ApertureDB in a jupyter environment.**
+**These are miscellaneous helper methods to render responses from ApertureDB in a jupyter environment.**
 """
 
 import os

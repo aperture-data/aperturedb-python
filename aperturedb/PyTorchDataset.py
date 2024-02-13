@@ -15,7 +15,7 @@ class ApertureDBDataset(data.Dataset):
     """
     This class implements a PyTorch Dataset for ApertureDB.
     It is used to load images from ApertureDB into a PyTorch model.
-    It can be initialised with a query that will be used to retrieve
+    It can be initialized with a query that will be used to retrieve
     the images from ApertureDB.
     """
 

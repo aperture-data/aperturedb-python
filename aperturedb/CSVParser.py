@@ -30,11 +30,11 @@ class CSVParser(Subscriptable):
     - **Dask Mode**: This mode is used when the CSV file is too big to fit in memory, or multiprocessing is desired.
         It reads the CSV file into a Dask DataFrame.
         In Dask mode the CSV file is read in chunks, and the operations are performed on each chunk.
-        The tricky bit is that the chunck size is not known till the loader is created, so the processing happens when ingest is called.
+        The tricky bit is that the chunk size is not known till the loader is created, so the processing happens when ingest is called.
         So the Data CSV has another signature, where the df is passed explicitly.
 
     Typically, the response_handler is application specific, and loading does not break
-    on errors in response_handlers, so the default behaviour is to log the error and continue.
+    on errors in response_handlers, so the default behavior is to log the error and continue.
     If you want to break on errors, set strict_response_validation to True.
     """
 

@@ -132,11 +132,11 @@ def insert_data_from_csv(db, request):
 
         assert loader.error_counter == 0
         assert len(data) - \
-            loader.get_suceeded_queries() == expected_error_count
+            loader.get_succeeded_queries() == expected_error_count
         if loader_result_lambda is not None:
             loader_result_lambda(loader, data)
         assert len(data) - \
-            loader.get_suceeded_queries() == expected_error_count
+            loader.get_succeeded_queries() == expected_error_count
         if loader_result_lambda is not None:
             loader_result_lambda(loader, data)
 

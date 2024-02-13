@@ -10,7 +10,7 @@ class Parallelizer:
     """**Generic Parallelizer**
 
     A parallelizer converts a series of operations to be executed and partitions it into
-    batches, to be execued by multiple threads of execution.
+    batches, to be executed by multiple threads of execution.
     ```mermaid
     gantt
         title Parallel execution
