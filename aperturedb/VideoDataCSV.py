@@ -50,7 +50,7 @@ class VideoDataCSV(CSVParser.CSVParser):
     def __init__(self, filename, check_video=True, **kwargs):
         self.source_types = [HEADER_PATH,
                              HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
-        super().__init__(filename, df=None, **kwargs)
+        super().__init__(filename, **kwargs)
         self.check_video = check_video
 
         self.props_keys       = [x for x in self.header[1:]
@@ -58,9 +58,6 @@ class VideoDataCSV(CSVParser.CSVParser):
         self.constraints_keys = [x for x in self.header[1:]
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.command = "AddVideo"
-
-        self.sources = Sources(n_download_retries=3,
-                               s3_client=boto3.client('s3'))
         self.loaders = {
             HEADER_PATH: self.load_video,
             HEADER_URL: self.load_url,
@@ -68,6 +65,7 @@ class VideoDataCSV(CSVParser.CSVParser):
             HEADER_GS_URL: self.load_gs_url
         }
         self.source_type = self.header[0]
+        self.sources = Sources(n_download_retries=3)
 
     def get_indices(self):
         return {
