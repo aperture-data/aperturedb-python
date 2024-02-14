@@ -65,7 +65,11 @@ class VideoDataCSV(CSVParser.CSVParser):
             HEADER_GS_URL: self.load_gs_url
         }
         self.source_type = self.header[0]
-        self.sources = Sources(n_download_retries=3)
+        if self.use_dask == False and self.source_type == HEADER_S3_URL:
+            s3_client = boto3.client('s3')
+            self.sources = Sources(3, s3_client=s3_client)
+        else:
+            self.sources = Sources(3)
 
     def get_indices(self):
         return {

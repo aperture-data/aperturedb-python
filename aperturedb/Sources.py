@@ -81,7 +81,7 @@ class Sources():
             except Exception as e:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning(f"Retrying object: {s3_url}")
+                logger.warning(f"Retrying object: {s3_url}", exc_info=True)
                 retries += 1
                 time.sleep(2)
 
@@ -107,7 +107,7 @@ class Sources():
             except:
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("Retrying object: {gs_url}")
+                logger.warning("Retrying object: {gs_url}", exc_info=True)
                 retries += 1
                 time.sleep(2)
 
