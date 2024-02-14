@@ -59,7 +59,9 @@ def get_configurations(file: str):
                 host=config["host"],
                 port=config["port"],
                 username=config["username"],
-                password=config["password"])
+                password=config["password"],
+                use_rest=config["use_rest"],
+                use_ssl=config["use_ssl"])
     active = configurations["active"]
     return configs, active
 
@@ -172,7 +174,7 @@ def create(
 @app.command()
 def activate(
         name: Annotated[str, typer.Argument(help="Name of this configuration for easy reference")],
-        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = False):
+        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
     """
     Set the default configuration.
     """
