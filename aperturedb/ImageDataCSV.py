@@ -162,6 +162,13 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         loader.ingest(data)
     ```
 
+    or
+
+    ``` bash
+
+        adb ingest from-csv /path/to/ImageData.csv --ingest-type IMAGE
+    ```
+
 
     :::info
     In the above example, the constraint_id ensures that an Image with the specified

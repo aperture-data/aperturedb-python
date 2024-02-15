@@ -24,27 +24,51 @@ class VideoDataCSV(CSVParser.CSVParser):
     and converts it into a series of ApertureDB queries.
 
 
-    .. note::
+    :::note Is backed by a CSV file with the following columns:
 
-        Expects a CSV file with the following columns:
+    ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
+    OR
+
+    ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+    OR
+
+    ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+
+    OR
+
+    ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+    :::
 
     Example CSV file::
 
         filename,id,label,constraint_id
-        /home/user/file1.jpg,321423532,dog,321423532
-        /home/user/file2.jpg,42342522,cat,4234252
+        /home/user/file1.mp4,321423532,dog,321423532
+        /home/user/file2.mp4,42342522,cat,4234252
         ...
 
     Example usage:
 
     ``` python
 
-        data = ImageDataCSV("/path/to/VideoData.csv")
+        data = VideoDataCSV("/path/to/VideoData.csv")
         loader = ParallelLoader(db)
         loader.ingest(data)
     ```
+
+    or
+
+    ``` bash
+
+        adb ingest from-csv /path/to/VideoData.csv --ingest-type VIDEO
+    ```
+
+
+    :::info
+    In the above example, the constraint_id ensures that an Video with the specified
+    id would be only inserted if it does not already exist in the database.
+    :::
     """
 
     def __init__(self, filename, check_video=True, **kwargs):
