@@ -631,7 +631,7 @@ def main(params):
         ("input/sample_gs_urls", "input/gs_images.adb.csv", "gs_url"),
         ("input/sample_http_video_urls", "input/http_videos.adb.csv", "url"),
         ("input/sample_s3_video_urls", "input/s3_videos.adb.csv", "s3_url"),
-        ("input/sample_gs_urls", "input/gs_videos.adb.csv", "gs_url")
+        ("input/sample_gs_video_urls", "input/gs_videos.adb.csv", "gs_url")
     ]
     for ip, op, header in list_csv_headers:
         generate_csv_from_list(ip, op, header)
