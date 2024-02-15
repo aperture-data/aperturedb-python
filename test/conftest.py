@@ -11,6 +11,7 @@ from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.ImageDataCSV import ImageDataCSV, ImageUpdateDataCSV, ImageForceNewestDataCSV, ImageSparseAddDataCSV
 from aperturedb.BBoxDataCSV import BBoxDataCSV
+from aperturedb.VideoDataCSV import VideoDataCSV
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
 from aperturedb.Query import Query
@@ -97,7 +98,10 @@ def insert_data_from_csv(db, request):
             "./input/images_to_modify.adb.csv": ImageDataCSV,
             "./input/images_to_modify.adb.csv": ImageDataCSV,
             "./input/persons-exist-base.adb.csv": EntityDataCSV,
-            "./input/persons-some-exist.adb.csv": EntityDataCSV
+            "./input/persons-some-exist.adb.csv": EntityDataCSV,
+            "./input/http_videos.adb.csv": VideoDataCSV,
+            "./input/s3_videos.adb.csv": VideoDataCSV,
+            "./input/gs_videos.adb.csv": VideoDataCSV,
         }
         use_dask = False
         if hasattr(request, "param"):
