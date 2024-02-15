@@ -87,7 +87,7 @@ class Entities(Subscriptable):
                 subresponse = flattened
             try:
                 entities = cls.known_entities[wc](
-                    db=db, response=subresponse, type=wc)
+                    db=db, response=subresponse, type=wc, spec=spec)
                 entities.blobs = blobs
 
                 results.append(entities)
@@ -110,7 +110,7 @@ class Entities(Subscriptable):
             db=db, spec=spec, with_adjacent=with_adjacent)
 
         # This is a very naive assumption, we will stop querying once
-        # the object of interest is the in the resopnses.
+        # the object of interest is the in the responses.
         objects = results[-1]
 
         return objects
@@ -137,13 +137,18 @@ class Entities(Subscriptable):
             entities.decorator = cls.__decorator
             entities.adjacent = adjacent
 
-    def __init__(self, db: Connector = None, response: dict = None, type: str = None) -> None:
+    def __init__(self,
+                 db: Connector = None,
+                 response: dict = None,
+                 type: str = None,
+                 spec: Query = None) -> None:
         super().__init__()
         self.db = db
         self.response = response
         self.type = type
         self.decorator = None
         self.get_image = False
+        self.spec = spec
 
     def getitem(self, idx):
         item = self.response[idx]
@@ -245,6 +250,8 @@ class Entities(Subscriptable):
                 "count": True
             }
         }
+        if self.spec.operations:
+            cmd_params["operations"] = self.spec.operations.operations_arr
         query = [
             QueryBuilder().find_command(self.db_object, params=cmd_params)
         ]
