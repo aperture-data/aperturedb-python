@@ -4,6 +4,7 @@ from enum import Enum
 from typing import List, Tuple
 
 from aperturedb.Constraints import Constraints
+from aperturedb.Operations import Operations
 from aperturedb.Sort import Sort
 from pydantic import BaseModel
 
@@ -46,7 +47,7 @@ def generate_save_query(
     Args:
         obj (BaseModel): The object from the user domain.
         cached (List[str], optional): helps to optimize sending one blob per node. Defaults to None.
-        source_field (str, optional): Preserves the relavant connection informatio from user objects. Defaults to None.
+        source_field (str, optional): Preserves the relevant connection information from user objects. Defaults to None.
         index (int, optional): The index to start creating references from. Defaults to 1.
         parent (int, optional): The parent of the current node. Defaults to None.
 
@@ -159,7 +160,7 @@ class QueryBuilder():
                 }
             else:
                 raise Exception(
-                    f"Invalid Object type. Should not begin with _, exceept for {members}")
+                    f"Invalid Object type. Should not begin with _, except for {members}")
         else:
             if operation == "Find":
                 params["with_class"] = oclass
@@ -213,6 +214,7 @@ class Query():
     @classmethod
     def spec(cls,
              constraints: Constraints = None,
+             operations: Operations = None,
              with_class: str = "",
              limit: int = -1,
              sort: Sort = None,
@@ -235,6 +237,7 @@ class Query():
         """
         return Query(
             constraints=constraints,
+            operations=operations,
             with_class=with_class,
             limit=limit,
             sort = sort,
@@ -245,6 +248,7 @@ class Query():
 
     def __init__(self,
                  constraints: Constraints = None,
+                 operations: Operations = None,
                  with_class: str = "",
                  limit: int = -1,
                  sort: Sort = None,
@@ -253,6 +257,7 @@ class Query():
                  blobs: bool = False,
                  adj_to: int = 0):
         self.constraints = constraints
+        self.operations = operations
         self.with_class = with_class
         self.limit = limit
         self.sort = sort
@@ -276,6 +281,9 @@ class Query():
 
         if self.constraints:
             cmd_params["constraints"] = self.constraints.constraints
+        if self.operations:
+            cmd_params["operations"] = self.operations.operations_arr
+
         self.with_class = self.with_class if self.db_object == "Entity" else self.db_object
         cmd = QueryBuilder.find_command(
             oclass=self.with_class, params=cmd_params)

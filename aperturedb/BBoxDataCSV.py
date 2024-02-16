@@ -15,7 +15,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
     **ApertureDB BBox Data.**
 
     This class loads the Bounding Box Data which is present in a CSV file,
-    and converts it into a series of aperturedb queries.
+    and converts it into a series of ApertureDB queries.
 
     :::note Is backed by a CSV file with the following columns:
     ``IMG_KEY``, ``x_pos``, ``y_pos``, ``width``, ``height``, ``BBOX_PROP_NAME_1``, ... ``BBOX_PROP_NAME_N``, ``constraint_BBOX_PROP_NAME_1``

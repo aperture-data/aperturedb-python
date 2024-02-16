@@ -217,7 +217,8 @@ class TestConfigure():
                     with patch.multiple(os,
                                         getcwd = MagicMock(return_value = tmp_local)):
                         runner = CliRunner()
-                        result = runner.invoke(app, ["activate", "second"])
+                        result = runner.invoke(
+                            app, ["activate", "second", "--no-as-global"])
                         assert result.exit_code == 0
 
     def test_active_name_global_as_global(self, config):

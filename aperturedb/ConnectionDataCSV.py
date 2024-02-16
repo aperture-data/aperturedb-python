@@ -28,9 +28,9 @@ class ConnectionDataCSV(CSVParser):
 
     **ConnectionClass**: Arbitrary class name for the entity this would be saved as.
 
-    **``ClassName``@``PropertyName``**: This is a special combination of Class Name and Property Name that can uniquely identify an entity. ‘@’ is a delimeter, so should not be used in a property name.
+    **``ClassName``@``PropertyName``**: This is a special combination of Class Name and Property Name that can uniquely identify an entity. ‘@’ is a delimiter, so should not be used in a property name.
 
-    **PROP_NAME_1 .. PROP_NAME_N**: Arbitraty property names.
+    **PROP_NAME_1 .. PROP_NAME_N**: Arbitrary property names.
 
     **constraint_PROP_NAME_1**: A equality check against a unique property to ensure duplicates are not inserted.
 

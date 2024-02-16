@@ -354,7 +354,7 @@ class TestURILoader():
             raise AssertionError(
                 "Expected {}, got {}".format(expected, actual))
 
-    def test_S3Loader(self, utils, insert_data_from_csv):
+    def test_S3ImageLoader(self, utils, insert_data_from_csv):
         self.assertEqual(utils.remove_all_indexes(), True)
         self.assertEqual(utils.remove_all_objects(), True)
         data, _ = insert_data_from_csv(
@@ -374,3 +374,24 @@ class TestURILoader():
         data, _ = insert_data_from_csv(
             in_csv_file = "./input/gs_images.adb.csv")
         self.assertEqual(len(data), utils.count_images())
+
+    def test_S3VideoLoader(self, utils, insert_data_from_csv):
+        self.assertEqual(utils.remove_all_indexes(), True)
+        self.assertEqual(utils.remove_all_objects(), True)
+        data, _ = insert_data_from_csv(
+            in_csv_file = "./input/s3_videos.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("_Video"))
+
+    def test_HttpVideoLoader(self, utils, insert_data_from_csv):
+        self.assertEqual(utils.remove_all_indexes(), True)
+        self.assertEqual(utils.remove_all_objects(), True)
+        data, _ = insert_data_from_csv(
+            in_csv_file = "./input/http_videos.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("_Video"))
+
+    def test_GSVideoLoader(self, utils, insert_data_from_csv):
+        self.assertEqual(utils.remove_all_indexes(), True)
+        self.assertEqual(utils.remove_all_objects(), True)
+        data, _ = insert_data_from_csv(
+            in_csv_file = "./input/gs_videos.adb.csv")
+        self.assertEqual(len(data), utils.count_entities("_Video"))

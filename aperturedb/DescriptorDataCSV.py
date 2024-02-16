@@ -18,7 +18,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
     **ApertureDB Descriptor Data.**
 
     This class loads the Descriptor Data which is present in a CSV file,
-    and converts it into a series of aperturedb queries.
+    and converts it into a series of ApertureDB queries.
 
     :::note Is backed by a CSV file with the following columns, and a NumPy array file "npz" for the descriptors:
     ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
@@ -30,11 +30,11 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     **set**: The search space to restrict the knn search queries to.
 
-    **label**: Arbitraty name given to the label associated with this descriptor.
+    **label**: Arbitrary name given to the label associated with this descriptor.
 
     **PROP_NAME_1 .. PROP_NAME_N**: Arbitrarily assigned properties to this descriptor.
 
-    **constraint_PROP_NAME_1**: A constraint to enusre uniqueness when inserting this descriptor.
+    **constraint_PROP_NAME_1**: A constraint to ensure uniqueness when inserting this descriptor.
 
     Example CSV file::
 
@@ -56,7 +56,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
 
     :::info
-    In the above example, the index uniqely identiifes the actual np array from the many arrays in the npz file
+    In the above example, the index uniquely identifies the actual np array from the many arrays in the npz file
     which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
 
     Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
