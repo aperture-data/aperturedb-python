@@ -133,7 +133,8 @@ class ConnectorRest(Connector):
                     self.last_response  = json_response["json"]
                     break
             except Exception as e:
-                response_text = response.text[:1000] if hasattr(response, "text") else ""
+                response_text = response.text[:1000] if hasattr(
+                    response, "text") else ""
                 logger.error(
                     f"Response not OK = {response.status_code} {response_text}\n\
                         attempt [{tries}/3] .. PID = {os.getpid()}")
