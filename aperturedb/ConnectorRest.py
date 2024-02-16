@@ -119,21 +119,24 @@ class ConnectorRest(Connector):
         response.status_code = 0
         while tries < self.config.retry_max_attempts:
             tries += 1
-            response = self.http_session.post(self.url,
-                                              headers = headers,
-                                              files   = files,
-                                              verify  = self.use_ssl)
-            if response.status_code == 200:
-                # Parse response:
-                json_response       = json.loads(response.text)
-                import base64
-                response_blob_array = [base64.b64decode(
-                    b) for b in json_response['blobs']]
-                self.last_response  = json_response["json"]
-                break
-            logger.error(
-                f"Response not OK = {response.status_code} {response.text[:1000]}\n\
-                    attempt [{tries}/3] .. PID = {os.getpid()}")
+            try:
+                response = self.http_session.post(self.url,
+                                                  headers = headers,
+                                                  files   = files,
+                                                  verify  = self.use_ssl)
+                if response.status_code == 200:
+                    # Parse response:
+                    json_response       = json.loads(response.text)
+                    import base64
+                    response_blob_array = [base64.b64decode(
+                        b) for b in json_response['blobs']]
+                    self.last_response  = json_response["json"]
+                    break
+            except Exception as e:
+                response_text = response.text[:1000] if hasattr(response, "text") else ""
+                logger.error(
+                    f"Response not OK = {response.status_code} {response_text}\n\
+                        attempt [{tries}/3] .. PID = {os.getpid()}")
 
             time.sleep(self.config.retry_interval_seconds)
 
