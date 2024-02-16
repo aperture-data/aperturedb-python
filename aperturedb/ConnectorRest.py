@@ -132,11 +132,11 @@ class ConnectorRest(Connector):
                         b) for b in json_response['blobs']]
                     self.last_response  = json_response["json"]
                     break
-            except Exception as e:
-                response_text = response.text[:1000] if hasattr(
-                    response, "text") else ""
                 logger.error(
-                    f"Response not OK = {response.status_code} {response_text}\n\
+                    f"Response not OK = {response.status_code} {response.text[:1000]}\n\
+                        attempt [{tries}/3] .. PID = {os.getpid()}")
+            except Exception as e:
+                logger.error(f"Exception during http.post = {e}\n\
                         attempt [{tries}/3] .. PID = {os.getpid()}")
 
             time.sleep(self.config.retry_interval_seconds)
