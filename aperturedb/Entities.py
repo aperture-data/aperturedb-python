@@ -250,7 +250,9 @@ class Entities(Subscriptable):
                 "count": True
             }
         }
-        if self.spec.operations:
+        # An entities object is created with the response of the query
+        # or a spec. Check if the spec is not None, and if it has operations.
+        if self.spec and self.spec.operations:
             cmd_params["operations"] = self.spec.operations.operations_arr
         query = [
             QueryBuilder().find_command(self.db_object, params=cmd_params)
