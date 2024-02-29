@@ -462,6 +462,16 @@ class Connector(object):
                 count += 1
 
     def create_new_connection(self) -> Connector:
+        """
+        Create a new connection object with the same parameters as the current one.
+        This is important in multi-threaded applications, where each thread should have its own connection object.
+        Because the connection object is not thread-safe, it is not safe to share it between threads.
+        Be cautious when using this method, as it will create a new connection to the database, which will consume resources.
+        Ideally, this method should be called once for each thread.
+
+        Returns:
+            connection: Clone of original connection
+        """
         return type(self)(
             self.host,
             self.port,
