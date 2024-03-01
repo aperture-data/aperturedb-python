@@ -197,21 +197,21 @@ class Utils(object):
         r = self.get_schema()
         s = json.loads(self.status())[0]["GetStatus"]
         version = s["version"]
-        status  = s["status"]
-        info    = s["info"]
+        status = s["status"]
+        info = s["info"]
 
         if r["entities"] == None:
             total_entities = 0
             entities_classes = []
         else:
-            total_entities   = r["entities"]["returned"]
+            total_entities = r["entities"]["returned"]
             entities_classes = [c for c in r["entities"]["classes"]]
 
         if r["connections"] == None:
             total_connections = 0
             connections_classes = []
         else:
-            total_connections   = r["connections"]["returned"]
+            total_connections = r["connections"]["returned"]
             connections_classes = [c for c in r["connections"]["classes"]]
 
         print(f"================== Summary ==================")
@@ -338,7 +338,7 @@ class Utils(object):
 
         batch_size = DEFAULT_METADATA_BATCH_SIZE
         iterations = total_elements // batch_size
-        reminder   = total_elements % batch_size
+        reminder = total_elements % batch_size
 
         if iterations == 0 and reminder > 0:
             iterations = 1
@@ -699,7 +699,7 @@ class Utils(object):
                                     yield {"index_type": typemap[typ], "class": clas, "property_key": property_key}
 
         try:
-            r, _  = self.execute([{"GetSchema": {}}])
+            r, _ = self.execute([{"GetSchema": {}}])
             schema = r[0]
             indexes = list(find_indexes(schema))
             query = [{"RemoveIndex": index} for index in indexes]
@@ -762,6 +762,7 @@ class Utils(object):
             message (str): The message to log.
             level (str): The level of the message. Default is "INFO".
         """
-        assert level in ["INFO", "WARNING", "ERROR"], f"Invalid log level: {level}"
+        assert level in ["INFO", "WARNING",
+                         "ERROR"], f"Invalid log level: {level}"
         q = [{"UserLogMessage": {"text": message, "type": level}}]
         self.execute(q)
