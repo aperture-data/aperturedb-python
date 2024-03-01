@@ -753,3 +753,15 @@ class Utils(object):
             logger.exception(e)
 
         return False
+
+    def user_log_message(self, message: str, level: str = "INFO"):
+        """
+        Log a message to the user log.
+
+        Args:
+            message (str): The message to log.
+            level (str): The level of the message. Default is "INFO".
+        """
+        assert level in ["INFO", "WARNING", "ERROR"], f"Invalid log level: {level}"
+        q = [{"UserLogMessage": {"text": message, "type": level}}]
+        self.execute(q)
