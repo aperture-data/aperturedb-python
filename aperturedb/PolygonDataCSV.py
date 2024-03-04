@@ -32,7 +32,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
     **_label**: optionally applies a label to the polygon objects.
 
-    **polygons**: a JSON array of polygon regions. Each polygon region is itself an array of [x,y] vertices that describe the boundary of a single contiguous polygon. See also [Polygon API parameter](query_language/Reference/shared_command_parameters/polygons).
+    **polygons**: a JSON array of polygon regions. Each polygon region is itself an array of [x,y] vertices that describe the boundary of a single contiguous polygon. See also [Polygon API parameter](/query_language/Reference/shared_command_parameters/polygons).
 
     Example CSV file::
 
