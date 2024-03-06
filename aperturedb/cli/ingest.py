@@ -99,7 +99,7 @@ def _create_pipeline(transformers: List[str]):
 def from_generator(filepath: Annotated[str, typer.Argument(
     help="Path to python module for ingestion [BETA]")],
     sample_count: Annotated[int, typer.Option(
-        help="Number of samples to ingest")] = 1,
+        help="Number of samples to ingest (-1 for all)")] = -1,
     debug: Annotated[bool, typer.Option(
         help="Debug mode")] = False,
     batchsize: Annotated[int, typer.Option(
@@ -127,7 +127,7 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     # tested with CelebADataKaggle.py, CocoDataPytorch.py and Cifar10DataTensorflow.py in examples
     start = time.time()
     data = mclass()
-    data.sample_count = sample_count
+    data.sample_count = len(data) if sample_count == -1 else sample_count
     console.log(f"Data generator loaded in {time.time() - start} seconds")
 
     if transformer or user_transformer:
@@ -174,7 +174,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     user_transformer: Annotated[Optional[List[str]], typer.Option(
         help="Apply user transformer to the pipeline as path to file [Can be specified multiple times.]")] = None,
     sample_count: Annotated[int, typer.Option(
-        help="Number of samples to ingest")] = -1,
+        help="Number of samples to ingest (-1 for all)")] = -1,
     debug: Annotated[bool, typer.Option(
         help="Debug mode")] = False,
 ):
