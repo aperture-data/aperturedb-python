@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Tuple, Union
+from typing import Any, Dict, Iterable, List, Tuple, Union
 import cv2
 import math
 import numpy as np
@@ -19,26 +19,55 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def np_arr_img_to_bytes(arr, format='JPEG') -> bytes:
+def np_arr_img_to_bytes(arr, format: str = 'JPEG') -> bytes:
+    """
+    **Convert a NumPy array to bytes**
+
+    Args:
+        arr: The NumPy array to convert
+        format: The format of the image. Defaults to "JPEG".
+
+    Returns:
+        bytes: The image as bytes
+    """
     return image_to_bytes(Image.fromarray(arr, 'RGB'), format=format)
 
 
-def image_to_bytes(image: Image, format="JPEG") -> bytes:
+def image_to_bytes(image: Image, format: str = "JPEG") -> bytes:
+    """
+    **Convert an image to bytes**
+
+    Args:
+        image (PIL.Image): The image to convert
+        format (str, optional): The format of the image. Defaults to "JPEG".
+
+    Returns:
+        bytes: The image as bytes
+    """
     with BytesIO() as bytes:
         image.save(bytes, format=format)
         return bytes.getvalue()
 
 
-def rotate(points, angle, c_x=None, c_y=None):
+def rotate(points, angle, c_x=0, c_y=0):
     """
     **Rotate a set of points around a center**
+
+    Args:
+        points: The points to rotate; iterable of (x, y) pairs
+        angle: The angle of counterclockwise rotation in degrees
+        c_x: The x coordinate of the center of rotation
+        c_y: The y coordinate of the center of rotation
+
+    Returns:
+        points: The rotated points as a NumPy array of shape (n,2) and type int
     """
     ANGLE = np.deg2rad(angle)
     return np.array(
         [
             [
-                c_x + np.cos(ANGLE) * (px - c_x) - np.sin(ANGLE) * (py - c_x),
-                c_y + np.sin(ANGLE) * (px - c_y) + np.cos(ANGLE) * (py - c_y)
+                c_x + np.cos(ANGLE) * (px - c_x) - np.sin(ANGLE) * (py - c_y),
+                c_y + np.sin(ANGLE) * (px - c_x) + np.cos(ANGLE) * (py - c_y)
             ]
             for px, py in points
         ]
@@ -49,12 +78,15 @@ def resolve(points: np.array, image_meta, operations) -> np.array:
     """
     **Resolve the coordinates of a bounding box to the original image size**
 
+    Given an array of (x,y) points with respect to the coordinates of an image, returns the corresponding coordinates with respect to a the resized or rotated image that resulted from a series of operations.
+
     Args:
-        coordinates (dict): The coordinates of the bounding box
+        points (NumPy array): The coordinates of the bounding box; shape (...,2)
         image (dict): The image properties
+        operations (list): The operations applied to the image
 
     Returns:
-        dict: The resolved coordinates
+        resolved_points (NumPy array): The resolved coordinates, same shape as points
     """
     resolved = points.copy()
     if image_meta["adb_image_width"] and image_meta["adb_image_height"]:
@@ -94,6 +126,9 @@ class Images(Entities):
     ***It includes utility methods to visualize image and annotations**
     Inter convert the representation into NumPy matrices and find similar images,
     related bounding boxes, etc.
+
+    Args:
+        db: The database connector, perhaps as returned by `Utils.create_connector`
     """
     db_object = "_Image"
 
@@ -153,19 +188,19 @@ class Images(Entities):
 
         self.db_connector = db
 
-        self.images          = {}
-        self.images_ids      = []
-        self.image_sizes     = []
-        self.images_bboxes   = {}
+        self.images = {}
+        self.images_ids = []
+        self.image_sizes = []
+        self.images_bboxes = {}
         self.images_polygons = {}
         self.overlays = []
         self.color_for_tag = {}
 
         self.constraints = None
-        self.operations  = None
-        self.format      = None
-        self.limit       = None
-        self.query       = None
+        self.operations = None
+        self.format = None
+        self.limit = None
+        self.query = None
 
         self.adjacent = {}
 
@@ -173,7 +208,7 @@ class Images(Entities):
         self.total_cached_images = 0
         self.display_limit = 20
 
-        self.img_id_prop     = "_uniqueid"
+        self.img_id_prop = "_uniqueid"
         self.bbox_label_prop = "_label"
         self.get_image = True
 
@@ -204,10 +239,10 @@ class Images(Entities):
         # for that batch
 
         total_batches = math.ceil(len(self.images_ids) / self.batch_size)
-        batch_id      = int(math.floor(index / self.batch_size))
+        batch_id = int(math.floor(index / self.batch_size))
 
         start = batch_id * self.batch_size
-        end   = min(start + self.batch_size, len(self.images_ids))
+        end = min(start + self.batch_size, len(self.images_ids))
 
         query = []
 
@@ -290,8 +325,8 @@ class Images(Entities):
             res, _ = self.db_connector.query(query)
 
             polygons = []
-            bounds   = []
-            tags     = []
+            bounds = []
+            tags = []
             meta = []
             polys = res[1]["FindPolygon"]["entities"]
             operations = self.query["operations"] if self.query and "operations" in self.query else [
@@ -380,7 +415,7 @@ class Images(Entities):
         try:
             res, images = self.db_connector.query(query)
             bboxes = []
-            tags   = []
+            tags = []
             meta = []
             bounds = []
             if "entities" in res[1]["FindBoundingBox"]:
@@ -403,8 +438,8 @@ class Images(Entities):
                 f"Cannot retrieve bounding boxes for image {uniqueid}", exc_info=True)
         finally:
             self.images_bboxes[uniqueid_str]["bboxes"] = bboxes
-            self.images_bboxes[uniqueid_str]["tags"]   = tags
-            self.images_bboxes[uniqueid_str]["meta"]   = meta
+            self.images_bboxes[uniqueid_str]["tags"] = tags
+            self.images_bboxes[uniqueid_str]["meta"] = meta
             self.images_bboxes[uniqueid_str]["bounds"] = bounds
 
     def total_results(self) -> int:
@@ -493,9 +528,9 @@ class Images(Entities):
         """
 
         self.constraints = constraints
-        self.operations  = operations
-        self.format      = format
-        self.limit       = limit
+        self.operations = operations
+        self.format = format
+        self.limit = limit
 
         self.images = {}
         self.images_ids = []
@@ -745,9 +780,9 @@ class Images(Entities):
         self.__draw_polygon(image, polygon, color)
 
         if tag:
-            left   = bounds["x"]
-            top    = bounds["y"]
-            right  = bounds["x"] + bounds["width"]
+            left = bounds["x"]
+            top = bounds["y"]
+            right = bounds["x"] + bounds["width"]
             FONT_WIDTH = 10
             FONT_HEIGHT = 16
 
@@ -769,23 +804,25 @@ class Images(Entities):
                 limit: Union[int, object] = None,
                 polygon_constraints: Constraints = None,
                 polygon_tag_key: str = "_label",
-                polygon_tag_format: str = "{}"):
+                polygon_tag_format: str = "{}") -> None:
         """
         **Display images with annotations**
-        show_bboxes: bool, optional
-            Show bounding boxes, by default False
-        bbox_constraints: Constraints, optional
-            Constraints for bounding boxes, by default None
-        show_polygons: bool, optional
-            Show polygons, by default False
-        limit: Union[int, object], optional
-            Number of images to display, by default None
-        polygon_constraints: Constraints, optional
-            Constraints for polygons, by default None
-        polygon_tag_key: str, optional
-            Key for the polygon tag, by default "_label"
-        polygon_tag_format: str, optional
-            Format for the polygon tag, by default "{}"
+
+        Args:
+            show_bboxes: bool, optional
+                Show bounding boxes, by default False
+            bbox_constraints: Constraints, optional
+                Constraints for bounding boxes, by default None
+            show_polygons: bool, optional
+                Show polygons, by default False
+            limit: Union[int, object], optional
+                Number of images to display, by default None
+            polygon_constraints: Constraints, optional
+                Constraints for polygons, by default None
+            polygon_tag_key: str, optional
+                Key for the polygon tag, by default "_label"
+            polygon_tag_format: str, optional
+                Format for the polygon tag, by default "{}"
         """
         if not limit:
             limit = self.display_limit
@@ -803,7 +840,7 @@ class Images(Entities):
             limit -= 1
 
             uniqueid = str(self.images_ids[i])
-            image    = self.get_image_by_index(i)
+            image = self.get_image_by_index(i)
 
             # Just decode the image from buffer
             nparr = np.frombuffer(image, dtype=np.uint8)
@@ -815,7 +852,7 @@ class Images(Entities):
                     self.__retrieve_bounding_boxes(i, bbox_constraints)
 
                 bboxes = self.images_bboxes[uniqueid]["bboxes"]
-                tags   = self.images_bboxes[uniqueid]["tags"]
+                tags = self.images_bboxes[uniqueid]["tags"]
                 meta = self.images_bboxes[uniqueid]["meta"]
                 bounds = self.images_bboxes[uniqueid]["bounds"]
 
@@ -860,8 +897,13 @@ class Images(Entities):
             fig1, ax1 = plt.subplots()
             plt.imshow(image)
 
-    def get_props_names(self):
+    def get_props_names(self) -> List[str]:
+        """
+        **Get the names of the properties that apply to images**
 
+        Returns:
+            properties (List[str]): The names of the properties of the images
+        """
         dbutils = Utils.Utils(self.db_connector)
         schema = dbutils.get_schema()
 
@@ -874,8 +916,16 @@ class Images(Entities):
 
         return props_array
 
-    def get_properties(self, prop_list=[]):
+    def get_properties(self, prop_list: Iterable[str] = []) -> Dict[str, Any]:
+        """
+        **Get the properties of the images**
 
+        Args:
+            prop_list (List[str], optional): The list of properties to retrieve. Defaults to [].
+
+            Returns:
+                property_values Dict[str, Any]: The properties of the images
+        """
         if len(prop_list) == 0:
             return {}
 

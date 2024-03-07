@@ -55,5 +55,10 @@ def log(
     message: Annotated[str, typer.Argument(help="The message to log")],
     level: LogLevel = LogLevel.INFO
 ):
+    """
+    Log a message to the user log.
+
+    This is useful because it can later be seen in Grafana, not only as log entries in the AperturDB Logging dashboard, but also as event markers in the Aperture DB Status dahsboard.
+    """
     utils = Utils(create_connector())
     utils.user_log_message(message, level=level.value)
