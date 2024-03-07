@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Tuple, Union
+from typing import Any, Dict, Iterable, List, Tuple, Union
 import cv2
 import math
 import numpy as np
@@ -804,23 +804,25 @@ class Images(Entities):
                 limit: Union[int, object] = None,
                 polygon_constraints: Constraints = None,
                 polygon_tag_key: str = "_label",
-                polygon_tag_format: str = "{}"):
+                polygon_tag_format: str = "{}") -> None:
         """
         **Display images with annotations**
-        show_bboxes: bool, optional
-            Show bounding boxes, by default False
-        bbox_constraints: Constraints, optional
-            Constraints for bounding boxes, by default None
-        show_polygons: bool, optional
-            Show polygons, by default False
-        limit: Union[int, object], optional
-            Number of images to display, by default None
-        polygon_constraints: Constraints, optional
-            Constraints for polygons, by default None
-        polygon_tag_key: str, optional
-            Key for the polygon tag, by default "_label"
-        polygon_tag_format: str, optional
-            Format for the polygon tag, by default "{}"
+
+        Args:
+            show_bboxes: bool, optional
+                Show bounding boxes, by default False
+            bbox_constraints: Constraints, optional
+                Constraints for bounding boxes, by default None
+            show_polygons: bool, optional
+                Show polygons, by default False
+            limit: Union[int, object], optional
+                Number of images to display, by default None
+            polygon_constraints: Constraints, optional
+                Constraints for polygons, by default None
+            polygon_tag_key: str, optional
+                Key for the polygon tag, by default "_label"
+            polygon_tag_format: str, optional
+                Format for the polygon tag, by default "{}"
         """
         if not limit:
             limit = self.display_limit
@@ -895,8 +897,13 @@ class Images(Entities):
             fig1, ax1 = plt.subplots()
             plt.imshow(image)
 
-    def get_props_names(self):
+    def get_props_names(self) -> List[str]:
+        """
+        **Get the names of the properties that apply to images**
 
+        Returns:
+            properties (List[str]): The names of the properties of the images
+        """
         dbutils = Utils.Utils(self.db_connector)
         schema = dbutils.get_schema()
 
@@ -909,8 +916,16 @@ class Images(Entities):
 
         return props_array
 
-    def get_properties(self, prop_list=[]):
+    def get_properties(self, prop_list: Iterable[str] = []) -> Dict[str, Any]:
+        """
+        **Get the properties of the images**
 
+        Args:
+            prop_list (List[str], optional): The list of properties to retrieve. Defaults to [].
+
+            Returns:
+                property_values Dict[str, Any]: The properties of the images
+        """
         if len(prop_list) == 0:
             return {}
 
