@@ -3,6 +3,7 @@ import json
 import os
 import importlib
 import sys
+from typing import List
 
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
@@ -10,7 +11,6 @@ from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Configuration import Configuration
 from aperturedb.cli.configure import ls
-
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,9 @@ def __create_connector(configuration: Configuration):
 def create_connector():
     """
     **Create a connector to the database.**
+
+    This function reads the active configuration.
+    See `adb config` command-line tool for more information.
 
     Args:
         None
@@ -104,6 +107,18 @@ class Utils(object):
             print(str)
 
     def execute(self, query, blobs=[], success_statuses=[0]):
+        """
+        Execute a query.
+
+        Args:
+            query (list): The query to execute.
+            blobs (list, optional): The blobs to send with the query.
+            success_statuses (list, optional): The list of success statuses.
+
+        Returns:
+            result: The result of the query.
+            blobs: The blobs returned by the query.
+        """
         try:
             rc, r, b = execute_batch(
                 query, blobs, self.connector, success_statuses=success_statuses)
@@ -117,6 +132,10 @@ class Utils(object):
         return r, b
 
     def status(self):
+        """
+        Executes a `GetStatus` query.
+        See `GetStatus` in the ApertureDB documentation for more information.
+        """
 
         q = [{"GetStatus": {}}]
 
@@ -135,6 +154,10 @@ class Utils(object):
         self.connector.print_last_response()
 
     def get_schema(self, refresh=False):
+        """
+        Get the schema of the database.
+        See `GetSchema` in the ApertureDB documentation for more information.
+        """
 
         if refresh:
             logger.warning("get_schema: refresh no longer needed.")
@@ -193,25 +216,29 @@ class Utils(object):
         return total_elements
 
     def summary(self):
+        """
+        Print a summary of the database.
 
+        This is essentially a call to `GetSchema`, with the results formatted in a more human-readable way.
+        """
         r = self.get_schema()
         s = json.loads(self.status())[0]["GetStatus"]
         version = s["version"]
-        status  = s["status"]
-        info    = s["info"]
+        status = s["status"]
+        info = s["info"]
 
         if r["entities"] == None:
             total_entities = 0
             entities_classes = []
         else:
-            total_entities   = r["entities"]["returned"]
+            total_entities = r["entities"]["returned"]
             entities_classes = [c for c in r["entities"]["classes"]]
 
         if r["connections"] == None:
             total_connections = 0
             connections_classes = []
         else:
-            total_connections   = r["connections"]["returned"]
+            total_connections = r["connections"]["returned"]
             connections_classes = [c for c in r["connections"]["classes"]]
 
         print(f"================== Summary ==================")
@@ -272,6 +299,10 @@ class Utils(object):
         return True
 
     def create_entity_index(self, class_name, property_key, property_type=None):
+        """
+        Create an index for an entity class.
+        See `CreateIndex` in the ApertureDB documentation for more information.
+        """
 
         if property_type is not None:
             logger.warning(f"create_entity_index ignores 'property_type'")
@@ -281,6 +312,10 @@ class Utils(object):
         return self._create_index("entity", class_name, property_key)
 
     def create_connection_index(self, class_name, property_key, property_type=None):
+        """
+        Create an index for a connection class.
+        See `CreateIndex` in the ApertureDB documentation for more information.
+        """
 
         if property_type is not None:
             logger.warning(f"create_connection_index ignores 'property_type'")
@@ -290,15 +325,31 @@ class Utils(object):
         return self._create_index("connection", class_name, property_key)
 
     def remove_entity_index(self, class_name, property_key):
+        """
+        Remove an index for an entity class.
+        See `RemoveIndex` in the ApertureDB documentation for more information.
+        """
 
         return self._remove_index("entity", class_name, property_key)
 
     def remove_connection_index(self, class_name, property_key):
-
+        """
+        Remove an index for a connection class.
+        See `RemoveIndex` in the ApertureDB documentation for more information.
+        """
         return self._remove_index("connection", class_name, property_key)
 
-    def count_images(self, constraints={}):
+    def count_images(self, constraints={}) -> int:
+        """
+        Count the number of images in the database.
 
+        Args:
+            constraints (dict, optional): The constraints to apply to the query.
+                See the `Constraints` wrapper class for more information.
+
+        Returns:
+            count: The number of images in the database.
+        """
         q = [{
             "FindImage": {
                 "blobs": False,
@@ -316,8 +367,18 @@ class Utils(object):
 
         return total_images
 
-    def get_uniqueids(self, object_type, constraints={}):
+    def get_uniqueids(self, object_type: str, constraints={}):
+        """
+        Get the uniqueids of all the objects of a given type.
 
+        Args:
+            object_type (str): The type of the objects.
+            constraints (dict, optional): The constraints to apply to the query.
+                See the `Constraints` wrapper class for more information.
+
+        Returns:
+            ids (list of str): The uniqueids of the objects.
+        """
         q = [{
             "FindEntity": {
                 "with_class": object_type,
@@ -338,7 +399,7 @@ class Utils(object):
 
         batch_size = DEFAULT_METADATA_BATCH_SIZE
         iterations = total_elements // batch_size
-        reminder   = total_elements % batch_size
+        reminder = total_elements % batch_size
 
         if iterations == 0 and reminder > 0:
             iterations = 1
@@ -367,10 +428,30 @@ class Utils(object):
         return ids
 
     def get_images_uniqueids(self, constraints={}):
+        """
+        Get the uniqueids of all the images in the database.
+
+        Args:
+            constraints (dict, optional): The constraints to apply to the query.
+                See the `Constraints` wrapper class for more information.
+
+        Returns:
+            ids (list of str): The uniqueids of the images.
+        """
 
         return self.get_uniqueids("_Image", constraints)
 
-    def count_bboxes(self, constraints=None):
+    def count_bboxes(self, constraints=None) -> int:
+        """
+        Count the number of bounding boxes in the database.
+
+        Args:
+            constraints (dict, optional): The constraints to apply to the query.
+                See the `Constraints` wrapper class for more information.
+
+        Returns:
+            count: The number of bounding boxes in the database.
+        """
         # The default params in python functions should not be
         # mutable objects.
         # It can lead to https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
@@ -391,7 +472,17 @@ class Utils(object):
 
         return total_connections
 
-    def count_entities(self, entity_class, constraints=None):
+    def count_entities(self, entity_class, constraints=None) -> int:
+        """
+        Count the number of entities in the database.
+
+        Args:
+            constraints (dict, optional): The constraints to apply to the query.
+                See the `Constraints` wrapper class for more information.
+
+        Returns:
+            count: The number of entities in the database.
+        """
 
         q = [{
             "FindEntity": {
@@ -410,7 +501,17 @@ class Utils(object):
 
         return total_entities
 
-    def count_connections(self, connections_class, constraints=None):
+    def count_connections(self, connections_class, constraints=None) -> int:
+        """
+        Count the number of connections in the database.
+
+        Args:
+            constraints (dict, optional): The constraints to apply to the query.
+                See the `Constraints` wrapper class for more information.
+
+        Returns:
+            count: The number of connections in the database.
+        """
 
         q = [{
             "FindConnection": {
@@ -429,8 +530,19 @@ class Utils(object):
 
         return total_connections
 
-    def add_descriptorset(self, name, dim, metric="L2", engine="FaissFlat"):
+    def add_descriptorset(self, name: str, dim: int, metric="L2", engine="FaissFlat") -> bool:
+        """
+        Add a descriptor set to the database.
 
+        Args:
+            name (str): The name of the descriptor set.
+            dim (int): The dimension of the descriptors.
+            metric (str, optional): The metric to use for the descriptors.
+            engine (str, optional): The engine to use for the descriptors.
+
+        Returns:
+            success (bool): True if the operation was successful, False otherwise.
+        """
         query = [{
             "AddDescriptorSet": {
                 "name":       name,
@@ -447,8 +559,13 @@ class Utils(object):
 
         return True
 
-    def count_descriptorsets(self):
+    def count_descriptorsets(self) -> int:
+        """
+        Count the number of descriptor sets in the database.
 
+        Returns:
+            count: The number of descriptor sets in the database.
+        """
         q = [{
             "FindDescriptorSet": {
                 "results": {
@@ -462,8 +579,13 @@ class Utils(object):
 
         return total_descriptor_sets
 
-    def get_descriptorset_list(self):
+    def get_descriptorset_list(self) -> List[str]:
+        """
+        Get the list of descriptor sets in the database.
 
+        Returns:
+            sets (list of str): The list of descriptor sets in the database.
+        """
         q = [{
             "FindDescriptorSet": {
                 "results": {
@@ -481,8 +603,18 @@ class Utils(object):
 
         return sets
 
-    def remove_descriptorset(self, set_name):
+    def remove_descriptorset(self, set_name: str) -> bool:
+        """
+        Remove a descriptor set from the database.
 
+        See `DeleteDescriptorSet` in the ApertureDB documentation for more information.
+
+        Args:
+            set_name (str): The name of the descriptor set.
+
+        Returns:
+            success (bool): True if the operation was successful, False otherwise.
+        """
         q = [{
             "FindDescriptorSet": {
                 "_ref": 1,
@@ -550,8 +682,20 @@ class Utils(object):
 
         return True
 
-    def remove_entities(self, class_name, batched=False, batch_size=10000):
+    def remove_entities(self, class_name: str, batched: bool = False, batch_size: int = 10000) -> bool:
+        """
+        Remove all entities of a given class from the database.
 
+        See `DeleteEntity` in the ApertureDB documentation for more information.
+
+        Args:
+            class_name (str): The class of the entities to remove.
+            batched (bool, optional): Whether to batch the operation. Default is False.
+            batch_size (int, optional): The batch size to use. Default is 10000.
+
+        Returns:
+            success (bool): True if the operation was successful, False otherwise.
+        """
         # We used to batch because removing a large number of object did not work ok.
         # Now it seems to work ok, so we don't batch anymore.
         # We keep the option in case we need to batch, but not default.
@@ -577,7 +721,19 @@ class Utils(object):
         return True
 
     def remove_connections(self, class_name, batched=False, batch_size=10000):
+        """
+        Remove all connections of a given class from the database.
 
+        See `DeleteConnection` in the ApertureDB documentation for more information.
+
+        Args:
+            class_name (str): The class of the connections to remove.
+            batched (bool, optional): Whether to batch the operation. Default is False.
+            batch_size (int, optional): The batch size to use. Default is 10000.
+
+        Returns:
+            success (bool): True if the operation was successful, False otherwise.
+        """
         # We used to batch because removing a large number of object did not work ok.
         # Now it seems to work ok, so we don't batch anymore.
         # We keep the option in case we need to batch, but not default.
@@ -602,8 +758,13 @@ class Utils(object):
 
         return True
 
-    def remove_all_descriptorsets(self):
+    def remove_all_descriptorsets(self) -> bool:
+        """
+        Remove all descriptor sets from the database, together with descriptors, indexes and connections.
 
+        Returns:
+            success (bool): True if the operation was successful, False otherwise.
+        """
         self.print("Removing indexes...")
 
         idx_props = self.get_indexed_props(DESCRIPTOR_CLASS)
@@ -634,9 +795,16 @@ class Utils(object):
 
         self.print("Done removing sets.")
 
-    def get_indexed_props(self, class_name, type="entities"):
+    def get_indexed_props(self, class_name: str, type="entities") -> List[str]:
         """
         Returns all the indexed properties for a given class.
+
+        Args:
+            class_name (str): The class name.
+            type (str, optional): The type of the class. Default is "entities".
+
+        Returns:
+            indexed_props (list of str): The list of indexed properties.
         """
 
         if type not in ["entities", "connections"]:
@@ -653,8 +821,16 @@ class Utils(object):
 
         return indexed_props
 
-    def count_descriptors_in_set(self, set_name):
+    def count_descriptors_in_set(self, set_name: str) -> int:
+        """
+        Count the number of descriptors in a descriptor set.
 
+        Args:
+            set_name (str): The name of the descriptor set.
+
+        Returns:
+            total (int): The number of descriptors in the set.
+        """
         total = -1
 
         q = [{
@@ -680,13 +856,16 @@ class Utils(object):
 
         return total
 
-    def remove_all_indexes(self):
+    def remove_all_indexes(self) -> bool:
         """Remove all indexes from the database.
 
         This may improve the performance of remove_all_objects.
         It may improve or degrade the performance of other operations.
 
         Note that this only removes populated indexes.
+
+        Returns:
+            success (bool): True if the operation was successful, False otherwise.
         """
         def find_indexes(schema):
             typemap = dict(entities="entity", connections="connection")
@@ -699,7 +878,7 @@ class Utils(object):
                                     yield {"index_type": typemap[typ], "class": clas, "property_key": property_key}
 
         try:
-            r, _  = self.execute([{"GetSchema": {}}])
+            r, _ = self.execute([{"GetSchema": {}}])
             schema = r[0]
             indexes = list(find_indexes(schema))
             query = [{"RemoveIndex": index} for index in indexes]
@@ -716,8 +895,15 @@ class Utils(object):
 
         return True
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> bool:
+        """
+        Remove all objects from the database.
 
+        This includes images, videos, blobs, clips, descriptor sets, descriptors, bounding boxes, polygons, frames, entities, connections, indexes and connections.
+
+        Returns:
+            success (bool): True if the operation was successful, False otherwise.
+        """
         cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
 
         transaction = [
@@ -753,3 +939,18 @@ class Utils(object):
             logger.exception(e)
 
         return False
+
+    def user_log_message(self, message: str, level: str = "INFO") -> None:
+        """
+        Log a message to the user log.
+
+        This is useful because it can later be seen in Grafana, not only as log entries in the AperturDB Logging dashboard, but also as event markers in the Aperture DB Status dahsboard.
+
+        Args:
+            message (str): The message to log.
+            level (str): The level of the message. Default is "INFO".
+        """
+        assert level in ["INFO", "WARNING",
+                         "ERROR"], f"Invalid log level: {level}"
+        q = [{"UserLogMessage": {"text": message, "type": level}}]
+        self.execute(q)

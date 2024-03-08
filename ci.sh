@@ -126,6 +126,7 @@ build_notebook_dependencies_image(){
         # Build will use cache to speed up the process
         # Runs from github events
         cache_control="--cache-from ${DEPS_IMAGE}"
+        docker pull ${DEPS_IMAGE}
     else
         # Build won't use cache to create a fresh image
         # Runs from cron-job
