@@ -151,7 +151,7 @@ def annotate_video(blob, bboxes: List[TemporalBoundingBox] = []):
         fourcc = cv2.VideoWriter_fourcc(*'avc1')  # codec
 
         out = cv2.VideoWriter(os.path.join(
-            DESTINATION_FOLDER, 'output.mp4'), fourcc, 20.0, res)
+            DESTINATION_FOLDER, 'output.mp4'), fourcc, cap.get(cv2.CAP_PROP_FPS), res)
         frame = None
         count = 0
         while True:
