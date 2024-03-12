@@ -2,12 +2,12 @@ from matplotlib.transforms import Bbox
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
-HEADER_X_POS  = "x_pos"
-HEADER_Y_POS  = "y_pos"
-HEADER_WIDTH  = "width"
+HEADER_X_POS = "x_pos"
+HEADER_Y_POS = "y_pos"
+HEADER_WIDTH = "width"
 HEADER_HEIGHT = "height"
-IMG_KEY_PROP  = "img_key_prop"
-IMG_KEY_VAL   = "img_key_value"
+IMG_KEY_PROP = "img_key_prop"
+IMG_KEY_VAL = "img_key_value"
 
 
 class BBoxDataCSV(CSVParser.CSVParser):
@@ -57,7 +57,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename: str, **kwargs):
 
         super().__init__(filename, **kwargs)
 
@@ -117,7 +117,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
 
         return q, []
 
-    def validate(self):
+    def validate(self) -> None:
 
         self.header = list(self.df.columns.values)
 

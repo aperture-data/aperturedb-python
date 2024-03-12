@@ -2,12 +2,12 @@ import ast
 from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
-HEADER_NAME   = "name"
-HEADER_DIM    = "dimensions"
+HEADER_NAME = "name"
+HEADER_DIM = "dimensions"
 HEADER_ENGINE = "engine"
 HEADER_METRIC = "metric"
-PROPERTIES    = "properties"
-CONSTRAINTS   = "constraints"
+PROPERTIES = "properties"
+CONSTRAINTS = "constraints"
 
 
 class DescriptorSetDataCSV(CSVParser.CSVParser):
@@ -46,7 +46,7 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
     :::
     """
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename: str, **kwargs):
 
         super().__init__(filename, **kwargs)
 

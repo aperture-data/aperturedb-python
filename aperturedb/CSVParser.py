@@ -1,3 +1,4 @@
+from typing import Set
 import pandas as pd
 import logging
 from aperturedb.Subscriptable import Subscriptable
@@ -9,10 +10,10 @@ import re
 
 logger = logging.getLogger(__name__)
 
-ENTITY_CLASS      = "EntityClass"
+ENTITY_CLASS = "EntityClass"
 CONSTRAINTS_PREFIX = "constraint_"
 DATE_PREFIX = "date:"
-PROPERTIES  = "properties"
+PROPERTIES = "properties"
 CONSTRAINTS = "constraints"
 
 # This number is based on the partitions one wants to use per core.
@@ -73,7 +74,7 @@ class CSVParser(Subscriptable):
                     f"CSV file too small to be read in parallel. Use normal mode. cpus: {cpus}")
             self.df = dataframe.read_csv(
                 self.filename,
-                blocksize = blocksize)
+                blocksize=blocksize)
 
         # len for dask dataframe needs a client.
         if not self.use_dask and len(self.df) == 0:
@@ -86,7 +87,7 @@ class CSVParser(Subscriptable):
     def __len__(self):
         return len(self.df.index)
 
-    def get_indexed_properties(self):
+    def get_indexed_properties(self) -> Set[str]:
         if self.constraints_keys:
             return {self._parse_prop(k)[0] for k in self.constraints_keys}
         return set()

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable
+from typing import Callable, Dict, List, Tuple
 from aperturedb import Parallelizer
 import numpy as np
 import json
@@ -8,24 +8,37 @@ import math
 
 
 from aperturedb.DaskManager import DaskManager
-
+from aperturedb.Connector import Connector
 
 logger = logging.getLogger(__name__)
 
 
-def execute_batch(q, blobs, db, success_statuses: list[int] = [0],
+def execute_batch(q: List[Dict], blobs: List[bytes], db: Connector, 
+                  success_statuses: list[int] = [0],
                   response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0,
-                  strict_response_validation: bool = False):
+                  strict_response_validation: bool = False)->Tuple[in, List[Dict], List[bytes]]:
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
-    This should be used (without the parallel machinery) instead of db.query to keep the
-    response handling consistent, better logging, etc.
+    This should be used (without the parallel machinery) instead of db.query to keep the response handling consistent, better logging, etc.
+
+    Args:
+        q (list[dict]): List of commands to execute.
+        blobs (list[bytes]): List of blobs to send.
+        db (Connector): The database connector.
+        success_statuses (list[int], optional): The list of success statuses. Defaults to [0].
+        response_handler (Callable, optional): The response handler. Defaults to None.
+        commands_per_query (int, optional): The number of commands per query. Defaults to 1.
+        blobs_per_query (int, optional): The number of blobs per query. Defaults to 0.
+        strict_response_validation (bool, optional): Whether to strictly validate the response. Defaults to False.
 
     Returns:
-        - 0 : if all commands succeeded
-        - 1 : if there was -1 in the response
-        - 2 : For any other code.
+        int: The result code.
+            - 0 : if all commands succeeded
+            - 1 : if there was -1 in the response
+            - 2 : For any other code.
+        list[dict]: The response.
+        list[bytes]: The blobs.
     """
     result = 0
     logger.debug(f"Query={q}")
@@ -108,6 +121,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     This class provides the abstraction for partitioning data into batches,
     so that they may be processed using different threads.
+
+    Args:
+        db (Connector): The database connector.
+        dry_run (bool, optional): Whether to run in dry run mode. Defaults to False.
     """
 
     # 0 is success, 2 is object exists
@@ -121,7 +138,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    def __init__(self, db, dry_run=False):
+    def __init__(self, db:Connector, dry_run:bool=False):
 
         super().__init__()
 
@@ -138,11 +155,18 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.daskManager = None
         self.batch_command = execute_batch
 
-    def generate_batch(self, data):
+    def generate_batch(self, data:List[Tuple[List[Dict], List[bytes]]]) -> Tuple[List[Dict], List[bytes]]:
         """
         Here we flatten the individual queries to run them as
         a single query in a batch
         We also update the _ref values and connections refs.
+
+        Args:
+            data (list[tuple[list[dict], list[bytes]]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
+
+        Returns:
+            commands (list[dict]): The batched commands.
+            blobs (list[bytes]): The batched blobs.
         """
         def update_refs(batched_commands):
             updates = {}
@@ -174,13 +198,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         return q, blobs
 
-    def call_response_handler(self, q, blobs, r, b):
+    def call_response_handler(self, q:List[Dict], blobs:List(bytes), r, b):
         try:
             self.generator.response_handler(q, blobs, r, b)
         except BaseException as e:
             logger.exception(e)
 
-    def do_batch(self, db, data):
+    def do_batch(self, db:Connector, data:List[Tuple[List[Dict], List[bytes]]]) -> None:
         """
         It also provides a way for invoking a user defined function to handle the
         responses of each of the queries executed. This function can be used to process
@@ -253,7 +277,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.times_arr.append(query_time)
         self.actual_stats.append(worker_stats)
 
-    def worker(self, thid, generator, start, end):
+    def worker(self, thid:int, generator, start:int, end:int):
         # A new connection will be created for each thread
         db = self.db.create_new_connection()
 
@@ -279,19 +303,19 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if thid == 0 and self.stats:
                 self.pb.update((i + 1) / total_batches)
 
-    def get_objects_existed(self):
+    def get_objects_existed(self) -> int:
         return sum([stat["objects_existed"]
                     for stat in self.actual_stats])
 
-    def get_succeeded_queries(self):
+    def get_succeeded_queries(self) -> int:
         return sum([stat["succeeded_queries"]
                     for stat in self.actual_stats])
 
-    def get_succeeded_commands(self):
+    def get_succeeded_commands(self) -> int:
         return sum([stat["succeeded_commands"]
                     for stat in self.actual_stats])
 
-    def query(self, generator, batchsize=1, numthreads=4, stats=False):
+    def query(self, generator, batchsize:int=1, numthreads:int=4, stats:bool=False):
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)
@@ -347,7 +371,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             )
             self.run(generator, batchsize, numthreads, stats)
 
-    def print_stats(self):
+    def print_stats(self) -> None:
 
         times = np.array(self.times_arr)
         total_queries_exec = len(times)
@@ -379,7 +403,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         print("=========================================================")
 
-    def debug_sample(self, **kwargs):
+    def debug_sample(self, **kwargs) -> None:
         """
         Sample the data to be ingested for debugging purposes.
         """

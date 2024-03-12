@@ -92,7 +92,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
     GENERATE_PROP_PREFIX = "gen_"
 
-    def __init__(self, entity_class, filename, **kwargs):
+    def __init__(self, entity_class: str, filename: str, **kwargs):
         self.known_generators = ["blobsize", "blobsha1", "insertdate"]
         self.entity = entity_class
         self.keys_set = False
@@ -112,16 +112,16 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
     def _setupkeys(self):
         if not self.keys_set:
             self.keys_set = True
-            self.props_keys       = [x for x in self.header[1:]
-                                     if not (x.startswith(CSVParser.CONSTRAINTS_PREFIX)
-                                             or x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)
-                                             or x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX))]
+            self.props_keys = [x for x in self.header[1:]
+                               if not (x.startswith(CSVParser.CONSTRAINTS_PREFIX)
+                                       or x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)
+                                       or x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX))]
             self.generated_keys = [x for x in self.header[1:]
                                    if x.startswith(BlobNewestDataCSV.GENERATE_PROP_PREFIX)]
-            self.constraints_keys       = [x for x in self.header[1:]
-                                           if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.search_keys       = [x for x in self.header[1:]
-                                      if x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)]
+            self.constraints_keys = [x for x in self.header[1:]
+                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+            self.search_keys = [x for x in self.header[1:]
+                                if x.startswith(BlobNewestDataCSV.UPDATE_CONSTRAINT_PREFIX)]
 
     # derived class interface for retrieving blob
     def read_blob(self, idx):
@@ -248,7 +248,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
                                                          self.filter_generated_constraints(), idx)
         # we test generated constraints here as they will stop an update from happening.
         generated_positive_constraints = self.create_generated_constraints(
-            idx, match = True)
+            idx, match=True)
         update_constraints.update(search_constraints)
         update_constraints.update(generated_positive_constraints)
         properties = self.parse_properties(idx)
