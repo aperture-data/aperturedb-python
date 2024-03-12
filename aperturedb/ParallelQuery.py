@@ -13,10 +13,10 @@ from aperturedb.Connector import Connector
 logger = logging.getLogger(__name__)
 
 
-def execute_batch(q: List[Dict], blobs: List[bytes], db: Connector, 
+def execute_batch(q: List[Dict], blobs: List[bytes], db: Connector,
                   success_statuses: list[int] = [0],
                   response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0,
-                  strict_response_validation: bool = False)->Tuple[in, List[Dict], List[bytes]]:
+                  strict_response_validation: bool = False) -> Tuple[int, List[Dict], List[bytes]]:
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -138,7 +138,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    def __init__(self, db:Connector, dry_run:bool=False):
+    def __init__(self, db: Connector, dry_run: bool = False):
 
         super().__init__()
 
@@ -155,7 +155,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.daskManager = None
         self.batch_command = execute_batch
 
-    def generate_batch(self, data:List[Tuple[List[Dict], List[bytes]]]) -> Tuple[List[Dict], List[bytes]]:
+    def generate_batch(self, data: List[Tuple[List[Dict], List[bytes]]]) -> Tuple[List[Dict], List[bytes]]:
         """
         Here we flatten the individual queries to run them as
         a single query in a batch
@@ -198,13 +198,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         return q, blobs
 
-    def call_response_handler(self, q:List[Dict], blobs:List(bytes), r, b):
+    def call_response_handler(self, q: List[Dict], blobs: List(bytes), r, b):
         try:
             self.generator.response_handler(q, blobs, r, b)
         except BaseException as e:
             logger.exception(e)
 
-    def do_batch(self, db:Connector, data:List[Tuple[List[Dict], List[bytes]]]) -> None:
+    def do_batch(self, db: Connector, data: List[Tuple[List[Dict], List[bytes]]]) -> None:
         """
         It also provides a way for invoking a user defined function to handle the
         responses of each of the queries executed. This function can be used to process
@@ -277,7 +277,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.times_arr.append(query_time)
         self.actual_stats.append(worker_stats)
 
-    def worker(self, thid:int, generator, start:int, end:int):
+    def worker(self, thid: int, generator, start: int, end: int):
         # A new connection will be created for each thread
         db = self.db.create_new_connection()
 
@@ -315,7 +315,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         return sum([stat["succeeded_commands"]
                     for stat in self.actual_stats])
 
-    def query(self, generator, batchsize:int=1, numthreads:int=4, stats:bool=False):
+    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False):
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)

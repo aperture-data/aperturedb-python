@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import Callable
+from typing import Any, Callable
 from aperturedb.ParallelQuery import ParallelQuery
 import itertools
 import logging
 import numpy as np
+from aperturedb.Connector import Connector
 
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ DEBUG_CONSTRAINTS = True
 # removes blobs from a list or tuple for pretty printing
 
 
-def remove_blobs(item):
+def remove_blobs(item: Any) -> Any:
     if isinstance(item, list):
         item = list(map(remove_blobs, item))
     elif isinstance(item, tuple):
@@ -318,13 +319,13 @@ class ParallelQuerySet(ParallelQuery):
      Per-query actions are done by ParallelQuery.
     """
 
-    def __init__(self, db, dry_run=False):
+    def __init__(self, db: Connector, dry_run: bool = False):
 
         super().__init__(db, dry_run)
 
         self.base_batch_command = self.batch_command
 
-    def verify_generator(self, generator):
+    def verify_generator(self, generator) -> bool:
         # first level should be grouping of commands
         # first cmd should have a list of query sets
         if isinstance(generator[0], list) or isinstance(generator[0], tuple):
@@ -337,11 +338,15 @@ class ParallelQuerySet(ParallelQuery):
         logger.error(type(generator[0]))
         return False
 
-    def do_batch(self, db, data):
+    def do_batch(self, db: Connector, data: List[Tuple[List[Dict], List[bytes]]]) -> None:
         """
         This is an override of ParallelQuery.do_batch.
 
         This is the per-worker function which is the entry-point to a unit of work.
+
+        Args:
+            db (Connector): The ApertureDB Connector
+            data (List[Tuple[List[Dict], List[bytes]]]): A list of tuples, each containing a list of commands and a list of blobs
         """
         if not hasattr(self.generator, "commands_per_query"):
             raise Exception(
@@ -359,7 +364,7 @@ class ParallelQuerySet(ParallelQuery):
 
         ParallelQuery.do_batch(self, db, data)
 
-    def print_stats(self):
+    def print_stats(self) -> None:
 
         times = np.array(self.times_arr)
         total_queries_exec = len(times)
@@ -375,7 +380,7 @@ class ParallelQuerySet(ParallelQuery):
 
         else:
             mean = np.mean(times)
-            std  = np.std(times)
+            std = np.std(times)
             tp = 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")
