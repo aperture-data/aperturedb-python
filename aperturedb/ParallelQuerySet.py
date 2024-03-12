@@ -1,11 +1,14 @@
 from __future__ import annotations
-from typing import Any, Callable
-from aperturedb.ParallelQuery import ParallelQuery
+from typing import Any, Callable, List, Tuple
 import itertools
 import logging
+
 import numpy as np
+
+from aperturedb.ParallelQuery import ParallelQuery
 from aperturedb.Connector import Connector
 
+from types import Command, Blob, Query, Blobs, CommandResponses
 
 logger = logging.getLogger(__name__)
 
@@ -316,7 +319,11 @@ class ParallelQuerySet(ParallelQuery):
     """
     **Parallel and Batch Set Multi-Querier for ApertureDB**
     This class provides the mechanism to run multiple queries over a single csv.
-     Per-query actions are done by ParallelQuery.
+    Per-query actions are done by ParallelQuery.
+
+    Args:
+        db (Connector): The ApertureDB Connector
+        dry_run (bool, optional): If True, no queries are executed. Defaults to False.
     """
 
     def __init__(self, db: Connector, dry_run: bool = False):
@@ -338,7 +345,7 @@ class ParallelQuerySet(ParallelQuery):
         logger.error(type(generator[0]))
         return False
 
-    def do_batch(self, db: Connector, data: List[Tuple[List[Dict], List[bytes]]]) -> None:
+    def do_batch(self, db: Connector, data: List[Tuple[Query, Blobs]]) -> None:
         """
         This is an override of ParallelQuery.do_batch.
 
@@ -346,7 +353,7 @@ class ParallelQuerySet(ParallelQuery):
 
         Args:
             db (Connector): The ApertureDB Connector
-            data (List[Tuple[List[Dict], List[bytes]]]): A list of tuples, each containing a list of commands and a list of blobs
+            data (List[Tuple[Query, Blobs]]): A list of tuples, each containing a list of commands and a list of blobs
         """
         if not hasattr(self.generator, "commands_per_query"):
             raise Exception(
