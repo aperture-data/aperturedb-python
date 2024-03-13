@@ -8,7 +8,7 @@ import numpy as np
 from aperturedb.ParallelQuery import ParallelQuery
 from aperturedb.Connector import Connector
 
-from types import Command, Blob, Query, Blobs, CommandResponses
+from aperturedata_types import Command, Blob, Query, Blobs, CommandResponses
 
 logger = logging.getLogger(__name__)
 
