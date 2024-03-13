@@ -9,7 +9,7 @@ import math
 
 from aperturedb.DaskManager import DaskManager
 from aperturedb.Connector import Connector
-from aperturedata_types import Query, Blobs, CommandResponses
+from aperturedb.types import Query, Blobs, CommandResponses
 
 logger = logging.getLogger(__name__)
 
