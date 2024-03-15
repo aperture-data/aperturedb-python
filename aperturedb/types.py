@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Tuple
 
 Command = Dict[str, Any]
 Blob = bytes
-Query = List[Command]
+Commands = List[Command]  # aka Query, but that's also a class name
 Blobs = List[Blob]
 CommandResponses = List[Dict]
 

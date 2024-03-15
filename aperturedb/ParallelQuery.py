@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Optional
 from aperturedb import Parallelizer
 import numpy as np
 import json
@@ -9,14 +9,14 @@ import math
 
 from aperturedb.DaskManager import DaskManager
 from aperturedb.Connector import Connector
-from aperturedb.types import Query, Blobs, CommandResponses
+from aperturedb.types import Commands, Blobs, CommandResponses
 
 logger = logging.getLogger(__name__)
 
 
-def execute_batch(q: Query, blobs: Blobs, db: Connector,
+def execute_batch(q: Commands, blobs: Blobs, db: Connector,
                   success_statuses: list[int] = [0],
-                  response_handler: Callable = None, commands_per_query: int = 1, blobs_per_query: int = 0,
+                  response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
                   strict_response_validation: bool = False) -> Tuple[int, CommandResponses, Blobs]:
     """
     Execute a batch of queries, doing useful logging around it.
@@ -24,7 +24,7 @@ def execute_batch(q: Query, blobs: Blobs, db: Connector,
     This should be used (without the parallel machinery) instead of db.query to keep the response handling consistent, better logging, etc.
 
     Args:
-        q (Query): List of commands to execute.
+        q (Commands): List of commands to execute.
         blobs (Blobs): List of blobs to send.
         db (Connector): The database connector.
         success_statuses (list[int], optional): The list of success statuses. Defaults to [0].
@@ -156,7 +156,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.daskManager = None
         self.batch_command = execute_batch
 
-    def generate_batch(self, data: List[Tuple[Query, Blobs]]) -> Tuple[Query, Blobs]:
+    def generate_batch(self, data: List[Tuple[Commands, Blobs]]) -> Tuple[Commands, Blobs]:
         """
         Here we flatten the individual queries to run them as
         a single query in a batch
@@ -166,7 +166,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             data (list[tuple[Query, Blobs]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
 
         Returns:
-            commands (Query): The batched commands.
+            commands (Commands): The batched commands.
             blobs (Blobs): The batched blobs.
         """
         def update_refs(batched_commands):
@@ -199,19 +199,19 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         return q, blobs
 
-    def call_response_handler(self, q: Query, blobs: Blobs, r: CommandResponses, b: Blobs):
+    def call_response_handler(self, q: Commands, blobs: Blobs, r: CommandResponses, b: Blobs):
         try:
             self.generator.response_handler(q, blobs, r, b)
         except BaseException as e:
             logger.exception(e)
 
-    def do_batch(self, db: Connector, data: List[Tuple[Query, Blobs]]) -> None:
+    def do_batch(self, db: Connector, data: List[Tuple[Commands, Blobs]]) -> None:
         """
         Executes batch of queries and blobs in the database.
 
         Args:
             db (Connector): The database connector.
-            data (list[tuple[Query, Blobs]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
+            data (list[tuple[Commands, Blobs]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
 
         It also provides a way for invoking a user defined function to handle the
         responses of each of the queries executed. This function can be used to process

@@ -8,7 +8,7 @@ import numpy as np
 from aperturedb.ParallelQuery import ParallelQuery
 from aperturedb.Connector import Connector
 
-from aperturedb.types import Command, Blob, Query, Blobs, CommandResponses
+from aperturedb.types import Command, Blob, Commands, Blobs, CommandResponses
 
 logger = logging.getLogger(__name__)
 
@@ -345,7 +345,7 @@ class ParallelQuerySet(ParallelQuery):
         logger.error(type(generator[0]))
         return False
 
-    def do_batch(self, db: Connector, data: List[Tuple[Query, Blobs]]) -> None:
+    def do_batch(self, db: Connector, data: List[Tuple[Commands, Blobs]]) -> None:
         """
         This is an override of ParallelQuery.do_batch.
 
