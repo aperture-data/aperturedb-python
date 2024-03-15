@@ -4,8 +4,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 ENTITY_CLASS = "EntityClass"
-PROPERTIES   = "properties"
-CONSTRAINTS  = "constraints"
+PROPERTIES = "properties"
+CONSTRAINTS = "constraints"
 
 
 class EntityDataCSV(CSVParser.CSVParser):
@@ -42,7 +42,7 @@ class EntityDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename: str, **kwargs):
         super().__init__(filename, **kwargs)
 
         self.props_keys = [x for x in self.header[1:]
@@ -63,7 +63,7 @@ class EntityDataCSV(CSVParser.CSVParser):
         eclass = self.df.loc[idx, ENTITY_CLASS]
         q = []
         ae = self._basic_command(idx,
-                                 custom_fields = {
+                                 custom_fields={
                                      "class": eclass
                                  })
 
@@ -122,7 +122,7 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
         self.command = "Delete" + entity_class
         self.constraint_keyword = "constraints"
         if not use_dask:
-            self.constraint_keys       = [x for x in self.header[0:]]
+            self.constraint_keys = [x for x in self.header[0:]]
 
     def getitem(self, idx):
         idx = self.df.index.start + idx

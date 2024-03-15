@@ -1,5 +1,6 @@
 
 from aperturedb import ParallelQuery
+from aperturedb.Connector import Connector
 
 import numpy as np
 import logging
@@ -15,7 +16,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     into batches, and passing the batches to multiple workers.
     """
 
-    def __init__(self, db, dry_run=False):
+    def __init__(self, db: Connector, dry_run: bool = False):
         super().__init__(db, dry_run=dry_run)
         self.type = "element"
 
@@ -35,7 +36,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                                 cls_name, set()).add(prop_name)
         return existing_indices
 
-    def create_indices(self, indices):
+    def create_indices(self, indices) -> None:
         if len(indices) == 0:
             return
 
@@ -68,11 +69,11 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                 "Failed to create indices; ingestion will be slow.")
             logger.warning(res)
 
-    def query_setup(self, generator):
+    def query_setup(self, generator) -> None:
         if hasattr(generator, "get_indices"):
             self.create_indices(generator.get_indices())
 
-    def ingest(self, generator, batchsize=1, numthreads=4, stats=False):
+    def ingest(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
         """
         **Method to ingest data into the database**
 
@@ -86,7 +87,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
         self.query(generator, batchsize, numthreads, stats)
 
-    def print_stats(self):
+    def print_stats(self) -> None:
 
         times = np.array(self.get_times())
         total_queries_exec = len(times)
@@ -105,7 +106,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
         else:
             mean = np.mean(times)
-            std  = np.std(times)
+            std = np.std(times)
             tp = 0 if mean == 0 else 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")

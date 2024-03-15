@@ -18,7 +18,7 @@ class SparseAddingDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, entity_class, filename, **kwargs):
+    def __init__(self, entity_class: str, filename: str, **kwargs):
         self.entity = entity_class
         self.keys_set = False
         super().__init__(filename, **kwargs)
@@ -29,10 +29,10 @@ class SparseAddingDataCSV(CSVParser.CSVParser):
     def _setupkeys(self):
         if not self.keys_set:
             self.keys_set = True
-            self.props_keys       = [x for x in self.header[1:]
-                                     if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.constraints_keys       = [x for x in self.header[1:]
-                                           if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+            self.props_keys = [x for x in self.header[1:]
+                               if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+            self.constraints_keys = [x for x in self.header[1:]
+                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
@@ -43,7 +43,7 @@ class SparseAddingDataCSV(CSVParser.CSVParser):
         self.command = "Find" + self.entity
         self.constraint_keyword = "constraints"
         entity_find = self._basic_command(
-            idx, custom_fields = {"results": {"count": True}})
+            idx, custom_fields={"results": {"count": True}})
         # proceed to second command if count == 0
         condition_find_failed = {"results": {0: {"count": ["==", 0]}}}
         self.props_keys = hold_props_keys

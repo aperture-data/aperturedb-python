@@ -128,8 +128,8 @@ def insert_data_from_csv(db, request):
             for tp, classes in expected_indices.items():
                 for cls, props in classes.items():
                     for prop in props:
-                        assert prop in observed_indices[tp][cls]
-
+                        err_msg = f"Index {prop} not found for {cls}, {expected_indices=}, {observed_indices=}"
+                        assert prop in observed_indices[tp][cls], err_msg
         assert loader.error_counter == 0
         assert len(data) - \
             loader.get_succeeded_queries() == expected_error_count

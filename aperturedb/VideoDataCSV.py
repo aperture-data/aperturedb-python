@@ -9,9 +9,9 @@ import boto3
 logger = logging.getLogger(__name__)
 
 HEADER_PATH = "filename"
-PROPERTIES  = "properties"
+PROPERTIES = "properties"
 CONSTRAINTS = "constraints"
-HEADER_URL    = "url"
+HEADER_URL = "url"
 HEADER_S3_URL = "s3_url"
 HEADER_GS_URL = "gs_url"
 
@@ -71,14 +71,14 @@ class VideoDataCSV(CSVParser.CSVParser):
     :::
     """
 
-    def __init__(self, filename, check_video=True, **kwargs):
+    def __init__(self, filename: str, check_video: bool = True, **kwargs):
         self.source_types = [HEADER_PATH,
                              HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
         super().__init__(filename, **kwargs)
         self.check_video = check_video
 
-        self.props_keys       = [x for x in self.header[1:]
-                                 if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+        self.props_keys = [x for x in self.header[1:]
+                           if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.constraints_keys = [x for x in self.header[1:]
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.command = "AddVideo"
@@ -102,7 +102,7 @@ class VideoDataCSV(CSVParser.CSVParser):
             }
         }
 
-    def check_video_buf(self, video):
+    def check_video_buf(self, video) -> bool:
         # check if video is valid
         print(len(video))
         return True

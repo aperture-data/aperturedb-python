@@ -1,10 +1,14 @@
 from __future__ import annotations
-from typing import Callable
-from aperturedb.ParallelQuery import ParallelQuery
+from typing import Any, Callable, List, Tuple
 import itertools
 import logging
+
 import numpy as np
 
+from aperturedb.ParallelQuery import ParallelQuery
+from aperturedb.Connector import Connector
+
+from aperturedb.types import Command, Blob, Commands, Blobs, CommandResponses
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +18,7 @@ DEBUG_CONSTRAINTS = True
 # removes blobs from a list or tuple for pretty printing
 
 
-def remove_blobs(item):
+def remove_blobs(item: Any) -> Any:
     if isinstance(item, list):
         item = list(map(remove_blobs, item))
     elif isinstance(item, tuple):
@@ -315,16 +319,20 @@ class ParallelQuerySet(ParallelQuery):
     """
     **Parallel and Batch Set Multi-Querier for ApertureDB**
     This class provides the mechanism to run multiple queries over a single csv.
-     Per-query actions are done by ParallelQuery.
+    Per-query actions are done by ParallelQuery.
+
+    Args:
+        db (Connector): The ApertureDB Connector
+        dry_run (bool, optional): If True, no queries are executed. Defaults to False.
     """
 
-    def __init__(self, db, dry_run=False):
+    def __init__(self, db: Connector, dry_run: bool = False):
 
         super().__init__(db, dry_run)
 
         self.base_batch_command = self.batch_command
 
-    def verify_generator(self, generator):
+    def verify_generator(self, generator) -> bool:
         # first level should be grouping of commands
         # first cmd should have a list of query sets
         if isinstance(generator[0], list) or isinstance(generator[0], tuple):
@@ -337,11 +345,15 @@ class ParallelQuerySet(ParallelQuery):
         logger.error(type(generator[0]))
         return False
 
-    def do_batch(self, db, data):
+    def do_batch(self, db: Connector, data: List[Tuple[Commands, Blobs]]) -> None:
         """
         This is an override of ParallelQuery.do_batch.
 
         This is the per-worker function which is the entry-point to a unit of work.
+
+        Args:
+            db (Connector): The ApertureDB Connector
+            data (List[Tuple[Query, Blobs]]): A list of tuples, each containing a list of commands and a list of blobs
         """
         if not hasattr(self.generator, "commands_per_query"):
             raise Exception(
@@ -359,7 +371,7 @@ class ParallelQuerySet(ParallelQuery):
 
         ParallelQuery.do_batch(self, db, data)
 
-    def print_stats(self):
+    def print_stats(self) -> None:
 
         times = np.array(self.times_arr)
         total_queries_exec = len(times)
@@ -375,7 +387,7 @@ class ParallelQuerySet(ParallelQuery):
 
         else:
             mean = np.mean(times)
-            std  = np.std(times)
+            std = np.std(times)
             tp = 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")

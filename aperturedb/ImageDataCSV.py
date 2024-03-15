@@ -15,13 +15,13 @@ import os
 
 logger = logging.getLogger(__name__)
 
-HEADER_PATH   = "filename"
-HEADER_URL    = "url"
+HEADER_PATH = "filename"
+HEADER_URL = "url"
 HEADER_S3_URL = "s3_url"
 HEADER_GS_URL = "gs_url"
-PROPERTIES    = "properties"
-CONSTRAINTS   = "constraints"
-IMG_FORMAT    = "format"
+PROPERTIES = "properties"
+CONSTRAINTS = "constraints"
+IMG_FORMAT = "format"
 
 
 class ImageDataProcessor():
@@ -38,7 +38,7 @@ class ImageDataProcessor():
         self.check_image = check_image
         self.n_download_retries = n_download_retries
 
-    def set_processor(self, use_dask, source_type):
+    def set_processor(self, use_dask: bool, source_type):
         self.source_type = source_type
         if use_dask == False and self.source_type == HEADER_S3_URL:
             # The connections by boto3 cause ResourceWarning. Known
@@ -176,7 +176,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     :::
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3, **kwargs):
+    def __init__(self, filename: str, check_image: bool = True, n_download_retries: int = 3, **kwargs):
 
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
@@ -185,10 +185,10 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         source_type = self.header[0]
         self.set_processor(self.use_dask, source_type)
 
-        self.format_given     = IMG_FORMAT in self.header
-        self.props_keys       = [x for x in self.header[1:]
-                                 if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-        self.props_keys       = [
+        self.format_given = IMG_FORMAT in self.header
+        self.props_keys = [x for x in self.header[1:]
+                           if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+        self.props_keys = [
             x for x in self.props_keys if x != IMG_FORMAT]
         self.constraints_keys = [x for x in self.header[1:]
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
@@ -196,7 +196,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         if self.source_type not in self.source_types:
             logger.error("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
-        self.source_loader    = {
+        self.source_loader = {
             st: sl for st, sl in zip(self.source_types, self.loaders)
         }
 
@@ -260,7 +260,7 @@ class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
 
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3, **kwargs):
+    def __init__(self, filename: str, check_image: bool = True, n_download_retries: int = 3, **kwargs):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
         SingleEntityUpdateDataCSV.__init__(
@@ -271,13 +271,13 @@ class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
 
         # this class loads a blob, so must set the first query to have a blob.
         self.blobs_per_query = [1, 0]
-        self.format_given     = IMG_FORMAT in self.header
+        self.format_given = IMG_FORMAT in self.header
         self.props_keys = list(filter(lambda prop: prop not in [
                                IMG_FORMAT, "filename"], self.props_keys))
         if self.source_type not in self.source_types:
             logger.error("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
-        self.source_loader    = {
+        self.source_loader = {
             st: sl for st, sl in zip(self.source_types, self.loaders)
         }
 
@@ -322,13 +322,13 @@ class ImageForceNewestDataCSV(BlobNewestDataCSV, ImageDataProcessor):
         source_type = self.header[0]
         self.set_processor(self.use_dask, source_type)
 
-        self.format_given     = IMG_FORMAT in self.header
+        self.format_given = IMG_FORMAT in self.header
         self.props_keys = list(filter(lambda prop: prop not in [
                                IMG_FORMAT, "filename"], self.props_keys))
         if self.source_type not in self.source_types:
             logger.error("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
-        self.source_loader    = {
+        self.source_loader = {
             st: sl for st, sl in zip(self.source_types, self.loaders)
         }
 
@@ -370,20 +370,20 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     ```
     """
 
-    def __init__(self, filename, check_image=True, n_download_retries=3, **kwargs):
+    def __init__(self, filename: str, check_image: bool = True, n_download_retries: int = 3, **kwargs):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
         SparseAddingDataCSV.__init__(self, "Image", filename, **kwargs)
         source_type = self.header[0]
         self.set_processor(self.use_dask, source_type)
 
-        self.format_given     = IMG_FORMAT in self.header
+        self.format_given = IMG_FORMAT in self.header
         self.props_keys = list(filter(lambda prop: prop not in [
                                IMG_FORMAT, "filename"], self.props_keys))
         if self.source_type not in self.source_types:
             logger.error("Source not recognized: " + self.source_type)
             raise Exception("Error loading image: " + filename)
-        self.source_loader    = {
+        self.source_loader = {
             st: sl for st, sl in zip(self.source_types, self.loaders)
         }
 

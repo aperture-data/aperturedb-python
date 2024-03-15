@@ -71,7 +71,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
     """
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
 
-    def __init__(self, entity_class, filename, **kwargs):
+    def __init__(self, entity_class: str, filename: str, **kwargs):
 
         if entity_class in ("Image", "Video", "Blob", "BoundingBox", "Connection", "Polygon", "Descriptor", "DescriptorSet", "Frame"):
             self.entity = entity_class
@@ -89,13 +89,13 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
     def _setupkeys(self):
         if not self.keys_set:
             self.keys_set = True
-            self.props_keys       = [x for x in self.header[1:]
-                                     if not (x.startswith(CSVParser.CONSTRAINTS_PREFIX)
-                                             or x.startswith(SingleEntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX))]
-            self.constraints_keys       = [x for x in self.header[1:]
-                                           if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
-            self.search_keys       = [x for x in self.header[1:]
-                                      if x.startswith(SingleEntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX)]
+            self.props_keys = [x for x in self.header[1:]
+                               if not (x.startswith(CSVParser.CONSTRAINTS_PREFIX)
+                                       or x.startswith(SingleEntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX))]
+            self.constraints_keys = [x for x in self.header[1:]
+                                     if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+            self.search_keys = [x for x in self.header[1:]
+                                if x.startswith(SingleEntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX)]
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
@@ -105,7 +105,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
         self.command = "Add" + self.entity
         selector = {} if self.entity_selection is None else {
             "class": self.entity_selection}
-        entity_add = self._basic_command(idx, custom_fields = selector)
+        entity_add = self._basic_command(idx, custom_fields=selector)
         condition_add_failed = {"results": {0: {"status": ["==", 2]}}}
         self.command = "Update" + self.entity
         update_constraints = self.parse_constraints(idx)

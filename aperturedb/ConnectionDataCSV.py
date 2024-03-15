@@ -5,7 +5,7 @@ from aperturedb.Query import QueryBuilder, ObjectType
 logger = logging.getLogger(__name__)
 
 CONNECTION_CLASS = "ConnectionClass"
-PROPERTIES  = "properties"
+PROPERTIES = "properties"
 CONSTRAINTS = "constraints"
 
 
@@ -53,21 +53,21 @@ class ConnectionDataCSV(CSVParser):
     :::
     """
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename: str, **kwargs):
         super().__init__(filename, **kwargs)
 
-        self.props_keys       = [x for x in self.header[3:]
-                                 if not x.startswith(CONSTRAINTS_PREFIX)]
+        self.props_keys = [x for x in self.header[3:]
+                           if not x.startswith(CONSTRAINTS_PREFIX)]
 
         self.constraints_keys = [x for x in self.header[3:]
                                  if x.startswith(CONSTRAINTS_PREFIX)]
 
-        self.src_class   = self.header[1].split("@")[0]
-        self.src_key     = self.header[1].split("@")[1]
-        self.dst_class   = self.header[2].split("@")[0]
+        self.src_class = self.header[1].split("@")[0]
+        self.src_key = self.header[1].split("@")[1]
+        self.dst_class = self.header[2].split("@")[0]
         # Pandas appends a .n to the column name if there is a duplicate
-        self.dst_key     = self.header[2].split("@")[1].split(".")[0]
-        self.command     = "AddConnection"
+        self.dst_key = self.header[2].split("@")[1].split(".")[0]
+        self.command = "AddConnection"
 
     def get_indices(self):
         return {
