@@ -53,7 +53,7 @@ provider "dockerhub" {
 }
 
 data "aws_route53_zone" "domain" {
-  name = "aperturedata.${var.environment == "main" ? "io" : "dev"}."
+  name = "aperturedata.${local.environment == "main" ? "io" : "dev"}."
 }
 
 module "service" {
