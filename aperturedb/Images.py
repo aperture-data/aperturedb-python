@@ -257,6 +257,7 @@ class Images(Entities):
                     "constraints": {
                         self.img_id_prop: ["==", self.images_ids[idx]]
                     },
+                    "blobs": True
                 }
             }
 
