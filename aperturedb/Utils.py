@@ -58,7 +58,7 @@ def create_connector():
     **Create a connector to the database.**
 
     This function reads the active configuration.
-    See `adb config` command-line tool for more information.
+    See :ref:`adb config <adb_config>`_ command-line tool for more information.
 
     Args:
         None
@@ -136,7 +136,7 @@ class Utils(object):
     def status(self):
         """
         Executes a `GetStatus` query.
-        See `GetStatus` in the ApertureDB documentation for more information.
+        See :ref:`GetStatus <GetStatus>`_ in the ApertureDB documentation for more information.
         """
 
         q = [{"GetStatus": {}}]
@@ -158,7 +158,7 @@ class Utils(object):
     def get_schema(self, refresh=False):
         """
         Get the schema of the database.
-        See `GetSchema` in the ApertureDB documentation for more information.
+        See :ref:`GetSchema <GetSchema>`_ in the ApertureDB documentation for more information.
         """
 
         if refresh:
@@ -293,7 +293,7 @@ class Utils(object):
         """
         Print a summary of the database.
 
-        This is essentially a call to `GetSchema`, with the results formatted in a more human-readable way.
+        This is essentially a call to :ref:`GetSchema <GetSchema>`_, with the results formatted in a more human-readable way.
         """
         r = self.get_schema()
         s = json.loads(self.status())[0]["GetStatus"]
@@ -375,7 +375,7 @@ class Utils(object):
     def create_entity_index(self, class_name, property_key, property_type=None):
         """
         Create an index for an entity class.
-        See `CreateIndex` in the ApertureDB documentation for more information.
+        See :ref:`CreateIndex <CreateIndex>`_ in the ApertureDB documentation for more information.
         """
 
         if property_type is not None:
@@ -388,7 +388,7 @@ class Utils(object):
     def create_connection_index(self, class_name, property_key, property_type=None):
         """
         Create an index for a connection class.
-        See `CreateIndex` in the ApertureDB documentation for more information.
+        See :ref:`CreateIndex <CreateIndex>`_ in the ApertureDB documentation for more information.
         """
 
         if property_type is not None:
@@ -401,7 +401,7 @@ class Utils(object):
     def remove_entity_index(self, class_name, property_key):
         """
         Remove an index for an entity class.
-        See `RemoveIndex` in the ApertureDB documentation for more information.
+        See :ref:`RemoveIndex <RemoveIndex>`_ in the ApertureDB documentation for more information.
         """
 
         return self._remove_index("entity", class_name, property_key)
@@ -409,7 +409,7 @@ class Utils(object):
     def remove_connection_index(self, class_name, property_key):
         """
         Remove an index for a connection class.
-        See `RemoveIndex` in the ApertureDB documentation for more information.
+        See :ref:`RemoveIndex <RemoveIndex>`_ in the ApertureDB documentation for more information.
         """
         return self._remove_index("connection", class_name, property_key)
 
@@ -419,7 +419,7 @@ class Utils(object):
 
         Args:
             constraints (dict, optional): The constraints to apply to the query.
-                See the `Constraints` wrapper class for more information.
+                See the [`Constraints`](../parameter_wrappers/Constraints) wrapper class for more information.
 
         Returns:
             count: The number of images in the database.
@@ -448,7 +448,7 @@ class Utils(object):
         Args:
             object_type (str): The type of the objects.
             constraints (dict, optional): The constraints to apply to the query.
-                See the `Constraints` wrapper class for more information.
+                See the [`Constraints`](../parameter_wrappers/Constraints) wrapper class for more information.
 
         Returns:
             ids (list of str): The uniqueids of the objects.
@@ -507,7 +507,7 @@ class Utils(object):
 
         Args:
             constraints (dict, optional): The constraints to apply to the query.
-                See the `Constraints` wrapper class for more information.
+                See the [`Constraints`](../parameter_wrappers/Constraints) wrapper class for more information.
 
         Returns:
             ids (list of str): The uniqueids of the images.
@@ -521,7 +521,7 @@ class Utils(object):
 
         Args:
             constraints (dict, optional): The constraints to apply to the query.
-                See the `Constraints` wrapper class for more information.
+                See the [`Constraints`](../parameter_wrappers/Constraints) wrapper class for more information.
 
         Returns:
             count: The number of bounding boxes in the database.
@@ -552,7 +552,7 @@ class Utils(object):
 
         Args:
             constraints (dict, optional): The constraints to apply to the query.
-                See the `Constraints` wrapper class for more information.
+                See the [`Constraints`](../parameter_wrappers/Constraints) wrapper class for more information.
 
         Returns:
             count: The number of entities in the database.
@@ -581,7 +581,7 @@ class Utils(object):
 
         Args:
             constraints (dict, optional): The constraints to apply to the query.
-                See the `Constraints` wrapper class for more information.
+                See the [`Constraints`](../parameter_wrappers/Constraints) wrapper class for more information.
 
         Returns:
             count: The number of connections in the database.
@@ -681,7 +681,7 @@ class Utils(object):
         """
         Remove a descriptor set from the database.
 
-        See `DeleteDescriptorSet` in the ApertureDB documentation for more information.
+        See :ref:`DeleteDescriptorSet <DeleteDescriptorSet>`_ in the ApertureDB documentation for more information.
 
         Args:
             set_name (str): The name of the descriptor set.
@@ -760,7 +760,7 @@ class Utils(object):
         """
         Remove all entities of a given class from the database.
 
-        See `DeleteEntity` in the ApertureDB documentation for more information.
+        See :ref:`DeleteEntity <DeleteEntity>`_ in the ApertureDB documentation for more information.
 
         Args:
             class_name (str): The class of the entities to remove.
@@ -798,7 +798,7 @@ class Utils(object):
         """
         Remove all connections of a given class from the database.
 
-        See `DeleteConnection` in the ApertureDB documentation for more information.
+        See :ref:`DeleteConnection <DeleteConnection>`_ in the ApertureDB documentation for more information.
 
         Args:
             class_name (str): The class of the connections to remove.
