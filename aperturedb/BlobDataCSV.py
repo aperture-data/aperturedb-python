@@ -2,9 +2,9 @@ import logging
 import os
 from aperturedb import CSVParser
 
-PROPERTIES  = "properties"
+PROPERTIES = "properties"
 CONSTRAINTS = "constraints"
-BLOB_PATH   = "filename"
+BLOB_PATH = "filename"
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class BlobDataCSV(CSVParser.CSVParser):
     :::
     """
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename: str, **kwargs):
 
         super().__init__(filename, **kwargs)
 

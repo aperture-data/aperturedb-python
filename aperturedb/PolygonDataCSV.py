@@ -3,9 +3,9 @@ import json
 from aperturedb import CSVParser
 
 HEADER_POLYGONS = "polygons"
-IMG_KEY_PROP    = "img_key_prop"
-IMG_KEY_VAL     = "img_key_value"
-POLYGON_FIELDS  = {
+IMG_KEY_PROP = "img_key_prop"
+IMG_KEY_VAL = "img_key_value"
+POLYGON_FIELDS = {
     "_label": "label",
 }
 
@@ -52,7 +52,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename: str, **kwargs):
 
         super().__init__(filename, kwargs=kwargs)
 

@@ -5,12 +5,12 @@ import os
 
 logger = logging.getLogger(__name__)
 
-HEADER_PATH  = "filename"
+HEADER_PATH = "filename"
 HEADER_INDEX = "index"
-HEADER_SET   = "set"
+HEADER_SET = "set"
 HEADER_LABEL = "label"
-PROPERTIES   = "properties"
-CONSTRAINTS  = "constraints"
+PROPERTIES = "properties"
+CONSTRAINTS = "constraints"
 
 
 class DescriptorDataCSV(CSVParser.CSVParser):
@@ -68,14 +68,14 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename, **kwargs):
+    def __init__(self, filename: str, **kwargs):
 
         super().__init__(filename, **kwargs)
         self.npy_arrays = {}
         self.has_label = False
 
-        self.props_keys       = [x for x in self.header[3:]
-                                 if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
+        self.props_keys = [x for x in self.header[3:]
+                           if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.constraints_keys = [x for x in self.header[3:]
                                  if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
         self.command = "AddDescriptor"
@@ -91,7 +91,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         idx = self.df.index.start + idx
         filename = os.path.join(self.relative_path_prefix,
                                 self.df.loc[idx, HEADER_PATH])
-        index    = self.df.loc[idx, HEADER_INDEX]
+        index = self.df.loc[idx, HEADER_INDEX]
         desc_set = self.df.loc[idx, HEADER_SET]
 
         descriptor, desc_ok = self.load_descriptor(filename, index)

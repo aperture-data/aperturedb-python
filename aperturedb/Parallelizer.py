@@ -34,16 +34,16 @@ class Parallelizer:
 
         self._reset()
 
-    def _reset(self, batchsize=1, numthreads=1):
+    def _reset(self, batchsize: int = 1, numthreads: int = 1):
 
         # Default Values
-        self.batchsize  = batchsize
+        self.batchsize = batchsize
         self.numthreads = numthreads
 
         self.total_actions = 0
         self.times_arr = []
         self.total_actions_time = 0
-        self.error_counter  = 0
+        self.error_counter = 0
         self.actual_stats = []
 
         if self.pb_file:
@@ -55,7 +55,7 @@ class Parallelizer:
 
         return self.times_arr
 
-    def run(self, generator, batchsize, numthreads, stats):
+    def run(self, generator, batchsize: int, numthreads: int, stats: bool):
 
         self._reset(batchsize, numthreads)
         self.stats = stats
@@ -78,8 +78,8 @@ class Parallelizer:
         thread_arr = []
         for i in range(self.numthreads):
             idx_start = i * elements_per_thread
-            idx_end   = min(idx_start + elements_per_thread,
-                            self.total_actions)
+            idx_end = min(idx_start + elements_per_thread,
+                          self.total_actions)
 
             thread_add = Thread(target=self.worker,
                                 args=(i, generator, idx_start, idx_end))
