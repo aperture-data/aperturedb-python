@@ -5,6 +5,8 @@ import importlib
 import sys
 from typing import List
 
+from graphviz import Source, Digraph
+
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb import ProgressBar
@@ -180,6 +182,78 @@ class Utils(object):
             raise e
 
         return schema
+
+    def visualize_schema(self, filename: str = None, format: str = "png") -> Source:
+        """
+        Visualize the schema of the database.  Optionally save the visualization to a file in the specified format.
+
+        The returned object can be rendered to a file as follows:
+        ```python
+        s = utils.visualize_schema()
+        s.render("schema", format="png")
+        ```
+
+        It can also be displayed inline in a Jupyter notebook:
+        ```python
+        from IPython.display import display
+        s = utils.visualize_schema()
+        display(s)
+        ```
+
+        Relies on graphviz to be installed.
+
+        Args:
+            filename (str, optional): The filename to save the visualization to. Default is None.
+            format (str, optional): The format to save the visualization to. Default is "png".
+
+        Returns:
+            source: The visualization of the schema.
+        """
+        r = self.get_schema()
+
+        dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={
+                      'shape': 'none'}, graph_attr={'rankdir': 'LR'})
+
+        # Add entities as nodes and connections as edges
+        entities = r['entities']['classes']
+        connections = r['connections']['classes']
+
+        for entity, data in entities.items():
+            matched = data["matched"]
+            # dictionary from name to (matched, indexed, type)
+            properties = data["properties"]
+            table = f'''<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+            <TR><TD BGCOLOR="lightgrey">{entity} ({matched:,})</TD></TR>
+            '''
+            for prop, (matched, indexed, typ) in properties.items():
+                table += f'<TR><TD BGCOLOR="lightblue">{prop} ({matched:,}): {"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
+            for connection, data in connections.items():
+                if data['src'] == entity:
+                    matched = data["matched"]
+                    # dictionary from name to (matched, indexed, type)
+                    properties = data["properties"]
+                    table += f'<TR><TD BGCOLOR="lightgreen"><TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">'
+                    table += f'<TR><TD PORT="{connection}">{connection} ({matched:,})</TD></TR>'
+                    if properties:
+                        for prop, (matched, indexed, typ) in properties.items():
+                            table += f'<TR><TD>{prop} ({matched:,}): {"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
+                    table += '</TABLE></TD></TR>'
+
+            table += '</TABLE>>'
+            dot.node(entity, label=table)
+
+        for connection, data in connections.items():
+            dot.edge(f'{data["src"]}:{connection}',
+                     f'{data["dst"]}:{connection}')
+
+        # Render the diagram inline
+        s = Source(dot.source, filename="schema_diagram.gv", format="png")
+
+        if filename is not None:
+            s.render(filename, format=format)
+
+        return s
 
     def _object_summary(self, name, object):
 
