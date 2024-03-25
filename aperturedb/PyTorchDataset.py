@@ -46,6 +46,7 @@ class ApertureDBDataset(data.Dataset):
             self.query[self.find_image_idx]["FindImage"]["results"] = {}
 
         self.query[self.find_image_idx]["FindImage"]["batch"] = {}
+        self.query[self.find_image_idx]["FindImage"]["blobs"] = True
 
         try:
             r, b = self.db.query(self.query)

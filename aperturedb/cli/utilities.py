@@ -62,3 +62,22 @@ def log(
     """
     utils = Utils(create_connector())
     utils.user_log_message(message, level=level.value)
+
+
+@app.command()
+def visualize_schema(
+    filename: str = "schema",
+    format: str = "png"
+):
+    """
+    Visualize the schema of the database.
+
+    This will create a file with the schema of the database in the specified format.
+
+    Relies on graphviz to be installed.
+    """
+
+    utils = Utils(create_connector())
+    s = utils.visualize_schema()
+    result = s.render(filename, format=format)
+    print(result)
