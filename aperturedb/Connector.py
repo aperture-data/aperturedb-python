@@ -34,6 +34,7 @@ import time
 import json
 import ssl
 import logging
+from datetime import datetime,timedelta
 
 import keepalive
 
@@ -112,6 +113,10 @@ class Connector(object):
         self.last_response = ''
         self.last_query_time = 0
         self.authenticated = False
+        self.last_query_timestamp = None
+        # suppress connection warnings which occur more than this time
+        # after the last query
+        self.query_connection_error_suppression_delta = timedelta( seconds=30 )
 
         if config is None:
             self.host = host
@@ -366,6 +371,17 @@ class Connector(object):
                         response_blob_array = [b for b in querRes.blobs]
                         self.last_response = json.loads(querRes.json)
                         break
+            except ssl.SSLEOFError as ssle:
+                # this can happen when working in a notebook.
+                # we log if this isn't the first try, or if 
+                # it has happened sooner than we expect a connection to be
+                # dropped.
+                now = datetime.now()
+                if tries != 0 or (self.last_query_timestamp is not None and \
+                        (now-self.last_query_timestamp) <
+                        self.query_connection_error_suppression_delta):
+                    logger.exception(ssle)
+                    logger.warning(f"SSL connection error on process {os.getpid()}")
             except ssl.SSLError as ssle:
                 # This can happen in a scenario where multiple
                 # processes might be accessing a single connection.
@@ -443,6 +459,7 @@ class Connector(object):
                 start = time.time()
                 self.response, self.blobs = self._query(q, blobs)
             self.last_query_time = time.time() - start
+            self.last_query_timestamp = datetime.now()
             return self.response, self.blobs
         except BaseException as e:
             logger.critical("Failed to query",
