@@ -212,7 +212,7 @@ class Utils(object):
         r = self.get_schema()
 
         dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={
-                      'shape': 'none'}, graph_attr={'rankdir': 'LR'})
+                      'shape': 'none', 'fontcolor': '#E2E0F1'}, graph_attr={'rankdir': 'LR'}, edge_attr={'color': '#3A3B9C'})
 
         # Add entities as nodes and connections as edges
         entities = r['entities']['classes']
@@ -224,22 +224,19 @@ class Utils(object):
             properties = data["properties"]
             table = f'''<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-            <TR><TD BGCOLOR="lightgrey">{entity} ({matched:,})</TD></TR>
+            <TR><TD BGCOLOR="#2A2E78" COLSPAN="3"><B>{entity}</B> ({matched:,})</TD></TR>
             '''
             for prop, (matched, indexed, typ) in properties.items():
-                table += f'<TR><TD BGCOLOR="lightblue">{prop} ({matched:,}): {"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
+                table += f'<TR><TD BGCOLOR="#337EC0"><B>{prop.strip()}</B></TD> <TD BGCOLOR="#337EC0">{matched:,}</TD> <TD BGCOLOR="#337EC0">{"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
             for connection, data in connections.items():
                 if data['src'] == entity:
                     matched = data["matched"]
                     # dictionary from name to (matched, indexed, type)
                     properties = data["properties"]
-                    table += f'<TR><TD BGCOLOR="lightgreen"><TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">'
-                    table += f'<TR><TD PORT="{connection}">{connection} ({matched:,})</TD></TR>'
+                    table += f'<TR><TD BGCOLOR="#5956F1" COLSPAN="3" PORT="{connection}"><B>{connection}</B> ({matched:,})</TD></TR>'
                     if properties:
                         for prop, (matched, indexed, typ) in properties.items():
-                            table += f'<TR><TD>{prop} ({matched:,}): {"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
-                    table += '</TABLE></TD></TR>'
-
+                            table += f'<TR><TD BGCOLOR="#33E1FF"><B>{prop.strip()}</B></TD> <TD BGCOLOR="#33E1FF">{matched:,}</TD> <TD BGCOLOR="#33E1FF">{"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
             table += '</TABLE>>'
             dot.node(entity, label=table)
 
