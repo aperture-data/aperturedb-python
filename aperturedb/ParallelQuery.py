@@ -38,7 +38,7 @@ def execute_batch(q: Commands, blobs: Blobs, db: Connector,
             - 0 : if all commands succeeded
             - 1 : if there was -1 in the response
             - 2 : For any other code.
-        CommandReponses: The response.
+        CommandResponses: The response.
         Blobs: The blobs.
     """
     result = 0
@@ -173,7 +173,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             updates = {}
             for i, cmd in enumerate(batched_commands):
                 if isinstance(cmd, list):
-                    # Only pralllel queries will work.
+                    # Only parallel queries will work.
                     break
                 values = cmd[list(cmd.keys())[0]]
                 if "_ref" in values:
