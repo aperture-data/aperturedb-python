@@ -58,10 +58,6 @@ def _debug_samples(data, sample_count, module_name):
                 f.write(blob)
 
 
-def apply_pipeline(data, transformers: List[str], **kwargs):
-    return _apply_pipeline(data, transformers, **kwargs)
-
-
 def _apply_pipeline(data, transformers: List[str], **kwargs):
     pipeline = _create_pipeline(transformers)
     console.log("Applying Pipeline: \r\n" +
