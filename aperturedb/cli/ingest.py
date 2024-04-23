@@ -4,6 +4,8 @@ from typing import List, Optional
 import typer
 import os
 import time
+import numpy as np
+import pandas as pd
 
 from typing_extensions import Annotated
 from aperturedb.ParallelLoader import ParallelLoader
@@ -22,6 +24,8 @@ from aperturedb.Query import ObjectType
 from aperturedb.cli.console import console
 
 from aperturedb.Utils import import_module_by_path
+
+from tqdm import tqdm
 
 logger = logging.getLogger(__file__)
 app = typer.Typer()
@@ -214,3 +218,62 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     else:
         loader.ingest(data, batchsize=batchsize,
                       numthreads=num_workers, stats=stats)
+
+
+@app.command()
+def generate_embedding_csv_from_image_csv(
+    input_file: Annotated[str, typer.Argument(
+        help="Path to csv for ingestion")],
+    set_name: Annotated[str, typer.Argument(
+        help="Descriptor set name to be associated with the embeddings")],
+    transformer: Annotated[Optional[List[TransformerType]], typer.Option(
+        help="Apply transformer to the pipeline [Can be specified multiple times]")] = None,
+    user_transformer: Annotated[Optional[List[str]], typer.Option(
+        help="Apply user transformer to the pipeline as path to file [Can be specified multiple times.]")] = None,
+    sample_count: Annotated[int, typer.Option(
+        help="Number of samples to ingest (-1 for all)")] = -1,
+):
+    """
+    Create a DescriptorDataCSV from an ImageDataCSV, using the specified transformer.
+    Also save embeddings in a separate file, and generate the ConnectionDataCSV
+    for linking the images to the descriptors.
+    """
+    data = ImageDataCSV(input_file)
+    data.sample_count = len(data) if sample_count == -1 else sample_count
+    if transformer or user_transformer:
+        transformer = transformer or []
+        user_transformer = user_transformer or []
+        all_transformers = transformer + user_transformer
+        if len(all_transformers) == 0:
+            console.log(
+                "No transformer specified . Generating embeddings from raw images requires a transformer.")
+            typer.Abort()
+        data = _apply_pipeline(data, all_transformers,
+                               adb_data_source=f"{os.path.basename(input_file)}")
+    filename = f"{os.path.basename(input_file)}_{all_transformers[-1]}"
+    metadata = []
+    connection = []
+    embeddings = []
+
+    for i in tqdm(range(data.sample_count)):
+        d = data[i]
+        embeddings.append(np.frombuffer(d[1][1], dtype=np.float32))
+        metadata.append({
+            "filename": f"{filename}.npy",
+            "index": i,
+            "set": set_name,
+            "id": i,
+            "constraint_id": i
+        })
+        connection.append({
+            "ConnectionClass": "image_descriptor",
+            "_Image@id": d[0][0]["AddImage"]["properties"]["id"],
+            "_Descriptor@id": i,
+        })
+
+    with open(f"{filename}.npy", "wb") as f:
+        np.save(f, embeddings)
+    pd.json_normalize(metadata).to_csv(
+        f"{filename}_metadata.adb.csv", index=False)
+    pd.json_normalize(connection).to_csv(
+        f"{filename}_connection.csv", index=False)
