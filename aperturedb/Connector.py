@@ -366,7 +366,7 @@ class Connector(object):
         data = query_msg.SerializeToString()
 
         # this is for session refresh attempts
-        tries = 0
+        tries = -1
         while tries < self.config.retry_max_attempts:
             try:
                 if self._send_msg(data):
@@ -406,8 +406,11 @@ class Connector(object):
                     logger.warning(f"Attribute error on process {os.getpid()}")
 
             tries += 1
-            logger.warning(
-                f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
+
+            # Do not log when trying for the first time.
+            if tries > 0:
+                logger.warning(
+                    f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
 
             if self.connected:
                 self.conn.close()
