@@ -237,6 +237,9 @@ def generate_embedding_csv_from_image_csv(
     Create a DescriptorDataCSV from an ImageDataCSV, using the specified transformer.
     Also save embeddings in a separate file, and generate the ConnectionDataCSV
     for linking the images to the descriptors.
+    The ingestion of the embeddings and the connection data is not done here.
+    image_properties transformer must be used at actual ingestion.
+    It is also applied by default for CSV generation.
     """
     data = ImageDataCSV(input_file)
     data.sample_count = len(data) if sample_count == -1 else sample_count
@@ -248,6 +251,7 @@ def generate_embedding_csv_from_image_csv(
             console.log(
                 "No transformer specified . Generating embeddings from raw images requires a transformer.")
             typer.Abort()
+        all_transformers.insert(0, "image_properties")
         data = _apply_pipeline(data, all_transformers,
                                adb_data_source=f"{os.path.basename(input_file)}")
     filename = f"{os.path.basename(input_file)}_{all_transformers[-1]}"
@@ -258,16 +262,17 @@ def generate_embedding_csv_from_image_csv(
     for i in tqdm(range(data.sample_count)):
         d = data[i]
         embeddings.append(np.frombuffer(d[1][1], dtype=np.float32))
+        descriptor_id = f"{set_name}_{os.path.basename(input_file)}_{i}"
         metadata.append({
             "filename": f"{filename}.npy",
             "index": i,
             "set": set_name,
-            "id": i,
-            "constraint_id": i
+            "id": descriptor_id,
+            "constraint_id": descriptor_id
         })
         connection.append({
             "ConnectionClass": "image_descriptor",
-            "_Image@id": d[0][0]["AddImage"]["properties"]["id"],
+            "_Image@adb_image_sha256": d[0][0]["AddImage"]["properties"]["adb_image_sha256"],
             "_Descriptor@id": i,
         })
 
@@ -276,4 +281,4 @@ def generate_embedding_csv_from_image_csv(
     pd.json_normalize(metadata).to_csv(
         f"{filename}_metadata.adb.csv", index=False)
     pd.json_normalize(connection).to_csv(
-        f"{filename}_connection.csv", index=False)
+        f"{filename}_connection.adb.csv", index=False)
