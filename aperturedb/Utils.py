@@ -1,3 +1,6 @@
+"""
+Miscellaneous utility functions for ApertureDB.
+"""
 import logging
 import json
 import os
@@ -13,6 +16,7 @@ from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Configuration import Configuration
 from aperturedb.cli.configure import ls
+from aperturedb.Query import QueryBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -480,21 +484,12 @@ class Utils(object):
         Returns:
             count: The number of entities in the database.
         """
-
-        q = [{
-            "FindEntity": {
-                "with_class": entity_class,
-                "results": {
-                    "count": True,
-                }
-            }
-        }]
-
+        params = {"results": {"count": True}}
         if constraints:
-            q[0]["FindEntity"]["constraints"] = constraints
-
-        res, _ = self.execute(q)
-        total_entities = res[0]["FindEntity"]["count"]
+            params["constraints"] = constraints
+        q = QueryBuilder.find_command(entity_class, params=params)
+        res, _ = self.execute(query=[q])
+        total_entities = res[0][list(q.keys())[0]]["count"]
 
         return total_entities
 
