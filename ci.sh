@@ -191,16 +191,6 @@ push_aws_ecr(){
     docker push 684446431133.dkr.ecr.${REGION}.amazonaws.com/${DST_IMAGE}
 }
 
-deploy_terraform(){
-    if [ "${DEPLOY_SERVER}" == "yes" ]
-    then
-        pushd "./deploy"
-        source login.sh "${BRANCH_NAME}" "${IMAGE_EXTENSION_WITH_VERSION}"
-        terraform init
-        terraform apply -auto-approve
-        popd
-    fi
-}
 if [ "${RUN_TESTS}" == "true" ] || [ "${BUILD_DEPENDENCIES}" == "true" ]
 then
     build_notebook_dependencies_image
@@ -218,11 +208,6 @@ then
     popd
 fi
 
-
-if [ "${DEPLOY_TERRAFORM}" == "true" ]
-then
-    deploy_terraform
-fi
 
 if [ "${BUILD_COMPLETE}" == "true" ]
 then
