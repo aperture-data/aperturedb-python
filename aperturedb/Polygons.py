@@ -17,7 +17,7 @@ class Polygons(Entities):
             threshold (float): The threshold for determining if two polygons are sufficiently intersecting.
 
         Returns:
-            Polygons: uniqued set of polygons that intersect with the other set of polygons.
+            Polygons: unique set of polygons that intersect with the other set of polygons.
         """
         result = set()
         for p1 in self:
