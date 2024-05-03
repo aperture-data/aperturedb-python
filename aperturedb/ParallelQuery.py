@@ -274,8 +274,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     [v['status'] == 2 for i in r for k, v in filter_per_group(i)])
                 sq = 0
                 for i in range(0, len(r), self.commands_per_query):
-                    if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
-                        sq += 1
+                    # Some errors stop the whole query from being executed
+                    # https://docs.aperturedata.io/query_language/Overview/Responses#return-status
+                    if isinstance(type(r), list):
+                        if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
+                            sq += 1
                 worker_stats["succeeded_queries"] = sq
         else:
             query_time = 1
