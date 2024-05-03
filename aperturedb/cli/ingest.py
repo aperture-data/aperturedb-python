@@ -274,7 +274,7 @@ def generate_embedding_csv_from_image_csv(
         connection.append({
             "ConnectionClass": "image_descriptor",
             "_Image@adb_image_sha256": d[0][0]["AddImage"]["properties"]["adb_image_sha256"],
-            "_Descriptor@id": i,
+            "_Descriptor@id": descriptor_id,
         })
 
     with open(f"{filename}.npy", "wb") as f:
