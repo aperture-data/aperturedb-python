@@ -2,7 +2,7 @@ version: '3'
 
 services:
   aperturedb:
-    image: aperturedata/aperturedb
+    image: aperturedata/aperturedb:vci_develop
     volumes:
       - ./aperturedb/db:/aperturedb/db
       - ./aperturedb/logs:/aperturedb/logs

@@ -154,6 +154,9 @@ class Connector(object):
             self.shared_data = shared_data
 
         self.should_authenticate = authenticate
+        # One time flag to indicate if we ever connected,
+        # to prevent logging of connection errors on first connect.
+        self._ever_connected = False
 
     def authenticate(self, shared_data, user, password, token):
         """
@@ -406,8 +409,10 @@ class Connector(object):
                     logger.warning(f"Attribute error on process {os.getpid()}")
 
             tries += 1
-            logger.warning(
-                f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
+            # Do not log when trying for the first time.
+            if self._ever_connected:
+                logger.warning(
+                    f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
 
             if self.connected:
                 self.conn.close()
@@ -415,6 +420,8 @@ class Connector(object):
 
             self.connect(
                 details=f"Will retry in {self.config.retry_interval_seconds} seconds")
+            if not self._ever_connected:
+                self._ever_connected = True
             time.sleep(self.config.retry_interval_seconds)
 
             # Try to resume the session, in cases where the connection is severed.
