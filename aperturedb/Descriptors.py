@@ -29,15 +29,13 @@ class Descriptors(Entities):
         """
         Find similar descriptor sets to the input descriptor set.
 
-        If scores and vectors are both false, the results will be a list of 
-
         Args:
             set (str): Descriptor set name.
             vector (list): Input descriptor set vector.
             k_neighbors (int): Number of neighbors to return.
             distances (bool): Return similarity metric values.
             blobs (bool): Return vectors of the neighbors.
-            results (dict): Dictionary with the results format.  
+            results (dict): Dictionary with the results format.
                 Defaults to all properties.
 
         Returns:
@@ -100,7 +98,7 @@ class Descriptors(Entities):
         Args:
             fetch_k (int): Number of neighbors to fetch from the database.
             lambda_mult (float): Lambda multiplier for the MMR algorithm.
-                Defaults to 0.5.  1.0 means no diversity.         
+                Defaults to 0.5.  1.0 means no diversity.
         """
         self.metric = self._descriptorset_metrics(set)
         vector = np.array(vector, dtype=np.float32)
