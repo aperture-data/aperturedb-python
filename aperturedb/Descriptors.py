@@ -115,7 +115,7 @@ class Descriptors(Entities):
         # Calculate similarity between all pairs of documents
         document_similarity = {}
         for i, d in enumerate(self):
-            for j, d2 in enumerate(self[i+1:], i+1):
+            for j, d2 in enumerate(self[i + 1:], i + 1):
                 similarity = self._vector_similarity(d["vector"], d2["vector"])
                 document_similarity[(i, j)] = similarity
                 document_similarity[(j, i)] = similarity
