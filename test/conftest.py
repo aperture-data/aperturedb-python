@@ -20,7 +20,7 @@ from aperturedb.Utils import Utils
 import dbinfo
 
 # These are test fixtures and can be used in any
-# pytest tests as function parmeters with same names.
+# pytest tests as function parameters with same names.
 
 
 def pytest_generate_tests(metafunc):
@@ -135,15 +135,11 @@ def insert_data_from_csv(db, request):
             loader.get_succeeded_queries() == expected_error_count
         if loader_result_lambda is not None:
             loader_result_lambda(loader, data)
-        assert len(data) - \
-            loader.get_succeeded_queries() == expected_error_count
-        if loader_result_lambda is not None:
-            loader_result_lambda(loader, data)
 
         # Preserve loader so that dask manager is not auto deleted.
         # ---------------
         # Previously, dask's cluster and client were entirely managed in a context
-        # insede dask manager. A change upstream broke that, and now we keep the DM
+        # inside dask manager. A change upstream broke that, and now we keep the DM
         # in scope just so that we can do computations after ingestion, as those
         # things are lazily evaluated.
         return data, loader
