@@ -79,7 +79,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
         Args:
             generator (_type_): The list of data, or a class derived from [Subscriptable](/python_sdk/helpers/Subscriptable) to be ingested.
-            batchsize (int, optional): The size of batch to be ussed. Defaults to 1.
+            batchsize (int, optional): The size of batch to be used. Defaults to 1.
             numthreads (int, optional): Number of workers to create. Defaults to 4.
             stats (bool, optional): If stats need to be presented, realtime. Defaults to False.
         """
