@@ -67,7 +67,8 @@ class Descriptors(Entities):
                 entity["vector"] = np.frombuffer(
                     blobs_out[i], dtype=np.float32)
 
-    def _descriptorset_metrics(self, set: str):
+    def _descriptorset_metric(self, set: str):
+        """Find default metric for descriptor set"""
         command = {"FindDescriptorSet": {"with_name": set, "metrics": True}}
         query = [command]
         response, _ = self.db_connector.query(query)
@@ -76,9 +77,11 @@ class Descriptors(Entities):
         return response[0]["FindDescriptorSet"]['entities'][0]["_metrics"][0]
 
     def _vector_similarity(self, v1, v2):
+        """Find similarity between two vectors using the metric of the descriptor set."""
         if self.metric == "CS":
             return np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
         elif self.metric == "L2":
+            # negate to turn distance into similarity
             return -np.linalg.norm(v1 - v2)
         elif self.metric == "IP":
             return np.dot(v1, v2)
@@ -96,11 +99,15 @@ class Descriptors(Entities):
         As find_similar, but using the MMR algorithm to diversify the results.
 
         Args:
+
+            set (str): Descriptor set name.
+            vector (list): Input descriptor set vector.
+            k_neighbors (int): Number of results to return.
             fetch_k (int): Number of neighbors to fetch from the database.
             lambda_mult (float): Lambda multiplier for the MMR algorithm.
                 Defaults to 0.5.  1.0 means no diversity.
         """
-        self.metric = self._descriptorset_metrics(set)
+        self.metric = self._descriptorset_metric(set)
         vector = np.array(vector, dtype=np.float32)
 
         kwargs["blobs"] = True  # force vector return
