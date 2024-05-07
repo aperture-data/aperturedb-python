@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from aperturedb.Entities import Entities
+from aperturedb.ParallelQuery import execute_batch
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +15,8 @@ class Descriptors(Entities):
 
     db_object = "_Descriptor"
 
-    def __init__(self, db, response=None):
-        super().__init__(db, response)
-        self.db_connector = db
+    def __init__(self, db):
+        super().__init__(db)
 
     def find_similar(self,
                      set: str,
@@ -54,14 +54,11 @@ class Descriptors(Entities):
             command["FindDescriptor"]["constraints"] = constraints.constraints
 
         query = [command]
-        logger.debug(query)
         blobs_in = [np.array(vector, dtype=np.float32).tobytes()]
-
-        response, blobs_out = self.db_connector.query(query, blobs_in)
-        assert self.db_connector.last_query_ok(), response
-        logger.debug(response)
+        _, response, blobs_out = execute_batch(query, blobs_in, self.db)
 
         self.response = response[0]["FindDescriptor"]["entities"]
+
         if blobs:
             for i, entity in enumerate(self.response):
                 entity["vector"] = np.frombuffer(
@@ -71,9 +68,9 @@ class Descriptors(Entities):
         """Find default metric for descriptor set"""
         command = {"FindDescriptorSet": {"with_name": set, "metrics": True}}
         query = [command]
-        response, _ = self.db_connector.query(query)
+        response, _ = self.db.query(query)
         logger.debug(response)
-        assert self.db_connector.last_query_ok(), response
+        assert self.db.last_query_ok(), response
         return response[0]["FindDescriptorSet"]['entities'][0]["_metrics"][0]
 
     def _vector_similarity(self, v1, v2):
