@@ -1,3 +1,6 @@
+"""
+Miscellaneous utility functions for ApertureDB.
+"""
 import logging
 import json
 import os
@@ -13,6 +16,7 @@ from aperturedb import ProgressBar
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Configuration import Configuration
 from aperturedb.cli.configure import ls
+from aperturedb.Query import QueryBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +216,7 @@ class Utils(object):
         r = self.get_schema()
 
         dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={
-                      'shape': 'none'}, graph_attr={'rankdir': 'LR'})
+                      'shape': 'none', 'fontcolor': '#E2E0F1'}, graph_attr={'rankdir': 'LR'}, edge_attr={'color': '#3A3B9C'})
 
         # Add entities as nodes and connections as edges
         entities = r['entities']['classes']
@@ -224,22 +228,19 @@ class Utils(object):
             properties = data["properties"]
             table = f'''<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-            <TR><TD BGCOLOR="lightgrey">{entity} ({matched:,})</TD></TR>
+            <TR><TD BGCOLOR="#2A2E78" COLSPAN="3"><B>{entity}</B> ({matched:,})</TD></TR>
             '''
             for prop, (matched, indexed, typ) in properties.items():
-                table += f'<TR><TD BGCOLOR="lightblue">{prop} ({matched:,}): {"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
+                table += f'<TR><TD BGCOLOR="#337EC0"><B>{prop.strip()}</B></TD> <TD BGCOLOR="#337EC0">{matched:,}</TD> <TD BGCOLOR="#337EC0">{"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
             for connection, data in connections.items():
                 if data['src'] == entity:
                     matched = data["matched"]
                     # dictionary from name to (matched, indexed, type)
                     properties = data["properties"]
-                    table += f'<TR><TD BGCOLOR="lightgreen"><TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">'
-                    table += f'<TR><TD PORT="{connection}">{connection} ({matched:,})</TD></TR>'
+                    table += f'<TR><TD BGCOLOR="#5956F1" COLSPAN="3" PORT="{connection}"><B>{connection}</B> ({matched:,})</TD></TR>'
                     if properties:
                         for prop, (matched, indexed, typ) in properties.items():
-                            table += f'<TR><TD>{prop} ({matched:,}): {"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
-                    table += '</TABLE></TD></TR>'
-
+                            table += f'<TR><TD BGCOLOR="#33E1FF"><B>{prop.strip()}</B></TD> <TD BGCOLOR="#33E1FF">{matched:,}</TD> <TD BGCOLOR="#33E1FF">{"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
             table += '</TABLE>>'
             dot.node(entity, label=table)
 
@@ -441,80 +442,6 @@ class Utils(object):
 
         return total_images
 
-    def get_uniqueids(self, object_type: str, constraints={}):
-        """
-        Get the uniqueids of all the objects of a given type.
-
-        Args:
-            object_type (str): The type of the objects.
-            constraints (dict, optional): The constraints to apply to the query.
-                See the [`Constraints`](../parameter_wrappers/Constraints) wrapper class for more information.
-
-        Returns:
-            ids (list of str): The uniqueids of the objects.
-        """
-        q = [{
-            "FindEntity": {
-                "with_class": object_type,
-                "batch": {},
-                "results": {
-                    "list": ["_uniqueid"],
-                }
-            }
-        }]
-
-        if constraints:
-            q[0]["FindEntity"]["constraints"] = constraints
-
-        ids = []
-
-        res, _ = self.execute(q)
-        total_elements = res[0]["FindEntity"]["batch"]["total_elements"]
-
-        batch_size = DEFAULT_METADATA_BATCH_SIZE
-        iterations = total_elements // batch_size
-        reminder = total_elements % batch_size
-
-        if iterations == 0 and reminder > 0:
-            iterations = 1
-
-        pb = ProgressBar.ProgressBar()
-
-        for i in range(iterations):
-
-            batch = {
-                "batch_size": batch_size,
-                "batch_id": i
-            }
-
-            q[0]["FindEntity"]["batch"] = batch
-
-            res, _ = self.execute(q)
-            ids += [element["_uniqueid"]
-                    for element in res[0]["FindEntity"]["entities"]]
-
-            if self.verbose:
-                pb.update(i / iterations)
-
-        if self.verbose:
-            pb.update(1)  # For the end of line
-
-        return ids
-
-    def get_images_uniqueids(self, constraints={}):
-        """
-        Get the uniqueids of all the images in the database.
-
-        Args:
-            constraints (dict, optional): The constraints to apply to the query.
-                See the [`Constraints`](../parameter_wrappers/Constraints) wrapper class for more information.
-
-        Returns:
-            ids (list of str): The uniqueids of the images.
-        """
-
-        return self.get_uniqueids("_Image", constraints)
-
     def count_bboxes(self, constraints=None) -> int:
         """
         Count the number of bounding boxes in the database.
@@ -557,21 +484,12 @@ class Utils(object):
         Returns:
             count: The number of entities in the database.
         """
-
-        q = [{
-            "FindEntity": {
-                "with_class": entity_class,
-                "results": {
-                    "count": True,
-                }
-            }
-        }]
-
+        params = {"results": {"count": True}}
         if constraints:
-            q[0]["FindEntity"]["constraints"] = constraints
-
-        res, _ = self.execute(q)
-        total_entities = res[0]["FindEntity"]["count"]
+            params["constraints"] = constraints
+        q = QueryBuilder.find_command(entity_class, params=params)
+        res, _ = self.execute(query=[q])
+        total_entities = res[0][list(q.keys())[0]]["count"]
 
         return total_entities
 

@@ -34,6 +34,7 @@ import time
 import json
 import ssl
 import logging
+from datetime import datetime, timedelta
 
 import keepalive
 
@@ -112,6 +113,10 @@ class Connector(object):
         self.last_response = ''
         self.last_query_time = 0
         self.authenticated = False
+        self.last_query_timestamp = None
+        # suppress connection warnings which occur more than this time
+        # after the last query
+        self.query_connection_error_suppression_delta = timedelta(seconds=30)
 
         if config is None:
             self.host = host
@@ -149,6 +154,9 @@ class Connector(object):
             self.shared_data = shared_data
 
         self.should_authenticate = authenticate
+        # One time flag to indicate if we ever connected,
+        # to prevent logging of connection errors on first connect.
+        self._ever_connected = False
 
     def authenticate(self, shared_data, user, password, token):
         """
@@ -215,9 +223,11 @@ class Connector(object):
 
         response, _ = self._query(query)
 
-        if not isinstance(response, (list, tuple)) or not "Authenticate" in response[0]:
+        if not isinstance(response, (list, tuple)
+                          ) or "Authenticate" not in response[0]:
             raise Exception(
-                "Unexpected response from server upon authenticate request: " + str(response))
+                "Unexpected response from server upon authenticate request: " +
+                str(response))
         session_info = response[0]["Authenticate"]
         if session_info["status"] != 0:
             raise Exception(session_info["info"])
@@ -313,7 +323,9 @@ class Connector(object):
 
         except BaseException as e:
             logger.error(
-                f"Error connecting to server: {str(e)} {self.config}", exc_info=True, stack_info=True)
+                f"Error connecting to server: {str(e)} {self.config}",
+                exc_info=True,
+                stack_info=True)
             self.conn.close()
             self.connected = False
             raise
@@ -330,7 +342,9 @@ class Connector(object):
                 self._connect()
             except socket.error as e:
                 logger.error(
-                    f"Error connecting to server: {self.config} \r\n{details}.", exc_info=True, stack_info=True)
+                    f"Error connecting to server: {self.config} \r\n{details}.",
+                    exc_info=True,
+                    stack_info=True)
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
@@ -366,6 +380,18 @@ class Connector(object):
                         response_blob_array = [b for b in querRes.blobs]
                         self.last_response = json.loads(querRes.json)
                         break
+            except ssl.SSLEOFError as ssle:
+                # this can happen when working in a notebook.
+                # we log if this isn't the first try, or if
+                # it has happened sooner than we expect a connection to be
+                # dropped.
+                now = datetime.now()
+                if tries != 0 or (self.last_query_timestamp is not None and
+                                  (now - self.last_query_timestamp) <
+                                  self.query_connection_error_suppression_delta):
+                    logger.exception(ssle)
+                    logger.warning(
+                        f"SSL connection error on process {os.getpid()}")
             except ssl.SSLError as ssle:
                 # This can happen in a scenario where multiple
                 # processes might be accessing a single connection.
@@ -383,8 +409,10 @@ class Connector(object):
                     logger.warning(f"Attribute error on process {os.getpid()}")
 
             tries += 1
-            logger.warning(
-                f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
+            # Do not log when trying for the first time.
+            if self._ever_connected:
+                logger.warning(
+                    f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
 
             if self.connected:
                 self.conn.close()
@@ -392,6 +420,8 @@ class Connector(object):
 
             self.connect(
                 details=f"Will retry in {self.config.retry_interval_seconds} seconds")
+            if not self._ever_connected:
+                self._ever_connected = True
             time.sleep(self.config.retry_interval_seconds)
 
             # Try to resume the session, in cases where the connection is severed.
@@ -443,6 +473,7 @@ class Connector(object):
                 start = time.time()
                 self.response, self.blobs = self._query(q, blobs)
             self.last_query_time = time.time() - start
+            self.last_query_timestamp = datetime.now()
             return self.response, self.blobs
         except BaseException as e:
             logger.critical("Failed to query",
@@ -457,7 +488,9 @@ class Connector(object):
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of 3] Failed to refresh token.", exc_info=True, stack_info=True)
+                    f"[Attempt {count + 1} of 3] Failed to refresh token.",
+                    exc_info=True,
+                    stack_info=True)
                 time.sleep(1)
                 count += 1
 
