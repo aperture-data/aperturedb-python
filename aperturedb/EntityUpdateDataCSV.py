@@ -25,7 +25,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
        - a series of updateif_ to determine if an update is necessary
 
        Conditionals:
-         updateif>_prop - updates if the databset value > csv value
+         updateif>_prop - updates if the database value > csv value
          updateif<_prop - updates if the database value < csv value
          updateif!_prop - updates if the database value is != csv value
 
