@@ -1,8 +1,9 @@
 import pytest
 from aperturedb.Connector import Connector
+from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.ParallelLoader import ParallelLoader
-from aperturedb.ParallelQuery import execute_batch
 import dbinfo
+import pandas as pd
 
 import logging
 logger = logging.getLogger(__name__)
@@ -55,13 +56,18 @@ class TestBadResponses():
 
             return (response, [])
         monkeypatch.setattr(Connector, "_query", test_response_half_non_unique)
+        monkeypatch.setattr(ConnectorRest, "_query",
+                            test_response_half_non_unique)
         monkeypatch.setattr(ParallelLoader, "get_existing_indices", lambda x: {
                             "entity": {"_Image": {"id"}}})
+        input_data = pd.read_csv("./input/images.adb.csv")
         data, loader = insert_data_from_csv(
-            in_csv_file = "./input/images.adb.csv")
-        assert loader.error_counter == 0
-        assert loader.get_succeeded_queries() == len(data)
-        assert loader.get_succeeded_commands() == len(data)
+            in_csv_file = "./input/images.adb.csv", expected_error_count = len(input_data))
+        assert loader.error_counter == 0, f"Error counter: {loader.error_counter=}"
+        assert loader.get_succeeded_queries(
+        ) == 0, f"Queries: {loader.get_succeeded_queries()=}"
+        assert loader.get_succeeded_commands(
+        ) == 0, f"Commands: {loader.get_succeeded_commands()=}"
 
     def test_AuthFailure(self, monkeypatch):
 

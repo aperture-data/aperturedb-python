@@ -58,18 +58,19 @@ def execute_batch(q: Commands, blobs: Blobs, db: Connector,
                 blobs_end = blobs_start + blobs_per_query
 
                 b_count = 0
-                for req, resp in zip(q[start:end], r[start:end]):
-                    for k in req:
-                        # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
-                        blobs_where_default_true = \
-                            k in ["FindImage", "FindBlob", "FindVideo"] and (
-                                "blobs" not in req[k] or req[k]["blobs"])
-                        blobs_where_default_false = \
-                            k in [
-                                "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
-                        if blobs_where_default_true or blobs_where_default_false:
-                            count = resp[k]["returned"]
-                            b_count += count
+                if issubclass(type(r), list):
+                    for req, resp in zip(q[start:end], r[start:end]):
+                        for k in req:
+                            # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
+                            blobs_where_default_true = \
+                                k in ["FindImage", "FindBlob", "FindVideo"] and (
+                                    "blobs" not in req[k] or req[k]["blobs"])
+                            blobs_where_default_false = \
+                                k in [
+                                    "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
+                            if blobs_where_default_true or blobs_where_default_false:
+                                count = resp[k]["returned"]
+                                b_count += count
 
                 try:
                     # The returned blobs need to be sliced to match the
@@ -77,7 +78,7 @@ def execute_batch(q: Commands, blobs: Blobs, db: Connector,
                     response_handler(
                         q[start:end],
                         blobs[blobs_start:blobs_end],
-                        r[start:end],
+                        r[start:end] if issubclass(type(r), list) else r,
                         b[blobs_returned:blobs_returned + b_count] if len(b) >= blobs_returned + b_count else None)
                 except BaseException as e:
                     logger.exception(e)
