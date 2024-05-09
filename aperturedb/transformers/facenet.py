@@ -35,7 +35,7 @@ def generate_embedding(img):
         # Calculate embedding (unsqueeze to add batch dimension)
         img_embedding = resnet(img_cropped.unsqueeze(0).to(device))
     else:
-        img_embedding = torch.FloatTensor(1, 512).to(device)
+        img_embedding = torch.zeros(1, 512).to(device)
         errors += 1
 
     return img_embedding
