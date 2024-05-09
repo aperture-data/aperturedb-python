@@ -218,7 +218,6 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     else:
         loader.ingest(data, batchsize=batchsize,
                       numthreads=num_workers, stats=stats)
-        console.log(loader.actual_stats)
 
 
 @app.command()
