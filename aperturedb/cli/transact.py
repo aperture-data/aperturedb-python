@@ -19,7 +19,6 @@ app = typer.Typer()
 class OutputTypes(str, Enum):
     STDOUT = "stdout"
     MOUNT_COCO = "mount_coco"
-    SERVE_LS = "serve_ls"
 
 
 def dump_to_stdout(db: Connector, transaction: dict, **kwargs):
@@ -67,8 +66,7 @@ def from_json_file(
 
     output_types = {
         OutputTypes.STDOUT: dump_to_stdout,
-        OutputTypes.MOUNT_COCO: mount_as_coco_ds,
-        OutputTypes.SERVE_LS: None
+        OutputTypes.MOUNT_COCO: mount_as_coco_ds
     }
 
     with open(filepath) as inputstream:

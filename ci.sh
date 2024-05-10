@@ -1,45 +1,6 @@
 set -e
 
-source $(dirname "$0")/version.sh
-
-check_for_changed_docker_files() {
-  echo "Checking for changed docker files..."
-
-  # Get files changed on merge
-  git fetch origin ${BRANCH_NAME}
-  git fetch origin ${TARGET_BRANCH_NAME}
-  git fetch origin ${TARGET_BRANCH_NAME}:refs/remotes/origin/${TARGET_BRANCH_NAME}
-  FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only | { grep 'Dockerfile' || true; })
-
-  echo "Files Changed: " ${FILES_CHANGED}
-  if [ -z "$FILES_CHANGED" ]
-  then
-    echo "No Dockerfile changes."
-    ANY_FILES_CHANGED=$(git diff origin/${TARGET_BRANCH_NAME} origin/${BRANCH_NAME} --name-only || true )
-    if [ -z "$ANY_FILES_CHANGED" ]; then
-        echo "No files changed?"
-        # no files changed is probably an error: print branches.
-        echo "${BRANCH_NAME}:"
-        git branch -a --list *${BRANCH_NAME}*
-        echo "${TARGET_BRANCH_NAME}:"
-        git branch -a --list *${TARGET_BRANCH_NAME}*
-        echo "All branches"
-        git branch -a | grep -v release
-    fi
-    return
-  fi
-
-  for file in $FILES_CHANGED; do
-
-    # Check if dependencies image changed
-    if [ $file == 'docker/dependencies/Dockerfile' ]
-    then
-      DEPENDENCIES_DOCKER_IMAGE_CHANGED=1
-      echo "Dependencies image changed"
-    fi
-  done
-  echo "Checking for changed docker files...done"
-}
+source $(dirname "${0}")/version.sh
 
 # Check and updates version based on release branch name
 update_version() {
@@ -75,13 +36,8 @@ update_version() {
     git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
     git add ./aperturedb/__init__.py
     git commit -m "Version bump: ${BUILD_VERSION} to ${VERSION_BUMP}"
-    git push --set-upstream origin $BRANCH_NAME
-    BUILD_VERSION=$VERSION_BUMP
-}
-
-install_prerequisites() {
-    sudo apt-get update
-    sudo apt-get install -y vim awscli
+    git push --set-upstream origin ${BRANCH_NAME}
+    BUILD_VERSION=${VERSION_BUMP}
 }
 
 # Fetch branch
@@ -96,17 +52,8 @@ then
     COMMIT_HASH=$(git rev-parse HEAD)
 fi
 
-# Fetch branch
-if [ -z ${TARGET_BRANCH_NAME+x} ]
-then
-    TARGET_BRANCH_NAME=$BRANCH_NAME
-fi
-
-#Install pre requisites
-install_prerequisites
-
-echo "Branch: $BRANCH_NAME"
-if [ -z "$BRANCH_NAME" ]
+echo "Branch: ${BRANCH_NAME}"
+if [ -z "${BRANCH_NAME}" ]
 then
     echo "This is on a merge branch. Will not continue"
     exit 0
@@ -246,15 +193,8 @@ push_aws_ecr(){
 
 if [ "${RUN_TESTS}" == "true" ] || [ "${BUILD_DEPENDENCIES}" == "true" ]
 then
-    check_for_changed_docker_files
-    echo "DEPENDENCIES_DOCKER_IMAGE_CHANGED=$DEPENDENCIES_DOCKER_IMAGE_CHANGED"
-    # Dependecies
-    # TODO : Conditionally build.
-    # Check if there is base image change
-    if [ "$DEPENDENCIES_DOCKER_IMAGE_CHANGED" == 1 ]
-    then
-        build_notebook_dependencies_image
-    fi
+    build_notebook_dependencies_image
+fi
 
 if [ "${RUN_TESTS}" == "true" ]
 then

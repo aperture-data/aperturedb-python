@@ -193,10 +193,10 @@ class Images(Entities):
 
         self.db_connector = db
 
-        self.images          = {}
-        self.images_ids      = []
-        self.image_sizes     = []
-        self.images_bboxes   = {}
+        self.images = {}
+        self.images_ids = []
+        self.image_sizes = []
+        self.images_bboxes = {}
         self.images_polygons = {}
         self.overlays = []
         self.color_for_tag = {}
