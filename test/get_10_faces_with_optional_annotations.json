@@ -15,7 +15,7 @@
         "blobs": false,
         "constraints": {
             "any": {
-                "yfcc_id": ["!=", null]
+                "Bald": ["==", null]
             }
         },
         "results" : {

@@ -2,7 +2,7 @@
     { "FindImage" : {
         "blobs": false,
         "constraints": {
-            "Bald": ["!=", null]
+            "Bald": ["==", null]
         },
         "results" : {
             "list": ["_uniqueid"],
