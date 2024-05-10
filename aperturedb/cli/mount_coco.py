@@ -63,19 +63,12 @@ def generate_coco_meta_data(images: Images):
     meta_annotations = []
 
     for ind, image_id in tqdm(enumerate(images.images_ids)):
-        if image_id in images.images_polygons and image_id in images.images_bboxes:
-
-            boxes_segments = zip(images.images_bboxes[image_id]['bboxes'],
-                                 images.images_polygons[image_id]['polygons'])
-            for bidx, (box, seg) in enumerate(boxes_segments):
-
-                # for bidx, box in enumerate(images.images_bboxes[image_id]['bboxes']):
+        if image_id in images.images_bboxes:
+            for bidx, box in enumerate(images.images_bboxes[image_id]['bboxes']):
                 annotation = {
-                    "id": 2 * bidx + 1,
+                    "id": 2 * bidx,
                     "image_id": image_id,
                     "category_id": 1,
-                    "segmentation": [[x for coords in seg[0] for x in coords]],
-                    "tags": [k for k in properties[image_id] if properties[image_id][k] == 1],
                     "bbox": [
                         int(box[0][0]),
                         int(box[0][1]),
@@ -85,6 +78,33 @@ def generate_coco_meta_data(images: Images):
                 }
                 meta_annotations.append(annotation)
                 label = images.images_bboxes[image_id]['tags'][bidx]
+                if label not in categories:
+                    categories.append(label)
+
+                # Figure the category id (offset by 1 for the unknown category)
+                annotation["category_id"] = categories.index(label) + 3
+
+        if image_id in images.images_polygons:
+            for bidx, seg in enumerate(images.images_polygons[image_id]['polygons']):
+                xs = [x for coords in seg[0]
+                      for i, x in enumerate(coords) if i % 2 == 0]
+                ys = [y for coords in seg[0]
+                      for i, y in enumerate(coords) if i % 2 == 1]
+                annotation = {
+                    "id": 2 * bidx + 1,
+                    "image_id": image_id,
+                    "category_id": 1,
+                    "segmentation": [[x for coords in seg[0] for x in coords]],
+                    "tags": [k for k in properties[image_id] if properties[image_id][k] == 1],
+                    "bbox": [
+                        int(min(xs)),
+                        int(min(ys)),
+                        int(max(xs) - min(xs)),
+                        int(max(ys) - min(ys))
+                    ]
+                }
+                meta_annotations.append(annotation)
+                label = images.images_polygons[image_id]['tags'][bidx]
                 if label not in categories:
                     categories.append(label)
 
@@ -158,27 +178,30 @@ class ADFS(Fuse):
                 raise
 
         self.meta_data, self.properties = generate_coco_meta_data(images)
-
         logger.info(f"Meta data generated with length = {len(self.meta_data)}")
 
     def getattr(self, path):
+        logger.info(f"getattr: {path=}")
         st = ADStat()
-        logger.info(f"getattr: {path}")
         if path == '/':
             st.st_mode = stat.S_IFDIR | 0o755
             st.st_nlink = 2
         elif path == f"/data":
             st.st_mode = stat.S_IFDIR | 0o755
             st.st_nlink = 2
+        elif path == f"/{meta_info}":
+            st.st_mode = stat.S_IFREG | 0o444
+            st.st_nlink = 1
+            st.st_size = len(self.meta_data)
         else:
-            logger.info(f"stats = {self.stats}")
             st.st_mode = stat.S_IFREG | 0o444
             st.st_nlink = 1
             st.st_size = self.stats[path]
+        logger.info(
+            f"getattr: {path=}, {st.st_mode=}, {st.st_nlink=}, {st.st_size=}")
         return st
 
     def readdir(self, path, offset):
-        logger.debug(f"{path}")
         if path == '/':
             direntries = [
                 ('.', 0),
@@ -193,21 +216,22 @@ class ADFS(Fuse):
                              self.properties[iid]["adb_image_size"]))
 
             direntries = [('.', 4096), ('..', 4096)] + [f for f in filegen]
-        print(direntries)
-        logger.info(f"{direntries}")
+
+        logger.info(f"readdir: {path=}, {len(direntries)=}")
         for r in direntries:
             self.stats[os.path.join(path, r[0])] = r[1]
             yield fuse.Direntry(r[0])
 
     def open(self, path, flags):
+        logger.info(f"path = {path}, flags = {flags}")
         accmode = os.O_RDONLY | os.O_WRONLY | os.O_RDWR
         if (flags & accmode) != os.O_RDONLY:
             return -errno.EACCES
 
     def read(self, path, size, offset):
-        logger.debug(f"path = {path}, size = {size}, offset = {offset}")
+        logger.info(f"path = {path}, size = {size}, offset = {offset}")
         filename = os.path.basename(path)
-        logger.debug(f"Filename = {filename}")
+        logger.info(f"Filename = {filename}")
         if filename == meta_info:
             try:
                 img = self.meta_data
