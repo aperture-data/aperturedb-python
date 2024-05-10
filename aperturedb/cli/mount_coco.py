@@ -63,31 +63,33 @@ def generate_coco_meta_data(images: Images):
     meta_annotations = []
 
     for ind, image_id in tqdm(enumerate(images.images_ids)):
-        boxes_segments = zip(images.images_bboxes[image_id]['bboxes'],
-                             images.images_polygons[image_id]['polygons'])
-        for bidx, (box, seg) in enumerate(boxes_segments):
+        if image_id in images.images_polygons and image_id in images.images_bboxes:
 
-            # for bidx, box in enumerate(images.images_bboxes[image_id]['bboxes']):
-            annotation = {
-                "id": 2 * bidx + 1,
-                "image_id": image_id,
-                "category_id": 1,
-                "segmentation": [[x for coords in seg[0] for x in coords]],
-                "tags": [k for k in properties[image_id] if properties[image_id][k] == 1],
-                "bbox": [
-                    box['x'],
-                    box['y'],
-                    box['width'],
-                    box['height']
-                ]
-            }
-            meta_annotations.append(annotation)
-            label = images.images_bboxes[image_id]['tags'][bidx]
-            if label not in categories:
-                categories.append(label)
+            boxes_segments = zip(images.images_bboxes[image_id]['bboxes'],
+                                 images.images_polygons[image_id]['polygons'])
+            for bidx, (box, seg) in enumerate(boxes_segments):
 
-            # Figure the category id (offset by 1 for the unknown category)
-            annotation["category_id"] = categories.index(label) + 3
+                # for bidx, box in enumerate(images.images_bboxes[image_id]['bboxes']):
+                annotation = {
+                    "id": 2 * bidx + 1,
+                    "image_id": image_id,
+                    "category_id": 1,
+                    "segmentation": [[x for coords in seg[0] for x in coords]],
+                    "tags": [k for k in properties[image_id] if properties[image_id][k] == 1],
+                    "bbox": [
+                        int(box[0][0]),
+                        int(box[0][1]),
+                        int(box[1][0] - box[0][0]),
+                        int(box[2][1] - box[0][1])
+                    ]
+                }
+                meta_annotations.append(annotation)
+                label = images.images_bboxes[image_id]['tags'][bidx]
+                if label not in categories:
+                    categories.append(label)
+
+                # Figure the category id (offset by 1 for the unknown category)
+                annotation["category_id"] = categories.index(label) + 3
 
         # Add attached keypoints. This is very DS specific, till we figure out
         # how to make this generic

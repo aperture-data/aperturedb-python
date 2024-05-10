@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from aperturedb import Utils
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
+from aperturedb.ParallelQuery import execute_batch
 from ipywidgets import widgets
 from IPython.display import display, HTML
 import base64
@@ -222,7 +223,7 @@ class Images(Entities):
 
         # Blobs can be passed in addition the response.
         # This would mean that the images are already retrieved.
-        # This is useful for usage of the class dor it's utility methods.
+        # This is useful for usage of the class for it's utility methods.
         if "blobs" in kwargs:
             blobs = kwargs["blobs"]
             for i, id in enumerate(self.images_ids):
@@ -330,37 +331,39 @@ class Images(Entities):
                 fpq_res["list"].append(key)
 
         try:
-            res, _ = self.db_connector.query(query)
+            result, res, _ = execute_batch(
+                db=self.db_connector, q=query, blobs=[])
 
             polygons = []
             bounds = []
             tags = []
             meta = []
-            polys = res[1]["FindPolygon"]["entities"]
-            operations = self.query["operations"] if self.query and "operations" in self.query else [
-            ]
-            for poly in polys:
-                if tag_key and tag_format:
-                    tag = tag_format.format(poly[tag_key])
-                    tags.append(tag)
-                    meta.append(res[0]["FindImage"]["entities"][0])
+            if "entities" in res[1]["FindPolygon"]:
+                polys = res[1]["FindPolygon"]["entities"]
+                operations = self.query["operations"] if self.query and "operations" in self.query else [
+                ]
+                for poly in polys:
+                    if tag_key and tag_format:
+                        tag = tag_format.format(poly[tag_key])
+                        tags.append(tag)
+                        meta.append(res[0]["FindImage"]["entities"][0])
 
-                bounds.append(poly["_bounds"])
-                converted = []
-                for vert in poly["_vertices"]:
-                    v = resolve(
-                        np.array(vert),
-                        res[0]["FindImage"]["entities"][0],
-                        operations)
-                    converted.append(v)
-                polygons.append(converted)
+                    bounds.append(poly["_bounds"])
+                    converted = []
+                    for vert in poly["_vertices"]:
+                        v = resolve(
+                            np.array(vert),
+                            res[0]["FindImage"]["entities"][0],
+                            operations)
+                        converted.append(v)
+                    polygons.append(converted)
 
-            self.images_polygons[str(uniqueid)] = {
-                "bounds": bounds,
-                "polygons": polygons,
-                "tags": tags,
-                "meta": meta
-            }
+                self.images_polygons[str(uniqueid)] = {
+                    "bounds": bounds,
+                    "polygons": polygons,
+                    "tags": tags,
+                    "meta": meta
+                }
 
         except Exception as e:
             self.images_polygons[str(uniqueid)] = {
@@ -421,7 +424,8 @@ class Images(Entities):
         uniqueid_str = str(uniqueid)
         self.images_bboxes[uniqueid_str] = {}
         try:
-            res, images = self.db_connector.query(query)
+            result, res, images = execute_batch(
+                db=self.db_connector, q=query, blobs=[])
             bboxes = []
             tags = []
             meta = []
