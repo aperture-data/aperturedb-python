@@ -185,14 +185,23 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     values["image_ref"] = updates[values["image_ref"]]
                 if "video_ref" in values:
                     values["video_ref"] = updates[values["video_ref"]]
-                if "is_connected_to" in values and "_ref" in values["is_connected_to"]:
-                    values["is_connected_to"]["_ref"] = updates[values["is_connected_to"]["_ref"]]
+                if "is_connected_to" in values:
+                    if "ref" in values["is_connected_to"]:
+                        values["is_connected_to"]["ref"] = updates[values["is_connected_to"]["ref"]]
+                    for op in ["any","all"]:
+                        if op in values["is_connected_to"]:
+                            for idx in  range(len(values["is_connected_to"][op])):
+                                if "ref" in values["is_connected_to"][op][idx]:
+                                    values["is_connected_to"][op][idx]["ref"] = updates[values["is_connected_to"][op][idx]["ref"]]
                 if "connect" in values and "ref" in values["connect"]:
                     values["connect"]["ref"] = updates[values["connect"]["ref"]]
                 if "src" in values:
                     values["src"] = updates[values["src"]]
                 if "dst" in values:
                     values["dst"] = updates[values["dst"]]
+                if "ref" in values:
+                    values["ref"] = updates[values["ref"]]
+
             return batched_commands
 
         q = update_refs([cmd for query in data for cmd in query[0]])
