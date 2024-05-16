@@ -61,6 +61,9 @@ class CocoDataPyTorch(PyTorchData):
                 "AddEntity": {
                     "_ref": 1,
                     "class": "SuperCategory",
+                    "if_not_found": {
+                        "name": ["==", category_info["supercategory"]]
+                    },
                     "properties": {
                         "name": category_info["supercategory"]
                     }
@@ -84,10 +87,9 @@ class CocoDataPyTorch(PyTorchData):
                 })
 
             if "segmentation" in meta_info:
-                segmentation = meta_info["segmentation"]
                 # Convert RLE to polygons in adb
                 # https://github.com/cocodataset/cocoapi/issues/476
-                m = mask.decode(segmentation)
+                m = self.coco_detection.coco.annToMask(meta_info)
                 polygons = polygonFromMask(m)
                 adb_polygons = []
                 for polygon in polygons:
