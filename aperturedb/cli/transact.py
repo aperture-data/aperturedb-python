@@ -7,11 +7,22 @@ import typer
 from typing_extensions import Annotated
 
 from aperturedb.cli.console import console
-from aperturedb.cli.mount_coco import mount_images_from_aperturedb
+
 from aperturedb.Connector import Connector
 from aperturedb.Images import Images
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Utils import create_connector
+import logging
+
+logger = logging.getLogger(__file__)
+
+FUSE_AVAIALBLE = False
+try:
+    from aperturedb.cli.mount_coco import mount_images_from_aperturedb
+    FUSE_AVAIALBLE = True
+except ImportError as e:
+    logger.warning(
+        "fuse not found for this env. This is not critical for adb to continue.")
 
 app = typer.Typer()
 
@@ -67,9 +78,10 @@ def from_json_file(
     db = create_connector()
 
     output_types = {
-        OutputTypes.STDOUT: dump_to_stdout,
-        OutputTypes.MOUNT_COCO: mount_as_coco_ds
+        OutputTypes.STDOUT: dump_to_stdout
     }
+    if FUSE_AVAIALBLE:
+        output_types[OutputTypes.MOUNT_COCO] = mount_as_coco_ds
 
     with open(filepath) as inputstream:
         transaction = json.loads(inputstream.read())
