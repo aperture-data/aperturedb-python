@@ -261,7 +261,7 @@ class ADFS(Fuse):
         return buf
 
 
-def mount_images_from_aperturdb(images: Images):
+def mount_images_from_aperturedb(images: Images):
     server = ADFS(
         version="%prog " + fuse.__version__,
         usage=fuse.Fuse.fusage,

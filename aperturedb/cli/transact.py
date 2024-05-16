@@ -7,7 +7,7 @@ import typer
 from typing_extensions import Annotated
 
 from aperturedb.cli.console import console
-from aperturedb.cli.mount_coco import mount_images_from_aperturdb
+from aperturedb.cli.mount_coco import mount_images_from_aperturedb
 from aperturedb.Connector import Connector
 from aperturedb.Images import Images
 from aperturedb.ParallelQuery import execute_batch
@@ -39,15 +39,17 @@ def mount_as_coco_ds(db: Connector, transaction: dict, **kwargs):
         blobs=[])
     if result == 0:
         image_entities = []
-        for cr in response:
+        for i, cr in enumerate(response):
             if "FindImage" in cr:
-                image_entities.extend(cr["FindImage"]["entities"])
+                if "entities" in cr["FindImage"]:
+                    image_entities.extend(cr["FindImage"]["entities"])
+                else:
+                    console.log(f"No entities found in FindImage {i} response")
         try:
 
             images = Images(db, response=image_entities)
-            # import  pdb; pdb.set_trace()
             console.log(f"Found {len(images)} images")
-            mount_images_from_aperturdb(images)
+            mount_images_from_aperturedb(images)
         except Exception as e:
             console.log(traceback.format_exc())
     else:
