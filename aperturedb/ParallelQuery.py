@@ -188,9 +188,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 if "is_connected_to" in values:
                     if "ref" in values["is_connected_to"]:
                         values["is_connected_to"]["ref"] = updates[values["is_connected_to"]["ref"]]
-                    for op in ["any","all"]:
+                    for op in ["any", "all"]:
                         if op in values["is_connected_to"]:
-                            for idx in  range(len(values["is_connected_to"][op])):
+                            for idx in range(len(values["is_connected_to"][op])):
                                 if "ref" in values["is_connected_to"][op][idx]:
                                     values["is_connected_to"][op][idx]["ref"] = updates[values["is_connected_to"][op][idx]["ref"]]
                 if "connect" in values and "ref" in values["connect"]:
