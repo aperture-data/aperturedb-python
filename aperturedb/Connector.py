@@ -182,6 +182,11 @@ class Connector(object):
             self.connected = False
 
     def _send_msg(self, data):
+        # aperturedb's param ADB_MAX_CONNECTION_MESSAGE_SIZE_MB = 256 by default
+        if len(data) > (256 * 2**20):
+            logger.warning(
+                "Message sent is larger than default for ApertureDB Server. Server may disconnect.")
+
         sent_len = struct.pack('@I', len(data))  # send size first
         x = self.conn.send(sent_len + data)
         return x == len(data) + 4
