@@ -279,42 +279,23 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
             blob_strike_list = list(map(lambda q: q is None, queries))
 
             # filter out struck blobs
-            used_blobs = filter(lambda b: b is not None,
-                                blob_filter(blob_set, blob_strike_list, i))
+            used_blobs = list(filter(lambda b: b is not None,
+                                blob_filter(blob_set, blob_strike_list, i)))
 
             if len(executable_queries) > 0:
                 result_code, db_results, db_blobs = base_executor(executable_queries, used_blobs,
                                                                   db, local_success_statuses,
                                                                   None, commands_per_query[i], blobs_per_query[i], strict_response_validation=strict_response_validation)
                 if response_handler != None and db.last_query_ok():
-                    blobs_returned = 0
-                    for ii in range(math.ceil(len(executable_queries) / commands_per_query[i])):
-                        start = ii * commands_per_query[i]
-                        end = start + commands_per_query[i]
-                        blobs_start = ii * blobs_per_query[i]
-                        blobs_end = blobs_start + blobs_per_query[i]
-                        b_count = 0
-                        if issubclass(type(db_results), list):
-                            for req, resp in zip(executable_queries[start:end], db_results[start:end]):
-                                for k in req:
-                                    # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
-                                    blobs_where_default_true = \
-                                        k in ["FindImage", "FindBlob", "FindVideo"] and (
-                                            "blobs" not in req[k] or req[k]["blobs"])
-                                    blobs_where_default_false = \
-                                        k in [
-                                            "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
-                                    if blobs_where_default_true or blobs_where_default_false:
-                                        count = resp[k]["returned"]
-                                        b_count += count
-                        response_handler(
-                            i,
-                            executable_queries[start:end],
-                            used_blobs,
-                            db_results[start:end] if issubclass(type(db_results), list) else db_results,
-                            db_blobs[blobs_returned:blobs_returned + b_count] if
-                            len(db_blobs) >= blobs_returned + b_count else None)
-                        blobs_returned += b_count
+                    def map_to_set( query, query_blobs, resp,resp_blobs ):
+                        response_handler(i,query,query_blobs,resp,resp_blobs)
+                    try:
+                        ParallelQuery.map_response_to_handler( map_to_set,
+                                executable_queries,used_blobs,db_results,db_blobs,commands_per_query[i],blobs_per_query[i])
+                    except BaseException as e:
+                        logger.exception(e)
+                        if strict_response_validation:
+                            raise e
             else:
                 logger.info(
                     f"Skipped executing set {i}, no executable queries")

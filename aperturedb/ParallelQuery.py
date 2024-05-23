@@ -46,45 +46,16 @@ def execute_batch(q: Commands, blobs: Blobs, db: Connector,
     r, b = db.query(q, blobs)
     logger.debug(f"Response={r}")
 
+
     if db.last_query_ok():
         if response_handler is not None:
-            # We could potentially always call this handler function
-            # and let the user deal with the error cases.
-            blobs_returned = 0
-            for i in range(math.ceil(len(q) / commands_per_query)):
-                start = i * commands_per_query
-                end = start + commands_per_query
-                blobs_start = i * blobs_per_query
-                blobs_end = blobs_start + blobs_per_query
-
-                b_count = 0
-                if issubclass(type(r), list):
-                    for req, resp in zip(q[start:end], r[start:end]):
-                        for k in req:
-                            # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
-                            blobs_where_default_true = \
-                                k in ["FindImage", "FindBlob", "FindVideo"] and (
-                                    "blobs" not in req[k] or req[k]["blobs"])
-                            blobs_where_default_false = \
-                                k in [
-                                    "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
-                            if blobs_where_default_true or blobs_where_default_false:
-                                count = resp[k]["returned"]
-                                b_count += count
-
                 try:
-                    # The returned blobs need to be sliced to match the
-                    # returned entities per command in query.
-                    response_handler(
-                        q[start:end],
-                        blobs[blobs_start:blobs_end],
-                        r[start:end] if issubclass(type(r), list) else r,
-                        b[blobs_returned:blobs_returned + b_count] if len(b) >= blobs_returned + b_count else None)
+                    ParallelQuery.map_response_to_handler( response_handler,
+                            q,blobs,r,b,commands_per_query,blobs_per_query)
                 except BaseException as e:
                     logger.exception(e)
                     if strict_response_validation:
                         raise e
-                blobs_returned += b_count
     else:
         # Transaction failed entirely.
         logger.error(f"Failed query = {q} with response = {r}")
@@ -139,6 +110,43 @@ class ParallelQuery(Parallelizer.Parallelizer):
     @classmethod
     def getSuccessStatus(cls):
         return cls.success_statuses
+
+    @classmethod
+    def map_response_to_handler(cls, handler, query, query_blobs,  response, response_blobs,
+            commands_per_query, blobs_per_query ):
+            # We could potentially always call this handler function
+            # and let the user deal with the error cases.
+            blobs_returned = 0
+            for i in range(math.ceil(len(query) / commands_per_query)):
+                start = i * commands_per_query
+                end = start + commands_per_query
+                blobs_start = i * blobs_per_query
+                blobs_end = blobs_start + blobs_per_query
+
+                b_count = 0
+                if issubclass(type(response), list):
+                    for req, resp in zip(query[start:end], response[start:end]):
+                        for k in req:
+                            # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
+                            blobs_where_default_true = \
+                                k in ["FindImage", "FindBlob", "FindVideo"] and (
+                                    "blobs" not in req[k] or req[k]["blobs"])
+                            blobs_where_default_false = \
+                                k in [
+                                    "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
+                            if blobs_where_default_true or blobs_where_default_false:
+                                count = resp[k]["returned"]
+                                b_count += count
+
+                # The returned blobs need to be sliced to match the
+                # returned entities per command in query.
+                handler(
+                    query[start:end],
+                    query_blobs[blobs_start:blobs_end],
+                    response[start:end] if issubclass(type(response), list) else response,
+                    response_blobs[blobs_returned:blobs_returned + b_count] if
+                        len(response_blobs) >= blobs_returned + b_count else None)
+                blobs_returned += b_count
 
     def __init__(self, db: Connector, dry_run: bool = False):
 
