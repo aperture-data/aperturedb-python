@@ -280,18 +280,19 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
 
             # filter out struck blobs
             used_blobs = list(filter(lambda b: b is not None,
-                                blob_filter(blob_set, blob_strike_list, i)))
+                                     blob_filter(blob_set, blob_strike_list, i)))
 
             if len(executable_queries) > 0:
                 result_code, db_results, db_blobs = base_executor(executable_queries, used_blobs,
                                                                   db, local_success_statuses,
                                                                   None, commands_per_query[i], blobs_per_query[i], strict_response_validation=strict_response_validation)
                 if response_handler != None and db.last_query_ok():
-                    def map_to_set( query, query_blobs, resp,resp_blobs ):
-                        response_handler(i,query,query_blobs,resp,resp_blobs)
+                    def map_to_set(query, query_blobs, resp, resp_blobs):
+                        response_handler(
+                            i, query, query_blobs, resp, resp_blobs)
                     try:
-                        ParallelQuery.map_response_to_handler( map_to_set,
-                                executable_queries,used_blobs,db_results,db_blobs,commands_per_query[i],blobs_per_query[i])
+                        ParallelQuery.map_response_to_handler(map_to_set,
+                                                              executable_queries, used_blobs, db_results, db_blobs, commands_per_query[i], blobs_per_query[i])
                     except BaseException as e:
                         logger.exception(e)
                         if strict_response_validation:
