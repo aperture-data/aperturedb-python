@@ -126,14 +126,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if issubclass(type(response), list):
                 for req, resp in zip(query[start:end], response[start:end]):
                     for k in req:
-                        # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
-                        blobs_where_default_true = \
-                            k in ["FindImage", "FindBlob", "FindVideo"] and (
-                                "blobs" not in req[k] or req[k]["blobs"])
-                        blobs_where_default_false = \
-                            k in [
-                                "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
-                        if blobs_where_default_true or blobs_where_default_false:
+                        blob_returning_commands = ["FindImage", "FindBlob", "FindVideo",\
+                                "FindDescriptor", "FindBoundingBox"]
+                        if k in blob_returning_commands and "blobs" in req[k] and req[k]["blobs"]:
                             count = resp[k]["returned"]
                             b_count += count
 
