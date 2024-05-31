@@ -95,7 +95,7 @@ class QGImages(QGPersons):
         for i in range(self.cpq):
             q = {
                 "FindImage": {
-                    "blobs":True
+                    "blobs": True
                 }
             }
             query.append(q)
