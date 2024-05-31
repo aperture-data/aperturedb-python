@@ -22,7 +22,7 @@ dependencies = [
     'scikit-image', 'image', 'requests', 'boto3',
     'numpy', 'matplotlib', 'pandas', 'kaggle', 'google-cloud-storage',
     'ipython', 'dask[complete]', 'ipywidgets', 'pydantic', 'devtools', 'typer[all]',
-    "opencv-python",
+    "opencv-python-headless",
     # Pinning this to be able to install google-cloud-bigquery
     'grpcio-status==1.48.2',
     # Pinning this to resolve test errors temporarily
