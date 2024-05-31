@@ -17,14 +17,19 @@ import logging
 logger = logging.getLogger(__file__)
 
 FUSE_AVAIALBLE = False
-try:
-    from aperturedb.cli.mount_coco import mount_images_from_aperturedb
-    FUSE_AVAIALBLE = True
-except ImportError as e:
-    logger.warning(
-        "fuse not found for this env. This is not critical for adb to continue.")
 
-app = typer.Typer()
+
+def load_fuse():
+    global FUSE_AVAIALBLE
+    try:
+        from aperturedb.cli.mount_coco import mount_images_from_aperturedb
+        FUSE_AVAIALBLE = True
+    except ImportError as e:
+        logger.warning(
+            "fuse not found for this env. This is not critical for adb to continue.")
+
+
+app = typer.Typer(callback=load_fuse)
 
 
 class OutputTypes(str, Enum):
@@ -57,7 +62,7 @@ def mount_as_coco_ds(db: Connector, transaction: dict, **kwargs):
                 else:
                     console.log(f"No entities found in FindImage {i} response")
         try:
-
+            from aperturedb.cli.mount_coco import mount_images_from_aperturedb
             images = Images(db, response=image_entities)
             console.log(f"Found {len(images)} images")
             mount_images_from_aperturedb(images)
@@ -80,6 +85,7 @@ def from_json_file(
     output_types = {
         OutputTypes.STDOUT: dump_to_stdout
     }
+    global FUSE_AVAIALBLE
     if FUSE_AVAIALBLE:
         output_types[OutputTypes.MOUNT_COCO] = mount_as_coco_ds
 
