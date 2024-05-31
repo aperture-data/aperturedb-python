@@ -258,10 +258,15 @@ def generate_embedding_csv_from_image_csv(
     metadata = []
     connection = []
     embeddings = []
+    errored = []
 
     for i in tqdm(range(data.sample_count)):
         d = data[i]
-        embeddings.append(np.frombuffer(d[1][1], dtype=np.float32))
+        nparr = np.frombuffer(d[1][1], dtype=np.float32)
+        if not nparr.any():
+            errored.append(d[0][0]["AddImage"]["properties"])
+
+        embeddings.append(nparr)
         descriptor_id = f"{set_name}_{os.path.basename(input_file)}_{i}"
         metadata.append({
             "filename": f"{filename}.npy",
@@ -282,3 +287,6 @@ def generate_embedding_csv_from_image_csv(
         f"{filename}_metadata.adb.csv", index=False)
     pd.json_normalize(connection).to_csv(
         f"{filename}_connection.adb.csv", index=False)
+    if(len(errored) > 0):
+        pd.json_normalize(errored).to_csv(
+            f"{filename}_errored.csv", index=False)

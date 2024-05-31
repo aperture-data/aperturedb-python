@@ -58,18 +58,19 @@ def execute_batch(q: Commands, blobs: Blobs, db: Connector,
                 blobs_end = blobs_start + blobs_per_query
 
                 b_count = 0
-                for req, resp in zip(q[start:end], r[start:end]):
-                    for k in req:
-                        # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
-                        blobs_where_default_true = \
-                            k in ["FindImage", "FindBlob", "FindVideo"] and (
-                                "blobs" not in req[k] or req[k]["blobs"])
-                        blobs_where_default_false = \
-                            k in [
-                                "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
-                        if blobs_where_default_true or blobs_where_default_false:
-                            count = resp[k]["returned"]
-                            b_count += count
+                if issubclass(type(r), list):
+                    for req, resp in zip(q[start:end], r[start:end]):
+                        for k in req:
+                            # Ref to https://docs.aperturedata.io/query_language/Reference/shared_command_parameters/blobs
+                            blobs_where_default_true = \
+                                k in ["FindImage", "FindBlob", "FindVideo"] and (
+                                    "blobs" not in req[k] or req[k]["blobs"])
+                            blobs_where_default_false = \
+                                k in [
+                                    "FindDescriptor", "FindBoundingBox"] and "blobs" in req[k] and req[k]["blobs"]
+                            if blobs_where_default_true or blobs_where_default_false:
+                                count = resp[k]["returned"]
+                                b_count += count
 
                 try:
                     # The returned blobs need to be sliced to match the
@@ -77,7 +78,7 @@ def execute_batch(q: Commands, blobs: Blobs, db: Connector,
                     response_handler(
                         q[start:end],
                         blobs[blobs_start:blobs_end],
-                        r[start:end],
+                        r[start:end] if issubclass(type(r), list) else r,
                         b[blobs_returned:blobs_returned + b_count] if len(b) >= blobs_returned + b_count else None)
                 except BaseException as e:
                     logger.exception(e)
@@ -184,14 +185,23 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     values["image_ref"] = updates[values["image_ref"]]
                 if "video_ref" in values:
                     values["video_ref"] = updates[values["video_ref"]]
-                if "is_connected_to" in values and "_ref" in values["is_connected_to"]:
-                    values["is_connected_to"]["_ref"] = updates[values["is_connected_to"]["_ref"]]
+                if "is_connected_to" in values:
+                    if "ref" in values["is_connected_to"]:
+                        values["is_connected_to"]["ref"] = updates[values["is_connected_to"]["ref"]]
+                    for op in ["any", "all"]:
+                        if op in values["is_connected_to"]:
+                            for idx in range(len(values["is_connected_to"][op])):
+                                if "ref" in values["is_connected_to"][op][idx]:
+                                    values["is_connected_to"][op][idx]["ref"] = updates[values["is_connected_to"][op][idx]["ref"]]
                 if "connect" in values and "ref" in values["connect"]:
                     values["connect"]["ref"] = updates[values["connect"]["ref"]]
                 if "src" in values:
                     values["src"] = updates[values["src"]]
                 if "dst" in values:
                     values["dst"] = updates[values["dst"]]
+                if "ref" in values:
+                    values["ref"] = updates[values["ref"]]
+
             return batched_commands
 
         q = update_refs([cmd for query in data for cmd in query[0]])
@@ -274,8 +284,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     [v['status'] == 2 for i in r for k, v in filter_per_group(i)])
                 sq = 0
                 for i in range(0, len(r), self.commands_per_query):
-                    if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
-                        sq += 1
+                    # Some errors stop the whole query from being executed
+                    # https://docs.aperturedata.io/query_language/Overview/Responses#return-status
+                    if issubclass(type(r), list):
+                        if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
+                            sq += 1
                 worker_stats["succeeded_queries"] = sq
         else:
             query_time = 1

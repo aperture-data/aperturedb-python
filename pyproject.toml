@@ -48,10 +48,10 @@ notebook = [
 ]
 # User install requirements, guaranteed to be pip installable
 complete = [
-    "torch==2.0.1",
-    "torchvision==0.15.2",
-    "tensorflow==2.14.0",
-    "facenet-pytorch==2.5.3",
+    "torch",
+    "torchvision",
+    "tensorflow",
+    "facenet-pytorch",
 ]
 # Dev install requirements, bleeding edge, will break CI.
 dev = [
@@ -63,7 +63,8 @@ dev = [
     "autopep8",
     "pre-commit",
     "pytest",
-    "build"
+    "build",
+    "fuse-python ; platform_system == 'Linux'"
 ]
 
 # The following would provide a command line executable called `sample`

@@ -20,7 +20,7 @@ from aperturedb.Utils import Utils
 import dbinfo
 
 # These are test fixtures and can be used in any
-# pytest tests as function parmeters with same names.
+# pytest tests as function parameters with same names.
 
 
 def pytest_generate_tests(metafunc):
@@ -65,10 +65,13 @@ def db(request):
 
 
 def check_response_regressions(queries, input_blobs, responses, output_blobs):
-    # Check that responses have no blobs
-    first_command = list(responses[0].keys())[0]
-    assert "blobs_start" not in responses[0][
-        first_command], f"responses[0]={responses[0]}"
+    if issubclass(type(responses), list):
+        # Check that responses have no blobs
+        first_command = list(responses[0].keys())[0]
+        assert "blobs_start" not in responses[0][
+            first_command], f"{responses[0]=}"
+    else:
+        assert responses["status"] in [-1, 3],  f"{responses=}"
 
 
 @pytest.fixture()
@@ -135,15 +138,11 @@ def insert_data_from_csv(db, request):
             loader.get_succeeded_queries() == expected_error_count
         if loader_result_lambda is not None:
             loader_result_lambda(loader, data)
-        assert len(data) - \
-            loader.get_succeeded_queries() == expected_error_count
-        if loader_result_lambda is not None:
-            loader_result_lambda(loader, data)
 
         # Preserve loader so that dask manager is not auto deleted.
         # ---------------
         # Previously, dask's cluster and client were entirely managed in a context
-        # insede dask manager. A change upstream broke that, and now we keep the DM
+        # inside dask manager. A change upstream broke that, and now we keep the DM
         # in scope just so that we can do computations after ingestion, as those
         # things are lazily evaluated.
         return data, loader
