@@ -312,6 +312,8 @@ class TestResponseHandler():
         querier.query(generator, batchsize=99,
                       numthreads=31,
                       stats=True)
+
+        assert querier.error_counter == 0
         for i, set_key in enumerate(self.responses):
             if set_key in self.response_blobs:
                 assert len(self.response_blobs[set_key]) == \
