@@ -112,6 +112,8 @@ class QGSetPersonAndImages(Subscriptable):
         self.responses = responses
         self.response_blobs = response_blobs
         self.cpq = cpq
+        self.commands_per_query = [cpq,cpq]
+        self.blobs_per_query = [0,0]
 
     def __len__(self):
         return math.ceil(10 / self.cpq)
@@ -146,7 +148,7 @@ class QGSetPersonAndImages(Subscriptable):
         query.append(entityquery if len(entityquery) > 1 else entityquery[0])
         query.append([image_constraint, imagequery if len(imagequery) > 1
                       else imagequery[0]])
-        return query, []
+        return [query], []
 
     def response_handler(self, set_id, request, input_blob, response, output_blob):
         if not set_id in self.requests:

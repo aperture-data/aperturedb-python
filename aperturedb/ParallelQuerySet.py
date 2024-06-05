@@ -29,7 +29,7 @@ def remove_blobs(item: Any) -> Any:
     return item
 
 
-def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable = None):
+def gen_execute_batch_sets(base_executor):
 
     #
     # execute_batch_sets - executes multiple sets of queries with optional constraints on follow on sets
@@ -156,9 +156,9 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
 
             # allowed layouts for commands other than the seed command
             # { "cmd" : {} } -> standard single command
-            # [{ "cmd1": {}, "cmd2} : {}] -> standard multiple command
-            # [{ "constraint" : {} , { "cmd" : {} }] -> constraint with a single command
-            # [{ "constraints: {} , [{"cmd1" : {} }, {"cmd2": {} }]] -> constraint with multiple command
+            # [{ "cmd1": {} },{ "cmd2" : {} }] -> standard multiple command
+            # [{ constraints } , { "cmd" : {} }] -> constraint with a single command
+            # [{ constraints } , [{"cmd1" : {} }, {"cmd2": {} }]] -> constraint with multiple command
 
             known_constraint_keys = ["results", "apply"]
             constraints = None
@@ -372,10 +372,8 @@ class ParallelQuerySet(ParallelQuery):
         self.commands_per_query = self.generator.commands_per_query
         self.blobs_per_query = self.generator.blobs_per_query
         set_response_handler = None
-        if hasattr(self.generator, "set_response_handler") and callable(self.generator.set_response_handler):
-            set_response_handler = self.generator.set_response_handler
         self.batch_command = gen_execute_batch_sets(
-            self.base_batch_command, set_response_handler)
+            self.base_batch_command )
 
         ParallelQuery.do_batch(self, db, data)
 
