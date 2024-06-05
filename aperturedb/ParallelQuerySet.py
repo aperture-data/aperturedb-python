@@ -373,7 +373,7 @@ class ParallelQuerySet(ParallelQuery):
         self.blobs_per_query = self.generator.blobs_per_query
         set_response_handler = None
         self.batch_command = gen_execute_batch_sets(
-            self.base_batch_command )
+            self.base_batch_command)
 
         ParallelQuery.do_batch(self, db, data)
 
