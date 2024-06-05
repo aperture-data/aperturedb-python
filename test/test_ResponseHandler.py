@@ -112,8 +112,8 @@ class QGSetPersonAndImages(Subscriptable):
         self.responses = responses
         self.response_blobs = response_blobs
         self.cpq = cpq
-        self.commands_per_query = [cpq,cpq]
-        self.blobs_per_query = [0,0]
+        self.commands_per_query = [cpq, cpq]
+        self.blobs_per_query = [0, 0]
 
     def __len__(self):
         return math.ceil(10 / self.cpq)
