@@ -103,6 +103,8 @@ class QGImages(QGPersons):
         return query, []
 
 # mimics a Entity connected to an Image
+
+
 class QGSetPersonAndImages(Subscriptable):
     def __init__(self, requests, responses, cpq, response_blobs) -> None:
         super().__init__()
@@ -121,31 +123,32 @@ class QGSetPersonAndImages(Subscriptable):
         for i in range(self.cpq):
             entityquery.append(
                 {"FindEntity": {
-                        "with_class": "Person",
-                        "results": {
-                            "all_properties": True
-                        },
-                        "constraints": {
-                            "age": [">=", (subscript * self.cpq + i) * 10, "<", (subscript * self.cpq + 1 + i) * 10]
-                        }
+                    "with_class": "Person",
+                    "results": {
+                        "all_properties": True
+                    },
+                    "constraints": {
+                        "age": [">=", (subscript * self.cpq + i) * 10, "<", (subscript * self.cpq + 1 + i) * 10]
                     }
+                }
                 })
-        image_constraint = {"result":{"0":{"status":["==",0]}} }
+        image_constraint = {"result": {"0": {"status": ["==", 0]}}}
 
         for i in range(self.cpq):
             imagequery.append(
-                    {"FindImage":
-                {
-                    "constraints": {
-                            "age": [">=", (subscript * self.cpq + i) * 10, "<", (subscript * self.cpq + 1 + i) * 10]
-                    }
-                }
-            })
-        query.append( entityquery if len(entityquery) > 1 else entityquery[0] )
-        query.append( [ image_constraint, imagequery if len(imagequery) > 1
-            else imagequery[0] ] )
-        return query,[]
-    def response_handler(self,set_id, request, input_blob, response, output_blob):
+                {"FindImage":
+                 {
+                     "constraints": {
+                         "age": [">=", (subscript * self.cpq + i) * 10, "<", (subscript * self.cpq + 1 + i) * 10]
+                     }
+                 }
+                 })
+        query.append(entityquery if len(entityquery) > 1 else entityquery[0])
+        query.append([image_constraint, imagequery if len(imagequery) > 1
+                      else imagequery[0]])
+        return query, []
+
+    def response_handler(self, set_id, request, input_blob, response, output_blob):
         if not set_id in self.requests:
             self.requests[set_id] = []
             self.responses[set_id] = []
@@ -154,7 +157,6 @@ class QGSetPersonAndImages(Subscriptable):
         self.responses[set_id].append(response)
         if output_blob is not None and len(output_blob) > 0:
             self.response_blobs[set_id].append(output_blob)
-
 
 
 # Fake DB query.
@@ -181,6 +183,7 @@ def query_mocker_factory(response_blobs_count):
         return mock_responses, mock_blobs
     return mock_query
 
+
 def set_query_mocker_factory(response_blobs_count):
     def mock_query(self, request, blobs):
         self.response = 0
@@ -201,7 +204,7 @@ def set_query_mocker_factory(response_blobs_count):
 
 class TestResponseHandler():
     def cleanDB(self):
-    # we no longer clean db since we insert no data, using mock instead.
+        # we no longer clean db since we insert no data, using mock instead.
         logger.debug(f"Cleaning existing data")
         self.requests = []
         self.responses = []
@@ -296,18 +299,18 @@ class TestResponseHandler():
                 assert len(self.response_blobs[i]) == resp[0][key]["returned"]
 
     @pytest.mark.parametrize("cpq", range(1, 3))
-    def test_set_response(self,db,utils,cpq,monkeypatch):
+    def test_set_response(self, db, utils, cpq, monkeypatch):
         monkeypatch.setattr(Connector, "query", lambda s, r,
                             b: set_query_mocker_factory(5.5)(s, r, b))
         self.cleanDB()
         self.response_blobs = []
         generator = QGSetPersonAndImages(self.requests, self.responses,
-                             cpq, self.response_blobs)
+                                         cpq, self.response_blobs)
         querier = ParallelQuerySet(db)
         querier.query(generator, batchsize=99,
                       numthreads=31,
                       stats=True)
-        for i,set_key in enumerate(self.responses):
+        for i, set_key in enumerate(self.responses):
             if set_key in self.response_blobs:
                 assert len(self.response_blobs[set_key]) == \
                     len(self.response[set_key])
@@ -315,4 +318,5 @@ class TestResponseHandler():
                     for key in resp[0]:
                         assert resp[0][key]["returned"] == j + 1
                         assert resp[0][key]["status"] == 0
-                        assert len(self.response_blobs[set_key][i]) == resp[0][key]["returned"]
+                        assert len(
+                            self.response_blobs[set_key][i]) == resp[0][key]["returned"]
