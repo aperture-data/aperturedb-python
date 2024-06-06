@@ -13,7 +13,19 @@ RUN  chmod 755 /start.sh
 # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
 # RUN chmod +x /usr/bin/tini
 # ENTRYPOINT ["/usr/bin/tini", "--"]
-RUN cd /aperturedata && pip install -e ".[notebook]"
+RUN cd /aperturedata && pip install -e ".[dev]"
+RUN echo "adb --install-completion" | bash
+
+# Install useful JupyterLab extensions
+RUN pip install jupyter-resource-usage
+
+# Suppress the annoying announcements popup
+RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements"
+
+# Install CLIP (for running transformers)
+RUN pip install git+https://github.com/openai/CLIP.git
+
+RUN apt update && apt install -y curl && apt clean
 
 EXPOSE 8888
 CMD ["/start.sh"]
