@@ -121,33 +121,33 @@ class QGSetPersonAndImages(Subscriptable):
     def getitem(self, subscript):
         query_set = []
         entityquery = {
-                "AddEntity":{
-                    "with_class": "Person",
-                    "properties": {
-                        "age":(subscript + 20 )
-                        },
-                    "constraint": {
-                        "age": ["==", (subscript + 20 )]
-                    }
+            "AddEntity": {
+                "with_class": "Person",
+                "properties": {
+                    "age": (subscript + 20)
+                },
+                "constraint": {
+                    "age": ["==", (subscript + 20)]
                 }
+            }
         }
         # add image if entity doesn't exist.
         image_constraint = {"results": {0: {"status": ["!=", 2]}}}
 
         imagequery = {
-                "AddImage": {
-                    "properties": {
-                        "type": "portrait",
-                        "age":(subscript + 20 )
-                    }
+            "AddImage": {
+                "properties": {
+                    "type": "portrait",
+                    "age": (subscript + 20)
                 }
+            }
         }
         query_set.append(entityquery)
         query_set.append([image_constraint, imagequery])
 
-        entity_blobs=[]
-        image_blobs=[subscript]
-        set_blobs = [ entity_blobs,image_blobs]
+        entity_blobs = []
+        image_blobs = [subscript]
+        set_blobs = [entity_blobs, image_blobs]
         return [query_set], [set_blobs]
 
     def response_handler(self, set_id, request, input_blob, response, output_blob):
@@ -200,7 +200,7 @@ def set_query_mocker_factory(response_blobs_count):
         mock_responses = [{
             cmd: {
                 "returned": (i + 1),
-                "status": 0 if i%2 ==0 or cmd_is_image else 2
+                "status": 0 if i % 2 == 0 or cmd_is_image else 2
             }
         } for i, c in enumerate(request)]
         mock_blobs = [i for i in range(
@@ -322,7 +322,7 @@ class TestResponseHandler():
 
         def expected_blobs_for_resp(rh_responses):
             i = 0
-            for r in rh_responses :
+            for r in rh_responses:
                 k = list(r.keys())[0]
                 if k == "AddImage" and r[k]["status"] == 0:
                     i = i + 1
@@ -341,8 +341,8 @@ class TestResponseHandler():
                             expected_status = 2
                         assert part[key]["status"] == expected_status
                         if key == "AddImage":
-                            assert( self.response_blobs[set_key][j]
-                                    == j *2 )
+                            assert(self.response_blobs[set_key][j]
+                                   == j * 2)
                             expected_blobs = expected_blobs + 1
                         else:
                             assert part[key]["returned"] == j + 1

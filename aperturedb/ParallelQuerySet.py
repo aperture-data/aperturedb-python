@@ -73,9 +73,10 @@ def gen_execute_batch_sets(base_executor):
 
             if len(first_element_blobs) == 0 or len(first_element_blobs) != set_total:
                 # user has confused blob format for sure.
-                logger.error("Malformed blobs for first element. Blob return from your loader " 
-                        "should be [query_blobs] where query_blobs = [ first_cmd_list, second_cmd_list, ... ] ")
-                raise Exception("Malformed blobs input. Expected First element to have a list of blobs for each set.")
+                logger.error("Malformed blobs for first element. Blob return from your loader "
+                             "should be [query_blobs] where query_blobs = [ first_cmd_list, second_cmd_list, ... ] ")
+                raise Exception(
+                    "Malformed blobs input. Expected First element to have a list of blobs for each set.")
 
             first_query_blobs = first_element_blobs[0]
             # If someone is looking for info logging from PQS, it is likely that blobs are not being set properly.
@@ -210,9 +211,9 @@ def gen_execute_batch_sets(base_executor):
                         passed_all_constraints = True
                         for result_number in result_constraints:
 
-                            if not isinstance(result_number,int):
-                                raise Exception("Keys for result constraints must be numbers: "\
-                                        f"{result_number} is {type(result_number)}")
+                            if not isinstance(result_number, int):
+                                raise Exception("Keys for result constraints must be numbers: "
+                                                f"{result_number} is {type(result_number)}")
 
                             if len(single_results) < result_number or single_results[result_number] is None:
                                 # in theory here we have two possibilities: a user can have a correctly formed constraint which didn't execute by design
