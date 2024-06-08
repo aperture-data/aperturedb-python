@@ -70,13 +70,20 @@ def gen_execute_batch_sets(base_executor):
         # verify layout if a complex set
         if per_set_blobs:
             first_element_blobs = blob_set[0]
+
+            if len(first_element_blobs) == 0 or len(first_element_blobs) != set_total:
+                # user has confused blob format for sure.
+                logger.error("Malformed blobs for first element. Blob return from your loader " 
+                        "should be [query_blobs] where query_blobs = [ first_cmd_list, second_cmd_list, ... ] ")
+                raise Exception("Malformed blobs input. Expected First element to have a list of blobs for each set.")
+
             first_query_blobs = first_element_blobs[0]
             # If someone is looking for info logging from PQS, it is likely that blobs are not being set properly.
             #  The wrapping of blobs in general can be confusing. Best suggestion is looking at a loader.
             logger.info("Blobs for first set = " +
-                        str(remove_blobs(blob_set[0])))
+                        str(remove_blobs(first_element_blobs)))
             logger.info("First Blob for first set = " +
-                        str(remove_blobs(blob_set[0][0])))
+                        str(remove_blobs(first_query_blobs)))
             if not isinstance(first_query_blobs, list):
                 logger.error(
                     "Expected a list of lists for the first element's blob sets")
@@ -112,7 +119,7 @@ def gen_execute_batch_sets(base_executor):
                 # the list comprehension pulls out the blob set for the requested set
                 # the blob set is then flattened as the query expects a flat array using blobs_per_query as the iterator
                 # the flat list is them zipped with the strike list, which determines which blobs are unused
-                # the filter checks if the blob is to be struc
+                # the filter checks if the blob is to be struck
                 # the map pulls the remaining blobs out
 
                 return list(map(lambda pair: pair[0],
@@ -202,6 +209,10 @@ def gen_execute_batch_sets(base_executor):
                         result_constraints = current_constraints['results']
                         passed_all_constraints = True
                         for result_number in result_constraints:
+
+                            if not isinstance(result_number,int):
+                                raise Exception("Keys for result constraints must be numbers: "\
+                                        f"{result_number} is {type(result_number)}")
 
                             if len(single_results) < result_number or single_results[result_number] is None:
                                 # in theory here we have two possibilities: a user can have a correctly formed constraint which didn't execute by design
@@ -394,7 +405,7 @@ class ParallelQuerySet(ParallelQuery):
         else:
             mean = np.mean(times)
             std = np.std(times)
-            tp = 1 / mean * self.numthreads
+            tp = 0 if mean == 0 else 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")
             print(f"Query time std: {std}")
