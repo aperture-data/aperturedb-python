@@ -320,14 +320,6 @@ class TestResponseHandler():
                       numthreads=31,
                       stats=True)
 
-        def expected_blobs_for_resp(rh_responses):
-            i = 0
-            for r in rh_responses:
-                k = list(r.keys())[0]
-                if k == "AddImage" and r[k]["status"] == 0:
-                    i = i + 1
-            return i
-
         assert querier.error_counter == 0
         for i, set_key in enumerate(self.responses):
             if set_key in self.response_blobs:
