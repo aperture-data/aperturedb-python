@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Callable, List, Tuple
 import itertools
 import logging
+import math
 
 import numpy as np
 
@@ -28,7 +29,7 @@ def remove_blobs(item: Any) -> Any:
     return item
 
 
-def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable = None):
+def gen_execute_batch_sets(base_executor):
 
     #
     # execute_batch_sets - executes multiple sets of queries with optional constraints on follow on sets
@@ -47,7 +48,7 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
     #  execution
     #
     def execute_batch_sets(query_set, blob_set, db, success_statuses: list[int] = [0],
-                           response_handler: Callable = None, commands_per_query: list[int] = -1,
+                           response_handler: Optional[Callable] = None, commands_per_query: list[int] = -1,
                            blobs_per_query: list[int] = -1, strict_response_validation: bool = False):
 
         logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
@@ -69,13 +70,21 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
         # verify layout if a complex set
         if per_set_blobs:
             first_element_blobs = blob_set[0]
+
+            if len(first_element_blobs) == 0 or len(first_element_blobs) != set_total:
+                # user has confused blob format for sure.
+                logger.error("Malformed blobs for first element. Blob return from your loader "
+                             "should be [query_blobs] where query_blobs = [ first_cmd_list, second_cmd_list, ... ] ")
+                raise Exception(
+                    "Malformed blobs input. Expected First element to have a list of blobs for each set.")
+
             first_query_blobs = first_element_blobs[0]
             # If someone is looking for info logging from PQS, it is likely that blobs are not being set properly.
             #  The wrapping of blobs in general can be confusing. Best suggestion is looking at a loader.
             logger.info("Blobs for first set = " +
-                        str(remove_blobs(blob_set[0])))
+                        str(remove_blobs(first_element_blobs)))
             logger.info("First Blob for first set = " +
-                        str(remove_blobs(blob_set[0][0])))
+                        str(remove_blobs(first_query_blobs)))
             if not isinstance(first_query_blobs, list):
                 logger.error(
                     "Expected a list of lists for the first element's blob sets")
@@ -111,7 +120,7 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
                 # the list comprehension pulls out the blob set for the requested set
                 # the blob set is then flattened as the query expects a flat array using blobs_per_query as the iterator
                 # the flat list is them zipped with the strike list, which determines which blobs are unused
-                # the filter checks if the blob is to be struc
+                # the filter checks if the blob is to be struck
                 # the map pulls the remaining blobs out
 
                 return list(map(lambda pair: pair[0],
@@ -155,9 +164,9 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
 
             # allowed layouts for commands other than the seed command
             # { "cmd" : {} } -> standard single command
-            # [{ "cmd1": {}, "cmd2} : {}] -> standard multiple command
-            # [{ "constraint" : {} , { "cmd" : {} }] -> constraint with a single command
-            # [{ "constraints: {} , [{"cmd1" : {} }, {"cmd2": {} }]] -> constraint with multiple command
+            # [{ "cmd1": {} },{ "cmd2" : {} }] -> standard multiple command
+            # [{ constraints } , { "cmd" : {} }] -> constraint with a single command
+            # [{ constraints } , [{"cmd1" : {} }, {"cmd2": {} }]] -> constraint with multiple command
 
             known_constraint_keys = ["results", "apply"]
             constraints = None
@@ -201,6 +210,10 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
                         result_constraints = current_constraints['results']
                         passed_all_constraints = True
                         for result_number in result_constraints:
+
+                            if not isinstance(result_number, int):
+                                raise Exception("Keys for result constraints must be numbers: "
+                                                f"{result_number} is {type(result_number)}")
 
                             if len(single_results) < result_number or single_results[result_number] is None:
                                 # in theory here we have two possibilities: a user can have a correctly formed constraint which didn't execute by design
@@ -278,17 +291,24 @@ def gen_execute_batch_sets(base_executor, per_batch_response_handler: Callable =
             blob_strike_list = list(map(lambda q: q is None, queries))
 
             # filter out struck blobs
-            used_blobs = filter(lambda b: b is not None,
-                                blob_filter(blob_set, blob_strike_list, i))
+            used_blobs = list(filter(lambda b: b is not None,
+                                     blob_filter(blob_set, blob_strike_list, i)))
 
-            # TODO: add wrapped response_handler.
-            if response_handler != None:
-                logger.warning(
-                    "ParallelQuerySet does not yet support a response_handler which will identify which set is being worked on")
             if len(executable_queries) > 0:
                 result_code, db_results, db_blobs = base_executor(executable_queries, used_blobs,
                                                                   db, local_success_statuses,
                                                                   None, commands_per_query[i], blobs_per_query[i], strict_response_validation=strict_response_validation)
+                if response_handler != None and db.last_query_ok():
+                    def map_to_set(query, query_blobs, resp, resp_blobs):
+                        response_handler(
+                            i, query, query_blobs, resp, resp_blobs)
+                    try:
+                        ParallelQuery.map_response_to_handler(map_to_set,
+                                                              executable_queries, used_blobs, db_results, db_blobs, commands_per_query[i], blobs_per_query[i])
+                    except BaseException as e:
+                        logger.exception(e)
+                        if strict_response_validation:
+                            raise e
             else:
                 logger.info(
                     f"Skipped executing set {i}, no executable queries")
@@ -364,10 +384,8 @@ class ParallelQuerySet(ParallelQuery):
         self.commands_per_query = self.generator.commands_per_query
         self.blobs_per_query = self.generator.blobs_per_query
         set_response_handler = None
-        if hasattr(self.generator, "set_response_handler") and callable(self.generator.set_response_handler):
-            set_response_handler = self.generator.set_response_handler
         self.batch_command = gen_execute_batch_sets(
-            self.base_batch_command, set_response_handler)
+            self.base_batch_command)
 
         ParallelQuery.do_batch(self, db, data)
 
@@ -388,7 +406,7 @@ class ParallelQuerySet(ParallelQuery):
         else:
             mean = np.mean(times)
             std = np.std(times)
-            tp = 1 / mean * self.numthreads
+            tp = 0 if mean == 0 else 1 / mean * self.numthreads
 
             print(f"Avg Query time (s): {mean}")
             print(f"Query time std: {std}")

@@ -4,6 +4,7 @@ import pytest
 from aperturedb.EntityDataCSV import EntityDataCSV
 from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.ParallelQuery import ParallelQuery
+from aperturedb.ParallelQuerySet import ParallelQuerySet
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Connector import Connector
 import math
@@ -95,11 +96,70 @@ class QGImages(QGPersons):
         for i in range(self.cpq):
             q = {
                 "FindImage": {
-
+                    "blobs": True
                 }
             }
             query.append(q)
         return query, []
+
+# mimics a Entity connected to an Image
+
+
+class QGSetPersonAndImages(Subscriptable):
+    def __init__(self, requests, responses, max_commands, request_blobs) -> None:
+        super().__init__()
+        self.requests = requests
+        self.responses = responses
+        self.request_blobs = request_blobs
+        self.max_commands = max_commands
+        self.commands_per_query = [1, 1]
+        self.blobs_per_query = [0, 1]
+
+    def __len__(self):
+        return self.max_commands
+
+    def getitem(self, subscript):
+        query_set = []
+        entityquery = {
+            "AddEntity": {
+                "with_class": "Person",
+                "properties": {
+                    "age": (subscript + 20)
+                },
+                "constraint": {
+                    "age": ["==", (subscript + 20)]
+                }
+            }
+        }
+        # add image if entity doesn't exist.
+        image_constraint = {"results": {0: {"status": ["!=", 2]}}}
+
+        imagequery = {
+            "AddImage": {
+                "properties": {
+                    "type": "portrait",
+                    "age": (subscript + 20)
+                }
+            }
+        }
+        query_set.append(entityquery)
+        query_set.append([image_constraint, imagequery])
+
+        entity_blobs = []
+        image_blobs = [subscript]
+        set_blobs = [entity_blobs, image_blobs]
+        return [query_set], [set_blobs]
+
+    def response_handler(self, set_id, request, input_blob, response, output_blob):
+        if not set_id in self.requests:
+            self.requests[set_id] = []
+            self.responses[set_id] = []
+            self.request_blobs[set_id] = []
+        self.requests[set_id].append(request)
+        self.responses[set_id].append(response)
+        # we attach 1 input "blob",so take it out of the list.
+        if input_blob is not None and len(input_blob) > 0:
+            self.request_blobs[set_id].append(input_blob[0])
 
 
 # Fake DB query.
@@ -127,8 +187,31 @@ def query_mocker_factory(response_blobs_count):
     return mock_query
 
 
+def set_query_mocker_factory(response_blobs_count):
+    # we return that entity "exists" for odd numbered
+    # requests, this allows us to verify the results
+    #  properly filter passed in blobs.
+    # also return 0 for addimage.
+    def mock_query(self, request, blobs):
+        self.response = 0
+        cmd_is_image = "AddImage" in request[0].keys()
+        cmd = "AddImage" if cmd_is_image else "AddEntity"
+
+        mock_responses = [{
+            cmd: {
+                "returned": (i + 1),
+                "status": 0 if i % 2 == 0 or cmd_is_image else 2
+            }
+        } for i, c in enumerate(request)]
+        mock_blobs = [i for i in range(
+            int(response_blobs_count * len(request)))]
+        return mock_responses, mock_blobs if cmd_is_image else []
+    return mock_query
+
+
 class TestResponseHandler():
-    def cleanDB(self, utils):
+    def cleanDB(self):
+        # we no longer clean db since we insert no data, using mock instead.
         logger.debug(f"Cleaning existing data")
         self.requests = []
         self.responses = []
@@ -137,7 +220,7 @@ class TestResponseHandler():
     def test_response_handler(self, records_count, db, utils, monkeypatch):
         monkeypatch.setattr(Connector, "query", lambda s,
                             r, b: mock_query(s, r, b))
-        self.cleanDB(utils=utils)
+        self.cleanDB()
         logger.warning(f"{records_count}")
         persons = EntityWithResponseDataCSV(
             "./input/persons.adb.csv", self.requests, self.responses)
@@ -169,7 +252,7 @@ class TestResponseHandler():
 
     @pytest.mark.parametrize("cpq", range(1, 11))
     def test_varying_response(self, db, utils, cpq):
-        self.cleanDB(utils=utils)
+        self.cleanDB()
         persons = EntityWithResponseDataCSV(
             "./input/persons.adb.csv", self.requests, self.responses)
         loader = ParallelLoader(db)
@@ -204,9 +287,10 @@ class TestResponseHandler():
             assert dist_by_ages[k] == dist["age"][k]
 
     def test_response_blobs(self, db, utils, monkeypatch):
+        # 5.5 makes blob result uneven number compared to query count
         monkeypatch.setattr(Connector, "query", lambda s, r,
                             b: query_mocker_factory(5.5)(s, r, b))
-        self.cleanDB(utils=utils)
+        self.cleanDB()
         self.response_blobs = []
         generator = QGImages(self.requests, self.responses,
                              1, self.response_blobs)
@@ -220,3 +304,38 @@ class TestResponseHandler():
                 assert resp[0][key]["returned"] == i + 1
                 assert resp[0][key]["status"] == 0
                 assert len(self.response_blobs[i]) == resp[0][key]["returned"]
+
+    @pytest.mark.parametrize("max_commands", range(1, 7, 3))
+    def test_set_response(self, db, utils, max_commands, monkeypatch):
+        monkeypatch.setattr(Connector, "query", lambda s, r,
+                            b: set_query_mocker_factory(5.5)(s, r, b))
+        self.cleanDB()
+        self.requests = {}
+        self.responses = {}
+        self.response_blobs = {}
+        generator = QGSetPersonAndImages(self.requests, self.responses,
+                                         max_commands, self.response_blobs)
+        querier = ParallelQuerySet(db)
+        querier.query(generator, batchsize=99,
+                      numthreads=31,
+                      stats=True)
+
+        assert querier.error_counter == 0
+        for i, set_key in enumerate(self.responses):
+            if set_key in self.response_blobs:
+                expected_blobs = 0
+                # each resp is the query response back from that query
+                for j, resp in enumerate(self.responses[set_key]):
+                    for part in resp:
+                        key = list(part.keys())[0]
+                        expected_status = 0
+                        if key == "AddEntity" and j % 2 == 1:
+                            expected_status = 2
+                        assert part[key]["status"] == expected_status
+                        if key == "AddImage":
+                            assert(self.response_blobs[set_key][j]
+                                   == j * 2)
+                            expected_blobs = expected_blobs + 1
+                        else:
+                            assert part[key]["returned"] == j + 1
+                assert len(self.response_blobs[set_key]) == expected_blobs
