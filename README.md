@@ -31,7 +31,7 @@ pip install -e .[dev]
 
 
 # Running tests
-The tests are inside the test dir.
+The tests are inside the `test` dir.
 
 All the tests can be run with:
 
