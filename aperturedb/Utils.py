@@ -8,7 +8,15 @@ import importlib
 import sys
 from typing import List
 
-from graphviz import Source, Digraph
+HAS_GRAPHVIZ=True
+try:
+    from graphviz import Source, Digraph
+except:
+    HAS_GRAPHVIZ=False
+    class Source:
+        pass
+    class Digraph:
+        pass
 
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest

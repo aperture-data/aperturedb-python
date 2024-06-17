@@ -84,12 +84,21 @@ class QGPersons(Subscriptable):
         return query, []
 
     def response_handler(self, request, input_blob, response, output_blob):
+        logger.debug( f"QGP")
         self.requests.append(request)
         self.responses.append(response)
         if output_blob is not None and len(output_blob) > 0:
             self.response_blobs.append(output_blob)
 
 
+class QGPersonsIndex(QGPersons):
+    def response_handler(self, request, input_blob, response, output_blob,index):
+        logger.warning( f"QGPI:{index}")
+        print( f"QGPI:{index}")
+        self.requests.append(request)
+        self.responses.append(response)
+        if output_blob is not None and len(output_blob) > 0:
+            self.response_blobs.append(output_blob)
 class QGImages(QGPersons):
     def getitem(self, subscript):
         query = []
@@ -339,3 +348,40 @@ class TestResponseHandler():
                         else:
                             assert part[key]["returned"] == j + 1
                 assert len(self.response_blobs[set_key]) == expected_blobs
+    @pytest.mark.parametrize("cpq", range(1, 3))
+    def test_varying_response_w_index(self, db, utils, cpq):
+        self.cleanDB()
+        persons = EntityWithResponseDataCSV(
+            "./input/persons.adb.csv", self.requests, self.responses)
+        loader = ParallelLoader(db)
+        loader.ingest(persons, batchsize=99,
+                      numthreads=31,
+                      stats=True)
+        assert loader.error_counter == 0
+
+        print("TVRWI?!??!")
+        logger.warning("HERE?")
+        dist = persons.df.groupby(persons.df.age // 10 * 10).count()
+        logger.debug(dist["age"])
+
+        self.requests = []
+        self.responses = []
+        self.response_blobs = []
+        generator = QGPersonsIndex(self.requests, self.responses,
+                              cpq, self.response_blobs)
+        querier = ParallelQuery(db)
+        querier.query(generator, batchsize=100,
+                      numthreads=1,
+                      stats=True)
+        dist_by_ages = {}
+        for req, resp in zip(self.requests, self.responses):
+            logger.debug(req)
+            assert len(req) in [cpq, 10 % cpq]
+            for rq, rr in zip(req, resp):
+                for key in rq:
+                    age_group = rq[key]["constraints"]["age"][1]
+                    count = rr[key]["returned"]
+                    dist_by_ages[age_group] = count
+        logger.debug(dist_by_ages)
+        for k in dist_by_ages:
+            assert dist_by_ages[k] == dist["age"][k]
