@@ -143,7 +143,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     type(response), list) else response,
                 response_blobs[blobs_returned:blobs_returned + b_count] if
                 len(response_blobs) >= blobs_returned + b_count else None,
-                None if not cmd_index_offset else cmd_index_offset + i)
+                None if cmd_index_offset is None else cmd_index_offset + i)
             blobs_returned += b_count
 
     def __init__(self, db: Connector, dry_run: bool = False):
@@ -261,7 +261,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if hasattr(self.generator, "strict_response_validation") and isinstance(self.generator.strict_response_validation, bool):
                 strict_response_validation = self.generator.strict_response_validation
 
-            # if response_handler doesn't support index, just discard it with a wrapper.
+            # if response_handler doesn't support index, just discard the index with a wrapper.
             if response_handler is not None:
                 if not 'index' in inspect.signature(response_handler).parameters:
                     indexless_handler = response_handler

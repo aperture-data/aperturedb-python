@@ -221,6 +221,8 @@ class Utils(object):
         Returns:
             source: The visualization of the schema.
         """
+        if not HAS_GRAPHVIZ:
+            raise Exception("graphviz not installed.")
         r = self.get_schema()
 
         dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={

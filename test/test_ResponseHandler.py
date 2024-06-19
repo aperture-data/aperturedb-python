@@ -84,7 +84,6 @@ class QGPersons(Subscriptable):
         return query, []
 
     def response_handler(self, request, input_blob, response, output_blob):
-        logger.debug( f"QGP")
         self.requests.append(request)
         self.responses.append(response)
         if output_blob is not None and len(output_blob) > 0:
@@ -93,12 +92,11 @@ class QGPersons(Subscriptable):
 
 class QGPersonsIndex(QGPersons):
     def response_handler(self, request, input_blob, response, output_blob,index):
-        logger.warning( f"QGPI:{index}")
-        print( f"QGPI:{index}")
-        self.requests.append(request)
-        self.responses.append(response)
+        self.requests[index] = request
+        self.responses[index] = response
         if output_blob is not None and len(output_blob) > 0:
-            self.response_blobs.append(output_blob)
+            self.response_blobs[index] = output_blob
+
 class QGImages(QGPersons):
     def getitem(self, subscript):
         query = []
@@ -359,14 +357,11 @@ class TestResponseHandler():
                       stats=True)
         assert loader.error_counter == 0
 
-        print("TVRWI?!??!")
-        logger.warning("HERE?")
         dist = persons.df.groupby(persons.df.age // 10 * 10).count()
-        logger.debug(dist["age"])
 
-        self.requests = []
-        self.responses = []
-        self.response_blobs = []
+        self.requests = {}
+        self.responses = {}
+        self.response_blobs = {}
         generator = QGPersonsIndex(self.requests, self.responses,
                               cpq, self.response_blobs)
         querier = ParallelQuery(db)
@@ -374,14 +369,10 @@ class TestResponseHandler():
                       numthreads=1,
                       stats=True)
         dist_by_ages = {}
-        for req, resp in zip(self.requests, self.responses):
-            logger.debug(req)
-            assert len(req) in [cpq, 10 % cpq]
-            for rq, rr in zip(req, resp):
-                for key in rq:
-                    age_group = rq[key]["constraints"]["age"][1]
-                    count = rr[key]["returned"]
-                    dist_by_ages[age_group] = count
-        logger.debug(dist_by_ages)
-        for k in dist_by_ages:
-            assert dist_by_ages[k] == dist["age"][k]
+        # req and resp are dict mapping index number to query.
+        for reqk, respk in zip(self.requests.keys(), self.responses.keys()):
+            req=self.requests[reqk]
+            age_group = req[0]["FindEntity"]["constraints"]["age"][1]
+            # in QGPersonIndex, age_group[1] is created by taking index
+            # and multiplying it by cqp and 10.
+            assert reqk == ( 0 if age_group == 0 else age_group / cpq / 10 )
