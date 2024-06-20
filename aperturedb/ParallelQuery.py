@@ -263,7 +263,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             # if response_handler doesn't support index, just discard the index with a wrapper.
             if response_handler is not None:
-                if not 'index' in inspect.signature(response_handler).parameters:
+                parameter_count = len(inspect.signature(response_handler).parameters)
+                if parameter_count < 4 or parameter_count > 5:
+                    raise Exception("Bad Signature for response_handler :" \
+                                    f"expected 6 > args > 3, got {parameter_count}")
+                if parameter_count == 4:
                     indexless_handler = response_handler
                     response_handler = lambda query, qblobs, resp, rblobs, qindex: indexless_handler(query,qblobs,resp,rblobs)
 
