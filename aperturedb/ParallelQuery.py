@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def execute_batch(q: Commands, blobs: Blobs, db: Connector,
                   success_statuses: list[int] = [0],
                   response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
-                  strict_response_validation: bool = False,cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
+                  strict_response_validation: bool = False, cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -50,9 +50,9 @@ def execute_batch(q: Commands, blobs: Blobs, db: Connector,
     if db.last_query_ok():
         if response_handler is not None:
             try:
-                ParallelQuery.map_response_to_handler( response_handler,
-                          q, blobs, r, b, commands_per_query, blobs_per_query,
-                          cmd_index)
+                ParallelQuery.map_response_to_handler(response_handler,
+                                                      q, blobs, r, b, commands_per_query, blobs_per_query,
+                                                      cmd_index)
             except BaseException as e:
                 logger.exception(e)
                 if strict_response_validation:
@@ -114,7 +114,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     @classmethod
     def map_response_to_handler(cls, handler, query, query_blobs,  response, response_blobs,
-                                commands_per_query, blobs_per_query,cmd_index_offset):
+                                commands_per_query, blobs_per_query, cmd_index_offset):
         # We could potentially always call this handler function
         # and let the user deal with the error cases.
         blobs_returned = 0
@@ -263,13 +263,15 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             # if response_handler doesn't support index, just discard the index with a wrapper.
             if response_handler is not None:
-                parameter_count = len(inspect.signature(response_handler).parameters)
+                parameter_count = len(inspect.signature(
+                    response_handler).parameters)
                 if parameter_count < 4 or parameter_count > 5:
-                    raise Exception("Bad Signature for response_handler :" \
+                    raise Exception("Bad Signature for response_handler :"
                                     f"expected 6 > args > 3, got {parameter_count}")
                 if parameter_count == 4:
                     indexless_handler = response_handler
-                    response_handler = lambda query, qblobs, resp, rblobs, qindex: indexless_handler(query,qblobs,resp,rblobs)
+                    def response_handler(query, qblobs, resp, rblobs, qindex): return indexless_handler(
+                        query, qblobs, resp, rblobs)
 
             result, r, b = self.batch_command(
                 q,
@@ -331,7 +333,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batch_end = min(batch_start + self.batchsize, end)
 
             try:
-                self.do_batch(db, batch_start, generator[batch_start:batch_end])
+                self.do_batch(db, batch_start,
+                              generator[batch_start:batch_end])
             except Exception as e:
                 logger.exception(e)
                 logger.warning(
