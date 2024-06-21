@@ -15,4 +15,4 @@ repos:
       hooks:
       - id: autopep8
         exclude: _pb2.py$
-        args: ["--ignore", "E251,E241,E221,E402", "-i"]
+        args: ["--ignore", "E251,E241,E221,E402,E275", "-i"]
