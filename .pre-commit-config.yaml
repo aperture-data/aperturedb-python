@@ -10,8 +10,8 @@ ci:
     skip: []
     submodules: false
 repos:
-    - repo: https://github.com/pre-commit/mirrors-autopep8
-      rev: 898691a
+    - repo: https://github.com/hhato/autopep8
+      rev: 8b75604
       hooks:
       - id: autopep8
         exclude: _pb2.py$
