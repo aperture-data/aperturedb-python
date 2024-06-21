@@ -349,8 +349,8 @@ class TestResponseHandler():
                             expected_status = 2
                         assert part[key]["status"] == expected_status
                         if key == "AddImage":
-                            assert(self.response_blobs[set_key][j]
-                                   == j * 2)
+                            assert (self.response_blobs[set_key][j]
+                                    == j * 2)
                             expected_blobs = expected_blobs + 1
                         else:
                             assert part[key]["returned"] == j + 1

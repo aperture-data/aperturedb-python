@@ -365,7 +365,7 @@ class ParallelQuerySet(ParallelQuery):
         logger.error(type(generator[0]))
         return False
 
-    def do_batch(self, db: Connector, batch_start:int,  data: List[Tuple[Commands, Blobs]]) -> None:
+    def do_batch(self, db: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
         """
         This is an override of ParallelQuery.do_batch.
 

@@ -8,13 +8,15 @@ import importlib
 import sys
 from typing import List
 
-HAS_GRAPHVIZ=True
+HAS_GRAPHVIZ = True
 try:
     from graphviz import Source, Digraph
 except:
-    HAS_GRAPHVIZ=False
+    HAS_GRAPHVIZ = False
+
     class Source:
         pass
+
     class Digraph:
         pass
 
