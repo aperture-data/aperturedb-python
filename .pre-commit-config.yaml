@@ -10,7 +10,7 @@ ci:
     skip: []
     submodules: false
 repos:
-    - repo: https://github.com/hhato/autopep8
+    - repo: https://github.com/hhatto/autopep8
       rev: 8b75604
       hooks:
       - id: autopep8
