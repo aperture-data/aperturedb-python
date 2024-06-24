@@ -6,7 +6,7 @@ import json
 import os
 import importlib
 import sys
-from typing import List
+from typing import List, Optional, Dict
 
 HAS_GRAPHVIZ = True
 try:
@@ -534,7 +534,8 @@ class Utils(object):
 
         return total_connections
 
-    def add_descriptorset(self, name: str, dim: int, metric="L2", engine="FaissFlat") -> bool:
+    def add_descriptorset(self, name: str, dim: int, metric="L2", engine="FaissFlat",
+                          properties: Optional[Dict] = None) -> bool:
         """
         Add a descriptor set to the database.
 
@@ -543,6 +544,7 @@ class Utils(object):
             dim (int): The dimension of the descriptors.
             metric (str, optional): The metric to use for the descriptors.
             engine (str, optional): The engine to use for the descriptors.
+            properties (dict, optional): The properties of the descriptor set.
 
         Returns:
             success (bool): True if the operation was successful, False otherwise.
@@ -555,6 +557,9 @@ class Utils(object):
                 "engine":     engine
             }
         }]
+
+        if properties is not None:
+            query[0]["AddDescriptorSet"]["properties"] = properties
 
         try:
             self.execute(query)
