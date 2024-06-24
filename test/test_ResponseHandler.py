@@ -367,8 +367,6 @@ class TestResponseHandler():
                       stats=True)
         assert loader.error_counter == 0
 
-        dist = persons.df.groupby(persons.df.age // 10 * 10).count()
-
         self.requests = {}
         self.responses = {}
         self.response_blobs = {}
@@ -378,7 +376,6 @@ class TestResponseHandler():
         querier.query(generator, batchsize=100,
                       numthreads=1,
                       stats=True)
-        dist_by_ages = {}
         # req and resp are dict mapping index number to query.
         for reqk, respk in zip(self.requests.keys(), self.responses.keys()):
             req = self.requests[reqk]
