@@ -10,9 +10,9 @@ ci:
     skip: []
     submodules: false
 repos:
-    - repo: https://github.com/pre-commit/mirrors-autopep8
-      rev: 898691a
+    - repo: https://github.com/hhatto/autopep8
+      rev: 8b75604
       hooks:
       - id: autopep8
         exclude: _pb2.py$
-        args: ["--ignore", "E251,E241,E221", "-i"]
+        args: ["--ignore", "E251,E241,E221,E402,E265,E275", "-i"]

@@ -8,7 +8,17 @@ import importlib
 import sys
 from typing import List, Optional, Dict
 
-from graphviz import Source, Digraph
+HAS_GRAPHVIZ = True
+try:
+    from graphviz import Source, Digraph
+except:
+    HAS_GRAPHVIZ = False
+
+    class Source:
+        pass
+
+    class Digraph:
+        pass
 
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
@@ -213,6 +223,8 @@ class Utils(object):
         Returns:
             source: The visualization of the schema.
         """
+        if not HAS_GRAPHVIZ:
+            raise Exception("graphviz not installed.")
         r = self.get_schema()
 
         dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={
