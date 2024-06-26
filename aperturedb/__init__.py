@@ -24,15 +24,16 @@ log_console_level = logging.getLevelName(
 error_file_name = f"error.${now}.log"
 
 if "ADB_LOG_FILE" in os.environ:
-    error_file_name = None if len(os.environ["ADB_LOG_FILE"]) == 0 else os.environ["ADB_LOG_FILE"]
+    error_file_name = None if len(
+        os.environ["ADB_LOG_FILE"]) == 0 else os.environ["ADB_LOG_FILE"]
 
 if error_file_name is not None:
-    error_file_tmpl = Template( error_file_name )
+    error_file_tmpl = Template(error_file_name)
     template_items = {
-            "now" : str(datetime.datetime.now.isoformat()),
-            "node": str(platform.node())
+        "now": str(datetime.datetime.now.isoformat()),
+        "node": str(platform.node())
     }
-    error_file_handler = logging.FileHandler( error_file_tmpl.safe_substitute(
+    error_file_handler = logging.FileHandler(error_file_tmpl.safe_substitute(
         **template_items), delay=True)
     error_file_handler.setFormatter(formatter)
     error_file_handler.setLevel(log_file_level)
