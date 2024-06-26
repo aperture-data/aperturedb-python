@@ -21,7 +21,7 @@ log_console_level = logging.getLevelName(
     os.getenv("LOG_CONSOLE_LEVEL", "ERROR"))
 
 # define file handler and set formatter
-error_file_name = f"error.${now}.log"
+error_file_name = "error.${now}.log"
 
 if "ADB_LOG_FILE" in os.environ:
     error_file_name = None if len(
