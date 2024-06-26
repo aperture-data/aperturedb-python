@@ -4,6 +4,8 @@ import datetime
 import os
 import json
 import requests
+from string import Template
+import platform
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +21,23 @@ log_console_level = logging.getLevelName(
     os.getenv("LOG_CONSOLE_LEVEL", "ERROR"))
 
 # define file handler and set formatter
-error_file_handler = logging.FileHandler(
-    f"error.{datetime.datetime.now().isoformat()}.log", delay=True)
-error_file_handler.setFormatter(formatter)
-error_file_handler.setLevel(log_file_level)
-logger.addHandler(error_file_handler)
+error_file_name = "error.${now}.log"
+
+if "ADB_LOG_FILE" in os.environ:
+    error_file_name = None if len(
+        os.environ["ADB_LOG_FILE"]) == 0 else os.environ["ADB_LOG_FILE"]
+
+if error_file_name is not None:
+    error_file_tmpl = Template(error_file_name)
+    template_items = {
+        "now": str(datetime.datetime.now().isoformat()),
+        "node": str(platform.node())
+    }
+    error_file_handler = logging.FileHandler(error_file_tmpl.safe_substitute(
+        **template_items), delay=True)
+    error_file_handler.setFormatter(formatter)
+    error_file_handler.setLevel(log_file_level)
+    logger.addHandler(error_file_handler)
 
 error_console_handler = logging.StreamHandler()
 error_console_handler.setLevel(log_console_level)
