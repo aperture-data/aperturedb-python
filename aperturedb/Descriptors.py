@@ -153,6 +153,6 @@ class Descriptors(Entities):
                 max_index = unselected[np.argmax(scores)]
                 selected.append(max_index)
                 unselected.remove(max_index)
-        logger.info("Selected indexes: %s; unselected %s", 
-            selected, unselected)
+        logger.info("Selected indexes: %s; unselected %s",
+                    selected, unselected)
         self.response = [self[i] for i in selected]
