@@ -18,14 +18,16 @@ class Descriptors(Entities):
     def __init__(self, db):
         super().__init__(db)
 
-    def find_similar(self,
-                     set: str,
-                     vector,
-                     k_neighbors: int,
-                     constraints=None,
-                     distances: bool = False,
-                     blobs: bool = False,
-                     results={"all_properties": True}):
+    def find_similar(
+        self,
+        set: str,
+        vector,
+        k_neighbors: int,
+        constraints=None,
+        distances: bool = False,
+        blobs: bool = False,
+        results={"all_properties": True},
+    ):
         """
         Find similar descriptor sets to the input descriptor set.
 
@@ -42,13 +44,15 @@ class Descriptors(Entities):
             results: Response from the server.
         """
 
-        command = {"FindDescriptor": {
-            "set": set,
-            "distances": distances,
-            "blobs": blobs,
-            "results": results,
-            "k_neighbors": k_neighbors,
-        }}
+        command = {
+            "FindDescriptor": {
+                "set": set,
+                "distances": distances,
+                "blobs": blobs,
+                "results": results,
+                "k_neighbors": k_neighbors,
+            }
+        }
 
         if constraints is not None:
             command["FindDescriptor"]["constraints"] = constraints.constraints
@@ -57,12 +61,11 @@ class Descriptors(Entities):
         blobs_in = [np.array(vector, dtype=np.float32).tobytes()]
         _, response, blobs_out = execute_batch(query, blobs_in, self.db)
 
-        self.response = response[0]["FindDescriptor"]["entities"]
+        self.response = response[0]["FindDescriptor"].get("entities", [])
 
         if blobs:
             for i, entity in enumerate(self.response):
-                entity["vector"] = np.frombuffer(
-                    blobs_out[i], dtype=np.float32)
+                entity["vector"] = np.frombuffer(blobs_out[i], dtype=np.float32)
 
     def _descriptorset_metric(self, set: str):
         """Find default metric for descriptor set"""
@@ -71,7 +74,7 @@ class Descriptors(Entities):
         response, _ = self.db.query(query)
         logger.debug(response)
         assert self.db.last_query_ok(), response
-        return response[0]["FindDescriptorSet"]['entities'][0]["_metrics"][0]
+        return response[0]["FindDescriptorSet"]["entities"][0]["_metrics"][0]
 
     def _vector_similarity(self, v1, v2):
         """Find similarity between two vectors using the metric of the descriptor set."""
@@ -85,13 +88,15 @@ class Descriptors(Entities):
         else:
             raise ValueError("Unknown metric: %s" % self.metric)
 
-    def find_similar_mmr(self,
-                         set: str,
-                         vector,
-                         k_neighbors: int,
-                         fetch_k: int,
-                         lambda_mult: float = 0.5,
-                         **kwargs):
+    def find_similar_mmr(
+        self,
+        set: str,
+        vector,
+        k_neighbors: int,
+        fetch_k: int,
+        lambda_mult: float = 0.5,
+        **kwargs,
+    ):
         """
         As find_similar, but using the MMR algorithm to diversify the results.
 
@@ -112,12 +117,11 @@ class Descriptors(Entities):
 
         # MMR algorithm
         # Calculate similarity between query and all documents
-        query_similarity = [self._vector_similarity(
-            vector, d["vector"]) for d in self]
+        query_similarity = [self._vector_similarity(vector, d["vector"]) for d in self]
         # Calculate similarity between all pairs of documents
         document_similarity = {}
         for i, d in enumerate(self):
-            for j, d2 in enumerate(self[i + 1:], i + 1):
+            for j, d2 in enumerate(self[i + 1 :], i + 1):
                 similarity = self._vector_similarity(d["vector"], d2["vector"])
                 document_similarity[(i, j)] = similarity
                 document_similarity[(j, i)] = similarity
@@ -132,16 +136,18 @@ class Descriptors(Entities):
                 unselected.remove(0)
             else:
                 selected_unselected_similarity = np.array(
-                    [[document_similarity[(i, j)] for j in unselected] for i in selected])
-                worst_similarity = np.max(
-                    selected_unselected_similarity, axis=0)
-                relevance_scores = np.array(
-                    [query_similarity[i] for i in unselected])
-                scores = (1 - lambda_mult) * worst_similarity + \
-                    lambda_mult * relevance_scores
+                    [
+                        [document_similarity[(i, j)] for j in unselected]
+                        for i in selected
+                    ]
+                )
+                worst_similarity = np.max(selected_unselected_similarity, axis=0)
+                relevance_scores = np.array([query_similarity[i] for i in unselected])
+                scores = (
+                    1 - lambda_mult
+                ) * worst_similarity + lambda_mult * relevance_scores
                 max_index = unselected[np.argmax(scores)]
                 selected.append(max_index)
                 unselected.remove(max_index)
-        logger.info("Selected indexes: %s; unselected %s",
-                    selected, unselected)
+        logger.info("Selected indexes: %s; unselected %s", selected, unselected)
         self.response = [self[i] for i in selected]
