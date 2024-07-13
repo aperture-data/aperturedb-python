@@ -9,7 +9,7 @@ import platform
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.4.29"
+__version__ = "0.4.30"
 
 # set log level
 logger.setLevel(logging.DEBUG)
