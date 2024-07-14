@@ -90,6 +90,22 @@ class QGPersons(Subscriptable):
             self.response_blobs.append(output_blob)
 
 
+class QGPersonsBadHandler(QGPersons):
+    def response_handler(self, request, input_blob):
+        self.requests.append(request)
+        self.responses.append(response)
+        if output_blob is not None and len(output_blob) > 0:
+            self.response_blobs.append(output_blob)
+
+
+class QGPersonsIndex(QGPersons):
+    def response_handler(self, request, input_blob, response, output_blob, index):
+        self.requests[index] = request
+        self.responses[index] = response
+        if output_blob is not None and len(output_blob) > 0:
+            self.response_blobs[index] = output_blob
+
+
 class QGImages(QGPersons):
     def getitem(self, subscript):
         query = []
@@ -333,9 +349,51 @@ class TestResponseHandler():
                             expected_status = 2
                         assert part[key]["status"] == expected_status
                         if key == "AddImage":
-                            assert(self.response_blobs[set_key][j]
-                                   == j * 2)
+                            assert (self.response_blobs[set_key][j]
+                                    == j * 2)
                             expected_blobs = expected_blobs + 1
                         else:
                             assert part[key]["returned"] == j + 1
                 assert len(self.response_blobs[set_key]) == expected_blobs
+
+    @pytest.mark.parametrize("cpq", range(1, 3))
+    def test_varying_response_w_index(self, db, utils, cpq):
+        self.cleanDB()
+        persons = EntityWithResponseDataCSV(
+            "./input/persons.adb.csv", self.requests, self.responses)
+        loader = ParallelLoader(db)
+        loader.ingest(persons, batchsize=99,
+                      numthreads=31,
+                      stats=True)
+        assert loader.error_counter == 0
+
+        self.requests = {}
+        self.responses = {}
+        self.response_blobs = {}
+        generator = QGPersonsIndex(self.requests, self.responses,
+                                   cpq, self.response_blobs)
+        querier = ParallelQuery(db)
+        querier.query(generator, batchsize=100,
+                      numthreads=1,
+                      stats=True)
+        # req and resp are dict mapping index number to query.
+        for reqk, respk in zip(self.requests.keys(), self.responses.keys()):
+            req = self.requests[reqk]
+            age_group = req[0]["FindEntity"]["constraints"]["age"][1]
+            # in QGPersonIndex, age_group[1] is created by taking index
+            # and multiplying it by cqp and 10.
+            assert reqk == (age_group // cpq // 10)
+
+    def test_bad_responsehandler(self, db, utils, monkeypatch):
+        monkeypatch.setattr(Connector, "query", lambda s,
+                            r, b: mock_query(s, r, b))
+        self.requests = []
+        self.responses = []
+        self.response_blobs = []
+        generator = QGPersonsBadHandler(self.requests, self.responses,
+                                        1, self.response_blobs)
+        querier = ParallelQuery(db)
+        querier.query(generator, batchsize=99,
+                      numthreads=31,
+                      stats=True)
+        assert querier.error_counter != 0

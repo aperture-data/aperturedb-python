@@ -5,6 +5,7 @@ import numpy as np
 import json
 import logging
 import math
+import inspect
 
 
 from aperturedb.DaskManager import DaskManager
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 def execute_batch(q: Commands, blobs: Blobs, db: Connector,
                   success_statuses: list[int] = [0],
                   response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
-                  strict_response_validation: bool = False) -> Tuple[int, CommandResponses, Blobs]:
+                  strict_response_validation: bool = False, cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -50,7 +51,8 @@ def execute_batch(q: Commands, blobs: Blobs, db: Connector,
         if response_handler is not None:
             try:
                 ParallelQuery.map_response_to_handler(response_handler,
-                                                      q, blobs, r, b, commands_per_query, blobs_per_query)
+                                                      q, blobs, r, b, commands_per_query, blobs_per_query,
+                                                      cmd_index)
             except BaseException as e:
                 logger.exception(e)
                 if strict_response_validation:
@@ -112,7 +114,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     @classmethod
     def map_response_to_handler(cls, handler, query, query_blobs,  response, response_blobs,
-                                commands_per_query, blobs_per_query):
+                                commands_per_query, blobs_per_query, cmd_index_offset):
         # We could potentially always call this handler function
         # and let the user deal with the error cases.
         blobs_returned = 0
@@ -140,7 +142,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 response[start:end] if issubclass(
                     type(response), list) else response,
                 response_blobs[blobs_returned:blobs_returned + b_count] if
-                len(response_blobs) >= blobs_returned + b_count else None)
+                len(response_blobs) >= blobs_returned + b_count else None,
+                None if cmd_index_offset is None else cmd_index_offset + i)
             blobs_returned += b_count
 
     def __init__(self, db: Connector, dry_run: bool = False):
@@ -218,7 +221,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         except BaseException as e:
             logger.exception(e)
 
-    def do_batch(self, db: Connector, data: List[Tuple[Commands, Blobs]]) -> None:
+    def do_batch(self, db: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
         """
         Executes batch of queries and blobs in the database.
 
@@ -257,6 +260,19 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 response_handler = self.generator.response_handler
             if hasattr(self.generator, "strict_response_validation") and isinstance(self.generator.strict_response_validation, bool):
                 strict_response_validation = self.generator.strict_response_validation
+
+            # if response_handler doesn't support index, just discard the index with a wrapper.
+            if response_handler is not None:
+                parameter_count = len(inspect.signature(
+                    response_handler).parameters)
+                if parameter_count < 4 or parameter_count > 5:
+                    raise Exception("Bad Signature for response_handler :"
+                                    f"expected 6 > args > 3, got {parameter_count}")
+                if parameter_count == 4:
+                    indexless_handler = response_handler
+                    def response_handler(query, qblobs, resp, rblobs, qindex): return indexless_handler(
+                        query, qblobs, resp, rblobs)
+
             result, r, b = self.batch_command(
                 q,
                 blobs,
@@ -265,7 +281,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 response_handler,
                 self.commands_per_query,
                 self.blobs_per_query,
-                strict_response_validation=strict_response_validation)
+                strict_response_validation=strict_response_validation,
+                cmd_index=batch_start)
             if result == 0:
                 query_time = db.get_last_query_time()
                 worker_stats["succeeded_commands"] = len(q)
@@ -316,7 +333,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batch_end = min(batch_start + self.batchsize, end)
 
             try:
-                self.do_batch(db, generator[batch_start:batch_end])
+                self.do_batch(db, batch_start,
+                              generator[batch_start:batch_end])
             except Exception as e:
                 logger.exception(e)
                 logger.warning(

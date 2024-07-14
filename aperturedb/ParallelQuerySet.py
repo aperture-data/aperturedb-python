@@ -49,7 +49,8 @@ def gen_execute_batch_sets(base_executor):
     #
     def execute_batch_sets(query_set, blob_set, db, success_statuses: list[int] = [0],
                            response_handler: Optional[Callable] = None, commands_per_query: list[int] = -1,
-                           blobs_per_query: list[int] = -1, strict_response_validation: bool = False):
+                           blobs_per_query: list[int] = -1,
+                           strict_response_validation: bool = False, cmd_index: int = None):
 
         logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
             len(query_set), commands_per_query, blobs_per_query))
@@ -297,7 +298,11 @@ def gen_execute_batch_sets(base_executor):
             if len(executable_queries) > 0:
                 result_code, db_results, db_blobs = base_executor(executable_queries, used_blobs,
                                                                   db, local_success_statuses,
-                                                                  None, commands_per_query[i], blobs_per_query[i], strict_response_validation=strict_response_validation)
+                                                                  None,
+                                                                  commands_per_query[i],
+                                                                  blobs_per_query[i],
+                                                                  strict_response_validation=strict_response_validation,
+                                                                  cmd_index=cmd_index)
                 if response_handler != None and db.last_query_ok():
                     def map_to_set(query, query_blobs, resp, resp_blobs):
                         response_handler(
@@ -365,7 +370,7 @@ class ParallelQuerySet(ParallelQuery):
         logger.error(type(generator[0]))
         return False
 
-    def do_batch(self, db: Connector, data: List[Tuple[Commands, Blobs]]) -> None:
+    def do_batch(self, db: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
         """
         This is an override of ParallelQuery.do_batch.
 
@@ -387,7 +392,7 @@ class ParallelQuerySet(ParallelQuery):
         self.batch_command = gen_execute_batch_sets(
             self.base_batch_command)
 
-        ParallelQuery.do_batch(self, db, data)
+        ParallelQuery.do_batch(self, db, batch_start, data)
 
     def print_stats(self) -> None:
 

@@ -1,6 +1,13 @@
 """
 Miscellaneous utility functions for ApertureDB.
 """
+from aperturedb.Query import QueryBuilder
+from aperturedb.cli.configure import ls
+from aperturedb.Configuration import Configuration
+from aperturedb.ParallelQuery import execute_batch
+from aperturedb import ProgressBar
+from aperturedb.ConnectorRest import ConnectorRest
+from aperturedb.Connector import Connector
 import logging
 import json
 import os
@@ -8,15 +15,18 @@ import importlib
 import sys
 from typing import List, Optional, Dict
 
-from graphviz import Source, Digraph
+HAS_GRAPHVIZ = True
+try:
+    from graphviz import Source, Digraph
+except:
+    HAS_GRAPHVIZ = False
 
-from aperturedb.Connector import Connector
-from aperturedb.ConnectorRest import ConnectorRest
-from aperturedb import ProgressBar
-from aperturedb.ParallelQuery import execute_batch
-from aperturedb.Configuration import Configuration
-from aperturedb.cli.configure import ls
-from aperturedb.Query import QueryBuilder
+    class Source:
+        pass
+
+    class Digraph:
+        pass
+
 
 logger = logging.getLogger(__name__)
 
@@ -213,10 +223,24 @@ class Utils(object):
         Returns:
             source: The visualization of the schema.
         """
+        if not HAS_GRAPHVIZ:
+            raise Exception("graphviz not installed.")
         r = self.get_schema()
 
+        colors = dict(
+            edge="#3A3B9C",
+            entity_background="#2A2E78",
+            entity_foreground="#E2E0F1",
+            property_background="#337EC0",
+            property_foreground="#E2E0F1",
+            connection_background="#5956F1",
+            connection_foreground="#E2E0F1",
+            connection_property_background="#33E1FF",
+            connection_property_foreground="#2A2E78"
+        )
+
         dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={
-                      'shape': 'none', 'fontcolor': '#E2E0F1'}, graph_attr={'rankdir': 'LR'}, edge_attr={'color': '#3A3B9C'})
+                      'shape': 'none'}, graph_attr={'rankdir': 'LR'}, edge_attr={'color': colors['edge']})
 
         # Add entities as nodes and connections as edges
         entities = r['entities']['classes']
@@ -228,25 +252,25 @@ class Utils(object):
             properties = data["properties"]
             table = f'''<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-            <TR><TD BGCOLOR="#2A2E78" COLSPAN="3"><B>{entity}</B> ({matched:,})</TD></TR>
+            <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity}</B> ({matched:,})</FONT></TD></TR>
             '''
             for prop, (matched, indexed, typ) in properties.items():
-                table += f'<TR><TD BGCOLOR="#337EC0"><B>{prop.strip()}</B></TD> <TD BGCOLOR="#337EC0">{matched:,}</TD> <TD BGCOLOR="#337EC0">{"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
+                table += f'<TR><TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
             for connection, data in connections.items():
                 if data['src'] == entity:
                     matched = data["matched"]
                     # dictionary from name to (matched, indexed, type)
                     properties = data["properties"]
-                    table += f'<TR><TD BGCOLOR="#5956F1" COLSPAN="3" PORT="{connection}"><B>{connection}</B> ({matched:,})</TD></TR>'
+                    table += f'<TR><TD BGCOLOR="{colors["connection_background"]}" COLSPAN="3" PORT="{connection}"><FONT COLOR="{colors["connection_foreground"]}"><B>{connection}</B> ({matched:,})</FONT></TD></TR>'
                     if properties:
                         for prop, (matched, indexed, typ) in properties.items():
-                            table += f'<TR><TD BGCOLOR="#33E1FF"><B>{prop.strip()}</B></TD> <TD BGCOLOR="#33E1FF">{matched:,}</TD> <TD BGCOLOR="#33E1FF">{"Indexed" if indexed else "Unindexed"}, {typ}</TD></TR>'
+                            table += f'<TR><TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
             table += '</TABLE>>'
             dot.node(entity, label=table)
 
         for connection, data in connections.items():
             dot.edge(f'{data["src"]}:{connection}',
-                     f'{data["dst"]}:{connection}')
+                     f'{data["dst"]}')
 
         # Render the diagram inline
         s = Source(dot.source, filename="schema_diagram.gv", format="png")
