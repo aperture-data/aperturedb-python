@@ -358,7 +358,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     def get_succeeded_commands(self) -> int:
         return sum([stat["succeeded_commands"]
-                    for stat in self.actual_stats])
+                    for stat in self.actual_stats if "succeeded_commands" in stat])
 
     def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
         """
