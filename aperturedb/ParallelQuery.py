@@ -417,6 +417,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             self.run(generator, batchsize, numthreads, stats)
 
         if self.get_succeeded_commands() == 0:
+            logger.error("No commands succeeded")
             raise NoCommandsSucceededException()
 
     def print_stats(self) -> None:
