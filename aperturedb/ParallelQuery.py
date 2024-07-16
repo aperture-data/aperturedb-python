@@ -15,6 +15,10 @@ from aperturedb.types import Commands, Blobs, CommandResponses
 logger = logging.getLogger(__name__)
 
 
+class NoCommandsSucceededException(Exception):
+    pass
+
+
 def execute_batch(q: Commands, blobs: Blobs, db: Connector,
                   success_statuses: list[int] = [0],
                   response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
@@ -354,7 +358,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     def get_succeeded_commands(self) -> int:
         return sum([stat["succeeded_commands"]
-                    for stat in self.actual_stats])
+                    for stat in self.actual_stats if "succeeded_commands" in stat])
 
     def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
         """
@@ -411,6 +415,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}"
             )
             self.run(generator, batchsize, numthreads, stats)
+
+        if self.get_succeeded_commands() == 0:
+            logger.error(
+                f"No commands succeeded: Total queries executed: {len(self.times_arr)}, Total errors encountered: {self.error_counter}")
+            raise NoCommandsSucceededException()
 
     def print_stats(self) -> None:
 
