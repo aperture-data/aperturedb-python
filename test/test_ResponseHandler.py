@@ -395,8 +395,8 @@ class TestResponseHandler():
         querier = ParallelQuery(db)
         try:
             querier.query(generator, batchsize=99,
-                        numthreads=31,
-                        stats=True)
+                          numthreads=31,
+                          stats=True)
             assert False, "Should have raised an exception"
         except NoCommandsSucceededException:
             pass
