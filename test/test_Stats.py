@@ -44,7 +44,7 @@ class TestStats():
         try:
             out = self.ingest_with_capture(data, db)
             assert False, "Should have raised an exception"
-        except: NoCommandsSucceededException:
+        except NoCommandsSucceededException:
             pass
         assertions = {
             "Total inserted elements": lambda x: float(x) == 0,
