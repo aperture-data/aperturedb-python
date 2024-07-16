@@ -1,5 +1,7 @@
 from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.ParallelLoader import ParallelLoader
+from aperturedb.ParallelQuery import NoCommandsSucceededException
+
 from io import BytesIO, TextIOWrapper
 import sys
 
@@ -39,7 +41,11 @@ class TestStats():
         # Try to ingest descriptors, with no descriptor set, so all queries fail
         data = DescriptorDataCSV(
             "./input/setA.adb.csv", blobs_relative_to_csv=True)
-        out = self.ingest_with_capture(data, db)
+        try:
+            out = self.ingest_with_capture(data, db)
+            assert False, "Should have raised an exception"
+        except: NoCommandsSucceededException:
+            pass
         assertions = {
             "Total inserted elements": lambda x: float(x) == 0,
             "Overall insertion throughput (element/s)": lambda x: x == "NaN",

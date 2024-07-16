@@ -3,7 +3,7 @@ import logging
 import pytest
 from aperturedb.EntityDataCSV import EntityDataCSV
 from aperturedb.ParallelLoader import ParallelLoader
-from aperturedb.ParallelQuery import ParallelQuery
+from aperturedb.ParallelQuery import ParallelQuery, NoCommandsSucceededException
 from aperturedb.ParallelQuerySet import ParallelQuerySet
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Connector import Connector
@@ -393,7 +393,11 @@ class TestResponseHandler():
         generator = QGPersonsBadHandler(self.requests, self.responses,
                                         1, self.response_blobs)
         querier = ParallelQuery(db)
-        querier.query(generator, batchsize=99,
-                      numthreads=31,
-                      stats=True)
+        try:
+            querier.query(generator, batchsize=99,
+                        numthreads=31,
+                        stats=True)
+            assert False, "Should have raised an exception"
+        except NoCommandsSucceededException:
+            pass
         assert querier.error_counter != 0
