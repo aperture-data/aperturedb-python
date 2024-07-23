@@ -21,6 +21,7 @@ log_console_level = logging.getLevelName(
 
 # Set the logger filter to the minimum (more chatty) of the two handler levels
 # This reduces problems if the environment adds a root handler (e.g. Google Colab)
+print("Setting log level by minumum of file and console levels")
 logger_level = min(log_file_level, log_console_level)
 logger.setLevel(logging.DEBUG)
 
