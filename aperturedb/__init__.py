@@ -12,13 +12,17 @@ logger = logging.getLogger(__name__)
 __version__ = "0.4.30"
 
 # set log level
-logger.setLevel(logging.DEBUG)
-formatter    = logging.Formatter(
+formatter = logging.Formatter(
     "%(asctime)s : %(levelname)s : %(name)s : %(thread)d : %(lineno)d : %(message)s")
 
 log_file_level = logging.getLevelName(os.getenv("LOG_FILE_LEVEL", "WARN"))
 log_console_level = logging.getLevelName(
     os.getenv("LOG_CONSOLE_LEVEL", "ERROR"))
+
+# Set the logger filter to the minimum (more chatty) of the two handler levels
+# This reduces problems if the environment adds a root handler (e.g. Google Colab)
+logger_level = min(log_file_level, log_console_level)
+logger.setLevel(logging.DEBUG)
 
 # define file handler and set formatter
 error_file_name = "error.${now}.log"
