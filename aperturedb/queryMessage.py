@@ -15,4 +15,4 @@ elif google.protobuf.__version__.split(".")[0] == "4":
         return queryMessage4_pb2.queryMessage()
 else:
     raise Exception(
-        f"aperturedb not comaptible with {google.protobuf.__version__}")
+        f"aperturedb not compatible with {google.protobuf.__version__}")
