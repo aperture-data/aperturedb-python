@@ -22,8 +22,9 @@ log_console_level = logging.getLevelName(
 # Set the logger filter to the minimum (more chatty) of the two handler levels
 # This reduces problems if the environment adds a root handler (e.g. Google Colab)
 logger_level = min(log_file_level, log_console_level)
-if any( log_control in os.environ for log_control in [ "LOG_CONSOLE_LEVEL", "LOG_FILE_LEVEL" ]):
-   logger.setLevel(logger_level)
+if any(log_control in os.environ
+       for log_control in ["LOG_CONSOLE_LEVEL", "LOG_FILE_LEVEL"]):
+    logger.setLevel(logger_level)
 
 # define file handler and set formatter
 error_file_name = "error.${now}.log"
