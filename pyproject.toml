@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     # Pin to the bridge version.
     # https://github.com/tensorflow/tensorflow/issues/60320
-    'protobuf==3.20.3',
+    'protobuf >=3.20.3,<5.0.0',
     #Folllowing is needed parallel loaders, and basic things for
     # making the notebooks.
     'scikit-image', 'image', 'requests', 'boto3',
