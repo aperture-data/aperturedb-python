@@ -25,7 +25,7 @@
 # THE SOFTWARE.
 #
 from __future__ import annotations
-from . import queryMessage_pb2
+from . import queryMessage
 import sys
 import os
 import socket
@@ -359,7 +359,7 @@ class Connector(object):
         else:
             query_str = query
 
-        query_msg = queryMessage_pb2.queryMessage()
+        query_msg = queryMessage.queryMessage()
         # query has .json and .blobs
         query_msg.json = query_str
 
@@ -380,8 +380,8 @@ class Connector(object):
                 if self._send_msg(data):
                     response = self._recv_msg()
                     if response is not None:
-                        querRes = queryMessage_pb2.queryMessage()
-                        querRes.ParseFromString(response)
+                        querRes = queryMessage.queryMessage()
+                        queryMessage.ParseFromString(querRes, response)
                         response_blob_array = [b for b in querRes.blobs]
                         self.last_response = json.loads(querRes.json)
                         break

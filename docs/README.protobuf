@@ -1,0 +1,14 @@
+ApertureDB python library supports version 3 and 4 of protobuf.
+
+These are incompatable implementations in that the proto file that protoc
+compiles into python code will not work between versions.
+
+To solve this we have added a thin wrapper which selects the backend
+implementation based on the system installed version.
+
+This is done because customers use packages alongside aperturedb which require
+python protobuf packages from both the 3.x line and the 4.x line.
+
+To regenerate the files, simply take the queryMessage.proto file, and make
+copies which append the version at the end, then use the matching protoc to
+compile them. Finally place them in this repo.
