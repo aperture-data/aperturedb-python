@@ -381,7 +381,8 @@ class Connector(object):
                     response = self._recv_msg()
                     if response is not None:
                         querRes = queryMessage.queryMessage()
-                        querRes.ParseFromString(bytes(response))
+                        querRes.ParseFromString(response if
+                                queryMessage.bytearray_ok() else memoryview(response).tobytes())
                         response_blob_array = [b for b in querRes.blobs]
                         self.last_response = json.loads(querRes.json)
                         break
