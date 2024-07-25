@@ -7,6 +7,7 @@ if google.protobuf.__version__.split(".")[0] == "3":
 
     def queryMessage():
         return queryMessage3_pb2.queryMessage()
+
     def bytearray_ok():
         return True
 elif google.protobuf.__version__.split(".")[0] == "4":
@@ -16,6 +17,7 @@ elif google.protobuf.__version__.split(".")[0] == "4":
     def queryMessage():
         return queryMessage4_pb2.queryMessage()
     # because of https://github.com/protocolbuffers/protobuf/issues/10774
+
     def bytearray_ok():
         return False
 else:
