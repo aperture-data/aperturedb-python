@@ -46,6 +46,13 @@ class Sources():
         retries = 0
         while True:
             imgdata = self.http_client.get(url)
+            if imgdata.history:
+                logger.info("Request was redirected")
+                for resp in imgdata.history:
+                    logger.info(resp.status_code, resp.url)
+                logger.info("Final destination:")
+                logger.info(imgdata.status_code, imgdata.url)
+
             if imgdata.ok:
                 imgbuffer = np.frombuffer(imgdata.content, dtype='uint8')
                 if not validator(imgbuffer):
