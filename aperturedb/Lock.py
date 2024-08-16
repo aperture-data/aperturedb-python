@@ -42,7 +42,7 @@ from typing_extensions import override
 from typing import Optional
 from contextlib import AbstractContextManager
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from Connector import Connector
 from types import Commands
@@ -94,6 +94,7 @@ class Lock(AbstractContextManager):
         lock_properties = {
             "uuid": uuid,
             "timestamp": now,
+            "type": "write",  # For now, only write locks are supported
         }
         if client:
             lock_properties["client"] = client
@@ -196,3 +197,24 @@ class Lock(AbstractContextManager):
         """Unlocks the obect if it hasn't been unlocked yet
         """
         self._unlock()
+
+    @classmethod
+    def cleanup(class_, db, age=24*60*60):
+        """Cleans up old locks
+
+        Arguments:
+            db: ApertureDB connector
+            age: Maximum age of locks in seconds.  Default is 24 hours.
+        """
+        # Hopefully clocks are synchronized
+        threshold = (datetime.now() + timedelta(seconds=-age)).isoformat()
+        query = [
+            {
+                "DeleteEntity": {
+                    "with_class": LOCK_CLASS,
+                    "constraints": {"timestamp": ["<", threshold]},
+                }
+            }
+        ]
+        result, blobs_returned = db.query(query)
+        return result[0]["count"]  # Return number of locks deleted
