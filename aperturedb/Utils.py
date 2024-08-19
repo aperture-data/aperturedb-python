@@ -67,40 +67,44 @@ def __create_connector(configuration: Configuration):
     return connector
 
 
-def create_connector():
+def create_connector(name: Optional[str] = None) -> Connector:
     """
     **Create a connector to the database.**
 
-    This function reads the active configuration.
+    This function chooses a configuration in the folowing order:
+    1. The configuration specified by the `name` parameter.
+    2. The configuration specified by the `APERTUREDB_CONFIG` environment variable.
+    3. The active configuration.
+
+    If there are both global and local configurations with the same name, the global configuration is preferred.
+
     See :ref:`adb config <adb_config>`_ command-line tool for more information.
 
     Args:
-        None
+        name (str, optional): The name of the configuration to use. Default is None.
 
     Returns:
         Connector: The connector to the database.
     """
     all_configs = ls(log_to_console=False)
 
-    ac = all_configs["active"]
-    config = None
-    if ac is not None:
-        # check if the active config is in the global or local
-        # Local should be the final choice
-        if "global" in all_configs and ac in all_configs["global"]:
-            config = all_configs["global"][ac]
-        if "local" in all_configs and ac in all_configs["local"]:
-            config = all_configs["local"][ac]
-    assert config is not None, "No active configuration found."
+    def lookup_config_by_name(name: str, source: str) -> Configuration:
+        if "global" in all_configs and name in all_configs["global"]:
+            return all_configs["global"][name]
+        if "local" in all_configs and name in all_configs["local"]:
+            return all_configs["local"][name]
+        assert False, f"Configuration '{name}' not found ({source})."
 
-    env_config = os.environ.get("APERTUREDB_CONFIG")
-    if env_config is not None:
-        # TODO test me.
-        config = all_configs["global"][env_config] if env_config in all_configs["global"] else all_configs["local"][env_config]
-        return __create_connector(config)
-    # Then check if the local config has active
+    if name is not None:
+        config = lookup_config_by_name(name, "explicit")
+    elif "APERTUREDB_CONFIG" in os.environ and os.environ["APERTUREDB_CONFIG"] != "":
+        config = lookup_config_by_name(
+            os.environ["APERTUREDB_CONFIG"], "envar")
+    elif "active" in all_configs:
+        config = lookup_config_by_name(all_configs["active"], "active")
     else:
-        return __create_connector(config)
+        assert False, "No configuration found."
+    return __create_connector(config)
 
 
 class Utils(object):
