@@ -1,16 +1,16 @@
 import argparse
-from aperturedb import Utils, ParallelLoader
-import dbinfo
+from aperturedb.ParallelLoader import ParallelLoader
 from CelebADataKaggle import CelebADataKaggle
 from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
 from aperturedb.transformers.common_properties import CommonProperties
 from aperturedb.transformers.image_properties import ImageProperties
+from aperturedb.Utils import create_connector, Utils
 
 search_set_name = "similar_celebreties"
 
 
 def main(params):
-    utils = Utils.Utils(dbinfo.create_connector())
+    utils = Utils(create_connector())
     utils.remove_descriptorset(search_set_name)
 
     dataset = CelebADataKaggle()
@@ -31,7 +31,7 @@ def main(params):
     dataset = dataset[:params.images_count]
     print(len(dataset))
 
-    loader = ParallelLoader.ParallelLoader(dbinfo.create_connector())
+    loader = ParallelLoader(create_connector())
     loader.ingest(dataset, stats=True)
 
 
