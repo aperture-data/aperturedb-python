@@ -5,25 +5,12 @@ import typer
 import os
 import time
 import numpy as np
-import pandas as pd
 
 from typing_extensions import Annotated
-from aperturedb.ParallelLoader import ParallelLoader
-from aperturedb.ImageDataCSV import ImageDataCSV
-from aperturedb.BBoxDataCSV import BBoxDataCSV
-from aperturedb.EntityDataCSV import EntityDataCSV
-from aperturedb.BlobDataCSV import BlobDataCSV
-from aperturedb.ConnectionDataCSV import ConnectionDataCSV
-from aperturedb.PolygonDataCSV import PolygonDataCSV
-from aperturedb.VideoDataCSV import VideoDataCSV
-from aperturedb.DescriptorDataCSV import DescriptorDataCSV
-from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
 
-from aperturedb.Utils import create_connector
 from aperturedb.Query import ObjectType
 from aperturedb.cli.console import console
 
-from aperturedb.Utils import import_module_by_path
 
 from tqdm import tqdm
 
@@ -118,6 +105,10 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     """
     Ingest data from a Data generator [BETA].
     """
+    from aperturedb.ParallelLoader import ParallelLoader
+    from aperturedb.Utils import create_connector
+    from aperturedb.Utils import import_module_by_path
+
     db = create_connector()
     loader = ParallelLoader(db)
 
@@ -185,6 +176,18 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     """
     Ingest data from a pre generated CSV file.
     """
+    from aperturedb.ImageDataCSV import ImageDataCSV
+    from aperturedb.BBoxDataCSV import BBoxDataCSV
+    from aperturedb.EntityDataCSV import EntityDataCSV
+    from aperturedb.BlobDataCSV import BlobDataCSV
+    from aperturedb.ConnectionDataCSV import ConnectionDataCSV
+    from aperturedb.PolygonDataCSV import PolygonDataCSV
+    from aperturedb.VideoDataCSV import VideoDataCSV
+    from aperturedb.DescriptorDataCSV import DescriptorDataCSV
+    from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
+    from aperturedb.ParallelLoader import ParallelLoader
+
+    from aperturedb.Utils import create_connector
 
     ingest_types = {
         IngestType.BLOB: BlobDataCSV,
@@ -241,6 +244,9 @@ def generate_embedding_csv_from_image_csv(
     image_properties transformer must be used at actual ingestion.
     It is also applied by default for CSV generation.
     """
+    import pandas as pd
+    from aperturedb.ImageDataCSV import ImageDataCSV
+
     data = ImageDataCSV(input_file)
     data.sample_count = len(data) if sample_count == -1 else sample_count
     if transformer or user_transformer:
