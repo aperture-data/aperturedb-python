@@ -167,11 +167,7 @@ class Connector(object):
         if not self.authenticated:
             if shared_data.session is None:
                 self.shared_data.lock = Lock()
-                try:
-                    self._authenticate(user, password, token)
-                except Exception as e:
-                    raise UnauthenticatedException(
-                        "Authentication failed:", str(e))
+                self._authenticate(user, password, token)
             else:
                 self.shared_data = shared_data
             self.authenticated = True
@@ -343,7 +339,7 @@ class Connector(object):
                 self._connect()
             except socket.error as e:
                 logger.error(
-                    f"Error connecting to server: {self.config} \r\n{details}.",
+                    f"Error connecting to server: {self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
 
@@ -432,8 +428,13 @@ class Connector(object):
             if try_resume:
                 self._renew_session()
         if tries == self.config.retry_max_attempts:
+            # We have tried enough times, and failed. Log some state info.
             raise Exception(
-                f"Could not query apertureDB using TCP.")
+                f"Could not query apertureDB using TCP. \r\n\
+                {self.connected=}\r\n \
+                {self.authenticated=} \r\n \
+                attempts={tries}/{self.config.retry_max_attempts} \r\n \
+                {self.config=}")
         return (self.last_response, response_blob_array)
 
     def query(self, q, blobs=[]):
