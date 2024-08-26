@@ -327,10 +327,6 @@ class Connector(object):
                 self.conn = self.context.wrap_socket(self.conn)
 
         except BaseException as e:
-            logger.error(
-                f"Error connecting to server: {str(e)} {self.config}",
-                exc_info=True,
-                stack_info=True)
             self.conn.close()
             self.connected = False
             raise
