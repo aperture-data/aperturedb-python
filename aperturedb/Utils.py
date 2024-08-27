@@ -120,7 +120,7 @@ class Utils(object):
         self.verbose = verbose
 
     def __repr__(self):
-        return f"{id(self)=}"
+        return f"{id(self)}"
 
     def print(self, str):
         if self.verbose:
