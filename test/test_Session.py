@@ -110,7 +110,7 @@ class TestSession():
             new_db.query([{"FindImage": {"results": {"limit": 5}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
-            assert e.args[0] == "Authentication failed:"
+            assert "self.connected=False" in e.args[0]
 
         # Check that we tried to connect 3 times.
         assert connect_attempts == 3
@@ -136,7 +136,7 @@ class TestSession():
             new_db.query([{"FindImage": {"results": {"limit": 5}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
-            assert e.args[0] == "Authentication failed:"
+            assert "self.connected=False" in e.args[0]
 
         # Check that we tried to send 5 (connect hello:2) + query:3) times.
         assert send_attempts == 5
@@ -164,7 +164,7 @@ class TestSession():
             new_db.query([{"FindImage": {"results": {"limit": 5}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
-            assert e.args[0] == "Authentication failed:"
+            assert "self.connected=False" in e.args[0]
 
         # Check that we tried to connect 3 times.
         assert connect_attempts == 3
