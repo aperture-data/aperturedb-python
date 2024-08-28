@@ -147,8 +147,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
             blobs_returned += b_count
 
     def __init__(self, db: Connector, dry_run: bool = False):
-
         super().__init__()
+        from aperturedb.Utils import Utils
+
+        utils = Utils(db)
+        test_string = f"Connection test successful with {db.config}"
+        try:
+            utils.get_schema()
+            logger.info(test_string)
+        except Exception as e:
+            logger.error(test_string.replace("successful", "failed"))
+            raise
 
         self.db = db.create_new_connection()
 
