@@ -36,6 +36,7 @@ The tests are inside the `test` dir.
 All the tests can be run with:
 
 ```bash
+export GCP_SERVICE_ACCOUNT_KEY=<content of a GCP SERVICE ACCOUNT JSON file>
 bash run_test.sh
 ```
 

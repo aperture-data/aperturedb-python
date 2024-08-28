@@ -9,9 +9,6 @@ from typing_extensions import Annotated
 from aperturedb.cli.console import console
 
 from aperturedb.Connector import Connector
-from aperturedb.Images import Images
-from aperturedb.ParallelQuery import execute_batch
-from aperturedb.Utils import create_connector
 import logging
 
 logger = logging.getLogger(__file__)
@@ -38,6 +35,8 @@ class OutputTypes(str, Enum):
 
 
 def dump_to_stdout(db: Connector, transaction: dict, **kwargs):
+    from aperturedb.ParallelQuery import execute_batch
+
     result, response, blobs = execute_batch(
         db=db,
         q=transaction,
@@ -49,6 +48,9 @@ def dump_to_stdout(db: Connector, transaction: dict, **kwargs):
 
 
 def mount_as_coco_ds(db: Connector, transaction: dict, **kwargs):
+    from aperturedb.Images import Images
+    from aperturedb.ParallelQuery import execute_batch
+
     result, response, blobs = execute_batch(
         db=db,
         q=transaction,
@@ -80,6 +82,8 @@ def from_json_file(
     output_path: Annotated[str,  typer.Option(
         help="Path to output (only for mount as output)")] = None
 ):
+    from aperturedb.Utils import create_connector
+
     db = create_connector()
 
     output_types = {
