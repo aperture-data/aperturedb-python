@@ -65,7 +65,8 @@ def __create_connector(configuration: Configuration):
             password=configuration.password,
             use_ssl=configuration.use_ssl,
             config=configuration)
-    logger.info(f"Connected Using: {configuration}")
+    logger.debug(
+        f"Created connector using: {configuration}. Will connect on query.")
     return connector
 
 

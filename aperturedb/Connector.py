@@ -276,6 +276,10 @@ class Connector(object):
     def _connect(self):
 
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Setting a reasonable timeout value for the connection
+        # default is None which leads to blocking call till system does something.
+        # https://docs.python.org/3/library/socket.html#timeouts-and-the-connect-method
+        self.conn.settimeout(1)
         self.conn.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
         if self.use_keepalive:
             keepalive.set(self.conn)
