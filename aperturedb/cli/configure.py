@@ -117,7 +117,9 @@ def create(
         password: Annotated[str, typer.Option(help="Password")] = "admin",
         use_rest: Annotated[bool, typer.Option(help="Use REST")] = False,
         use_ssl: Annotated[bool, typer.Option(help="Use SSL")] = True,
-        interactive: Annotated[bool, typer.Option(help="Interactive mode")] = True):
+        interactive: Annotated[bool, typer.Option(
+            help="Interactive mode")] = True,
+        overwrite: Annotated[bool, typer.Option(help="overwrite existing configuration")] = False):
     """
     Create a new configuration for the client.
     """
@@ -141,6 +143,12 @@ def create(
     except json.JSONDecodeError:
         active = True
 
+    if name in configs and not overwrite:
+        console.log(
+            f"Configuration named '{name}' already exists. Use --overwrite to overwrite.",
+            style="bold yellow")
+        raise typer.Exit(code=2)
+
     if interactive:
         db_host = typer.prompt(f"Enter {APP_NAME} host name", default=db_host)
         db_port = typer.prompt(
@@ -163,6 +171,7 @@ def create(
         use_ssl=db_use_ssl,
         use_rest=db_use_rest
     )
+
     configs[name] = gen_config
     if active:
         configs["active"] = name
