@@ -2,7 +2,6 @@ import time
 import requests
 import os
 import logging
-from os import path
 
 import cv2
 import numpy as np

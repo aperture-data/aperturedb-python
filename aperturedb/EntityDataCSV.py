@@ -1,5 +1,4 @@
 from aperturedb import CSVParser
-from aperturedb.EntityUpdateDataCSV import SingleEntityUpdateDataCSV
 import logging
 
 logger = logging.getLogger(__name__)

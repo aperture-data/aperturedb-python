@@ -55,6 +55,7 @@ def __create_connector(configuration: Configuration):
             port=configuration.port,
             user=configuration.username,
             password=configuration.password,
+            use_ssl=configuration.use_ssl,
             config=configuration)
     else:
         connector = Connector(
@@ -62,6 +63,7 @@ def __create_connector(configuration: Configuration):
             port=configuration.port,
             user=configuration.username,
             password=configuration.password,
+            use_ssl=configuration.use_ssl,
             config=configuration)
     logger.info(f"Connected Using: {configuration}")
     return connector

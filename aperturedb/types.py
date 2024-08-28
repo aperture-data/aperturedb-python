@@ -1,6 +1,6 @@
 # This file only exists to support readable type hints
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 
 Command = Dict[str, Any]
 Blob = bytes

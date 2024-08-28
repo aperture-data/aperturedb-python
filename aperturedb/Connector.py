@@ -25,6 +25,7 @@
 # THE SOFTWARE.
 #
 from __future__ import annotations
+from typing import Optional
 from . import queryMessage
 import sys
 import os
@@ -105,7 +106,7 @@ class Connector(object):
                  use_keepalive=True,
                  retry_interval_seconds=1,
                  retry_max_attempts=3,
-                 config: Configuration = None):
+                 config: Optional[Configuration] = None):
         """
         Constructor for the Connector class.
         """

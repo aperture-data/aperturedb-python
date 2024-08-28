@@ -31,9 +31,7 @@ import time
 import json
 import logging
 
-from threading import Lock
 from types import SimpleNamespace
-from dataclasses import dataclass
 from aperturedb.Connector import Connector
 from aperturedb.Configuration import Configuration
 

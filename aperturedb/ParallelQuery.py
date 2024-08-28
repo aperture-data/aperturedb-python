@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Dict, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional
 from aperturedb import Parallelizer
 import numpy as np
 import json
