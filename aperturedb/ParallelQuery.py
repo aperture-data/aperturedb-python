@@ -148,12 +148,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     def __init__(self, db: Connector, dry_run: bool = False):
         super().__init__()
-        from aperturedb.Utils import Utils
-
-        utils = Utils(db)
         test_string = f"Connection test successful with {db.config}"
         try:
-            utils.get_schema()
+            _, _ = db.query([{"GetSchema": {}}], [])
             logger.info(test_string)
         except Exception as e:
             logger.error(test_string.replace("successful", "failed"))
