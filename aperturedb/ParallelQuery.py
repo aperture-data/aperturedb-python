@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Dict, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional
 from aperturedb import Parallelizer
 import numpy as np
 import json
@@ -147,8 +147,14 @@ class ParallelQuery(Parallelizer.Parallelizer):
             blobs_returned += b_count
 
     def __init__(self, db: Connector, dry_run: bool = False):
-
         super().__init__()
+        test_string = f"Connection test successful with {db.config}"
+        try:
+            _, _ = db.query([{"GetSchema": {}}], [])
+            logger.info(test_string)
+        except Exception as e:
+            logger.error(test_string.replace("successful", "failed"))
+            raise
 
         self.db = db.create_new_connection()
 

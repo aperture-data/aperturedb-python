@@ -1,6 +1,6 @@
 import logging
 from aperturedb.CSVParser import CSVParser, CONSTRAINTS_PREFIX
-from aperturedb.Query import QueryBuilder, ObjectType
+from aperturedb.Query import QueryBuilder
 
 logger = logging.getLogger(__name__)
 

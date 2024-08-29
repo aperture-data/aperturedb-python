@@ -25,6 +25,7 @@
 # THE SOFTWARE.
 #
 from __future__ import annotations
+from typing import Optional
 from . import queryMessage
 import sys
 import os
@@ -105,7 +106,7 @@ class Connector(object):
                  use_keepalive=True,
                  retry_interval_seconds=1,
                  retry_max_attempts=3,
-                 config: Configuration = None):
+                 config: Optional[Configuration] = None):
         """
         Constructor for the Connector class.
         """
@@ -275,6 +276,10 @@ class Connector(object):
     def _connect(self):
 
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Setting a reasonable timeout value for the connection
+        # default is None which leads to blocking call till system does something.
+        # https://docs.python.org/3/library/socket.html#timeouts-and-the-connect-method
+        self.conn.settimeout(1)
         self.conn.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
         if self.use_keepalive:
             keepalive.set(self.conn)
