@@ -1,8 +1,8 @@
 import io
 
 from aperturedb.ParallelLoader import ParallelLoader
+from aperturedb.Utils import create_connector
 from PIL import Image
-import dbinfo
 from CocoDataPyTorch import CocoDataPyTorch
 import argparse
 
@@ -26,7 +26,7 @@ def main(params):
             if len(images) == params.images_count:
                 break
 
-    loader = ParallelLoader(dbinfo.create_connector())
+    loader = ParallelLoader(create_connector())
     loader.ingest(generator = images, stats=True)
     print(f"Inserted {params.images_count} images to aperturedb")
 
