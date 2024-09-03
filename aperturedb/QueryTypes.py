@@ -35,12 +35,10 @@ class ClipModel(IdentityModel):
                      PropertyType.SYSTEM]
     stop: Annotated[float, Field(title="Stop", description="Stop point as frame, time(hh:mm:ss.uuuuuu) or fraction"),
                     PropertyType.SYSTEM]
-    # video: Annotated[VideoModel, Field(title="Video", description="Video ID"), PropertyType.SYSTEM]
 
 
 class VideoModel(BlobModel):
     type = ObjectType.VIDEO
-    # clips: Annotated[List[ClipModel], Field(title="Clip", description="Clip object", default_factory=list)]
 
 
 class DescriptorModel(IdentityModel):

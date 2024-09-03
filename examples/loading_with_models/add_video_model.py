@@ -4,9 +4,16 @@ from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Query import generate_save_query
 from aperturedb.Query import RangeType
 
+# Define the models for the associstaion of Video, Video Clips, and Embeddings
+# Note : Video has multiple Clips, and each Clip has an embedding.
+
+# Video clip -> Embedding.
+
 
 class ClipEmbeddingModel(ClipModel):
     embedding: DescriptorModel
+
+# Video -> Video Clips
 
 
 class VideoClipsModel(VideoModel):
@@ -14,15 +21,19 @@ class VideoClipsModel(VideoModel):
     description: str
     clips: list[ClipEmbeddingModel] = []
 
+# Function to create a connected Video object model.
+
 
 def save_video_details_to_aperturedb(URL: str, embeddings):
     video = VideoClipsModel(url=URL, title="Title", description="Description")
+    # Use the embeddings to create the video clips, and add them to the video object
     for embedding in embeddings:
         video.clips.append(ClipEmbeddingModel(
             range_type=RangeType.TIME,
             start=embedding['start_offset_sec'],
             stop=embedding['end_offset_sec'],
             embedding=DescriptorModel(
+                # The corresponding descriptor to the Video Clip.
                 vector=embedding['embedding'], set=descriptorset)
         ))
     return video
