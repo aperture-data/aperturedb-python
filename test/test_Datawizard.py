@@ -116,7 +116,7 @@ def make_people(count: int = 1) -> List[object]:
         dominant_hand: Hand = None
 
     def make_hand(side: Side) -> Hand:
-        hand = Hand(side = side, file= "input/images/0079.jpg")
+        hand = Hand(side = side, url= "input/images/0079.jpg")
         hand.fingers = [Finger(nail_clean=True) if random.randint(
             0, 1) == 1 else Finger(nail_clean=False) for i in range(5)]
         hand.thumb = hand.fingers[0]
