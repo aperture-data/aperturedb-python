@@ -1,7 +1,6 @@
 from aperturedb.PyTorchData import PyTorchData
 from torchvision.datasets import CocoDetection
 from aperturedb.Images import image_to_bytes
-import pycocotools.mask as mask
 import cv2
 
 
