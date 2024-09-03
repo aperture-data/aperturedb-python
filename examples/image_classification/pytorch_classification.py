@@ -1,10 +1,10 @@
 import time
 import AlexNetClassifier as alexnet
-import dbinfo
 from aperturedb import PyTorchDataset
+from aperturedb.Utils import create_connector
 
+db = create_connector()
 
-db = dbinfo.create_connector()
 out_file_name = "classification.txt"
 query = [{
     "FindImage": {

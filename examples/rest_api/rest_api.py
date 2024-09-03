@@ -1,10 +1,13 @@
-import dbinfo
 import requests
 import argparse
 import json
 import os
+from aperturedb.Utils import create_connector
+from aperturedb.Connector import Connector
 
-URL = "https://" + dbinfo.DB_HOST  + '/api'
+db: Connector = create_connector()
+
+URL = "https://" + db.config.host  + '/api'
 
 VERIFY_SSL = True
 
@@ -23,8 +26,8 @@ def auth():
 
     query = [{
         "Authenticate": {
-            "username": dbinfo.DB_USER,
-            "password": dbinfo.DB_PASS,
+            "username": db.config.username,
+            "password": db.config.password,
         }
     }]
 
