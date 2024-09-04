@@ -2,7 +2,7 @@ import logging
 import random
 
 from aperturedb.Connector import Connector
-from aperturedb.ParallelQuery import ParallelQuery
+from aperturedb.ParallelQuery import ParallelQuery, NoCommandsSucceededException
 from aperturedb.Subscriptable import Subscriptable
 
 logger = logging.getLogger(__name__)
@@ -75,8 +75,9 @@ class TestParallel():
             querier.query(generator, batchsize=2,
                           numthreads=8,
                           stats=True)
-            logger.info(querier.get_succeeded_commands())
-            assert querier.get_succeeded_commands() == 0
+            assert False, "Query should have thrown"
+        except NoCommandsSucceededException as e:
+            print("Exception thrown as expected", e)
         except Exception as e:
             print(e)
             print("Failed to renew Session")
