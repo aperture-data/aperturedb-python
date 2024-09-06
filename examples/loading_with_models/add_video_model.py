@@ -3,6 +3,7 @@ from aperturedb.Utils import create_connector
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Query import generate_save_query
 from aperturedb.Query import RangeType
+from typing import List
 
 # Define the models for the associstaion of Video, Video Clips, and Embeddings
 # Note : Video has multiple Clips, and each Clip has an embedding.
@@ -19,7 +20,7 @@ class ClipEmbeddingModel(ClipModel):
 class VideoClipsModel(VideoModel):
     title: str
     description: str
-    clips: list[ClipEmbeddingModel] = []
+    clips: List[ClipEmbeddingModel] = []
 
 # Function to create a connected Video object model.
 
