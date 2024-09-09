@@ -1,4 +1,4 @@
-from aperturedb.QueryTypes import VideoModel, ClipModel, DescriptorModel, DescriptorSetModel
+from aperturedb.DataModels import VideoModel, ClipModel, DescriptorModel, DescriptorSetModel
 from aperturedb.Utils import create_connector
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Query import generate_save_query

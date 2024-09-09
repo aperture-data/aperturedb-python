@@ -6,7 +6,7 @@ from aperturedb.Entities import Entities
 from aperturedb.Images import Images
 from aperturedb.Query import ObjectType, Query
 from aperturedb.Query import generate_save_query
-from aperturedb.QueryTypes import ImageModel, IdentityModel
+from aperturedb.DataModels import ImageModel, IdentityModel
 import random
 from typing import List
 from enum import Enum
