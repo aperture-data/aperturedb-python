@@ -4,7 +4,7 @@ dynamic = ["version"]
 description = "ApertureDB Python SDK"
 
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = {file = "LICENSE"}
 keywords = ["aperturedb", "graph", "database",
  "image", "video", "metadata", "search", "indexing"]
@@ -22,7 +22,7 @@ dependencies = [
     'scikit-image', 'image', 'requests', 'boto3',
     # https://github.com/Kaggle/kaggle-api/issues/611
     'numpy<2', 'matplotlib', 'pandas', 'kaggle!=1.6.15', 'google-cloud-storage',
-    'ipython', 'dask[complete]', 'ipywidgets', 'pydantic', 'devtools', 'typer[all]',
+    'ipython', 'dask[complete]', 'ipywidgets', 'pydantic>=2.6.0', 'devtools', 'typer[all]',
     "opencv-python-headless",
     # Pinning this to be able to install google-cloud-bigquery
     'grpcio-status==1.48.2',

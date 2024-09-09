@@ -50,6 +50,7 @@ config = Config.SAVE_NAME
 sources = Sources(n_download_retries=3)
 source_url_handlers = {
     "http": sources.load_from_http_url,
+    "https": sources.load_from_http_url,
     "": sources.load_from_file,
     "s3": sources.load_from_s3_url,
     "gs": sources.load_from_gs_url
@@ -198,8 +199,9 @@ def generate_save_query(
                 query.append(
                     QueryBuilder.add_command(obj.type.value, params=params))
             else:
-                params["constraints"] = params["if_not_found"]
-                params.pop("if_not_found", None)
+                if "if_not_found" in params:
+                    params["constraints"] = params["if_not_found"]
+                    params.pop("if_not_found", None)
                 params.pop("properties", None)
                 query.append(
                     QueryBuilder.find_command(obj.type.value, params=params))
