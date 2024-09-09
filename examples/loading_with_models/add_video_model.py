@@ -1,4 +1,4 @@
-from aperturedb.DataModels import VideoModel, ClipModel, DescriptorModel, DescriptorSetModel
+from aperturedb.DataModels import VideoDataModel, ClipDataModel, DescriptorDataModel, DescriptorSetDataModel
 from aperturedb.Utils import create_connector
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Query import generate_save_query
@@ -11,13 +11,13 @@ from typing import List
 # Video clip -> Embedding.
 
 
-class ClipEmbeddingModel(ClipModel):
-    embedding: DescriptorModel
+class ClipEmbeddingModel(ClipDataModel):
+    embedding: DescriptorDataModel
 
 # Video -> Video Clips
 
 
-class VideoClipsModel(VideoModel):
+class VideoClipsModel(VideoDataModel):
     title: str
     description: str
     clips: List[ClipEmbeddingModel] = []
@@ -33,7 +33,7 @@ def save_video_details_to_aperturedb(URL: str, embeddings):
             range_type=RangeType.TIME,
             start=embedding['start_offset_sec'],
             stop=embedding['end_offset_sec'],
-            embedding=DescriptorModel(
+            embedding=DescriptorSetDataModel(
                 # The corresponding descriptor to the Video Clip.
                 vector=embedding['embedding'], set=descriptorset)
         ))

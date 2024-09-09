@@ -6,7 +6,7 @@ from aperturedb.Entities import Entities
 from aperturedb.Images import Images
 from aperturedb.Query import ObjectType, Query
 from aperturedb.Query import generate_save_query
-from aperturedb.DataModels import ImageModel, IdentityModel
+from aperturedb.DataModels import ImageDataModel, IdentityDataModel
 import random
 from typing import List
 from enum import Enum
@@ -102,15 +102,15 @@ def make_people(count: int = 1) -> List[object]:
         RIGHT = 1
         LEFT = 2
 
-    class Finger(IdentityModel):
+    class Finger(IdentityDataModel):
         nail_clean: bool = False
 
-    class Hand(ImageModel):
+    class Hand(ImageDataModel):
         side: Side = None
         thumb: Finger = None
         fingers: List[Finger] = []
 
-    class Person(IdentityModel):
+    class Person(IdentityDataModel):
         name: str = ""
         hands: List[Hand] = []
         dominant_hand: Hand = None
