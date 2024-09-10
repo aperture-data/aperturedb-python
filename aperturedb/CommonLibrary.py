@@ -168,7 +168,7 @@ def execute_query(q: Commands, blobs: Blobs, db: Connector,
     return result, r, b
 
 
-def map_response_to_handler(cls, handler, query, query_blobs,  response, response_blobs,
+def map_response_to_handler(handler, query, query_blobs,  response, response_blobs,
                             commands_per_query, blobs_per_query, cmd_index_offset):
     # We could potentially always call this handler function
     # and let the user deal with the error cases.
