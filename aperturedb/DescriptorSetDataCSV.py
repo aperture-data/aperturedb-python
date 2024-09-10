@@ -1,5 +1,4 @@
 import ast
-from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
 HEADER_NAME = "name"

@@ -2,14 +2,13 @@ from __future__ import annotations
 from typing import Any, Callable, List, Tuple
 import itertools
 import logging
-import math
 
 import numpy as np
 
 from aperturedb.ParallelQuery import ParallelQuery
 from aperturedb.Connector import Connector
 
-from aperturedb.types import Command, Blob, Commands, Blobs, CommandResponses
+from aperturedb.types import Commands, Blobs
 
 logger = logging.getLogger(__name__)
 

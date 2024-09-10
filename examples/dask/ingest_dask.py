@@ -2,7 +2,7 @@ import dask
 from dask import dataframe
 import os
 from aperturedb import EntityDataCSV
-from dask.distributed import Client, LocalCluster, get_worker
+from dask.distributed import Client, LocalCluster
 
 
 if __name__ == '__main__':
@@ -19,9 +19,9 @@ if __name__ == '__main__':
         FILENAME, blocksize=os.path.getsize(FILENAME) // numthreads)
 
     def process(df):
-        import dbinfo
+        from aperturedb.Utils import create_connector
         from aperturedb.ParallelLoader import ParallelLoader
-        db = dbinfo.create_connector()
+        db = create_connector()
         loader = ParallelLoader(db)
         count = 0
 

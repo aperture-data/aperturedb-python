@@ -1,5 +1,3 @@
-from matplotlib.transforms import Bbox
-from aperturedb import ParallelLoader
 from aperturedb import CSVParser
 
 HEADER_X_POS = "x_pos"

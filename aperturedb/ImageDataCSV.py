@@ -1,8 +1,5 @@
-import time
-import requests
 import boto3
 
-import numpy as np
 import cv2
 
 from aperturedb import CSVParser

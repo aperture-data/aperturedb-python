@@ -53,5 +53,6 @@ if [[ $RESULT != 0 ]]; then
 else
 	echo "Generating coverage..."
 	coverage html -i --directory=output
+	python adb_timing_tests.py
 fi
 

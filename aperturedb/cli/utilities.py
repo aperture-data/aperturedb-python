@@ -3,7 +3,6 @@ from typing import Annotated
 
 import typer
 
-from aperturedb.Utils import Utils, create_connector
 from aperturedb.cli.console import console
 
 app = typer.Typer()
@@ -31,6 +30,8 @@ def confirm(command: CommandTypes, force: bool):
 @app.command()
 def execute(command: CommandTypes,
             force: Annotated[bool, typer.Option(help="Do not confirm")] = False):
+    from aperturedb.Utils import Utils, create_connector
+
     utils = Utils(create_connector())
     available_commands = {
         CommandTypes.STATUS: lambda: print(utils),
@@ -60,6 +61,8 @@ def log(
 
     This is useful because it can later be seen in Grafana, not only as log entries in the AperturDB Logging dashboard, but also as event markers in the Aperture DB Status dahsboard.
     """
+    from aperturedb.Utils import Utils, create_connector
+
     utils = Utils(create_connector())
     utils.user_log_message(message, level=level.value)
 
@@ -76,6 +79,7 @@ def visualize_schema(
 
     Relies on graphviz to be installed.
     """
+    from aperturedb.Utils import Utils, create_connector
 
     utils = Utils(create_connector())
     s = utils.visualize_schema()

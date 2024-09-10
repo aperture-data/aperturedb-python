@@ -83,7 +83,7 @@ def ls(log_to_console: bool = True):
             check_configured(as_global)
         except json.JSONDecodeError:
             check_configured(as_global)
-            console.log("Failed to decode json")
+            console.log(f"Failed to decode json '{config_path.as_posix()}'")
 
     if "global" in all_configs or "local" in all_configs:
         if "global" in all_configs and len(all_configs["global"]) == 0 \
@@ -117,7 +117,9 @@ def create(
         password: Annotated[str, typer.Option(help="Password")] = "admin",
         use_rest: Annotated[bool, typer.Option(help="Use REST")] = False,
         use_ssl: Annotated[bool, typer.Option(help="Use SSL")] = True,
-        interactive: Annotated[bool, typer.Option(help="Interactive mode")] = True):
+        interactive: Annotated[bool, typer.Option(
+            help="Interactive mode")] = True,
+        overwrite: Annotated[bool, typer.Option(help="overwrite existing configuration")] = False):
     """
     Create a new configuration for the client.
     """
@@ -141,6 +143,12 @@ def create(
     except json.JSONDecodeError:
         active = True
 
+    if name in configs and not overwrite:
+        console.log(
+            f"Configuration named '{name}' already exists. Use --overwrite to overwrite.",
+            style="bold yellow")
+        raise typer.Exit(code=2)
+
     if interactive:
         db_host = typer.prompt(f"Enter {APP_NAME} host name", default=db_host)
         db_port = typer.prompt(
@@ -149,8 +157,10 @@ def create(
             f"Enter {APP_NAME} username", default=db_username)
         db_password = typer.prompt(
             f"Enter {APP_NAME} password", hide_input=True, default=db_password)
-        db_use_rest = typer.confirm(f"Use REST", default=db_use_rest)
-        db_use_ssl = typer.confirm(f"Use SSL", default=db_use_ssl)
+        db_use_rest = typer.confirm(
+            f"Use REST [Note: Only if ApertureDB is setup to recieve http requests]", default=db_use_rest)
+        db_use_ssl = typer.confirm(
+            f"Use SSL [Note: ApertureDB's defaults do not allow non SSL traffic]", default=db_use_ssl)
 
     gen_config = Configuration(
         name=name,
@@ -161,6 +171,7 @@ def create(
         use_ssl=db_use_ssl,
         use_rest=db_use_rest
     )
+
     configs[name] = gen_config
     if active:
         configs["active"] = name
