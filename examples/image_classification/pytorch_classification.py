@@ -1,7 +1,7 @@
 import time
 import AlexNetClassifier as alexnet
 from aperturedb import PyTorchDataset
-from aperturedb.Utils import create_connector
+from aperturedb.CommonLibrary import create_connector
 
 db = create_connector()
 

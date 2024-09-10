@@ -82,7 +82,7 @@ def from_json_file(
     output_path: Annotated[str,  typer.Option(
         help="Path to output (only for mount as output)")] = None
 ):
-    from aperturedb.Utils import create_connector
+    from aperturedb.CommonLibrary import create_connector
 
     db = create_connector()
 

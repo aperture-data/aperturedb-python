@@ -1,5 +1,5 @@
 from aperturedb.DataModels import VideoDataModel, ClipDataModel, DescriptorDataModel, DescriptorSetDataModel
-from aperturedb.Utils import create_connector
+from aperturedb.CommonLibrary import create_connector
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb.Query import generate_save_query
 from aperturedb.Query import RangeType

@@ -2,7 +2,7 @@ import requests
 import argparse
 import json
 import os
-from aperturedb.Utils import create_connector
+from aperturedb.CommonLibrary import create_connector
 from aperturedb.Connector import Connector
 
 db: Connector = create_connector()

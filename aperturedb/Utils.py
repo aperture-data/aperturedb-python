@@ -1,18 +1,13 @@
 """
 Miscellaneous utility functions for ApertureDB.
+This class contains a collection of helper functions to interact with the database.
 """
 from aperturedb.Query import QueryBuilder
-from aperturedb.cli.configure import ls
-from aperturedb.Configuration import Configuration
 from aperturedb.ParallelQuery import execute_batch
 from aperturedb import ProgressBar
-from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.Connector import Connector
 import logging
 import json
-import os
-import importlib
-import sys
 from typing import List, Optional, Dict
 
 HAS_GRAPHVIZ = True
@@ -32,87 +27,12 @@ logger = logging.getLogger(__name__)
 
 DESCRIPTOR_CLASS = "_Descriptor"
 DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
-
 DEFAULT_METADATA_BATCH_SIZE = 100_000
-
-
-def import_module_by_path(filepath):
-    """
-    This function imports a module given a path to a python file.
-    """
-    module_name = os.path.basename(filepath)[:-3]
-    spec = importlib.util.spec_from_file_location(module_name, filepath)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-def __create_connector(configuration: Configuration):
-    if configuration.use_rest:
-        connector = ConnectorRest(
-            host=configuration.host,
-            port=configuration.port,
-            user=configuration.username,
-            password=configuration.password,
-            use_ssl=configuration.use_ssl,
-            config=configuration)
-    else:
-        connector = Connector(
-            host=configuration.host,
-            port=configuration.port,
-            user=configuration.username,
-            password=configuration.password,
-            use_ssl=configuration.use_ssl,
-            config=configuration)
-    logger.debug(
-        f"Created connector using: {configuration}. Will connect on query.")
-    return connector
-
-
-def create_connector(name: Optional[str] = None) -> Connector:
-    """
-    **Create a connector to the database.**
-
-    This function chooses a configuration in the folowing order:
-    1. The configuration specified by the `name` parameter.
-    2. The configuration specified by the `APERTUREDB_CONFIG` environment variable.
-    3. The active configuration.
-
-    If there are both global and local configurations with the same name, the global configuration is preferred.
-
-    See :ref:`adb config <adb_config>`_ command-line tool for more information.
-
-    Args:
-        name (str, optional): The name of the configuration to use. Default is None.
-
-    Returns:
-        Connector: The connector to the database.
-    """
-    all_configs = ls(log_to_console=False)
-
-    def lookup_config_by_name(name: str, source: str) -> Configuration:
-        if "global" in all_configs and name in all_configs["global"]:
-            return all_configs["global"][name]
-        if "local" in all_configs and name in all_configs["local"]:
-            return all_configs["local"][name]
-        assert False, f"Configuration '{name}' not found ({source})."
-
-    if name is not None:
-        config = lookup_config_by_name(name, "explicit")
-    elif "APERTUREDB_CONFIG" in os.environ and os.environ["APERTUREDB_CONFIG"] != "":
-        config = lookup_config_by_name(
-            os.environ["APERTUREDB_CONFIG"], "envar")
-    elif "active" in all_configs:
-        config = lookup_config_by_name(all_configs["active"], "active")
-    else:
-        assert False, "No configuration found."
-    return __create_connector(config)
 
 
 class Utils(object):
     """
-    **A bunch of helper methods to get information from aperturedb.**
+    **Helper methods to get information from aperturedb, or affect it's state.**
 
     Args:
         object (Connector): The underlying Connector.
@@ -982,3 +902,10 @@ class Utils(object):
                          "ERROR"], f"Invalid log level: {level}"
         q = [{"UserLogMessage": {"text": message, "type": level}}]
         self.execute(q)
+
+
+def create_connector():
+    from aperturedb.CommonLibrary import create_connector, issue_deprecation_warning
+    issue_deprecation_warning("Utils.create_connector",
+                              "CommonLibrary.create_connector")
+    return create_connector()

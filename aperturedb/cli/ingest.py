@@ -60,6 +60,7 @@ def _create_pipeline(transformers: List[str]):
     from aperturedb.transformers.image_properties import ImageProperties
     from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
     from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    from aperturedb.CommonLibrary import import_module_by_path
 
     # Actual collection of transformers, packaged with aperturedb.
     built_in_transformers = {
@@ -106,8 +107,7 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     Ingest data from a Data generator [BETA].
     """
     from aperturedb.ParallelLoader import ParallelLoader
-    from aperturedb.Utils import create_connector
-    from aperturedb.Utils import import_module_by_path
+    from aperturedb.CommonLibrary import create_connector, import_module_by_path
 
     db = create_connector()
     loader = ParallelLoader(db)
@@ -187,7 +187,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
     from aperturedb.ParallelLoader import ParallelLoader
 
-    from aperturedb.Utils import create_connector
+    from aperturedb.CommonLibrary import create_connector
 
     ingest_types = {
         IngestType.BLOB: BlobDataCSV,
