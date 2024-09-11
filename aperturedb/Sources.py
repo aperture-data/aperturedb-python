@@ -62,8 +62,9 @@ class Sources():
         return False, None
 
     def load_from_s3_url(self, s3_url, validator):
-        retries = 0
+        import numpy as np
 
+        retries = 0
         while True:
             try:
                 bucket_name = s3_url.split("/")[2]
@@ -88,8 +89,10 @@ class Sources():
         return False, None
 
     def load_from_gs_url(self, gs_url, validator):
-        retries = 0
+        import numpy as np
         from google.cloud import storage
+
+        retries = 0
         client = storage.Client()
         while True:
             try:
