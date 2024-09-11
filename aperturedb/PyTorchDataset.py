@@ -3,9 +3,10 @@ import numpy as np
 import cv2
 import logging
 
-from aperturedb import Images
-
 from torch.utils import data
+
+from aperturedb.CommonLibrary import execute_query
+from aperturedb.Connector import Connector
 
 
 logger = logging.getLogger(__name__)
@@ -19,9 +20,9 @@ class ApertureDBDataset(data.Dataset):
     the images from ApertureDB.
     """
 
-    def __init__(self, db, query, label_prop=None, batch_size=1):
+    def __init__(self, client: Connector, query, label_prop=None, batch_size=1):
 
-        self.db = db.create_new_connection()
+        self.client = client.clone()
         self.query = query
         self.find_image_idx = None
         self.total_elements = 0
@@ -49,7 +50,8 @@ class ApertureDBDataset(data.Dataset):
         self.query[self.find_image_idx]["FindImage"]["blobs"] = True
 
         try:
-            r, b = self.db.query(self.query)
+            _, r, b = execute_query(
+                client=self.client, query=self.query, blobs=[])
             batch = r[self.find_image_idx]["FindImage"]["batch"]
             self.total_elements = batch["total_elements"]
         except:
@@ -107,15 +109,17 @@ class ApertureDBDataset(data.Dataset):
             # disconnection/timeout and SSL context on multiprocessing
             connection_ok = False
             try:
-                r, b = self.db.query(query)
+                _, r, b = execute_query(
+                    query=self.query, blobs=[], client=self.client)
                 connection_ok = True
             except:
                 # Connection failed, we retry just once to re-connect
-                self.db = self.db.create_new_connection()
+                self.client = self.client.clone()
 
             if not connection_ok:
                 # Connection failed, we have reconnected, we try again.
-                r, b = self.db.query(query)
+                _, r, b = execute_query(
+                    query=self.query, blobs=[], client=self.client)
 
             if len(b) == 0:
                 logger.error(f"index: {index}")

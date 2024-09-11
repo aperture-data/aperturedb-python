@@ -39,7 +39,7 @@ class Utils(object):
     """
 
     def __init__(self, connector: Connector, verbose=False):
-        self.connector = connector.create_new_connection()
+        self.connector = connector.clone()
         self.verbose = verbose
 
     def __repr__(self):

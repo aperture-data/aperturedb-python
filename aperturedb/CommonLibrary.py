@@ -7,7 +7,7 @@ import importlib
 import math
 import os
 import sys
-from typing import Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple
 import logging
 import json
 
@@ -19,7 +19,7 @@ from aperturedb.types import Blobs, CommandResponses, Commands
 logger = logging.getLogger(__name__)
 
 
-def import_module_by_path(filepath):
+def import_module_by_path(filepath: str) -> Any:
     """
     This function imports a module given a path to a python file.
     """
@@ -94,7 +94,7 @@ def create_connector(name: Optional[str] = None) -> Connector:
     return __create_connector(config)
 
 
-def execute_query(q: Commands, blobs: Blobs, db: Connector,
+def execute_query(client: Connector, query: Commands, blobs: Blobs,
                   success_statuses: list[int] = [0],
                   response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
                   strict_response_validation: bool = False, cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
@@ -122,15 +122,15 @@ def execute_query(q: Commands, blobs: Blobs, db: Connector,
         Blobs: The blobs.
     """
     result = 0
-    logger.debug(f"Query={q}")
-    r, b = db.query(q, blobs)
+    logger.debug(f"Query={query}")
+    r, b = client.query(query, blobs)
     logger.debug(f"Response={r}")
 
-    if db.last_query_ok():
+    if client.last_query_ok():
         if response_handler is not None:
             try:
                 map_response_to_handler(response_handler,
-                                        q, blobs, r, b, commands_per_query, blobs_per_query,
+                                        query, blobs, r, b, commands_per_query, blobs_per_query,
                                         cmd_index)
             except BaseException as e:
                 logger.exception(e)
@@ -138,7 +138,7 @@ def execute_query(q: Commands, blobs: Blobs, db: Connector,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {q} with response = {r}")
+        logger.error(f"Failed query = {query} with response = {r}")
         result = 1
 
     statuses = {}
@@ -162,7 +162,7 @@ def execute_query(q: Commands, blobs: Blobs, db: Connector,
                     warn_list.append(wr)
         if len(warn_list) != 0:
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(warn_list)}")
+                f"Partial errors:\r\n{json.dumps(query)}\r\n{json.dumps(warn_list)}")
             result = 2
 
     return result, r, b

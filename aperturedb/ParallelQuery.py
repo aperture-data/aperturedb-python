@@ -47,7 +47,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             logger.error(test_string.replace("successful", "failed"))
             raise
 
-        self.db = db.create_new_connection()
+        self.db = db.clone()
 
         self.dry_run = dry_run
 
@@ -216,7 +216,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     def worker(self, thid: int, generator, start: int, end: int):
         # A new connection will be created for each thread
-        db = self.db.create_new_connection()
+        db = self.db.clone()
 
         total_batches = (end - start) // self.batchsize
 
