@@ -97,7 +97,7 @@ def get_specific(obj: BaseModel) -> dict:
     return {}, []
 
 
-def generate_save_query(
+def generate_add_query(
         obj: BaseModel,
         cached: List[str] = None,
         source_field: str = None,
@@ -171,12 +171,12 @@ def generate_save_query(
                 pass
             elif isinstance(subobj, list):
                 for i, si in enumerate(subobj):
-                    q, b, index = generate_save_query(
+                    q, b, index = generate_add_query(
                         si, cached=cached, source_field=f"{p}[{i}]", index=index + 1, parent=cindex)
                     dependents_blobs.extend(b)
                     dependents.extend(q)
             else:
-                q, b, index = generate_save_query(
+                q, b, index = generate_add_query(
                     subobj, cached=cached, source_field=f"{p}", index=index + 1, parent=cindex)
                 dependents.extend(q)
                 dependents_blobs.extend(b)

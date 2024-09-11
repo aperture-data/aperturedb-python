@@ -4,13 +4,12 @@ from aperturedb.BoundingBoxes import BoundingBoxes
 from aperturedb.Constraints import Constraints
 from aperturedb.Entities import Entities
 from aperturedb.Images import Images
-from aperturedb.Query import ObjectType, Query
-from aperturedb.Query import generate_save_query
+from aperturedb.Query import Query
+from aperturedb.Query import generate_add_query
 from aperturedb.DataModels import ImageDataModel, IdentityDataModel
 import random
 from typing import List
 from enum import Enum
-from devtools import debug
 
 logger = logging.getLogger(__file__)
 
@@ -146,7 +145,7 @@ class TestQueryBuilder():
         total_commands = []
         total_blobs = []
         for person in people:
-            q, b, current_ref = generate_save_query(person)
+            q, b, current_ref = generate_add_query(person)
             total_commands += q
             total_blobs += b
             # 16 entities have been inserted and referenced
