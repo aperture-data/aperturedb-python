@@ -1,8 +1,5 @@
 import time
 import requests
-
-import numpy as np
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,6 +40,8 @@ class Sources():
         """
         Load data from a http url.
         """
+        import numpy as np
+
         retries = 0
         while True:
             imgdata = self.http_client.get(url)

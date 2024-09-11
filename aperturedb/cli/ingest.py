@@ -4,7 +4,6 @@ from typing import List, Optional
 import typer
 import os
 import time
-import numpy as np
 
 from typing_extensions import Annotated
 
@@ -246,6 +245,7 @@ def generate_embedding_csv_from_image_csv(
     """
     import pandas as pd
     from aperturedb.ImageDataCSV import ImageDataCSV
+    import numpy as np
 
     data = ImageDataCSV(input_file)
     data.sample_count = len(data) if sample_count == -1 else sample_count
