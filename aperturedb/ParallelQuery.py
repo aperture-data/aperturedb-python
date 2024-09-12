@@ -22,7 +22,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     so that they may be processed using different threads.
 
     Args:
-        db (Connector): The database connector.
+        client (Connector): The database connector.
         dry_run (bool, optional): Whether to run in dry run mode. Defaults to False.
     """
 
@@ -37,17 +37,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    def __init__(self, db: Connector, dry_run: bool = False):
+    def __init__(self, client: Connector, dry_run: bool = False):
         super().__init__()
-        test_string = f"Connection test successful with {db.config}"
+        test_string = f"Connection test successful with {client.config}"
         try:
-            _, _ = db.query([{"GetSchema": {}}], [])
+            _, _ = client.query([{"GetSchema": {}}], [])
             logger.info(test_string)
         except Exception as e:
             logger.error(test_string.replace("successful", "failed"))
             raise
 
-        self.db = db.clone()
+        self.client = client.clone()
 
         self.dry_run = dry_run
 
@@ -118,12 +118,12 @@ class ParallelQuery(Parallelizer.Parallelizer):
         except BaseException as e:
             logger.exception(e)
 
-    def do_batch(self, db: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
+    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
         """
         Executes batch of queries and blobs in the database.
 
         Args:
-            db (Connector): The database connector.
+            client (Connector): The database connector.
             data (list[tuple[Commands, Blobs]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
 
         It also provides a way for invoking a user defined function to handle the
@@ -140,7 +140,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 def process_responses(requests, input_blobs, responses, output_blobs):
                     self.requests.extend(requests)
                     self.responses.extend(responses)
-            loader = ParallelLoader(self.db)
+            loader = ParallelLoader(self.client)
             generator = MyQueries()
             loader.ingest(generator)
         ```
@@ -171,9 +171,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
                         query, qblobs, resp, rblobs)
 
             result, r, b = self.batch_command(
+                client,
                 q,
                 blobs,
-                db,
                 ParallelQuery.success_statuses,
                 response_handler,
                 self.commands_per_query,
@@ -181,7 +181,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 strict_response_validation=strict_response_validation,
                 cmd_index=batch_start)
             if result == 0:
-                query_time = db.get_last_query_time()
+                query_time = client.get_last_query_time()
                 worker_stats["succeeded_commands"] = len(q)
                 worker_stats["succeeded_queries"] = len(data)
                 worker_stats["objects_existed"] = sum(
@@ -216,7 +216,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     def worker(self, thid: int, generator, start: int, end: int):
         # A new connection will be created for each thread
-        db = self.db.clone()
+        client = self.client.clone()
 
         total_batches = (end - start) // self.batchsize
 
@@ -230,7 +230,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batch_end = min(batch_start + self.batchsize, end)
 
             try:
-                self.do_batch(db, batch_start,
+                self.do_batch(client, batch_start,
                               generator[batch_start:batch_end])
             except Exception as e:
                 logger.exception(e)
@@ -274,7 +274,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
-                self.__class__, self.db, generator, batchsize, stats=stats)
+                self.__class__, self.client, generator, batchsize, stats=stats)
             self.actual_stats = []
             for result in results:
                 if result is not None:

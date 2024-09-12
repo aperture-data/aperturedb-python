@@ -1,0 +1,12 @@
+{
+    "name": "dev",
+    "image": "ubuntu:22.04",
+    "customizations": {
+        "vscode": {
+                "extensions": [
+                        "ms-vscode.cpptools",
+                        "ms-python.python"
+                ]
+        }
+    }
+}

@@ -35,7 +35,7 @@ class Entities(Subscriptable):
         using :class:`~aperturedb.Query.Query`
 
         Args:
-            db (Connector): _description_
+            client (Connector): Connector object to the database.
             spec (Query): _description_
 
         Raises:
@@ -101,13 +101,13 @@ class Entities(Subscriptable):
 
     @classmethod
     def retrieve(cls,
-                 db: Connector,
+                 client: Connector,
                  spec: Query,
                  with_adjacent: Dict[str, Query] = None) -> Entities:
         spec.db_object = cls.db_object
 
         results = Entities.retrieve_entities(
-            db=db, spec=spec, with_adjacent=with_adjacent)
+            client=client, spec=spec, with_adjacent=with_adjacent)
 
         # This is a very naive assumption, we will stop querying once
         # the object of interest is the in the responses.
@@ -162,7 +162,7 @@ class Entities(Subscriptable):
         return len(self.response)
 
     def filter(self, predicate):
-        return self.known_entities[self.type](db=self.db, response=list(filter(predicate, self.response)), type=self.type)
+        return self.known_entities[self.type](client=self.client, response=list(filter(predicate, self.response)), type=self.type)
 
     def __add__(self, other: Entities) -> Entities:
         return Entities(response = self.response + other.response, type=self.type)
@@ -233,7 +233,7 @@ class Entities(Subscriptable):
             if entity_class in self.known_entities:
                 cl = self.known_entities[entity_class]
             result.append(cl(
-                db=self.db, response=r[1]["FindEntity"]["entities"], type=entity_class))
+                client=self.client, response=r[1]["FindEntity"]["entities"], type=entity_class))
         return result
 
     def get_blob(self, entity) -> Any:
