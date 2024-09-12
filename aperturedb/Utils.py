@@ -3,7 +3,7 @@ Miscellaneous utility functions for ApertureDB.
 This class contains a collection of helper functions to interact with the database.
 """
 from aperturedb.Query import QueryBuilder
-from aperturedb.ParallelQuery import execute_batch
+from aperturedb.CommonLibrary import execute_query
 from aperturedb import ProgressBar
 from aperturedb.Connector import Connector
 import logging
@@ -38,8 +38,8 @@ class Utils(object):
         object (Connector): The underlying Connector.
     """
 
-    def __init__(self, connector: Connector, verbose=False):
-        self.connector = connector.clone()
+    def __init__(self, client: Connector, verbose=False):
+        self.client: Connector = client.clone()
         self.verbose = verbose
 
     def __repr__(self):
@@ -63,10 +63,10 @@ class Utils(object):
             blobs: The blobs returned by the query.
         """
         try:
-            rc, r, b = execute_batch(
-                query, blobs, self.connector, success_statuses=success_statuses)
+            rc, r, b = execute_query(self.client,
+                                     query, blobs, success_statuses=success_statuses)
         except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
+            logger.error(self.client.get_last_response_str())
             raise e
 
         if rc != 0:
@@ -84,7 +84,7 @@ class Utils(object):
 
         self.execute(q)
 
-        return self.connector.get_last_response_str()
+        return self.client.get_last_response_str()
 
     def print_schema(self, refresh=False):
 
@@ -94,7 +94,7 @@ class Utils(object):
             logger.warning("Please remove 'refresh' parameter.")
 
         self.get_schema()
-        self.connector.print_last_response()
+        self.client.print_last_response()
 
     def get_schema(self, refresh=False):
         """
@@ -112,14 +112,14 @@ class Utils(object):
             }
         }]
 
-        res, _ = self.connector.query(query)
+        res, _ = self.client.query(query)
 
         schema = {}
 
         try:
             schema = res[0]["GetSchema"]
         except BaseException as e:
-            logger.error(self.connector.get_last_response_str())
+            logger.error(self.client.get_last_response_str())
             raise e
 
         return schema
@@ -268,7 +268,7 @@ class Utils(object):
             connections_classes = [c for c in r["connections"]["classes"]]
 
         print(f"================== Summary ==================")
-        print(f"Database: {self.connector.host}")
+        print(f"Database: {self.client.host}")
         print(f"Version: {version}")
         print(f"Status:  {status}")
         print(f"Info:    {info}")
@@ -621,7 +621,7 @@ class Utils(object):
                 return False
 
             self.print(
-                f"Delete transaction of {batch_size} elements took: {self.connector.get_last_query_time()}")
+                f"Delete transaction of {batch_size} elements took: {self.client.get_last_query_time()}")
 
             count -= batch_size
 
@@ -661,7 +661,7 @@ class Utils(object):
             count = r[0]["DeleteEntity"]["count"]
             self.print(f"Deleted {count} entities")
             self.print(
-                f"Delete transaction took: {self.connector.get_last_query_time()}")
+                f"Delete transaction took: {self.client.get_last_query_time()}")
         except:
             logger.error("Could not get count of deleted entities")
             return False
@@ -699,7 +699,7 @@ class Utils(object):
             count = r[0]["DeleteConnection"]["count"]
             self.print(f"Deleted {count} connections")
             self.print(
-                f"Delete transaction took: {self.connector.get_last_query_time()}")
+                f"Delete transaction took: {self.client.get_last_query_time()}")
         except:
             logger.error("Could not get count of deleted connections")
             return False

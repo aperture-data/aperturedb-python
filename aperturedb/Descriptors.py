@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aperturedb.Entities import Entities
-from aperturedb.ParallelQuery import execute_batch
+from aperturedb.CommonLibrary import execute_query
 
 logger = logging.getLogger(__name__)
 
@@ -12,11 +12,7 @@ class Descriptors(Entities):
     """
     Python wrapper for ApertureDB Descriptors API.
     """
-
     db_object = "_Descriptor"
-
-    def __init__(self, db):
-        super().__init__(db)
 
     def find_similar(
         self,
@@ -59,7 +55,7 @@ class Descriptors(Entities):
 
         query = [command]
         blobs_in = [np.array(vector, dtype=np.float32).tobytes()]
-        _, response, blobs_out = execute_batch(query, blobs_in, self.db)
+        _, response, blobs_out = execute_query(self.client, query, blobs_in)
 
         self.response = response[0]["FindDescriptor"].get("entities", [])
 
@@ -72,7 +68,7 @@ class Descriptors(Entities):
         """Find default metric for descriptor set"""
         command = {"FindDescriptorSet": {"with_name": set, "metrics": True}}
         query = [command]
-        response, _ = self.db.query(query)
+        _, response, _ = execute_query(self.client, query, [])
         logger.debug(response)
         assert self.db.last_query_ok(), response
         return response[0]["FindDescriptorSet"]["entities"][0]["_metrics"][0]

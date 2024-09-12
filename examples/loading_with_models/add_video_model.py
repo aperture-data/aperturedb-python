@@ -1,6 +1,5 @@
 from aperturedb.DataModels import VideoDataModel, ClipDataModel, DescriptorDataModel, DescriptorSetDataModel
-from aperturedb.CommonLibrary import create_connector
-from aperturedb.ParallelQuery import execute_batch
+from aperturedb.CommonLibrary import create_connector, execute_query
 from aperturedb.Query import generate_add_query
 from aperturedb.Query import RangeType
 from typing import List
@@ -62,16 +61,16 @@ embeddings = [
     }
 ]
 
-db = create_connector()
+client = create_connector()
 
 # Create a descriptor set
 descriptorset = DescriptorSetModel(name="marengo26", dimensions=3)
 q, blobs, c = generate_add_query(descriptorset)
-result, response, blobs = execute_batch(q=q, blobs=blobs, db=db)
+result, response, blobs = execute_query(query=q, blobs=blobs, client=client)
 print(f"{result=}, {response=}")
 
 # Create a video object, with clips, and embeddings
 video = save_video_details_to_aperturedb(video_url, embeddings)
 q, blobs, c = generate_add_query(video)
-result, response, blobs = execute_batch(q=q, blobs=blobs, db=db)
+result, response, blobs = execute_query(query=q, blobs=blobs, client=client)
 print(f"{result=}, {response=}")

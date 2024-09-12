@@ -108,8 +108,8 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     from aperturedb.ParallelLoader import ParallelLoader
     from aperturedb.CommonLibrary import create_connector, import_module_by_path
 
-    db = create_connector()
-    loader = ParallelLoader(db)
+    client = create_connector()
+    loader = ParallelLoader(client)
 
     module = import_module_by_path(filepath)
 
@@ -211,10 +211,10 @@ def from_csv(filepath: Annotated[str, typer.Argument(
                                adb_data_source=f"{ingest_type}.{os.path.basename(filepath)}")
     else:
         console.log("No transformer applied")
-    db = create_connector()
-    console.log(db)
+    client = create_connector()
+    console.log(client)
 
-    loader = ParallelLoader(db)
+    loader = ParallelLoader(client)
     if debug:
         _debug_samples(data, sample_count, filepath)
     else:

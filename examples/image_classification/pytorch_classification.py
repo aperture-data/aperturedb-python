@@ -3,7 +3,7 @@ import AlexNetClassifier as alexnet
 from aperturedb import PyTorchDataset
 from aperturedb.CommonLibrary import create_connector
 
-db = create_connector()
+client = create_connector()
 
 out_file_name = "classification.txt"
 query = [{
@@ -28,7 +28,7 @@ query = [{
 classifier = alexnet.AlexNetClassifier()
 with open(out_file_name, 'w') as classification:
     dataset = PyTorchDataset.ApertureDBDataset(
-        db=db, query=query, label_prop='image_id')
+        client=client, query=query, label_prop='image_id')
     start = time.time()
     for item in dataset:
         image, id = item

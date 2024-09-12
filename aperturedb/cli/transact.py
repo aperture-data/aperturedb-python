@@ -34,11 +34,11 @@ class OutputTypes(str, Enum):
     MOUNT_COCO = "mount_coco"
 
 
-def dump_to_stdout(db: Connector, transaction: dict, **kwargs):
-    from aperturedb.ParallelQuery import execute_batch
+def dump_to_stdout(client: Connector, transaction: dict, **kwargs):
+    from aperturedb.CommonLibrary import execute_query
 
-    result, response, blobs = execute_batch(
-        db=db,
+    result, response, blobs = execute_query(
+        client=client,
         q=transaction,
         blobs=[])
     console.log(result)
@@ -47,12 +47,12 @@ def dump_to_stdout(db: Connector, transaction: dict, **kwargs):
         console.log(f"len(blob[{i}]) = {len(blob[i])}")
 
 
-def mount_as_coco_ds(db: Connector, transaction: dict, **kwargs):
+def mount_as_coco_ds(client: Connector, transaction: dict, **kwargs):
     from aperturedb.Images import Images
-    from aperturedb.ParallelQuery import execute_batch
+    from aperturedb.CommonLibrary import execute_query
 
-    result, response, blobs = execute_batch(
-        db=db,
+    result, response, blobs = execute_query(
+        client=client,
         q=transaction,
         blobs=[])
     if result == 0:
@@ -65,7 +65,7 @@ def mount_as_coco_ds(db: Connector, transaction: dict, **kwargs):
                     console.log(f"No entities found in FindImage {i} response")
         try:
             from aperturedb.cli.mount_coco import mount_images_from_aperturedb
-            images = Images(db, response=image_entities)
+            images = Images(client, response=image_entities)
             console.log(f"Found {len(images)} images")
             mount_images_from_aperturedb(images)
         except Exception as e:
@@ -84,7 +84,7 @@ def from_json_file(
 ):
     from aperturedb.CommonLibrary import create_connector
 
-    db = create_connector()
+    client = create_connector()
 
     output_types = {
         OutputTypes.STDOUT: dump_to_stdout
@@ -97,5 +97,5 @@ def from_json_file(
         transaction = json.loads(inputstream.read())
         old_argv = sys.argv[1:]
         sys.argv[1:] = [output_path]
-        output_types[output_type](db, transaction, output_path=output_path)
+        output_types[output_type](client, transaction, output_path=output_path)
         sys.argv[1:] = old_argv
