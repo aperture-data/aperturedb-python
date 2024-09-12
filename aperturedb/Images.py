@@ -574,7 +574,8 @@ class Images(Entities):
         # Only retrieve images when needed
         query["FindImage"]["blobs"] = False
 
-        _, response, images = execute_query(self.client, query=query)
+        _, response, images = execute_query(
+            self.client, query=[query], blobs=[])
 
         try:
             entities = response[0]["FindImage"]["entities"]
@@ -655,7 +656,7 @@ class Images(Entities):
                 }
             }]
 
-            _, response, blobs = execute_query(self.client, query)
+            _, response, blobs = execute_query(self.client, query, [])
 
             query = [{
                 "FindDescriptor": {
@@ -959,7 +960,7 @@ class Images(Entities):
                     }
                 }]
 
-                _, res, images = execute_query(self.client, query)
+                _, res, images = execute_query(self.client, query, [])
 
                 return_dictionary[str(
                     uniqueid)] = res[0]["FindImage"]["entities"][0]

@@ -46,7 +46,7 @@ def gen_execute_batch_sets(base_executor):
     # if blob_set is a list of lists, each inner list will be given to the inner
     #  execution
     #
-    def execute_batch_sets(query_set, blob_set, db, success_statuses: list[int] = [0],
+    def execute_batch_sets(db, query_set, blob_set, success_statuses: list[int] = [0],
                            response_handler: Optional[Callable] = None, commands_per_query: list[int] = -1,
                            blobs_per_query: list[int] = -1,
                            strict_response_validation: bool = False, cmd_index: int = None):
