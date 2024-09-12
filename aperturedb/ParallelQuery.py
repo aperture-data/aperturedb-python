@@ -356,8 +356,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 print(self.generator[i])
 
 
-def execute_batch(*args, **kwargs):
+def execute_batch(q: Commands, blobs: Blobs, db: Connector, *args, **kwargs) -> Tuple[int, CommandResponses, Blobs]:
     from aperturedb.CommonLibrary import execute_query, issue_deprecation_warning
     issue_deprecation_warning(
         "ParallelQuery.execute_batch", "CommonLibrary.execute_query")
-    return execute_query(*args, **kwargs)
+    return execute_query(db, q, blobs, *args, **kwargs)

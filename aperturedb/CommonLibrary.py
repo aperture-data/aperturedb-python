@@ -104,9 +104,9 @@ def execute_query(client: Connector, query: Commands, blobs: Blobs,
     This should be used (without the parallel machinery) instead of db.query to keep the response handling consistent, better logging, etc.
 
     Args:
-        q (Commands): List of commands to execute.
+        client (Connector): The database connector.
+        query (Commands): List of commands to execute.
         blobs (Blobs): List of blobs to send.
-        db (Connector): The database connector.
         success_statuses (list[int], optional): The list of success statuses. Defaults to [0].
         response_handler (Callable, optional): The response handler. Defaults to None.
         commands_per_query (int, optional): The number of commands per query. Defaults to 1.
