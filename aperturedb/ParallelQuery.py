@@ -9,7 +9,7 @@ import inspect
 from aperturedb.DaskManager import DaskManager
 from aperturedb.Connector import Connector
 from aperturedb.types import Commands, Blobs, CommandResponses
-from aperturedb.CommonLibrary import execute_query as execute_batch
+from aperturedb.CommonLibrary import execute_query
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.commands_per_query = 1
         self.blobs_per_query = 0
         self.daskManager = None
-        self.batch_command = execute_batch
+        self.batch_command = execute_query
 
     def generate_batch(self, data: List[Tuple[Commands, Blobs]]) -> Tuple[Commands, Blobs]:
         """
