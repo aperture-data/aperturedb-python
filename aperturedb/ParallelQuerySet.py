@@ -34,7 +34,7 @@ def gen_execute_batch_sets(base_executor):
     # execute_batch_sets - executes multiple sets of queries with optional constraints on follow on sets
     #  query_set: list of queries that get passed to ParallelLoader's execute_batch
     #  blob_set:  list of blobs ( or list of list of blobs ) that get passed to execute_batch
-    #  db: Connection object
+    #  client: Connection object
     #  success_statutes: list of return values from ApertureDB to be considered 'success'
     #  response_handler: optional function to return after an execution ( not active yet )
     #  commands_per_query : list of how many commands each query has.
@@ -46,7 +46,7 @@ def gen_execute_batch_sets(base_executor):
     # if blob_set is a list of lists, each inner list will be given to the inner
     #  execution
     #
-    def execute_batch_sets(db, query_set, blob_set, success_statuses: list[int] = [0],
+    def execute_batch_sets(client, query_set, blob_set, success_statuses: list[int] = [0],
                            response_handler: Optional[Callable] = None, commands_per_query: list[int] = -1,
                            blobs_per_query: list[int] = -1,
                            strict_response_validation: bool = False, cmd_index: int = None):
@@ -295,14 +295,14 @@ def gen_execute_batch_sets(base_executor):
                                      blob_filter(blob_set, blob_strike_list, i)))
 
             if len(executable_queries) > 0:
-                result_code, db_results, db_blobs = base_executor(db, executable_queries, used_blobs,
+                result_code, db_results, db_blobs = base_executor(client, executable_queries, used_blobs,
                                                                   local_success_statuses,
                                                                   None,
                                                                   commands_per_query[i],
                                                                   blobs_per_query[i],
                                                                   strict_response_validation=strict_response_validation,
                                                                   cmd_index=cmd_index)
-                if response_handler != None and db.last_query_ok():
+                if response_handler != None and client.last_query_ok():
                     def map_to_set(query, query_blobs, resp, resp_blobs):
                         response_handler(
                             i, query, query_blobs, resp, resp_blobs)
@@ -346,13 +346,13 @@ class ParallelQuerySet(ParallelQuery):
     Per-query actions are done by ParallelQuery.
 
     Args:
-        db (Connector): The ApertureDB Connector
+        client (Connector): The ApertureDB Connector
         dry_run (bool, optional): If True, no queries are executed. Defaults to False.
     """
 
-    def __init__(self, db: Connector, dry_run: bool = False):
+    def __init__(self, client: Connector, dry_run: bool = False):
 
-        super().__init__(db, dry_run)
+        super().__init__(client, dry_run)
 
         self.base_batch_command = self.batch_command
 
@@ -369,14 +369,14 @@ class ParallelQuerySet(ParallelQuery):
         logger.error(type(generator[0]))
         return False
 
-    def do_batch(self, db: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
+    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
         """
         This is an override of ParallelQuery.do_batch.
 
         This is the per-worker function which is the entry-point to a unit of work.
 
         Args:
-            db (Connector): The ApertureDB Connector
+            client (Connector): The ApertureDB Connector
             data (List[Tuple[Query, Blobs]]): A list of tuples, each containing a list of commands and a list of blobs
         """
         if not hasattr(self.generator, "commands_per_query"):
@@ -391,7 +391,7 @@ class ParallelQuerySet(ParallelQuery):
         self.batch_command = gen_execute_batch_sets(
             self.base_batch_command)
 
-        ParallelQuery.do_batch(self, db, batch_start, data)
+        ParallelQuery.do_batch(self, client, batch_start, data)
 
     def print_stats(self) -> None:
 

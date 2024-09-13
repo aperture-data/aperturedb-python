@@ -29,7 +29,7 @@ class EntityDataCSV(CSVParser.CSVParser):
     ``` python
 
         data = EntityDataCSV("/path/to/EntityData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 
@@ -100,7 +100,7 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
    ```python
 
         data = ImageDeleteDataCSV("/path/to/UnusedImages.csv")
-        loader = ParallelQuery(db)
+        loader = ParallelQuery(client)
         loader.query(data)
     ```
 

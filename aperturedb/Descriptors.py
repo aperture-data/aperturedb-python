@@ -70,7 +70,7 @@ class Descriptors(Entities):
         query = [command]
         _, response, _ = execute_query(self.client, query, [])
         logger.debug(response)
-        assert self.db.last_query_ok(), response
+        assert self.client.last_query_ok(), response
         return response[0]["FindDescriptorSet"]["entities"][0]["_metrics"][0]
 
     def _vector_similarity(self, v1, v2):

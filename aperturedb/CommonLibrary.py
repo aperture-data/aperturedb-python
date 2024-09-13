@@ -101,7 +101,9 @@ def execute_query(client: Connector, query: Commands, blobs: Blobs,
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
-    This should be used (without the parallel machinery) instead of db.query to keep the response handling consistent, better logging, etc.
+
+    This should be used (without the parallel machinery) instead of
+    Connector.query to keep the response handling consistent, better logging, etc.
 
     Args:
         client (Connector): The database connector.

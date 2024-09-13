@@ -88,7 +88,7 @@ class Connector(object):
         str (host): Address of the host to connect to.
         int (port): Port to connect to.
         str (user): Username to specify while establishing a connection.
-        str (password): Password to specify while connecting to the db.
+        str (password): Password to specify while connecting to ApertureDB.
         str (token): Token to use while connecting to the database.
         bool (use_ssl): Use SSL to encrypt communication with the database.
         bool (use_keepalive): Set keepalive on the connection with the database.

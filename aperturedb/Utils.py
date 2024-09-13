@@ -892,7 +892,8 @@ class Utils(object):
         """
         Log a message to the user log.
 
-        This is useful because it can later be seen in Grafana, not only as log entries in the AperturDB Logging dashboard, but also as event markers in the Aperture DB Status dahsboard.
+        This is useful because it can later be seen in Grafana, not only as log entries in the ApertureDB
+        Logging dashboard, but also as event markers in the ApertureDB Status dashboard.
 
         Args:
             message (str): The message to log.

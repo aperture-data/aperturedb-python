@@ -80,8 +80,8 @@ class DaskManager:
             return metrics
 
         start_time = time.time()
-        # Passing DB as an argument to function is not supported by Dask,
-        # so we pass session and host/port instead.
+        # Connector cannot be serialized across processes,
+        # so we pass session and host/port information instead.
         computation = generator.df.map_partitions(
             process,
             client.host,

@@ -56,7 +56,7 @@ class ApertureDBDataset(data.Dataset):
             self.total_elements = batch["total_elements"]
         except:
             logger.error(
-                f"Query error: {self.query} {self.db.get_last_response_str()}")
+                f"Query error: {self.query} {self.client.get_last_response_str()}")
             raise
 
     def __getitem__(self, index):
@@ -135,5 +135,5 @@ class ApertureDBDataset(data.Dataset):
             else:
                 self.batch_labels = ["none" for l in range(len(b))]
         except:
-            logger.error(f"Query error: {self.db.get_last_response_str()}")
+            logger.error(f"Query error: {self.client.get_last_response_str()}")
             raise

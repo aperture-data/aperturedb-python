@@ -5,9 +5,9 @@ import os
 from aperturedb.CommonLibrary import create_connector
 from aperturedb.Connector import Connector
 
-db: Connector = create_connector()
+client: Connector = create_connector()
 
-URL = "https://" + db.config.host  + '/api'
+URL = "https://" + client.config.host  + '/api'
 
 VERIFY_SSL = True
 
@@ -26,8 +26,8 @@ def auth():
 
     query = [{
         "Authenticate": {
-            "username": db.config.username,
-            "password": db.config.password,
+            "username": client.config.username,
+            "password": client.config.password,
         }
     }]
 

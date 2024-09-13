@@ -133,7 +133,7 @@ class Images(Entities):
     related bounding boxes, etc.
 
     Args:
-        db: The database connector, perhaps as returned by `Utils.create_connector`
+        client: The database connector, perhaps as returned by `Utils.create_connector`
     """
     db_object = "_Image"
 
