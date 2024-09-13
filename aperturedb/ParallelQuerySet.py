@@ -295,8 +295,8 @@ def gen_execute_batch_sets(base_executor):
                                      blob_filter(blob_set, blob_strike_list, i)))
 
             if len(executable_queries) > 0:
-                result_code, db_results, db_blobs = base_executor(executable_queries, used_blobs,
-                                                                  db, local_success_statuses,
+                result_code, db_results, db_blobs = base_executor(db, executable_queries, used_blobs,
+                                                                  local_success_statuses,
                                                                   None,
                                                                   commands_per_query[i],
                                                                   blobs_per_query[i],
