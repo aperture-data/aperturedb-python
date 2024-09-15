@@ -2,7 +2,9 @@ from aperturedb.DataModels import VideoDataModel, ClipDataModel, DescriptorDataM
 from aperturedb.CommonLibrary import create_connector, execute_query
 from aperturedb.Query import generate_add_query
 from aperturedb.Query import RangeType
+from aperturedb.Descriptors import Descriptors
 from typing import List
+import json
 
 # Define the models for the associstaion of Video, Video Clips, and Embeddings
 # Note : Video has multiple Clips, and each Clip has an embedding.
@@ -39,32 +41,15 @@ def save_video_details_to_aperturedb(URL: str, embeddings):
     return video
 
 
-video_url = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
-embeddings = [
-    {
-        "start_offset_sec": 0.0,
-        "end_offset_sec": 6.0,
-        "embedding": [0.1, 0.2, 0.3],
-        "embedding_scope": "clip"
-    },
-    {
-        "start_offset_sec": 6.0,
-        "end_offset_sec": 12.0,
-        "embedding": [0.4, 0.5, 0.6],
-        "embedding_scope": "clip"
-    },
-    {
-        "start_offset_sec": 12.0,
-        "end_offset_sec": 15.0,
-        "embedding": [0.4, 0.5, 0.6],
-        "embedding_scope": "clip"
-    }
-]
+video_url = "https://storage.googleapis.com/ad-demos-datasets/videos/Ecommerce%20v2.5.mp4"
+embeddings = None
+with open("embeddings.json", "r") as f:
+    embeddings = json.load(f)
 
 client = create_connector()
 
 # Create a descriptor set
-descriptorset = DescriptorSetModel(name="marengo26", dimensions=3)
+descriptorset = DescriptorSetDataModel(name="marengo26", dimensions=3)
 q, blobs, c = generate_add_query(descriptorset)
 result, response, blobs = execute_query(query=q, blobs=blobs, client=client)
 print(f"{result=}, {response=}")
