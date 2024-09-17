@@ -44,6 +44,8 @@ class ConnectorRest(Connector):
     """
     **Class to use ApertureDB's REST interface**
 
+    This class is used to connect to ApertureDB using the REST interface.
+
     Args:
         str (host): Address of the host to connect to.
         int (port): Port to connect to.

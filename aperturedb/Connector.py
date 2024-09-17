@@ -84,6 +84,12 @@ class Connector(object):
     **Class to facilitate connections with an instance of ApertureDB**
 
     It lets the client execute any JSON query based on the [ApertureDB query language specification](/query_language/Overview/API%20Description)
+    It manages the TCP connection to the database.
+
+    :::note
+    - The connection is established only when a query is run.
+    - A new connection is established for each instance that runs a query, and gets closed only at destruction.
+    :::
 
     Args:
         str (host): Address of the host to connect to.

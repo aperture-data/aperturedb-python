@@ -124,16 +124,19 @@ class Images(Entities):
     **The python wrapper of images in ApertureDB.**
 
     This class serves 2 purposes:
-    ***This class is a layer on top of the native query.***
+
+    **This class is a layer on top of the native query.**
+
     It facilitate interactions with images in the database in a pythonic way.
     Abstracts the complexity of the query language and the communication with the database.
 
-    ***It includes utility methods to visualize image and annotations**
+    **It includes utility methods to visualize image and annotations**
+
     Inter convert the representation into NumPy matrices and find similar images,
     related bounding boxes, etc.
 
     Args:
-        client: The database connector, perhaps as returned by `Utils.create_connector`
+        client: The database connector, perhaps as returned by `CommonLibrary.create_connector`
     """
     db_object = "_Image"
 

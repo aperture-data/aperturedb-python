@@ -77,7 +77,7 @@ class FrameDataModel(IdentityDataModel):
 
 
 class DescriptorSetDataModel(IdentityDataModel):
-    """Descriptor Set data model for ApertureDB._
+    """Descriptor Set data model for ApertureDB.
     """
     type = ObjectType.DESCRIPTORSET
     name: Annotated[str, Field(title="Name", description="Name of the descriptor set"),
