@@ -43,7 +43,6 @@ from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
-from aperturedb.CommonLibrary import issue_deprecation_warning
 
 logger = logging.getLogger(__name__)
 
@@ -523,6 +522,7 @@ class Connector(object):
             shared_data=self.shared_data)
 
     def create_new_connection(self):
+        from aperturedb.CommonLibrary import issue_deprecation_warning
         issue_deprecation_warning(
             "Connector.create_new_connection", "Connector.clone")
         return self.clone()
