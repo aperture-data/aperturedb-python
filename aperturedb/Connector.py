@@ -268,6 +268,10 @@ class Connector(object):
                 self.authenticated = False
                 self.should_authenticate = True
                 self.shared_data.session = None
+                self.authenticate(self.shared_data,
+                                  self.config.username,
+                                  self.config.password,
+                                  self.token)
                 raise UnauthorizedException(response)
 
             self.shared_data.session = Session(

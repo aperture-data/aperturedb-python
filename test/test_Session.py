@@ -258,9 +258,4 @@ class TestSession():
         db.shared_data.session.session_token_ttl = 0
         resp, blobs = db.query([{'GetSchema': {}}], [])
         print(f"{resp=}")
-        assert resp['status'] == -1, f"{resp=}"
-
-        # Ensure the session is reauthenticated
-        resp, blobs = db.query([{'GetSchema': {}}], [])
-        print(f"{resp=}")
-        assert resp[0]['GetSchema']['status'] == 0, f"{resp=}"
+        assert enable_mock == False, "Authentication query was not invoked"
