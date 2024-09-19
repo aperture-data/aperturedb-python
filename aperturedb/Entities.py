@@ -149,6 +149,7 @@ class Entities(Subscriptable):
         self.decorator = None
         self.get_image = False
         self.spec = spec
+        self.known_entities = load_entities_registry()
 
     def getitem(self, idx):
         item = self.response[idx]
@@ -216,12 +217,12 @@ class Entities(Subscriptable):
                 "is_connected_to": {
                     "ref": 1
                 },
-                "with_class": entity_class,
-                "constraints": constraints.constraints,
                 "results": {
                     "all_properties": True
                 }
             }
+            if constraints:
+                params_dst["constraints"] = constraints.constraints
 
             query = [
                 QueryBuilder.find_command(self.db_object, params=params_src),
@@ -267,6 +268,7 @@ def load_entities_registry(custom_entities: List[str] = None) -> dict:
     from aperturedb.Blobs import Blobs
     from aperturedb.BoundingBoxes import BoundingBoxes
     from aperturedb.Videos import Videos
+    from aperturedb.Clips import Clips
 
     known_entities = {
         ObjectType.POLYGON.value: Polygons,
@@ -274,8 +276,9 @@ def load_entities_registry(custom_entities: List[str] = None) -> dict:
         ObjectType.VIDEO.value: Videos,
         ObjectType.BOUNDING_BOX.value: BoundingBoxes,
         ObjectType.BLOB.value: Blobs,
+        ObjectType.CLIP.value: Clips
     }
-    for entity in set(custom_entities):
+    for entity in set(custom_entities or []):
         if entity not in known_entities:
             known_entities[entity] = Entities
     return known_entities
