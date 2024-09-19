@@ -1,16 +1,19 @@
 import json
 from aperturedb.Descriptors import Descriptors
 from aperturedb.Utils import create_connector
-
+from aperturedb.Query import ObjectType
 
 client = create_connector()
-
 
 with open("text_embedding.json", "r") as f:
     embeddings = json.load(f)
     descriptorset = "marengo26"
-    d = Descriptors(client)
-    d.find_similar(
-        descriptorset, embeddings["text_embedding"], 3, distances=True)
-    for de in d:
-        print(de)
+    descriptors = Descriptors(client)
+    descriptors.find_similar(
+        descriptorset,
+        embeddings["text_embedding"],
+        k_neighbors=3,
+        distances=True)
+    clips = descriptors.get_connected_entities(ObjectType.CLIP)
+    for clip in clips:
+        print(clip)
