@@ -168,8 +168,8 @@ class Connector(object):
     def authenticate(self, shared_data, user, password, token):
         """
         Authenticate with the database. This will be called automatically from query.
-        This is separate from session refresh mechanism, and is called only once.
-        Failure leads to exception.
+        This is separate from session refresh mechanism, and is set to be called only once per session.
+        If a Refresh token also fails, this will be called again.
         """
         if not self.authenticated:
             if shared_data.session is None:
@@ -268,6 +268,16 @@ class Connector(object):
         if isinstance(response, list):
             session_info = response[0]["RefreshToken"]
             if session_info["status"] != 0:
+                # Refresh token failed, we need to re-authenticate
+                # This is possible with a long lived connector, where
+                # the session token and the refresh token have expired.
+                self.authenticated = False
+                self.should_authenticate = True
+                self.shared_data.session = None
+                self.authenticate(self.shared_data,
+                                  self.config.username,
+                                  self.config.password,
+                                  self.token)
                 raise UnauthorizedException(response)
 
             self.shared_data.session = Session(

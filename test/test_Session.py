@@ -228,3 +228,34 @@ class TestSession():
             response, blobs = db.query(query)
             assert(response[0]["FindImage"]["status"] == 0)
             assert count == 3
+
+    def test_invalid_session_recovery(self, db: Connector, monkeypatch):
+        # simulate session invalidation
+        original_query = db._query
+        enable_mock = True
+
+        def mock_refresher(query, blobs=[], try_resume=True):
+            # when enabled, the mock will return a status -1 for the RefreshToken
+            # and a schema query will be used to get not authenticated.
+            nonlocal enable_mock
+            print(f"{query=}")
+            r, b = original_query(query, blobs, try_resume)
+            if enable_mock:
+                if "RefreshToken" in query[0]:
+                    r[0]["RefreshToken"]["status"] = -1
+                if "GetSchema" in query[0]:
+                    r = {"info": "Not Authenticated!", "status": -1}
+                if "Authenticate" in query[0]:
+                    enable_mock = False
+            print(f"{r=}")
+            return r, b
+        monkeypatch.setattr(
+            db,
+            "_query",
+            mock_refresher)
+
+        # Ensure a session validation error
+        db.shared_data.session.session_token_ttl = 0
+        resp, blobs = db.query([{'GetSchema': {}}], [])
+        print(f"{resp=}")
+        assert enable_mock == False, "Authentication query was not invoked"
