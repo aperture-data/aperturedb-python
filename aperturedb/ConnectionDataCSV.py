@@ -39,7 +39,7 @@ class ConnectionDataCSV(CSVParser):
     ``` python
 
         data = ConnectionDataCSV("/path/to/ConnectionData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from aperturedb.Entities import Entities
-from aperturedb.ParallelQuery import execute_batch
+from aperturedb.CommonLibrary import execute_query
 
 
 class Polygons(Entities):
@@ -46,7 +46,7 @@ class Polygons(Entities):
                         }
                     }
                 ]
-                res, r, b = execute_batch(query, [], self.db)
+                res, r, b = execute_query(self.client, query, [])
                 if r[2]["RegionIoU"]["IoU"][0][0] > threshold:
                     result.add(int(p1["ann_id"]))
                     result.add(int(p2["ann_id"]))

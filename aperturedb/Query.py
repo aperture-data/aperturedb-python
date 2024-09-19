@@ -47,14 +47,17 @@ class RangeType(str, Enum):
 
 config = Config.SAVE_NAME
 
-sources = Sources(n_download_retries=3)
-source_url_handlers = {
-    "http": sources.load_from_http_url,
-    "https": sources.load_from_http_url,
-    "": sources.load_from_file,
-    "s3": sources.load_from_s3_url,
-    "gs": sources.load_from_gs_url
-}
+
+def get_handlers():
+    sources = Sources(n_download_retries=3)
+    source_url_handlers = {
+        "http": sources.load_from_http_url,
+        "https": sources.load_from_http_url,
+        "": sources.load_from_file,
+        "s3": sources.load_from_s3_url,
+        "gs": sources.load_from_gs_url
+    }
+    return source_url_handlers
 
 
 def get_specific(obj: BaseModel) -> dict:
@@ -94,7 +97,7 @@ def get_specific(obj: BaseModel) -> dict:
     return {}, []
 
 
-def generate_save_query(
+def generate_add_query(
         obj: BaseModel,
         cached: List[str] = None,
         source_field: str = None,
@@ -141,6 +144,7 @@ def generate_save_query(
             * index, adjusting the count of children + self for the number of commands
               in current query
     """
+    source_url_handlers = get_handlers()
     if cached == None:
         cached = []
     query = []
@@ -167,12 +171,12 @@ def generate_save_query(
                 pass
             elif isinstance(subobj, list):
                 for i, si in enumerate(subobj):
-                    q, b, index = generate_save_query(
+                    q, b, index = generate_add_query(
                         si, cached=cached, source_field=f"{p}[{i}]", index=index + 1, parent=cindex)
                     dependents_blobs.extend(b)
                     dependents.extend(q)
             else:
-                q, b, index = generate_save_query(
+                q, b, index = generate_add_query(
                     subobj, cached=cached, source_field=f"{p}", index=index + 1, parent=cindex)
                 dependents.extend(q)
                 dependents_blobs.extend(b)

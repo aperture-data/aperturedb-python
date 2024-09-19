@@ -32,7 +32,7 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
     ``` python
 
         data = DescriptorSetDataCSV("/path/to/DescriptorSetData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 

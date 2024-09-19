@@ -64,8 +64,8 @@ def display(images_array, save=False):
 
     ```python
     from aperturedb.Images import Images
-    result, response, blobs = execute_batch([{"FindImage":{"uniqueids": True}}], [], db)
-    wrapper = Images(db, response=response[0]["FindImage"]["entities"])
+    result, response, blobs = execute_query(client, [{"FindImage":{"uniqueids": True}}], [])
+    wrapper = Images(client, response=response[0]["FindImage"]["entities"])
     wrapper.display()
     ```
     """

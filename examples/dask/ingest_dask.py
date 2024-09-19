@@ -19,10 +19,10 @@ if __name__ == '__main__':
         FILENAME, blocksize=os.path.getsize(FILENAME) // numthreads)
 
     def process(df):
-        from aperturedb.Utils import create_connector
+        from aperturedb.CommonLibrary import create_connector
         from aperturedb.ParallelLoader import ParallelLoader
-        db = create_connector()
-        loader = ParallelLoader(db)
+        client = create_connector()
+        loader = ParallelLoader(client)
         count = 0
 
         for i in range(0, len(df), batchsize):

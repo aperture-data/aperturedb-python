@@ -1,92 +1,17 @@
 from __future__ import annotations
-from typing import Callable, List, Tuple, Optional
+from typing import List, Tuple
 from aperturedb import Parallelizer
 import numpy as np
-import json
 import logging
-import math
 import inspect
 
 
 from aperturedb.DaskManager import DaskManager
 from aperturedb.Connector import Connector
 from aperturedb.types import Commands, Blobs, CommandResponses
+from aperturedb.CommonLibrary import execute_query
 
 logger = logging.getLogger(__name__)
-
-
-def execute_batch(q: Commands, blobs: Blobs, db: Connector,
-                  success_statuses: list[int] = [0],
-                  response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
-                  strict_response_validation: bool = False, cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
-    """
-    Execute a batch of queries, doing useful logging around it.
-    Calls the response handler if provided.
-    This should be used (without the parallel machinery) instead of db.query to keep the response handling consistent, better logging, etc.
-
-    Args:
-        q (Commands): List of commands to execute.
-        blobs (Blobs): List of blobs to send.
-        db (Connector): The database connector.
-        success_statuses (list[int], optional): The list of success statuses. Defaults to [0].
-        response_handler (Callable, optional): The response handler. Defaults to None.
-        commands_per_query (int, optional): The number of commands per query. Defaults to 1.
-        blobs_per_query (int, optional): The number of blobs per query. Defaults to 0.
-        strict_response_validation (bool, optional): Whether to strictly validate the response. Defaults to False.
-
-    Returns:
-        int: The result code.
-            - 0 : if all commands succeeded
-            - 1 : if there was -1 in the response
-            - 2 : For any other code.
-        CommandResponses: The response.
-        Blobs: The blobs.
-    """
-    result = 0
-    logger.debug(f"Query={q}")
-    r, b = db.query(q, blobs)
-    logger.debug(f"Response={r}")
-
-    if db.last_query_ok():
-        if response_handler is not None:
-            try:
-                ParallelQuery.map_response_to_handler(response_handler,
-                                                      q, blobs, r, b, commands_per_query, blobs_per_query,
-                                                      cmd_index)
-            except BaseException as e:
-                logger.exception(e)
-                if strict_response_validation:
-                    raise e
-    else:
-        # Transaction failed entirely.
-        logger.error(f"Failed query = {q} with response = {r}")
-        result = 1
-
-    statuses = {}
-    if isinstance(r, dict):
-        statuses[r['status']] = [r]
-    elif isinstance(r, list):
-        # add each result to a list of the responses, keyed by the response
-        # code.
-        [statuses.setdefault(result[cmd]['status'], []).append(result)
-         for result in r for cmd in result]
-    else:
-        logger.error("Response in unexpected format")
-        result = 1
-
-    # last_query_ok means result status >= 0
-    if result != 1:
-        warn_list = []
-        for status, results in statuses.items():
-            if status not in success_statuses:
-                for wr in results:
-                    warn_list.append(wr)
-        if len(warn_list) != 0:
-            logger.warning(
-                f"Partial errors:\r\n{json.dumps(q)}\r\n{json.dumps(warn_list)}")
-            result = 2
-
-    return result, r, b
 
 
 class ParallelQuery(Parallelizer.Parallelizer):
@@ -97,7 +22,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     so that they may be processed using different threads.
 
     Args:
-        db (Connector): The database connector.
+        client (Connector): The database connector.
         dry_run (bool, optional): Whether to run in dry run mode. Defaults to False.
     """
 
@@ -112,51 +37,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    @classmethod
-    def map_response_to_handler(cls, handler, query, query_blobs,  response, response_blobs,
-                                commands_per_query, blobs_per_query, cmd_index_offset):
-        # We could potentially always call this handler function
-        # and let the user deal with the error cases.
-        blobs_returned = 0
-        for i in range(math.ceil(len(query) / commands_per_query)):
-            start = i * commands_per_query
-            end = start + commands_per_query
-            blobs_start = i * blobs_per_query
-            blobs_end = blobs_start + blobs_per_query
-
-            b_count = 0
-            if issubclass(type(response), list):
-                for req, resp in zip(query[start:end], response[start:end]):
-                    for k in req:
-                        blob_returning_commands = ["FindImage", "FindBlob", "FindVideo",
-                                                   "FindDescriptor", "FindBoundingBox"]
-                        if k in blob_returning_commands and "blobs" in req[k] and req[k]["blobs"]:
-                            count = resp[k]["returned"]
-                            b_count += count
-
-            # The returned blobs need to be sliced to match the
-            # returned entities per command in query.
-            handler(
-                query[start:end],
-                query_blobs[blobs_start:blobs_end],
-                response[start:end] if issubclass(
-                    type(response), list) else response,
-                response_blobs[blobs_returned:blobs_returned + b_count] if
-                len(response_blobs) >= blobs_returned + b_count else None,
-                None if cmd_index_offset is None else cmd_index_offset + i)
-            blobs_returned += b_count
-
-    def __init__(self, db: Connector, dry_run: bool = False):
+    def __init__(self, client: Connector, dry_run: bool = False):
         super().__init__()
-        test_string = f"Connection test successful with {db.config}"
+        test_string = f"Connection test successful with {client.config}"
         try:
-            _, _ = db.query([{"GetSchema": {}}], [])
+            _, _ = client.query([{"GetSchema": {}}], [])
             logger.info(test_string)
         except Exception as e:
             logger.error(test_string.replace("successful", "failed"))
             raise
 
-        self.db = db.create_new_connection()
+        self.client = client.clone()
 
         self.dry_run = dry_run
 
@@ -167,7 +58,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.commands_per_query = 1
         self.blobs_per_query = 0
         self.daskManager = None
-        self.batch_command = execute_batch
+        self.batch_command = execute_query
 
     def generate_batch(self, data: List[Tuple[Commands, Blobs]]) -> Tuple[Commands, Blobs]:
         """
@@ -227,12 +118,12 @@ class ParallelQuery(Parallelizer.Parallelizer):
         except BaseException as e:
             logger.exception(e)
 
-    def do_batch(self, db: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
+    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
         """
         Executes batch of queries and blobs in the database.
 
         Args:
-            db (Connector): The database connector.
+            client (Connector): The database connector.
             data (list[tuple[Commands, Blobs]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
 
         It also provides a way for invoking a user defined function to handle the
@@ -249,7 +140,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 def process_responses(requests, input_blobs, responses, output_blobs):
                     self.requests.extend(requests)
                     self.responses.extend(responses)
-            loader = ParallelLoader(self.db)
+            loader = ParallelLoader(self.client)
             generator = MyQueries()
             loader.ingest(generator)
         ```
@@ -280,9 +171,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
                         query, qblobs, resp, rblobs)
 
             result, r, b = self.batch_command(
+                client,
                 q,
                 blobs,
-                db,
                 ParallelQuery.success_statuses,
                 response_handler,
                 self.commands_per_query,
@@ -290,7 +181,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 strict_response_validation=strict_response_validation,
                 cmd_index=batch_start)
             if result == 0:
-                query_time = db.get_last_query_time()
+                query_time = client.get_last_query_time()
                 worker_stats["succeeded_commands"] = len(q)
                 worker_stats["succeeded_queries"] = len(data)
                 worker_stats["objects_existed"] = sum(
@@ -325,7 +216,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     def worker(self, thid: int, generator, start: int, end: int):
         # A new connection will be created for each thread
-        db = self.db.create_new_connection()
+        client = self.client.clone()
 
         total_batches = (end - start) // self.batchsize
 
@@ -339,7 +230,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batch_end = min(batch_start + self.batchsize, end)
 
             try:
-                self.do_batch(db, batch_start,
+                self.do_batch(client, batch_start,
                               generator[batch_start:batch_end])
             except Exception as e:
                 logger.exception(e)
@@ -383,7 +274,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
-                self.__class__, self.db, generator, batchsize, stats=stats)
+                self.__class__, self.client, generator, batchsize, stats=stats)
             self.actual_stats = []
             for result in results:
                 if result is not None:
@@ -463,3 +354,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
             print("Sample of data to be ingested:")
             for i in range(sample_count):
                 print(self.generator[i])
+
+
+def execute_batch(q: Commands, blobs: Blobs, db: Connector, *args, **kwargs) -> Tuple[int, CommandResponses, Blobs]:
+    from aperturedb.CommonLibrary import execute_query, issue_deprecation_warning
+    issue_deprecation_warning(
+        "ParallelQuery.execute_batch", "CommonLibrary.execute_query")
+    return execute_query(db, q, blobs, *args, **kwargs)

@@ -1,6 +1,7 @@
 from aperturedb.transformers.transformer import Transformer
 from aperturedb.Subscriptable import Subscriptable
-from aperturedb.Utils import Utils, create_connector
+from aperturedb.Utils import Utils
+from aperturedb.CommonLibrary import create_connector
 
 from PIL import Image
 import io

@@ -83,12 +83,18 @@ class Connector(object):
     **Class to facilitate connections with an instance of ApertureDB**
 
     It lets the client execute any JSON query based on the [ApertureDB query language specification](/query_language/Overview/API%20Description)
+    It manages the TCP connection to the database.
+
+    :::note
+    - The connection is established only when a query is run.
+    - A new connection is established for each instance that runs a query, and gets closed only at destruction.
+    :::
 
     Args:
         str (host): Address of the host to connect to.
         int (port): Port to connect to.
         str (user): Username to specify while establishing a connection.
-        str (password): Password to specify while connecting to the db.
+        str (password): Password to specify while connecting to ApertureDB.
         str (token): Token to use while connecting to the database.
         bool (use_ssl): Use SSL to encrypt communication with the database.
         bool (use_keepalive): Set keepalive on the connection with the database.
@@ -496,16 +502,15 @@ class Connector(object):
                 time.sleep(1)
                 count += 1
 
-    def create_new_connection(self) -> Connector:
+    def clone(self) -> Connector:
         """
-        Create a new connection object with the same parameters as the current one.
-        This is important in multi-threaded applications, where each thread should have its own connection object.
-        Because the connection object is not thread-safe, it is not safe to share it between threads.
+        Create a new Connector object with the same parameters as the current one.
+        This is important in multi-threaded applications, where each thread should have its own Connector object.
         Be cautious when using this method, as it will create a new connection to the database, which will consume resources.
         Ideally, this method should be called once for each thread.
 
         Returns:
-            connection: Clone of original connection
+            Connector: Clone of original Connector
         """
         return type(self)(
             self.host,
@@ -515,6 +520,12 @@ class Connector(object):
             self.token,
             use_ssl=self.use_ssl,
             shared_data=self.shared_data)
+
+    def create_new_connection(self):
+        from aperturedb.CommonLibrary import issue_deprecation_warning
+        issue_deprecation_warning(
+            "Connector.create_new_connection", "Connector.clone")
+        return self.clone()
 
     def get_last_response_str(self):
 

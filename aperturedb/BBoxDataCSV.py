@@ -44,7 +44,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
     ``` python
 
         data = BBoxDataCSV("/path/to/BoundingBoxesData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 

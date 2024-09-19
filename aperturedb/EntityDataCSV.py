@@ -29,7 +29,7 @@ class EntityDataCSV(CSVParser.CSVParser):
     ``` python
 
         data = EntityDataCSV("/path/to/EntityData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 
@@ -82,7 +82,7 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
     This class loads the Entity Data which is present in a CSV file,
     and converts it into a series of ApertureDB deletes.
 
-    :::note::
+    :::note
     Expects a CSV file with the following columns:
 
         ``constraint_PROP1``
@@ -100,7 +100,7 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
    ```python
 
         data = ImageDeleteDataCSV("/path/to/UnusedImages.csv")
-        loader = ParallelQuery(db)
+        loader = ParallelQuery(client)
         loader.query(data)
     ```
 
@@ -138,7 +138,8 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
 
 class ImageDeleteDataCSV(EntityDeleteDataCSV):
     """
-    ***ApertureData CSV Loader class for deleting images***
+    **ApertureData CSV Loader class for deleting images**
+
     Usage details in EntityDeleteDataCSV
     """
 
