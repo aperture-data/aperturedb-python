@@ -37,7 +37,7 @@ class BlobDataCSV(CSVParser.CSVParser):
     ``` python
 
         data = BlobDataCSV("/path/to/BlobData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 

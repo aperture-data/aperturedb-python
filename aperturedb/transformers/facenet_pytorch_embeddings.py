@@ -4,7 +4,8 @@ from PIL import Image
 import io
 import time
 from .facenet import generate_embedding
-from aperturedb.Utils import create_connector, Utils
+from aperturedb.CommonLibrary import create_connector
+from aperturedb.Utils import Utils
 
 
 class FacenetPyTorchEmbeddings(Transformer):

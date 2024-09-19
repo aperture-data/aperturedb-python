@@ -1,7 +1,8 @@
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.transformers.transformer import Transformer
 from .clip import generate_embedding, descriptor_set
-from aperturedb.Utils import create_connector, Utils
+from aperturedb.Utils import Utils
+from aperturedb.CommonLibrary import create_connector
 
 
 class CLIPPyTorchEmbeddings(Transformer):

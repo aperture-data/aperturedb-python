@@ -4,7 +4,6 @@ from typing import List, Optional
 import typer
 import os
 import time
-import numpy as np
 
 from typing_extensions import Annotated
 
@@ -60,6 +59,7 @@ def _create_pipeline(transformers: List[str]):
     from aperturedb.transformers.image_properties import ImageProperties
     from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
     from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    from aperturedb.CommonLibrary import import_module_by_path
 
     # Actual collection of transformers, packaged with aperturedb.
     built_in_transformers = {
@@ -106,11 +106,10 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     Ingest data from a Data generator [BETA].
     """
     from aperturedb.ParallelLoader import ParallelLoader
-    from aperturedb.Utils import create_connector
-    from aperturedb.Utils import import_module_by_path
+    from aperturedb.CommonLibrary import create_connector, import_module_by_path
 
-    db = create_connector()
-    loader = ParallelLoader(db)
+    client = create_connector()
+    loader = ParallelLoader(client)
 
     module = import_module_by_path(filepath)
 
@@ -187,7 +186,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
     from aperturedb.ParallelLoader import ParallelLoader
 
-    from aperturedb.Utils import create_connector
+    from aperturedb.CommonLibrary import create_connector
 
     ingest_types = {
         IngestType.BLOB: BlobDataCSV,
@@ -212,10 +211,10 @@ def from_csv(filepath: Annotated[str, typer.Argument(
                                adb_data_source=f"{ingest_type}.{os.path.basename(filepath)}")
     else:
         console.log("No transformer applied")
-    db = create_connector()
-    console.log(db)
+    client = create_connector()
+    console.log(client)
 
-    loader = ParallelLoader(db)
+    loader = ParallelLoader(client)
     if debug:
         _debug_samples(data, sample_count, filepath)
     else:
@@ -246,6 +245,7 @@ def generate_embedding_csv_from_image_csv(
     """
     import pandas as pd
     from aperturedb.ImageDataCSV import ImageDataCSV
+    import numpy as np
 
     data = ImageDataCSV(input_file)
     data.sample_count = len(data) if sample_count == -1 else sample_count

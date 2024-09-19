@@ -1,7 +1,7 @@
 import io
 
 from aperturedb.ParallelLoader import ParallelLoader
-from aperturedb.Utils import create_connector
+from aperturedb.CommonLibrary import create_connector
 from PIL import Image
 from CocoDataPyTorch import CocoDataPyTorch
 import argparse

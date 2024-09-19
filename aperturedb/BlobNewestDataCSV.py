@@ -80,7 +80,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
     ``` python
 
         data = ImageForceNewestDataCSV("/path/to/WorkingImageDataset.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 

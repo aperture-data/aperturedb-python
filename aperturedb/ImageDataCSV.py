@@ -155,7 +155,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     ``` python
 
         data = ImageDataCSV("/path/to/ImageData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 
@@ -362,7 +362,7 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
     ```python
 
         data = ImageSparseAddDataCSV("/path/to/ImageData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
     """
