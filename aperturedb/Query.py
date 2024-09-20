@@ -415,6 +415,7 @@ class Query():
         if self.k_neighbors > 0:
             cmd_params["k_neighbors"] = self.k_neighbors
 
+        self.blob = None
         if self.vector:
             self.blob = struct.pack("%sf" % len(self.vector), *self.vector)
 
