@@ -14,6 +14,8 @@ with open("text_embedding.json", "r") as f:
         embeddings["text_embedding"],
         k_neighbors=3,
         distances=True)
-    clips = descriptors.get_connected_entities(ObjectType.CLIP)
-    for clip in clips:
-        print(clip)
+    clip_descriptors = descriptors.get_connected_entities(ObjectType.CLIP)
+    for clips in clip_descriptors:
+        for clip in clips:
+            print(clip)
+            print("-----")

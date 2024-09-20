@@ -4,6 +4,8 @@ from aperturedb.Images import Images
 from aperturedb.Utils import create_connector
 from aperturedb.Query import Query
 from pydantic import BaseModel, Field
+from aperturedb.Clips import Clips
+from aperturedb.Entities import ObjectType
 
 
 def x(*args, **kwargs):
@@ -26,17 +28,25 @@ class X:
 
 
 if __name__ == "__main__":
-    images = Images.retrieve(create_connector(),
-                             Query.spec(limit=10))
-    for image in images:
-        print(image)
+    # images = Images.retrieve(create_connector(),
+    #                          Query.spec(limit=10))
+    # for image in images:
+    #     print(image)
+    #     print("-----")
+
+    clips = Clips.retrieve(create_connector(), Query.spec(limit=3), with_adjacent={
+        "descriptors": Query.spec(limit=3, set="marengo26", with_class=ObjectType.DESCRIPTOR.value)
+    })
+
+    for clip in clips:
+        print(clip)
         print("-----")
 
-    descs = Descriptors.retrieve(create_connector(),
-                                 Query.spec(limit=3))
-    for desc in descs:
-        print(desc)
-        print("-----")
+    # descs = Descriptors.retrieve(create_connector(),
+    #                              Query.spec(limit=3, set="marengo26"))
+    # for desc in descs:
+    #     print(desc)
+    #     print("-----")
     # x(X.y > 45)
     # p = X(y=45)
 
