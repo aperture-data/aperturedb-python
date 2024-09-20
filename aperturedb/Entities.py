@@ -235,7 +235,7 @@ class Entities(Subscriptable):
                 cl = self.known_entities[entity_class]
 
             result.append(cl(
-                client=self.client, response=r[1]["FindEntity"]["entities"], type=entity_class))
+                client=self.client, response=r[1][list(r[1].keys())[0]]["entities"], type=entity_class))
         return result
 
     def get_blob(self, entity) -> Any:

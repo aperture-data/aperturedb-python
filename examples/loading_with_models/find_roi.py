@@ -1,6 +1,6 @@
 import json
 from aperturedb.Descriptors import Descriptors
-from aperturedb.Utils import create_connector
+from aperturedb.CommonLibrary import create_connector
 from aperturedb.Query import ObjectType
 
 client = create_connector()
