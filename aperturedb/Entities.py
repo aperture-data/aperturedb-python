@@ -149,7 +149,12 @@ class Entities(Subscriptable):
         self.decorator = None
         self.get_image = False
         self.spec = spec
-        self.known_entities = load_entities_registry()
+        custom_entities = []
+        if spec and spec.command_properties(prop="with_class"):
+            custom_entities = spec.command_properties(prop="with_class")
+        self.known_entities = load_entities_registry(
+            custom_entities=custom_entities
+        )
 
     def getitem(self, idx):
         item = self.response[idx]
