@@ -35,6 +35,12 @@ q, blobs, c = generate_add_query(descriptorset)
 result, response, blobs = execute_query(query=q, blobs=blobs, client=client)
 print(f"{result=}, {response=}")
 
+#Save a Viodeo object to ApertureDB, no embeddings.
+video = save_video_details_to_aperturedb(video_url, [])
+q, blobs, c = generate_add_query(video)
+result, response, blobs = execute_query(query=q, blobs=blobs, client=client)
+print(f"{result=}, {response=}")
+
 # Create a video object, with clips, and embeddings
 video = save_video_details_to_aperturedb(video_url, embeddings)
 q, blobs, c = generate_add_query(video)

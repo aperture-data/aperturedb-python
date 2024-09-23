@@ -1,3 +1,4 @@
+import json
 from twelvelabs import TwelveLabs
 from twelvelabs.models.embed import EmbeddingsTask
 
@@ -41,8 +42,16 @@ def generate_embedding(video_url):
     return embeddings, task_result
 
 
+def generate_text_embeddings(text: str):
+    text_embedding = twelvelabs_client.embed.create(
+        engine_name="Marengo-retrieval-2.6",
+        text=text,
+        text_truncate="none")
+
+    return text_embedding
+
+
 # Example usage
-# video_url = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
 video_url = "https://storage.googleapis.com/ad-demos-datasets/videos/Ecommerce%20v2.5.mp4"
 
 # Generate embeddings for the video
@@ -56,3 +65,14 @@ for i, emb in enumerate(embeddings):
         f"  Time range: {emb['start_offset_sec']} - {emb['end_offset_sec']} seconds")
     print(f"  Embedding vector (first 5 values): {emb['embedding'][:5]}")
     print()
+
+
+with open("embeddings.txt", "w") as f:
+    f.write(json.dumps(embeddings, indent=2))
+
+text_embedding, result = generate_text_embeddings(
+    "Show me the part which has lot of outfits being displayed"
+)
+
+with open("text_embedding.json", "w") as f:
+    f.write(json.dumps(str(text_embedding), indent=2))
