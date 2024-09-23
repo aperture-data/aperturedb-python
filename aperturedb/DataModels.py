@@ -46,16 +46,12 @@ class ClipDataModel(IdentityDataModel):
                      PropertyType.SYSTEM]
     stop: Annotated[float, Field(title="Stop", description="Stop point as frame, time(hh:mm:ss.uuuuuu) or fraction"),
                     PropertyType.SYSTEM]
-    embedding: Annotated[Optional[DescriptorDataModel], Field(
-        title="Embedding", description="Embedding of the clip")]
 
 
 class VideoDataModel(BlobDataModel):
     """Data model for video objects in ApertureDB.
     """
     type = ObjectType.VIDEO
-    clips: Annotated[Optional[List[ClipDataModel]], Field(
-        title="Clips", description="Clips in the video", default=[])]
 
 
 class DescriptorDataModel(IdentityDataModel):
