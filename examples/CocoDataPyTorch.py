@@ -26,16 +26,18 @@ class CocoDataPyTorch(PyTorchData):
     [CocoDetection (torchvision.datasets)](https://pytorch.org/vision/main/generated/torchvision.datasets.CocoDetection.html#torchvision.datasets.CocoDetection)**
     """
 
-    def __init__(self) -> None:
+    def __init__(self,
+                 dataset_name: str = "coco_validation_with_annotations",
+                 root: str = "coco/val2017",
+                 annotationsFile: str = "coco/annotations/instances_val2017.json") -> None:
         """
         COCO dataset loads as an iterable with Tuple (X, [y1, y2 .... yn])
         where X is the image (PIL.Image) and y's are multiple dicts with properties like:
         area, bbox, category_id, image_id, id, iscrowd, keypoints, num_keypoints, segmentation
         """
-        coco_detection = CocoDetection(
-            root="/mnt/data/datasets/coco/data/images/val2017/",
-            annFile="/mnt/data/datasets/coco/data/annotations/stuff_val2017.json")
+        coco_detection = CocoDetection(root=root, annFile=annotationsFile)
         self.coco_detection = coco_detection
+        self.dataset_name = dataset_name
         super().__init__(coco_detection)
 
     def generate_query(self, idx: int):
@@ -55,6 +57,8 @@ class CocoDataPyTorch(PyTorchData):
                 # Hack: Concatenate the list types as aperturedb does not support arrays for properties yet.
                 p: " ".join(map(str, meta_info[p])) if isinstance(meta_info[p], list) else meta_info[p] for p in meta_info
             }
+            # Tag the dataset name for simple query.
+            q[0]["AddImage"]["properties"]["dataset_name"] = self.dataset_name
 
             q.insert(0, {
                 "AddEntity": {
@@ -91,17 +95,37 @@ class CocoDataPyTorch(PyTorchData):
                 m = self.coco_detection.coco.annToMask(meta_info)
                 polygons = polygonFromMask(m)
                 adb_polygons = []
+                adb_boxes = []
                 for polygon in polygons:
                     adb_polygon = []
+                    left, top, right, bottom = 99999, 99999, 0, 0
                     for i in range(0, len(polygon), 2):
                         adb_polygon.append([polygon[i], polygon[i + 1]])
+                        left = min(left, polygon[i])
+                        top = min(top, polygon[i + 1])
+                        right = max(right, polygon[i])
+                        bottom = max(bottom, polygon[i + 1])
                     adb_polygons.append(adb_polygon)
-                for adb_polygon in adb_polygons:
+                    adb_boxes.append([left, top, right - left, bottom - top])
+
+                for adb_polygon, adb_box in zip(adb_polygons, adb_boxes):
                     q.append({
                         "AddPolygon": {
                             "image_ref": 2,
                             "label": str(category_info["name"]),
                             "polygons": [adb_polygon]
+                        }
+                    })
+                    q.append({
+                        "AddBoundingBox": {
+                            "image_ref": 2,
+                            "rectangle": {
+                                "x": int(adb_box[0]),
+                                "y": int(adb_box[1]),
+                                "width": int(adb_box[2]),
+                                "height": int(adb_box[3])
+                            },
+                            "label": str(category_info["name"])
                         }
                     })
 

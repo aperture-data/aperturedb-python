@@ -335,7 +335,7 @@ class Images(Entities):
 
         try:
             result, res, _ = execute_query(
-                client=self.client, q=query, blobs=[])
+                client=self.client, query=query, blobs=[])
 
             polygons = []
             bounds = []
@@ -428,7 +428,7 @@ class Images(Entities):
         self.images_bboxes[uniqueid_str] = {}
         try:
             result, res, images = execute_query(
-                client=self.client, q=query, blobs=[])
+                client=self.client, query=query, blobs=[])
             bboxes = []
             tags = []
             meta = []
