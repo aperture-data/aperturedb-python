@@ -31,7 +31,8 @@ def confirm(command: CommandTypes, force: bool):
 def execute(command: CommandTypes,
             force: Annotated[bool, typer.Option(help="Do not confirm")] = False):
 
-    from aperturedb.Utils import Utils, create_connector
+    from aperturedb.Utils import Utils
+    from aperturedb.CommonLibrary import create_connector
 
     utils = Utils(create_connector())
     available_commands = {
