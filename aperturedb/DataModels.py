@@ -4,7 +4,7 @@
 from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated, List
-from typing import ClassVar
+from typing import ClassVar, Optional
 from uuid import uuid4
 from aperturedb.Query import ObjectType, PropertyType, RangeType
 
