@@ -427,12 +427,12 @@ class Images(Entities):
         uniqueid_str = str(uniqueid)
         self.images_bboxes[uniqueid_str] = {}
         try:
-            result, res, images = execute_query(
-                client=self.client, q=query, blobs=[])
             bboxes = []
             tags = []
             meta = []
             bounds = []
+            result, res, images = execute_query(
+                client=self.client, q=query, blobs=[])
             if "entities" in res[1]["FindBoundingBox"]:
                 for bbox in res[1]["FindBoundingBox"]["entities"]:
                     coordinates = bbox["_coordinates"]
