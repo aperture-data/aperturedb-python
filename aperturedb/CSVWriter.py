@@ -19,7 +19,7 @@ def convert_entity_data(input, entity_class: str, unique_key: Optional[str] = No
     """
     Convert data to the format required for creating entities
 
-    Arguments: 
+    Arguments:
         input: Anything that can be used as input to a pandas DataFrame, including a pandas DataFrame
         entity_class: The entity class to write to the CSV file as the first column
         unique_key: (optional) An existing key to call out as a constraint
@@ -39,8 +39,8 @@ def write_entity_csv(filename: str, input, **kwargs):
     """
     Write data to a CSV file for creating entities
 
-    Arguments: 
-        filename: The name of the file to write to.  
+    Arguments:
+        filename: The name of the file to write to.
             Recommended to end in ".entity.csv".
         input: Anything that can be used as input to a pandas DataFrame, including a pandas DataFrame
         entity_class: The entity class to write to the CSV file as the first column
