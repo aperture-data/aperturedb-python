@@ -7,7 +7,7 @@ import importlib
 import math
 import os
 import sys
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple, Dict, Union
 import logging
 import json
 
@@ -53,14 +53,70 @@ def __create_connector(configuration: Configuration):
     return connector
 
 
+def _create_configuration_from_json(config: Union[Dict, str]) -> Connector:
+    """
+    **Create a connector to the database from a JSON configuration.**
+
+    Args:
+        config (Dict or str): The configuration.
+
+    Returns:
+        Connector: The connector to the database.
+    """
+    if isinstance(config, str):
+        config = json.loads(config)
+    assert isinstance(
+        config, dict), f"config must be a dict or a JSON object string: {type(config)}"
+
+    # Remove the password from the configuration before logging.
+    clean_config = {k: v for k, v in config.items() if k != "password"}
+
+    # These fields are required.
+    assert "host" in config, f"host is required in the configuration: {clean_config}"
+    assert "username" in config, f"username is required in the configuration: {clean_config}"
+    assert "password" in config, f"password is required in the configuration: {clean_config}"
+
+    # These fields have no default in the Configuration class.
+    if 'port' not in config:
+        config["port"] = 55555
+
+    if 'name' not in config:
+        config["name"] = "from_json"
+
+    configuration = Configuration(**config)
+    return configuration
+
+
+def _get_colab_secret(name: str) -> Optional[str]:
+    try:
+        from google.colab import userdata
+        return userdata.get(name)
+    except ImportError:  # Not on colab
+        return None
+
+
+def _get_dotenv_secret(name: str) -> Optional[str]:
+    try:
+        from dotenv import dotenv_values
+        config = dotenv_values(".env")
+        return config.get(name)
+    except ImportError:  # dotenv not installed
+        logger.warning(
+            "dotenv not installed. Cannot read secrets from .env file.")
+        return None
+
+
 def create_connector(name: Optional[str] = None) -> Connector:
     """
     **Create a connector to the database.**
 
     This function chooses a configuration in the folowing order:
-    1. The configuration specified by the `name` parameter.
-    2. The configuration specified by the `APERTUREDB_CONFIG` environment variable.
-    3. The active configuration.
+    1. The configuration named by the `name` parameter.
+    2. The configuration described in the `APERTUREDB_JSON` environment variable.
+    3. The configuration described in the `APERTUREDB_JSON` Google Colab secret.
+    4. The configuration described in the `APERTUREDB_JSON` secret in a `.env` file.
+    5. The configuration named by the `APERTUREDB_CONFIG` environment variable.
+    6. The active configuration.
 
     If there are both global and local configurations with the same name, the global configuration is preferred.
 
@@ -83,14 +139,31 @@ def create_connector(name: Optional[str] = None) -> Connector:
         assert False, f"Configuration '{name}' not found ({source})."
 
     if name is not None:
+        logger.info(f"Using configuration '{name}' explicitly")
         config = lookup_config_by_name(name, "explicit")
-    elif "APERTUREDB_CONFIG" in os.environ and os.environ["APERTUREDB_CONFIG"] != "":
-        config = lookup_config_by_name(
-            os.environ["APERTUREDB_CONFIG"], "envar")
+    elif (data := os.environ.get("APERTUREDB_JSON")) is not None and data != "":
+        logger.info(
+            f"Using configuration from APERTUREDB_JSON environment variable")
+        config = _create_configuration_from_json(data)
+    elif (data := _get_colab_secret("APERTUREDB_JSON")) is not None and data != "":
+        logger.info(
+            f"Using configuration from APERTUREDB_JSON Google Colab secret")
+        config = _create_configuration_from_json(data)
+    elif (data := _get_dotenv_secret("APERTUREDB_JSON")) is not None and data != "":
+        logger.info(
+            f"Using configuration from APERTUREDB_JSON secret in .env file")
+        config = _create_configuration_from_json(data)
+    elif (name := os.environ.get("APERTUREDB_CONFIG")) is not None and name != "":
+        logger.info(
+            f"Using configuration '{name}' from APERTUREDB_CONFIG environment variable")
+        config = lookup_config_by_name(name, "envar")
     elif "active" in all_configs:
-        config = lookup_config_by_name(all_configs["active"], "active")
+        name = all_configs["active"]
+        config = lookup_config_by_name(name, "active")
+        logger.info(f"Using active configuration '{name}'")
     else:
         assert False, "No configuration found."
+    logger.info(f"Configuration: {config}")
     return __create_connector(config)
 
 
