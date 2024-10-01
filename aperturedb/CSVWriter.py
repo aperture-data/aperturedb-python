@@ -14,7 +14,8 @@ from typing import Optional
 
 import pandas as pd
 
-def convert_entity_data(input, entity_class:str, unique_key:Optional[str]=None):
+
+def convert_entity_data(input, entity_class: str, unique_key: Optional[str] = None):
     """
     Convert data to the format required for creating entities
 
@@ -34,7 +35,7 @@ def convert_entity_data(input, entity_class:str, unique_key:Optional[str]=None):
     return df
 
 
-def write_entity_csv(filename:str, input, **kwargs):
+def write_entity_csv(filename: str, input, **kwargs):
     """
     Write data to a CSV file for creating entities
 
@@ -49,7 +50,7 @@ def write_entity_csv(filename:str, input, **kwargs):
     df.to_csv(filename, index=False)
 
 
-def convert_image_data(input, source_column:str, source_type:Optional[str]=None, format:Optional[str]=None, unique_key:Optional[str]=None):
+def convert_image_data(input, source_column: str, source_type: Optional[str] = None, format: Optional[str] = None, unique_key: Optional[str] = None):
     """
     Convert data to the format required for creating images
 
@@ -70,11 +71,13 @@ def convert_image_data(input, source_column:str, source_type:Optional[str]=None,
     if source_type is None:
         source_type = source_column
 
-    assert source_type in ["filename", "url", "gsurl", "s3url"], f"source_type must be one of 'filename', 'url', 'gsurl', or 's3url', found: {source_type}"
+    assert source_type in ["filename", "url", "gsurl",
+                           "s3url"], f"source_type must be one of 'filename', 'url', 'gsurl', or 's3url', found: {source_type}"
 
     if source_column == source_type:
         # reordering the columns to make the source column the first column
-        df = df[[source_column] + [col for col in df.columns if col != source_column]]
+        df = df[[source_column] +
+                [col for col in df.columns if col != source_column]]
     else:
         df.insert(0, source_type, df[source_column])
 
@@ -93,7 +96,7 @@ def convert_image_data(input, source_column:str, source_type:Optional[str]=None,
     return df
 
 
-def write_image_csv(filename:str, input, **kwargs):
+def write_image_csv(filename: str, input, **kwargs):
     """
     Write data to a CSV file for creating images
 
@@ -111,14 +114,14 @@ def write_image_csv(filename:str, input, **kwargs):
 
 
 def convert_connection_data(input,
-    connection_class:str,
-    source_class:str, source_property:str,
-    destination_class:str, destination_property:str,
-    source_column:Optional[str]=None, destination_column:Optional[str]=None,
-    unique_key:Optional[str]=None):
+                            connection_class: str,
+                            source_class: str, source_property: str,
+                            destination_class: str, destination_property: str,
+                            source_column: Optional[str] = None, destination_column: Optional[str] = None,
+                            unique_key: Optional[str] = None):
     """
     Convert data to the format required for creating connections
-    
+
     Arguments:
         input: Anything that can be used as input to a pandas DataFrame, including a pandas DataFrame
         connection_class: The connection class to write to the CSV file as the first column
@@ -138,14 +141,15 @@ def convert_connection_data(input,
     if source_column is None:
         source_column = source_property
     assert source_column in df.columns, f"source_column {source_column} not found in the input data"
-    
+
     if destination_column is None:
         destination_column = destination_property
     assert destination_column in df.columns, f"destination_column {destination_column} not found in the input data"
 
     df.insert(0, 'ConnectionClass', connection_class)
     df.insert(1, f"{source_class}@{source_property}", df[source_column])
-    df.insert(2, f"{destination_class}@{destination_property}", df[destination_column])
+    df.insert(2, f"{destination_class}@{destination_property}",
+              df[destination_column])
 
     if unique_key:
         assert unique_key in df.columns, f"unique_key {unique_key} not found in the input data"
@@ -154,7 +158,7 @@ def convert_connection_data(input,
     return df
 
 
-def write_connection_csv(filename:str, input, **kwargs):
+def write_connection_csv(filename: str, input, **kwargs):
     """
     Write data to a CSV file for creating connections
 
