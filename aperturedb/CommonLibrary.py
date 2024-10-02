@@ -90,8 +90,10 @@ def _create_configuration_from_json(config: Union[Dict, str]) -> Connector:
 def _get_colab_secret(name: str) -> Optional[str]:
     try:
         from google.colab import userdata
+        print("Checking for secret in colab")
         return userdata.get(name)
     except ImportError:  # Not on colab
+        print("Not on colab")
         return None
 
 
@@ -129,9 +131,13 @@ def create_connector(name: Optional[str] = None) -> Connector:
         Connector: The connector to the database.
     """
     from aperturedb.cli.configure import ls
-    all_configs = ls(log_to_console=False)
+    all_configs = None
 
     def lookup_config_by_name(name: str, source: str) -> Configuration:
+        nonlocal all_configs
+        if all_configs is None:
+            all_configs = ls(log_to_console=False)
+
         if "global" in all_configs and name in all_configs["global"]:
             return all_configs["global"][name]
         if "local" in all_configs and name in all_configs["local"]:
