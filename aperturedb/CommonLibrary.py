@@ -129,17 +129,21 @@ def create_connector(name: Optional[str] = None) -> Connector:
         Connector: The connector to the database.
     """
     from aperturedb.cli.configure import ls
-    all_configs = None
+    _all_configs = None
+
+    def get_all_configs():
+        nonlocal _all_configs
+        if _all_configs is None:
+            _all_configs = ls(log_to_console=False)
+        return _all_configs
 
     def lookup_config_by_name(name: str, source: str) -> Configuration:
-        nonlocal all_configs
-        if all_configs is None:
-            all_configs = ls(log_to_console=False)
+        configs = get_all_configs()
 
-        if "global" in all_configs and name in all_configs["global"]:
-            return all_configs["global"][name]
-        if "local" in all_configs and name in all_configs["local"]:
-            return all_configs["local"][name]
+        if "global" in configs and name in configs["global"]:
+            return configs["global"][name]
+        if "local" in configs and name in configs["local"]:
+            return configs["local"][name]
         assert False, f"Configuration '{name}' not found ({source})."
 
     if name is not None:
@@ -161,8 +165,8 @@ def create_connector(name: Optional[str] = None) -> Connector:
         logger.info(
             f"Using configuration '{name}' from APERTUREDB_CONFIG environment variable")
         config = lookup_config_by_name(name, "envar")
-    elif "active" in all_configs:
-        name = all_configs["active"]
+    elif "active" in get_all_configs():
+        name = get_all_configs()["active"]
         config = lookup_config_by_name(name, "active")
         logger.info(f"Using active configuration '{name}'")
     else:
