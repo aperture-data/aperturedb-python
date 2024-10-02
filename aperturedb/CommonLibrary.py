@@ -90,10 +90,8 @@ def _create_configuration_from_json(config: Union[Dict, str]) -> Connector:
 def _get_colab_secret(name: str) -> Optional[str]:
     try:
         from google.colab import userdata
-        print("Checking for secret in colab")
         return userdata.get(name)
     except ImportError:  # Not on colab
-        print("Not on colab")
         return None
 
 
