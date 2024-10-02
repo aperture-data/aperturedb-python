@@ -30,7 +30,8 @@ dependencies = [
     # Pinning this to resolve test errors temporarily
     'ipywidgets==8.0.4',
     'keepalive-socket==0.0.1',
-    'graphviz==0.20.2'
+    'graphviz==0.20.2',
+    "python-dotenv",
 ]
 
 [tool.setuptools.package-dir]
