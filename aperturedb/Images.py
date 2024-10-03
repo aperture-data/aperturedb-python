@@ -334,13 +334,13 @@ class Images(Entities):
                 fpq_res["list"].append(key)
 
         try:
-            result, res, _ = execute_query(
-                client=self.client, q=query, blobs=[])
-
             polygons = []
             bounds = []
             tags = []
             meta = []
+            result, res, _ = execute_query(
+                client=self.client, query=query, blobs=[])
+
             if "entities" in res[1]["FindPolygon"]:
                 polys = res[1]["FindPolygon"]["entities"]
                 operations = self.query["operations"] if self.query and "operations" in self.query else [
@@ -432,7 +432,7 @@ class Images(Entities):
             meta = []
             bounds = []
             result, res, images = execute_query(
-                client=self.client, q=query, blobs=[])
+                client=self.client, query=query, blobs=[])
             if "entities" in res[1]["FindBoundingBox"]:
                 for bbox in res[1]["FindBoundingBox"]["entities"]:
                     coordinates = bbox["_coordinates"]
