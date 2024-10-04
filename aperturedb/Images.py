@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from aperturedb import Utils
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
-from aperturedb.ParallelQuery import execute_batch
+from aperturedb.CommonLibrary import execute_query
 from ipywidgets import widgets
 from IPython.display import display, HTML
 import base64
@@ -124,16 +124,19 @@ class Images(Entities):
     **The python wrapper of images in ApertureDB.**
 
     This class serves 2 purposes:
-    ***This class is a layer on top of the native query.***
+
+    **This class is a layer on top of the native query.**
+
     It facilitate interactions with images in the database in a pythonic way.
     Abstracts the complexity of the query language and the communication with the database.
 
-    ***It includes utility methods to visualize image and annotations**
+    **It includes utility methods to visualize image and annotations**
+
     Inter convert the representation into NumPy matrices and find similar images,
     related bounding boxes, etc.
 
     Args:
-        db: The database connector, perhaps as returned by `Utils.create_connector`
+        client: The database connector, perhaps as returned by `CommonLibrary.create_connector`
     """
     db_object = "_Image"
 
@@ -188,10 +191,10 @@ class Images(Entities):
 
     # DW interface ends
 
-    def __init__(self, db, batch_size=100, response=None, **kwargs):
-        super().__init__(db, response)
+    def __init__(self, client, batch_size=100, response=None, **kwargs):
+        super().__init__(client, response)
 
-        self.db_connector = db
+        self.client = client
 
         self.images = {}
         self.images_ids = []
@@ -266,10 +269,10 @@ class Images(Entities):
                 find["FindImage"]["operations"] = self.operations.operations_arr
             query.append(find)
 
-        res, imgs = self.db_connector.query(query)
+        _, res, imgs = execute_query(self.client, query, [])
 
-        if not self.db_connector.last_query_ok():
-            print(self.db_connector.get_last_response_str())
+        if not self.client.last_query_ok():
+            print(self.client.get_last_response_str())
             return
 
         for (idx, i) in zip(range(start, end), range(end - start)):
@@ -331,13 +334,13 @@ class Images(Entities):
                 fpq_res["list"].append(key)
 
         try:
-            result, res, _ = execute_batch(
-                db=self.db_connector, q=query, blobs=[])
-
             polygons = []
             bounds = []
             tags = []
             meta = []
+            result, res, _ = execute_query(
+                client=self.client, query=query, blobs=[])
+
             if "entities" in res[1]["FindPolygon"]:
                 polys = res[1]["FindPolygon"]["entities"]
                 operations = self.query["operations"] if self.query and "operations" in self.query else [
@@ -424,12 +427,12 @@ class Images(Entities):
         uniqueid_str = str(uniqueid)
         self.images_bboxes[uniqueid_str] = {}
         try:
-            result, res, images = execute_batch(
-                db=self.db_connector, q=query, blobs=[])
             bboxes = []
             tags = []
             meta = []
             bounds = []
+            result, res, images = execute_query(
+                client=self.client, query=query, blobs=[])
             if "entities" in res[1]["FindBoundingBox"]:
                 for bbox in res[1]["FindBoundingBox"]["entities"]:
                     coordinates = bbox["_coordinates"]
@@ -574,7 +577,8 @@ class Images(Entities):
         # Only retrieve images when needed
         query["FindImage"]["blobs"] = False
 
-        response, images = self.db_connector.query([query])
+        _, response, images = execute_query(
+            self.client, query=[query], blobs=[])
 
         try:
             entities = response[0]["FindImage"]["entities"]
@@ -633,7 +637,7 @@ class Images(Entities):
 
     def get_similar_images(self, set_name, n_neighbors):
 
-        imgs_return = Images(self.db_connector)
+        imgs_return = Images(self.client)
 
         for uniqueid in self.images_ids:
 
@@ -655,7 +659,7 @@ class Images(Entities):
                 }
             }]
 
-            response, blobs = self.db_connector.query(query)
+            _, response, blobs = execute_query(self.client, query, [])
 
             query = [{
                 "FindDescriptor": {
@@ -678,7 +682,7 @@ class Images(Entities):
                 }
             }]
 
-            response, blobs = self.db_connector.query(query, blobs)
+            _, response, blobs = execute_query(self.client, query, blobs)
 
             try:
                 descriptors = response[0]["FindDescriptor"]["entities"]
@@ -916,7 +920,7 @@ class Images(Entities):
         Returns:
             properties (List[str]): The names of the properties of the images
         """
-        dbutils = Utils.Utils(self.db_connector)
+        dbutils = Utils.Utils(self.client)
         schema = dbutils.get_schema()
 
         try:
@@ -959,7 +963,7 @@ class Images(Entities):
                     }
                 }]
 
-                res, images = self.db_connector.query(query)
+                _, res, images = execute_query(self.client, query, [])
 
                 return_dictionary[str(
                     uniqueid)] = res[0]["FindImage"]["entities"][0]

@@ -46,7 +46,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
     ``` python
 
         data = PolygonDataCSV("/path/to/PolygonData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 

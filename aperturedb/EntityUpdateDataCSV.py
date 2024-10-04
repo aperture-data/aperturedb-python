@@ -59,7 +59,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
 
     ```python
         data = ImageForceNewestDataCSV("/path/to/ImageData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 

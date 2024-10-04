@@ -30,7 +30,9 @@ def confirm(command: CommandTypes, force: bool):
 @app.command()
 def execute(command: CommandTypes,
             force: Annotated[bool, typer.Option(help="Do not confirm")] = False):
-    from aperturedb.Utils import Utils, create_connector
+
+    from aperturedb.Utils import Utils
+    from aperturedb.CommonLibrary import create_connector
 
     utils = Utils(create_connector())
     available_commands = {
@@ -59,9 +61,11 @@ def log(
     """
     Log a message to the user log.
 
-    This is useful because it can later be seen in Grafana, not only as log entries in the AperturDB Logging dashboard, but also as event markers in the Aperture DB Status dahsboard.
+    This is useful because it can later be seen in Grafana, not only as log entries in the
+    ApertureDB Logging dashboard, but also as event markers in the ApertureDB Status dashboard.
     """
-    from aperturedb.Utils import Utils, create_connector
+    from aperturedb.Utils import Utils
+    from aperturedb.CommonLibrary import create_connector
 
     utils = Utils(create_connector())
     utils.user_log_message(message, level=level.value)
@@ -79,7 +83,8 @@ def visualize_schema(
 
     Relies on graphviz to be installed.
     """
-    from aperturedb.Utils import Utils, create_connector
+    from aperturedb.Utils import Utils
+    from aperturedb.CommonLibrary import create_connector
 
     utils = Utils(create_connector())
     s = utils.visualize_schema()

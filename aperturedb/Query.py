@@ -47,14 +47,17 @@ class RangeType(str, Enum):
 
 config = Config.SAVE_NAME
 
-sources = Sources(n_download_retries=3)
-source_url_handlers = {
-    "http": sources.load_from_http_url,
-    "https": sources.load_from_http_url,
-    "": sources.load_from_file,
-    "s3": sources.load_from_s3_url,
-    "gs": sources.load_from_gs_url
-}
+
+def get_handlers():
+    sources = Sources(n_download_retries=3)
+    source_url_handlers = {
+        "http": sources.load_from_http_url,
+        "https": sources.load_from_http_url,
+        "": sources.load_from_file,
+        "s3": sources.load_from_s3_url,
+        "gs": sources.load_from_gs_url
+    }
+    return source_url_handlers
 
 
 def get_specific(obj: BaseModel) -> dict:
@@ -94,7 +97,7 @@ def get_specific(obj: BaseModel) -> dict:
     return {}, []
 
 
-def generate_save_query(
+def generate_add_query(
         obj: BaseModel,
         cached: List[str] = None,
         source_field: str = None,
@@ -141,6 +144,7 @@ def generate_save_query(
             * index, adjusting the count of children + self for the number of commands
               in current query
     """
+    source_url_handlers = get_handlers()
     if cached == None:
         cached = []
     query = []
@@ -167,12 +171,12 @@ def generate_save_query(
                 pass
             elif isinstance(subobj, list):
                 for i, si in enumerate(subobj):
-                    q, b, index = generate_save_query(
+                    q, b, index = generate_add_query(
                         si, cached=cached, source_field=f"{p}[{i}]", index=index + 1, parent=cindex)
                     dependents_blobs.extend(b)
                     dependents.extend(q)
             else:
-                q, b, index = generate_save_query(
+                q, b, index = generate_add_query(
                     subobj, cached=cached, source_field=f"{p}", index=index + 1, parent=cindex)
                 dependents.extend(q)
                 dependents_blobs.extend(b)
@@ -330,7 +334,10 @@ class Query():
              sort: Sort = None,
              list: List[str] = None,
              group_by_src: bool = False,
-             blobs: bool = False
+             blobs: bool = False,
+             set: str = None,
+             vector: List[float] = None,
+             k_neighbors: int = 0
              ) -> Query:
         """
         The [specification](/query_language/Overview/API%20Description) for a command to be used in a query.
@@ -353,7 +360,10 @@ class Query():
             sort = sort,
             list = list,
             blobs=blobs,
-            group_by_src = group_by_src
+            group_by_src = group_by_src,
+            set=set,
+            vector=vector,
+            k_neighbors=k_neighbors
         )
 
     def __init__(self,
@@ -365,7 +375,11 @@ class Query():
                  list: List[str] = None,
                  group_by_src: bool = False,
                  blobs: bool = False,
-                 adj_to: int = 0):
+                 adj_to: int = 0,
+                 set: str = None,
+                 vector: List[float] = None,
+                 k_neighbors: int = 0
+                 ):
         self.constraints = constraints
         self.operations = operations
         self.with_class = with_class
@@ -375,10 +389,13 @@ class Query():
         self.group_by_src = group_by_src
         self.blobs = blobs
         self.adj_to = adj_to + 1
+        self.set = set
+        self.vector = vector
+        self.k_neighbors = k_neighbors
 
     def query(self) -> List[dict]:
         results_section = "results"
-        cmd_params = {results_section: {}}
+        cmd_params = {results_section: {}, "_ref": self.adj_to}
         if self.limit != -1:
             cmd_params[results_section]["limit"] = self.limit
         if self.sort:
@@ -393,16 +410,31 @@ class Query():
             cmd_params["constraints"] = self.constraints.constraints
         if self.operations:
             cmd_params["operations"] = self.operations.operations_arr
+        if self.set:
+            cmd_params["set"] = self.set
+        if self.k_neighbors > 0:
+            cmd_params["k_neighbors"] = self.k_neighbors
+
+        self.blob = None
+        if self.vector:
+            self.blob = struct.pack("%sf" % len(self.vector), *self.vector)
 
         self.with_class = self.with_class if self.db_object == "Entity" else self.db_object
         cmd = QueryBuilder.find_command(
             oclass=self.with_class, params=cmd_params)
         self.find_command = list(cmd.keys())[0]
         query = [cmd]
+        blobs = []
+        if self.blob:
+            blobs.append(self.blob)
+
         if self.next:
-            next_commands = self.next.query()
+            next_commands, next_blobs = self.next.query()
             list(next_commands[0].values())[0]["is_connected_to"] = {
                 "ref": self.adj_to
             }
+            # list(next_commands[0].values())[0]["_ref"] = self.adj_to
             query.extend(next_commands)
-        return query
+            blobs.extend(next_blobs)
+
+        return query, blobs

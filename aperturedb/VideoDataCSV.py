@@ -53,7 +53,7 @@ class VideoDataCSV(CSVParser.CSVParser):
     ``` python
 
         data = VideoDataCSV("/path/to/VideoData.csv")
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(client)
         loader.ingest(data)
     ```
 

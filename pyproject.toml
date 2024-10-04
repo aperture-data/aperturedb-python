@@ -21,15 +21,17 @@ dependencies = [
     # making the notebooks.
     'scikit-image', 'image', 'requests', 'boto3',
     # https://github.com/Kaggle/kaggle-api/issues/611
-    'numpy<2', 'matplotlib', 'pandas', 'kaggle!=1.6.15', 'google-cloud-storage',
-    'ipython', 'dask[complete]', 'ipywidgets', 'pydantic>=2.6.0', 'devtools', 'typer[all]',
+    'numpy<2; python_version<"3.9.0"', 'numpy', 'distributed',
+    'matplotlib', 'pandas', 'kaggle!=1.6.15', 'google-cloud-storage',
+    'ipython', 'dask[complete]', 'ipywidgets', 'pydantic>=2.6.0', 'devtools', 'typer',
     "opencv-python-headless",
     # Pinning this to be able to install google-cloud-bigquery
     'grpcio-status==1.48.2',
     # Pinning this to resolve test errors temporarily
     'ipywidgets==8.0.4',
     'keepalive-socket==0.0.1',
-    'graphviz==0.20.2'
+    'graphviz==0.20.2',
+    "python-dotenv",
 ]
 
 [tool.setuptools.package-dir]

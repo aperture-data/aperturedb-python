@@ -4,7 +4,8 @@ from CelebADataKaggle import CelebADataKaggle
 from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
 from aperturedb.transformers.common_properties import CommonProperties
 from aperturedb.transformers.image_properties import ImageProperties
-from aperturedb.Utils import create_connector, Utils
+from aperturedb.CommonLibrary import create_connector
+from aperturedb.Utils import Utils
 
 search_set_name = "similar_celebreties"
 

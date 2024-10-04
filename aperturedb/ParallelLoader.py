@@ -16,12 +16,12 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     into batches, and passing the batches to multiple workers.
     """
 
-    def __init__(self, db: Connector, dry_run: bool = False):
-        super().__init__(db, dry_run=dry_run)
+    def __init__(self, client: Connector, dry_run: bool = False):
+        super().__init__(client, dry_run=dry_run)
         self.type = "element"
 
     def get_existing_indices(self):
-        schema_result, _ = self.db.query([{"GetSchema": {}}])
+        schema_result, _ = self.client.query([{"GetSchema": {}}])
         schema = schema_result[0]["GetSchema"]
         existing_indices = {}
         if schema:
@@ -61,10 +61,10 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
         create_indices = [{"CreateIndex": idx} for idx in new_indices]
 
-        res, _ = self.db.query(
+        res, _ = self.client.query(
             create_indices)
 
-        if self.db.check_status(res) != 0:
+        if self.client.check_status(res) != 0:
             logger.warning(
                 "Failed to create indices; ingestion will be slow.")
             logger.warning(res)
