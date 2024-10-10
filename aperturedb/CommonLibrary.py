@@ -91,7 +91,23 @@ def _get_colab_secret(name: str) -> Optional[str]:
     try:
         from google.colab import userdata
         return userdata.get(name)
-    except (ImportError, AttributeError):  # Not in Colab Notebook
+    except ImportError:  # Not in Colab environment
+        return None
+    except AttributeError:  # In Colab environment but not in a notebook
+        logger.debug(
+            "In Colab environment but not in a notebook. Cannot read secrets.")
+        return None
+    except userdata.NotebookAccessError:  # Permission to access secrets not granted
+        logger.debug(
+            "Permission to access secrets not granted to this notebook.")
+        return None
+    except userdata.SecretNotFoundError:  # This secret does not exist
+        logger.debug(
+            f"Secret '{name}' not found in Google Colab.")
+        return None
+    except Exception as e:  # Unexpected error
+        logger.error(
+            f"Unexpected error while reading secret '{name}' from Google Colab: {e}")
         return None
 
 
