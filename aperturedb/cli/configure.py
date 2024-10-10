@@ -176,7 +176,7 @@ def create(
                     "Enter JSON string", hide_input=True)
         if json_str is None:
             console.log(
-                "JSON string not found. Please set APERTUREDB_JSON environment variable create a .env file with APERTUREDB_JSON entry, or enter JSON in interactive mode")
+                "JSON string not found. Please set APERTUREDB_JSON environment variable create a .env file with APERTUREDB_JSON entry, or enter config parameters in interactive mode")
             return
         gen_config = _create_configuration_from_json(json_str)
     else:
