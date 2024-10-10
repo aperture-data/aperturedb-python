@@ -564,10 +564,10 @@ class Connector(object):
         return self.check_status(self.response) >= 0
 
     def check_status(self, json_res):
-
-        status = 0
-        if (isinstance(self.response, dict)):
-            if ("status" not in self.response):
+        # Default status is -2, which is an error, but not a server error.
+        status = -2
+        if (isinstance(json_res, dict)):
+            if ("status" not in json_res):
                 status = self.check_status(json_res[list(json_res.keys())[0]])
             else:
                 status = json_res["status"]
