@@ -89,9 +89,19 @@ def _create_configuration_from_json(config: Union[Dict, str]) -> Connector:
 
 def _get_colab_secret(name: str) -> Optional[str]:
     try:
-        from google.colab import userdata
+        from google.colab import userdata, NotebookAccessError, SecretNotFoundError
         return userdata.get(name)
-    except (ImportError, AttributeError):  # Not in Colab Notebook
+    except ImportError:  # Not in Colab environment
+        return None
+    except AttributeError:  # In Colab environment but not in a notebook
+        return None
+    except NotebookAccessError:  # Permission to access secrets not granted
+        return None
+    except SecretNotFoundError:  # This secret does not exist
+        return None
+    except Exception as e:  # Unexpected error
+        logger.error(
+            f"Unexpected error while reading secret '{name}' from Google Colab: {e}")
         return None
 
 
