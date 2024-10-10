@@ -131,7 +131,7 @@ def create(
     1) The environment variable APERTUREDB_JSON;
     2) An entry for APERTUREDB_JSON in a .env file;
     3) In interactive mode, the user will be prompted to enter the JSON string.  This will be treated as a password entry.
-    See https://docs.aperturedata.dev/Setup/client/notebooks for more information on JSON configurations.
+    See https://docs.aperturedata.dev/Setup/client/configuration for more information on JSON configurations.
     """
 
     db_host = host
