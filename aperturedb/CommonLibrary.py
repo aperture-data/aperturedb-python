@@ -89,7 +89,7 @@ def _create_configuration_from_json(config: Union[Dict, str]) -> Connector:
 
 def _get_colab_secret(name: str) -> Optional[str]:
     try:
-        from google.colab import userdata, NotebookAccessError, SecretNotFoundError
+        from google.colab import userdata
         return userdata.get(name)
     except ImportError:         # Not in Colab environment
         return None
@@ -97,11 +97,11 @@ def _get_colab_secret(name: str) -> Optional[str]:
         logger.debug(
             "In Colab environment but not in a notebook. Cannot read secrets.")
         return None
-    except NotebookAccessError:  # Permission to access secrets not granted
+    except usedata.NotebookAccessError:  # Permission to access secrets not granted
         logger.debug(
             "Permission to access secrets not granted to this notebook.")
         return None
-    except SecretNotFoundError:  # This secret does not exist
+    except userdata.SecretNotFoundError:  # This secret does not exist
         logger.debug(
             f"Secret '{name}' not found in Google Colab.")
         return None
