@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 
 from aperturedb.cli.console import console
 from aperturedb.Configuration import Configuration
+from aperturedb.CommonLibrary import _create_configuration_from_json
 
 
 class ObjEncoder(JSONEncoder):
@@ -119,10 +120,20 @@ def create(
         use_ssl: Annotated[bool, typer.Option(help="Use SSL")] = True,
         interactive: Annotated[bool, typer.Option(
             help="Interactive mode")] = True,
-        overwrite: Annotated[bool, typer.Option(help="overwrite existing configuration")] = False):
+        overwrite: Annotated[bool, typer.Option(
+            help="overwrite existing configuration")] = False,
+        from_json: Annotated[bool, typer.Option(help="create config from a JSON string")] = False):
     """
     Create a new configuration for the client.
+
+    If --from-json is used, then the options --host, --port, --username, --password, --use-rest, and --use-ssl will be ignored.
+    The JSON string will be obtained from one of the following places (in order):
+    1) The environment variable APERTUREDB_JSON;
+    2) An entry for APERTUREDB_JSON in a .env file;
+    3) In interactive mode, the user will be prompted to enter the JSON string.  This will be treated as a password entry.
+    See https://docs.aperturedata.dev/Setup/client/configuration for more information on JSON configurations.
     """
+
     db_host = host
     db_port = port
     db_username = username
@@ -149,28 +160,49 @@ def create(
             style="bold yellow")
         raise typer.Exit(code=2)
 
-    if interactive:
-        db_host = typer.prompt(f"Enter {APP_NAME} host name", default=db_host)
-        db_port = typer.prompt(
-            f"Enter {APP_NAME} port number", default=db_port)
-        db_username = typer.prompt(
-            f"Enter {APP_NAME} username", default=db_username)
-        db_password = typer.prompt(
-            f"Enter {APP_NAME} password", hide_input=True, default=db_password)
-        db_use_rest = typer.confirm(
-            f"Use REST [Note: Only if ApertureDB is setup to recieve http requests]", default=db_use_rest)
-        db_use_ssl = typer.confirm(
-            f"Use SSL [Note: ApertureDB's defaults do not allow non SSL traffic]", default=db_use_ssl)
+    if from_json:
+        json_str = os.getenv("APERTUREDB_JSON")
+        if json_str is None:
+            try:
+                from dotenv import dotenv_values
+                env = dotenv_values(".env")
+                json_str = env.get("APERTUREDB_JSON")
+            except ImportError:
+                console.log("Unable to use the dotenv package")
+                pass
+        if json_str is None:
+            if interactive:
+                json_str = typer.prompt(
+                    "Enter JSON string", hide_input=True)
+        if json_str is None:
+            console.log(
+                "JSON string not found. Please set APERTUREDB_JSON environment variable create a .env file with APERTUREDB_JSON entry, or enter config parameters in interactive mode")
+            return
+        gen_config = _create_configuration_from_json(json_str)
+    else:
+        if interactive:
+            db_host = typer.prompt(
+                f"Enter {APP_NAME} host name", default=db_host)
+            db_port = typer.prompt(
+                f"Enter {APP_NAME} port number", default=db_port)
+            db_username = typer.prompt(
+                f"Enter {APP_NAME} username", default=db_username)
+            db_password = typer.prompt(
+                f"Enter {APP_NAME} password", hide_input=True, default=db_password)
+            db_use_rest = typer.confirm(
+                f"Use REST [Note: Only if ApertureDB is setup to receive HTTP requests]", default=db_use_rest)
+            db_use_ssl = typer.confirm(
+                f"Use SSL [Note: ApertureDB's defaults do not allow non SSL traffic]", default=db_use_ssl)
 
-    gen_config = Configuration(
-        name=name,
-        host=db_host,
-        port=db_port,
-        username=db_username,
-        password=db_password,
-        use_ssl=db_use_ssl,
-        use_rest=db_use_rest
-    )
+        gen_config = Configuration(
+            name=name,
+            host=db_host,
+            port=db_port,
+            username=db_username,
+            password=db_password,
+            use_ssl=db_use_ssl,
+            use_rest=db_use_rest
+        )
 
     configs[name] = gen_config
     if active:
