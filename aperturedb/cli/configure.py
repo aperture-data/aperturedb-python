@@ -126,7 +126,7 @@ def create(
     """
     Create a new configuration for the client.
 
-    If --from-json is used, then the options --host, --port, --username, --password, --use-rest, and --use-ssl will be ignored.  
+    If --from-json is used, then the options --host, --port, --username, --password, --use-rest, and --use-ssl will be ignored.
     The JSON string will be obtained from one of the following places (in order):
     1) The environment variable APERTUREDB_JSON;
     2) An entry for APERTUREDB_JSON in a .env file;
