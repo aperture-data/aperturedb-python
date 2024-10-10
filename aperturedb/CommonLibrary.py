@@ -91,7 +91,7 @@ def _get_colab_secret(name: str) -> Optional[str]:
     try:
         from google.colab import userdata
         return userdata.get(name)
-    except ImportError:  # Not on colab
+    except (ImportError, AttributeError):  # Not in Colab Notebook
         return None
 
 
@@ -106,7 +106,29 @@ def _get_dotenv_secret(name: str) -> Optional[str]:
         return None
 
 
-def create_connector(name: Optional[str] = None) -> Connector:
+def _store_config(config: Configuration, name: str):
+    logger.info(
+        f"Storing and activating configuration '{name}' in the global configuration: {config}")
+
+    from aperturedb.cli.configure import create
+    create(
+        name=name,
+        host=config.host,
+        port=config.port,
+        username=config.username,
+        password=config.password,
+        use_ssl=config.use_ssl,
+        use_rest=config.use_rest,
+        interactive=False,
+        overwrite=True,
+        active=True,
+    )
+
+
+def create_connector(
+    name: Optional[str] = None,
+    create_config_for_colab_secret=True,
+) -> Connector:
     """
     **Create a connector to the database.**
 
@@ -122,11 +144,14 @@ def create_connector(name: Optional[str] = None) -> Connector:
 
     See :ref:`adb config <adb_config>`_ command-line tool for more information.
 
-    Args:
+    Arguments:
         name (str, optional): The name of the configuration to use. Default is None.
+        create_config_for_colab_secret (bool, optional): Whether to create a configuration from the Google Colab secret. Default is True.
 
     Returns:
         Connector: The connector to the database.
+
+    Note about Google Colab secret: This secret is available in the context of a notebook running on Google Colab.  In particular, it is not available to the `adb` CLI tool running in a Colab notebook or any scripts run within a notebook.  To resolve this issue, a configuration is automatically created and activated in this case.  Use the `create_config_for_colab_secret` parameter to disable this behavior.
     """
     from aperturedb.cli.configure import ls
     _all_configs = None
@@ -157,6 +182,10 @@ def create_connector(name: Optional[str] = None) -> Connector:
         logger.info(
             f"Using configuration from APERTUREDB_JSON Google Colab secret")
         config = _create_configuration_from_json(data)
+        if create_config_for_colab_secret:
+            logger.info(
+                f"Creating and activating configuration from APERTUREDB_JSON Google Colab secret")
+            _store_config(config, 'google_colab')
     elif (data := _get_dotenv_secret("APERTUREDB_JSON")) is not None and data != "":
         logger.info(
             f"Using configuration from APERTUREDB_JSON secret in .env file")
