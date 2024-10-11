@@ -43,6 +43,7 @@ from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
+from aperturedb.types import CommandResponses
 
 logger = logging.getLogger(__name__)
 
@@ -563,7 +564,17 @@ class Connector(object):
 
         return self.check_status(self.response) >= 0
 
-    def check_status(self, json_res):
+    def check_status(self, json_res: CommandResponses) -> int:
+        """
+        Returns the status of the first command response from the server.
+        Can traverse a JSON recursively to find the first status.
+
+        Args:
+            json_res (CommandResponses): The actual response from the server.
+
+        Returns:
+            int: The value recieved from the server, or -2 if not found.
+        """
         # Default status is -2, which is an error, but not a server error.
         status = -2
         if (isinstance(json_res, dict)):
