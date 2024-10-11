@@ -180,8 +180,8 @@ class QGSetPersonAndImages(Subscriptable):
 
 # Fake DB query.
 def mock_query(self, request, blobs):
-    self.response = 0
-    return [], []
+    self.response = [{k: {"status": 0} for c in request for k, v in c.items()}]
+    return self.response, []
 
 # Fake DB query. Depending in the transaction, return a response increasing number of images.
 # Also add a item (int) to the blobs list for each image returned (to simulate the image data)
@@ -209,7 +209,6 @@ def set_query_mocker_factory(response_blobs_count):
     #  properly filter passed in blobs.
     # also return 0 for addimage.
     def mock_query(self, request, blobs):
-        self.response = 0
         cmd_is_image = "AddImage" in request[0].keys()
         cmd = "AddImage" if cmd_is_image else "AddEntity"
 
@@ -221,6 +220,7 @@ def set_query_mocker_factory(response_blobs_count):
         } for i, c in enumerate(request)]
         mock_blobs = [i for i in range(
             int(response_blobs_count * len(request)))]
+        self.response = mock_responses
         return mock_responses, mock_blobs if cmd_is_image else []
     return mock_query
 
