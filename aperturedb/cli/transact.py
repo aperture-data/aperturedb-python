@@ -39,7 +39,7 @@ def dump_to_stdout(client: Connector, transaction: dict, **kwargs):
 
     result, response, blobs = execute_query(
         client=client,
-        q=transaction,
+        query=transaction,
         blobs=[])
     console.log(result)
     console.log(response)
@@ -53,7 +53,7 @@ def mount_as_coco_ds(client: Connector, transaction: dict, **kwargs):
 
     result, response, blobs = execute_query(
         client=client,
-        q=transaction,
+        query=transaction,
         blobs=[])
     if result == 0:
         image_entities = []
