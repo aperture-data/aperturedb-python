@@ -61,7 +61,7 @@ class SPARQL:
         return unquote(uri[len(self.namespaces[ns]):])
 
     def _format_node(self, node):
-        return self.graph.qname(node) if isinstance(node, URIRef) else node.n3()
+        return self.graph.qname(node) if isinstance(node, URIRef) else node.toPython()
 
     def _format_triple(self, triple):
         return " ".join([self._format_node(node) for node in triple])
@@ -208,7 +208,7 @@ class SPARQL:
                     # print(f"{id2=}")
                     ids2 = ids.union({id2})
                     # print(f"{ids=} {ids2=}")
-                    ctx2 = ctx.push() if len(e) > 1 else ctx
+                    ctx2 = ctx.push()  # not always necessary
                     # print(f"{ctx=} {ctx2=}")
                     if bindings2:
                         # print("Processing bindings", bindings2)
@@ -277,6 +277,7 @@ class SPARQL:
         # print("Processing bindings")
         solutions = set()
         yield from process_bindings(output)
+        self.solutions = solutions  # Save solutions for debugging
 
         # raise NotImplementedError("Query execution not implemented")
         return
@@ -378,8 +379,7 @@ class SPARQL:
         Convert the SPARQL result to a pandas DataFrame
         """
         return pd.DataFrame(
-            data=([None if x is None else self.graph.qname(x)
-                   if isinstance(x, URIRef) else x.toPython()
+            data=([None if x is None else self._format_node(x)
                    for x in row] for row in result),
             columns=[str(x) for x in result.vars],
         )
