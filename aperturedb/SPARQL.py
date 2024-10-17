@@ -4,7 +4,7 @@
 # It is based on the rdflib library.
 # Currently, it supports a subset of BGP queries, but it can be extended to support more complex queries.
 
-from typing import Dict, Generator, List, Tuple
+from typing import Dict, Generator, List, Tuple, Union
 from urllib.parse import quote, unquote
 import json
 
@@ -368,6 +368,15 @@ class SPARQL:
             return local_name.split("/")[0]
         return None
 
+    def _deduce_uniqueid(self, v: Identifier) -> str:
+        """
+        Deduce the uniqueid of an identifier based on its URI
+        """
+        if isinstance(v, URIRef) and v.startswith(self.namespaces["o"]):
+            local_name = self._parse_uri_with_ns("o", v)
+            return local_name.split("/")[1]
+        return None
+
     def query(self, query: str):
         """
         Execute a SPARQL query
@@ -383,3 +392,52 @@ class SPARQL:
                    for x in row] for row in result),
             columns=[str(x) for x in result.vars],
         )
+
+    def get_blob(self, uri: Union[str, URIRef]) -> bytes:
+        """
+        Get the blob associated with a URI or QName.
+        """
+        if isinstance(uri, str):
+            uri = self.graph.namespace_manager.expand_curie(uri)
+
+        type = self._deduce_type(uri)
+        assert type is not None, f"Cannot get blob for entity URI: {uri}"
+        assert type[0] == "_", f"Cannot get blob for entity URI: {uri} with type {type}"
+        uniqueid = self._deduce_uniqueid(uri)
+        command_name = "Find" + type[1:]
+        query = [
+            {command_name: {
+                "constraints": {
+                    "_uniqueid": ["==", uniqueid],
+                },
+                "blobs": True,
+            }},
+        ]
+        _, blobs = self._client.query(query)
+        return blobs[0]
+
+    def get_image(self, uri: Union[str, URIRef]) -> "np.ndarray":
+        """
+        Get the image associated with a URI or QName
+        """
+        import numpy as np
+        import cv2
+
+        blob = self.get_blob(uri)
+        nparr = np.fromstring(blob, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        return image
+
+    def show_image(self, uri: Union[str, URIRef]):
+        """
+        Show the image associated with a URI or QName
+
+        This is best used in a Jupyter notebook.
+        """
+        import matplotlib.pyplot as plt
+
+        image = self.get_image(uri)
+        plt.imshow(image)
+        plt.axis("off")
+        plt.show()
