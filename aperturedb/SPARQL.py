@@ -8,25 +8,20 @@ from typing import Dict, Generator, List, Tuple, Union
 from urllib.parse import quote, unquote
 import json
 
-import rdflib
-from rdflib.term import BNode, Identifier, Literal, URIRef, Variable
-from rdflib.plugins.sparql.sparql import (
-    AlreadyBound,
-    FrozenBindings,
-    FrozenDict,
-    Query,
-    QueryContext,
-    SPARQLError,
-)
-from rdflib.plugins.sparql.parserutils import CompValue
-import pandas as pd
-
 from aperturedb.CommonLibrary import create_connector
 from aperturedb.Utils import Utils
 
 
 class SPARQL:
     def __init__(self, client=None):
+        try:
+            import rdflib
+        except ImportError:
+            raise ImportError(
+                "The rdflib library is required to use the SPARQL interface. "
+                "Please install it using 'pip install rdflib'."
+            )
+
         if client is None:
             client = create_connector()
         self._client = client
@@ -40,6 +35,7 @@ class SPARQL:
         }
         self._load_schema()
         # TODO: Only one instance of SPARQL can be used at a time
+        import rdflib.plugins.sparql
         rdflib.plugins.sparql.CUSTOM_EVALS["aperturedb"] = self.eval
         self.graph = rdflib.Graph()
         for k, v in self.namespaces.items():
@@ -48,19 +44,22 @@ class SPARQL:
     def _make_uri(self, prefix, suffix):
         return self.namespaces[prefix] + quote(suffix)
 
-    def _parse_uri(self, uri: URIRef):
+    def _parse_uri(self, uri: "URIRef"):
+        from rdflib.term import URIRef
         assert isinstance(uri, URIRef)
         for k, v in self.namespaces.items():
             if uri.startswith(v):
                 return k, unquote(uri[len(v):])
         return None, None
 
-    def _parse_uri_with_ns(self, ns: str, uri: URIRef):
+    def _parse_uri_with_ns(self, ns: str, uri: "URIRef"):
+        from rdflib.term import URIRef
         assert isinstance(uri, URIRef)
         assert uri.startswith(self.namespaces[ns])
         return unquote(uri[len(self.namespaces[ns]):])
 
     def _format_node(self, node):
+        from rdflib.term import URIRef
         return self.graph.qname(node) if isinstance(node, URIRef) else node.toPython()
 
     def _format_triple(self, triple):
@@ -89,8 +88,8 @@ class SPARQL:
                 self.properties[uri].add(e)
             self.namespaces[f"{e}"] = self._make_uri("o", e + "/")
 
-    def eval(self, ctx: QueryContext, part: CompValue
-             ) -> Generator[FrozenBindings, None, None]:
+    def eval(self, ctx: "QueryContext", part: "CompValue"
+             ) -> Generator["FrozenBindings", None, None]:
         """
         Execute a SPARQL query on the graph
         """
@@ -99,13 +98,14 @@ class SPARQL:
 
         raise NotImplementedError(f"Unsupported query type: {part.name}")
 
-    def evalBGP(self, ctx: QueryContext,
-                triples: List[Tuple[Identifier, Identifier, Identifier]],
-                ) -> Generator[FrozenBindings, None, None]:
+    def evalBGP(self, ctx: "QueryContext",
+                triples: List[Tuple["Identifier", "Identifier", "Identifier"]],
+                ) -> Generator["FrozenBindings", None, None]:
         """
         Execute a SPARQL query on the graph
         """
         def add_find(v, t):
+            from rdflib.term import Variable
             command_name = "FindEntity" if t[0] != "_" else "Find" + t[1:]
             body = {}
             if t[0] != "_":
@@ -169,7 +169,8 @@ class SPARQL:
                 command["is_connected_to"] = {
                     "all": [command["is_connected_to"], ict]}
 
-        def process_bindings(output, ctx: QueryContext = ctx, i=0, ids=set()):
+        def process_bindings(output, ctx: "QueryContext" = ctx, i=0, ids=set()):
+            from rdflib.term import Variable, BNode, Literal, URIRef
             if i == len(output):
                 solution = ctx.solution()
                 # print("Yielding solution", solution)
@@ -230,6 +231,8 @@ class SPARQL:
                         # print("No bindings")
                         yield from process_bindings(output, ctx, i+1, ids2)
 
+        from rdflib import RDF, Literal
+
         self.triples = triples  # Save triples for debugging
         triples = self._apply_context_to_triples(ctx, triples)
         types = self._deduce_types(ctx, triples)
@@ -251,7 +254,7 @@ class SPARQL:
         connection_triples = [(s, p, o)
                               for s, p, o in triples if p in self.connections]
         type_triples = [(s, p, o)
-                        for s, p, o in triples if p == rdflib.RDF.type]
+                        for s, p, o in triples if p == RDF.type]
 
         assert len(property_triples) + len(connection_triples) \
             + len(type_triples) == len(triples), "Found unknown triples"
@@ -296,8 +299,10 @@ class SPARQL:
             list(command.values())[0]["_ref"] = i
         return query
 
-    def _apply_context_to_triples(self, ctx: QueryContext, triples: List[Tuple[Identifier, Identifier, Identifier]]
-                                  ) -> List[Tuple[Identifier, Identifier, Identifier]]:
+    def _apply_context_to_triples(self, ctx: "QueryContext",
+                                  triples: List[Tuple["Identifier",
+                                                      "Identifier", "Identifier"]]
+                                  ) -> List[Tuple["Identifier", "Identifier", "Identifier"]]:
         """
         Apply the query context to the triples
         """
@@ -316,9 +321,10 @@ class SPARQL:
             new_triples.append((s, p, o))
         return new_triples
 
-    def _deduce_types(self, cts: QueryContext,
-                      triples: List[Tuple[Identifier, Identifier, Identifier]]
-                      ) -> Dict[Identifier, str]:
+    def _deduce_types(self, cts: "QueryContext",
+                      triples: List[Tuple["Identifier",
+                                          "Identifier", "Identifier"]]
+                      ) -> Dict["Identifier", str]:
         """
         Deduce the type of each subject and connection object in the query
         """
@@ -359,19 +365,21 @@ class SPARQL:
 
         return {v: list(t)[0] for v, t in types.items()}
 
-    def _deduce_type(self, v: Identifier) -> str:
+    def _deduce_type(self, v: "Identifier") -> str:
         """
         Deduce the type of an identifier based on its URI
         """
+        from rdflib.term import URIRef
         if isinstance(v, URIRef) and v.startswith(self.namespaces["o"]):
             local_name = self._parse_uri_with_ns("o", v)
             return local_name.split("/")[0]
         return None
 
-    def _deduce_uniqueid(self, v: Identifier) -> str:
+    def _deduce_uniqueid(self, v: "Identifier") -> str:
         """
         Deduce the uniqueid of an identifier based on its URI
         """
+        from rdflib.term import URIRef
         if isinstance(v, URIRef) and v.startswith(self.namespaces["o"]):
             local_name = self._parse_uri_with_ns("o", v)
             return local_name.split("/")[1]
@@ -383,17 +391,19 @@ class SPARQL:
         """
         return self.graph.query(query)
 
-    def to_dataframe(self, result):
+    def to_dataframe(self, result) -> "pd.DataFrame":
         """
         Convert the SPARQL result to a pandas DataFrame
         """
+        import pandas as pd
+
         return pd.DataFrame(
             data=([None if x is None else self._format_node(x)
                    for x in row] for row in result),
             columns=[str(x) for x in result.vars],
         )
 
-    def get_blob(self, uri: Union[str, URIRef]) -> bytes:
+    def get_blob(self, uri: Union[str, "URIRef"]) -> bytes:
         """
         Get the blob associated with a URI or QName.
         """
@@ -416,7 +426,7 @@ class SPARQL:
         _, blobs = self._client.query(query)
         return blobs[0]
 
-    def get_image(self, uri: Union[str, URIRef]) -> "np.ndarray":
+    def get_image(self, uri: Union[str, "URIRef"]) -> "np.ndarray":
         """
         Get the image associated with a URI or QName
         """
@@ -429,7 +439,7 @@ class SPARQL:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def show_image(self, uri: Union[str, URIRef]):
+    def show_image(self, uri: Union[str, "URIRef"]):
         """
         Show the image associated with a URI or QName
 
