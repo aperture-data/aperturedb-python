@@ -4,7 +4,7 @@
 # It is based on the rdflib library.
 # Currently, it supports a subset of BGP queries, but it can be extended to support more complex queries.
 
-from typing import Dict, Generator, List, Tuple, Union
+from typing import Dict, Generator, List, Tuple, Union, Optional
 from urllib.parse import quote, unquote
 import json
 
@@ -32,6 +32,7 @@ class SPARQL:
             "c": namespace["connection/"],
             "p": namespace["property/"],
             "o": namespace["object/"],
+            "knn": namespace["knn/"],
         }
         self._load_schema()
         # TODO: Only one instance of SPARQL can be used at a time
@@ -40,6 +41,8 @@ class SPARQL:
         self.graph = rdflib.Graph()
         for k, v in self.namespaces.items():
             self.graph.bind(k, v)
+        self.knn_properties = set(self.namespaces["knn"] + p for p in [
+                                  "similarTo", "set", "vector", "k_neighbors", "knn_first", "distance", "engine", "metric", "descriptor"])
 
     def _make_uri(self, prefix, suffix):
         return self.namespaces[prefix] + quote(suffix)
@@ -54,8 +57,8 @@ class SPARQL:
 
     def _parse_uri_with_ns(self, ns: str, uri: "URIRef"):
         from rdflib.term import URIRef
-        assert isinstance(uri, URIRef)
-        assert uri.startswith(self.namespaces[ns])
+        assert isinstance(uri, URIRef), uri
+        assert uri.startswith(self.namespaces[ns]), (ns, uri)
         return unquote(uri[len(self.namespaces[ns]):])
 
     def _format_node(self, node):
@@ -122,7 +125,8 @@ class SPARQL:
 
         def add_constraint(s, p, o):
             command = commands[s]
-            prop = self._parse_uri_with_ns("p", p)
+            ns, prop = self._parse_uri(p)
+            assert ns in ["p", "knn"], (ns, p)
             if "constraints" not in command:
                 command["constraints"] = {}
             if prop not in command["constraints"]:
@@ -142,12 +146,10 @@ class SPARQL:
         def add_is_connected_to(s, p, o):
             s_command = commands[s]
             o_command = commands[o]
-            connection_type = self._parse_uri_with_ns("c", p)
             if s_command["_ref"] < o_command["_ref"]:
                 command = o_command
                 ict = dict(
                     ref=s_command["_ref"],
-                    connection_class=connection_type,
                     direction="out",
                 )
                 connection_bindings.append((o_command, p, s_command, False))
@@ -155,10 +157,15 @@ class SPARQL:
                 command = s_command
                 ict = dict(
                     ref=o_command["_ref"],
-                    connection_class=connection_type,
                     direction="in",
                 )
                 connection_bindings.append((s_command, p, o_command, True))
+
+            if p is not None:
+                connection_type = self._parse_uri_with_ns("c", p)
+                ict["connection_class"] = connection_type
+            else:
+                del ict["direction"]  # Any connection, either in or out
 
             if "is_connected_to" not in command:
                 command["is_connected_to"] = ict
@@ -232,48 +239,64 @@ class SPARQL:
                         yield from process_bindings(output, ctx, i+1, ids2)
 
         from rdflib import RDF, Literal
+        from rdflib.plugins.sparql.sparql import SPARQLError
 
         self.triples = triples  # Save triples for debugging
         triples = self._apply_context_to_triples(ctx, triples)
         types = self._deduce_types(ctx, triples)
-        # print(f"Types: {types}")
-
         query = []  # ApertureDB query
         commands = {}  # Mapping from variable to command body
         bindings = []  # List of (variable, command body, property) tuples
         object_prefixes = []  # List of object prefixes
         # List of (source command, connection, destination command, is_forwards) tuples
         connection_bindings = []
+        blobs = []  # List of blobs
+
+        # Add Find commands for each variable
         for v, t in types.items():
             add_find(v, t)
-
-        # print("Query before properties", query)
-
-        property_triples = [(s, p, o)
-                            for s, p, o in triples if p in self.properties]
-        connection_triples = [(s, p, o)
-                              for s, p, o in triples if p in self.connections]
-        type_triples = [(s, p, o)
-                        for s, p, o in triples if p == RDF.type]
-
-        assert len(property_triples) + len(connection_triples) \
-            + len(type_triples) == len(triples), "Found unknown triples"
-
-        for s, p, o in property_triples:
-            if isinstance(o, Literal):
-                add_constraint(s, p, o)
-            else:
-                add_binding(s, p, o)
-
         query = self._optimize_query(query)
 
-        for s, p, o in connection_triples:
-            add_is_connected_to(s, p, o)
+        # Find knn nodes
+        knn_nodes = {
+            o: s for s, p, o in triples
+            if p == self.namespaces["knn"] + "similarTo"}
+
+        # Add constraints, bindings, connections
+
+        for s, p, o in triples:
+            if p in self.properties:
+                if isinstance(o, Literal):
+                    add_constraint(s, p, o)
+                else:
+                    add_binding(s, p, o)
+            elif p in self.connections:
+                add_is_connected_to(s, p, o)
+            elif p == RDF.type:
+                pass
+            elif p in self.knn_properties:
+                if p == self.namespaces["knn"] + "similarTo":
+                    pass
+                elif p == self.namespaces["knn"] + "vector":
+                    blobs.append(self._decode_descriptor(o))
+                else:
+                    s2 = knn_nodes[s]
+                    command = commands[s2]
+                    prop = self._parse_uri(p)[1]
+                    if isinstance(o, Literal):
+                        command[prop] = o.toPython()
+                    else:
+                        add_binding(s2, p, o)
+            elif p == self.namespaces["c"] + "ANY":
+                add_is_connected_to(s, None, o)
+            else:
+                raise SPARQLError(
+                    f"Unknown property or connection: {p}: valid connections are {self.connections.keys()}, valid properties are {self.properties.keys()}")
 
         # print("Query after connections", query)
 
         self.input_query = query  # Save query for debugging
-        output, _ = self._client.query(query)
+        output, _ = self._client.query(query, blobs)
         self.output_response = output  # Save response for debugging
         # print("Output", json.dumps(output, indent=2))
 
@@ -285,16 +308,24 @@ class SPARQL:
         # raise NotImplementedError("Query execution not implemented")
         return
 
+    def _decode_descriptor(self, literal: "Literal") -> bytes:
+        import numpy as np
+        return np.array(json.loads(literal.toPython())).astype(np.float32).tobytes()
+
+    def encode_descriptor(self, vector: "np.array") -> "Literal":
+        from rdflib import Literal
+        return Literal(json.dumps(vector.tolist()))
+
     def _optimize_query(self, query: List[dict]) -> List[dict]:
         """
         Optimize the query by reordering Find commands
 
         Query should not have connections between Find commands yet
         """
-        # Sort by number of constraints, descending
+        # Sort by number of constraints, descending, alphabetical by command name
         # TODO: Could use statistics from schema to optimize further
         query = sorted(query,
-                       key=lambda x: -len(list(x.values())[0].get("constraints", [])))
+                       key=lambda x: (-len(list(x.values())[0].get("constraints", [])), list(x.keys())[0]))
         for i, command in enumerate(query, start=1):
             list(command.values())[0]["_ref"] = i
         return query
@@ -338,11 +369,13 @@ class SPARQL:
                         f"Type error: {k} does not match a type {types[k]} vs {tt}")
                 types[k] = intersection
 
+        from rdflib import RDF
+        from rdflib.plugins.sparql.sparql import QueryContext, SPARQLError
         types = {}
         for s, p, o in triples:
             s_type = self._deduce_type(s)
             if s_type:
-                add_types(s, [s_type])
+                add_types(s, {s_type})
 
             if p in self.properties:
                 add_types(s, self.properties[p])
@@ -353,8 +386,13 @@ class SPARQL:
                     add_types(o, [o_type])
                 add_types(s, src)
                 add_types(o, dst)
-            elif p == rdflib.RDF.type:
+            elif p == RDF.type:
                 add_types(s, [self._parse_uri_with_ns('t', o)])
+            elif p in self.knn_properties:
+                if p == self.namespaces["knn"] + "similarTo":
+                    add_types(s, {"_Descriptor"})
+            elif p == self.namespaces["c"] + "ANY":
+                pass
             else:
                 raise SPARQLError(
                     f"Unknown property or connection: {p}: valid connections are {self.connections.keys()}, valid properties are {self.properties.keys()}")
@@ -403,14 +441,18 @@ class SPARQL:
             columns=[str(x) for x in result.vars],
         )
 
-    def get_blob(self, uri: Union[str, "URIRef"]) -> bytes:
+    def get_blob(self, uri: Union[str, "URIRef"], type: Optional[str] = None) -> bytes:
         """
         Get the blob associated with a URI or QName.
         """
         if isinstance(uri, str):
             uri = self.graph.namespace_manager.expand_curie(uri)
 
-        type = self._deduce_type(uri)
+        if type is None:
+            type = self._deduce_type(uri)
+        else:
+            assert type == self._deduce_type(
+                uri), f"Type {type} does not match deduced type {self._deduce_type(uri)}"
         assert type is not None, f"Cannot get blob for entity URI: {uri}"
         assert type[0] == "_", f"Cannot get blob for entity URI: {uri} with type {type}"
         uniqueid = self._deduce_uniqueid(uri)
@@ -426,6 +468,36 @@ class SPARQL:
         _, blobs = self._client.query(query)
         return blobs[0]
 
+    def get_blobs(self, uris: List[Union[str, "URIRef"]], type: Optional[str] = None) -> List[bytes]:
+        """
+        Get the blobs associated with a list of URI or QName.
+        """
+        uris = [self.graph.namespace_manager.expand_curie(uri)
+                if isinstance(uri, str) else uri for uri in uris]
+        types = [self._deduce_type(uri) for uri in uris]
+        if type is not None:
+            assert all(
+                t == type for t in types), f"Type {type} does not match deduced types {types}"
+        else:
+            type = types[0]
+            assert all(
+                t == type for t in types), f"Types do not match: {types}"
+
+        assert type is not None, f"Cannot get blob for entity URI: {uri}"
+        assert type[0] == "_", f"Cannot get blob for entity URI: {uri} with type {type}"
+        uniqueids = [self._deduce_uniqueid(uri) for uri in uris]
+        command_name = "Find" + type[1:]
+        query = [
+            {command_name: {
+                "constraints": {
+                    "_uniqueid": ["in", uniqueids],
+                },
+                "blobs": True,
+            }},
+        ]
+        _, blobs = self._client.query(query)
+        return blobs
+
     def get_image(self, uri: Union[str, "URIRef"]) -> "np.ndarray":
         """
         Get the image associated with a URI or QName
@@ -433,21 +505,54 @@ class SPARQL:
         import numpy as np
         import cv2
 
-        blob = self.get_blob(uri)
+        blob = self.get_blob(uri, type="_Image")
         nparr = np.fromstring(blob, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def show_image(self, uri: Union[str, "URIRef"]):
+    def get_images(self, uris: List[Union[str, "URIRef"]]) -> List["np.ndarray"]:
         """
-        Show the image associated with a URI or QName
+        Get the images associated with a list of URI or QName
+        """
+        import numpy as np
+        import cv2
+
+        blobs = self.get_blobs(uris, type="_Image")
+        images = []
+        for blob in blobs:
+            nparr = np.fromstring(blob, np.uint8)
+            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            images.append(image)
+        return images
+
+    def show_images(self, uris: List[Union[str, "URIRef"]]):
+        """
+        Show the images associated with a list of URI or QName
 
         This is best used in a Jupyter notebook.
         """
         import matplotlib.pyplot as plt
 
-        image = self.get_image(uri)
-        plt.imshow(image)
-        plt.axis("off")
-        plt.show()
+        images = self.get_images(uris)
+        for image in images:
+            plt.imshow(image)
+            plt.axis("off")
+            plt.show()
+
+    def get_descriptor(self, uri: Union[str, "URIRef"]) -> "np.ndarray":
+        """
+        Get the descriptor associated with a URI or QName
+        """
+        import numpy as np
+        blob = self.get_blob(uri, type="_Descriptor")
+        return np.frombuffer(blob, dtype=np.float32)
+
+    def get_descriptors(self, uris: List[Union[str, "URIRef"]]) -> List["np.ndarray"]:
+        """
+        Get the descriptors associated with a list of URI or QName
+        """
+        import numpy as np
+        blobs = self.get_blobs(uris, type="_Descriptor")
+        return [np.frombuffer(blob, dtype=np.float32) for blob in blobs]
