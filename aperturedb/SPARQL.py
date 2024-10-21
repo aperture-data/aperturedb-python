@@ -7,6 +7,7 @@
 from typing import Dict, Generator, List, Tuple, Union, Optional
 from urllib.parse import quote, unquote
 import json
+import math
 
 from aperturedb.CommonLibrary import create_connector
 from aperturedb.Utils import Utils
@@ -42,7 +43,7 @@ class SPARQL:
         for k, v in self.namespaces.items():
             self.graph.bind(k, v)
         self.knn_properties = set(self.namespaces["knn"] + p for p in [
-                                  "similarTo", "set", "vector", "k_neighbors", "knn_first", "distance", "engine", "metric", "descriptor"])
+                                  "similarTo", "set", "vector", "k_neighbors", "knn_first", "distance", "engine", "metric"])
 
     def _make_uri(self, prefix, suffix):
         return self.namespaces[prefix] + quote(suffix)
@@ -279,6 +280,9 @@ class SPARQL:
                     pass
                 elif p == self.namespaces["knn"] + "vector":
                     blobs.append(self._decode_descriptor(o))
+                elif p == self.namespaces["knn"] + "distance":
+                    command["distances"] = True
+                    bindings.append((o, command, "_distance"))
                 else:
                     s2 = knn_nodes[s]
                     command = commands[s2]
@@ -536,10 +540,13 @@ class SPARQL:
         import matplotlib.pyplot as plt
 
         images = self.get_images(uris)
-        for image in images:
+        columns = min(5, len(images))
+        rows = math.ceil(len(images) / columns)
+        for i, image in enumerate(images):
+            plt.subplot(rows, columns, i+1)
             plt.imshow(image)
             plt.axis("off")
-            plt.show()
+        plt.show()
 
     def get_descriptor(self, uri: Union[str, "URIRef"]) -> "np.ndarray":
         """
