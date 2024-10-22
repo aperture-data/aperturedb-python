@@ -278,10 +278,10 @@ class SPARQL:
                                 literal = Literal(e[prop])
                                 # print(f"{v} <- {literal}")
                                 ctx2[v] = literal
-                        yield from process_bindings(output, ctx2, i+1, ids2)
+                        yield from process_bindings(output, ctx2, i + 1, ids2)
                     else:
                         # print("No bindings")
-                        yield from process_bindings(output, ctx, i+1, ids2)
+                        yield from process_bindings(output, ctx, i + 1, ids2)
 
         from rdflib import RDF, Literal
         from rdflib.plugins.sparql.sparql import SPARQLError
@@ -585,7 +585,7 @@ class SPARQL:
         columns = min(5, len(images))
         rows = math.ceil(len(images) / columns)
         for i, image in enumerate(images):
-            plt.subplot(rows, columns, i+1)
+            plt.subplot(rows, columns, i + 1)
             plt.imshow(image)
             plt.axis("off")
         plt.show()
