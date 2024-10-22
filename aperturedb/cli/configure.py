@@ -5,6 +5,7 @@ from pathlib import Path
 
 import typer
 from typing_extensions import Annotated
+from typing import Optional
 
 from aperturedb.cli.console import console
 from aperturedb.Configuration import Configuration
@@ -108,7 +109,8 @@ def ls(log_to_console: bool = True):
 
 @app.command()
 def create(
-        name: Annotated[str, typer.Argument(help="Name of this configuration for easy reference")],
+        name: Annotated[Optional[str], typer.Argument(
+            help="Name of this configuration for easy reference")] = None,
         active: Annotated[bool, typer.Option(help="Set as active")] = False,
         as_global: Annotated[bool, typer.Option(
             help="Project level vs global level")] = True,
@@ -154,7 +156,7 @@ def create(
     except json.JSONDecodeError:
         active = True
 
-    if name in configs and not overwrite:
+    if name is not None and name in configs and not overwrite:
         console.log(
             f"Configuration named '{name}' already exists. Use --overwrite to overwrite.",
             style="bold yellow")
@@ -162,6 +164,9 @@ def create(
 
     if from_json:
         json_str = os.getenv("APERTUREDB_JSON")
+        if json_str is not None:
+            console.log("Using APERTUREDB_JSON from environment variable")
+
         if json_str is None:
             try:
                 from dotenv import dotenv_values
@@ -170,17 +175,32 @@ def create(
             except ImportError:
                 console.log("Unable to use the dotenv package")
                 pass
+            if json_str is not None:
+                console.log("Using APERTUREDB_JSON from .env file")
+
         if json_str is None:
             if interactive:
                 json_str = typer.prompt(
                     "Enter JSON string", hide_input=True)
+
         if json_str is None:
             console.log(
                 "JSON string not found. Please set APERTUREDB_JSON environment variable create a .env file with APERTUREDB_JSON entry, or enter config parameters in interactive mode")
             return
-        gen_config = _create_configuration_from_json(json_str)
+
+        try:
+            gen_config = _create_configuration_from_json(
+                json_str, name=name, name_required=True)
+        except AssertionError as e:
+            console.log(str(e))
+            raise typer.Exit(code=2)
+
     else:
         if interactive:
+            if name is None:
+                name = typer.prompt(
+                    "Enter configuration name", default=name)
+                assert name is not None, "Configuration name must be specified"
             db_host = typer.prompt(
                 f"Enter {APP_NAME} host name", default=db_host)
             db_port = typer.prompt(
