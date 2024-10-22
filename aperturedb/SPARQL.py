@@ -14,7 +14,15 @@ from aperturedb.Utils import Utils
 
 
 class SPARQL:
-    def __init__(self, client=None):
+    def __init__(self, client=None, debug=False):
+        """SPARQL compatability layer for ApertureDB
+
+        Args:
+            client: ApertureDB client. If not uppliued, then `create_connector()` is used to create a new client.
+            debug: bool. If True, then certain intermediate results are stored in the object.
+        """
+        self.debug = debug
+
         try:
             import rdflib
         except ImportError:
@@ -95,7 +103,21 @@ class SPARQL:
     def eval(self, ctx: "QueryContext", part: "CompValue"
              ) -> Generator["FrozenBindings", None, None]:
         """
-        Execute a SPARQL query on the graph
+        Evaluate a SPARQL query part
+
+        This method is registered as a custom eval function for rdflib.
+        It is given the first opportunity to evaluate a query part.
+
+        Arguments:
+            ctx: QueryContext. The query context, supplying existing bindings
+            part: CompValue. The query part to evaluate
+
+        Yields:
+            FrozenBindings. The results of the query
+
+        Raises:
+            NotImplementedError: If the query type is not supported.
+                This is the case for all query types except BGP.
         """
         if part.name == 'BGP':
             return self.evalBGP(ctx, part.triples)
@@ -106,9 +128,17 @@ class SPARQL:
                 triples: List[Tuple["Identifier", "Identifier", "Identifier"]],
                 ) -> Generator["FrozenBindings", None, None]:
         """
-        Execute a SPARQL query on the graph
+        Evaluates a Basic Graph Pattern (BGP) query
+
+        Arguments:
+            ctx: QueryContext. The query context, supplying existing bindings
+            triples: List[Tuple[Identifier, Identifier, Identifier]]. The triples to evaluate
+
+        Yields:
+            FrozenBindings. Binding sets that are the results of the query
         """
         def add_find(v, t):
+            """Create new Find* command for variable v with type t"""
             from rdflib.term import Variable
             command_name = "FindEntity" if t[0] != "_" else "Find" + t[1:]
             body = {}
@@ -125,6 +155,7 @@ class SPARQL:
             object_prefixes.append(self._make_uri("o", t + "/"))
 
         def add_constraint(s, p, o):
+            """Add property constraint to existing command"""
             command = commands[s]
             ns, prop = self._parse_uri(p)
             assert ns in ["p", "knn"], (ns, p)
@@ -135,6 +166,7 @@ class SPARQL:
             command["constraints"][prop].extend(["==", o.toPython()])
 
         def add_binding(s, p, o):
+            """Associates a return binding variable with a specific property in the ApertureDB response"""
             command = commands[s]
             if "results" not in command:
                 command["results"] = {}
@@ -145,6 +177,7 @@ class SPARQL:
             bindings.append((o, command, prop))
 
         def add_is_connected_to(s, p, o):
+            """Adds connection constraint between two commands"""
             s_command = commands[s]
             o_command = commands[o]
             if s_command["_ref"] < o_command["_ref"]:
@@ -178,6 +211,12 @@ class SPARQL:
                     "all": [command["is_connected_to"], ict]}
 
         def process_bindings(output, ctx: "QueryContext" = ctx, i=0, ids=set()):
+            """Processes AperatureDB response and yields bindings
+
+            Operates recursively, processing each command in the query to generate bindings 
+            for each variable, multiplying the number of bindings at each step.
+            Uses `solutions` to avoid yielding duplicate solutions.
+            """
             from rdflib.term import Variable, BNode, Literal, URIRef
             if i == len(output):
                 solution = ctx.solution()
@@ -242,7 +281,6 @@ class SPARQL:
         from rdflib import RDF, Literal
         from rdflib.plugins.sparql.sparql import SPARQLError
 
-        self.triples = triples  # Save triples for debugging
         triples = self._apply_context_to_triples(ctx, triples)
         types = self._deduce_types(ctx, triples)
         query = []  # ApertureDB query
@@ -256,15 +294,15 @@ class SPARQL:
         # Add Find commands for each variable
         for v, t in types.items():
             add_find(v, t)
-        query = self._optimize_query(query)
+        query, object_prefixes = self._optimize_query(query, object_prefixes)
 
         # Find knn nodes
         knn_nodes = {
             o: s for s, p, o in triples
             if p == self.namespaces["knn"] + "similarTo"}
 
+        # Process triples to generate querty
         # Add constraints, bindings, connections
-
         for s, p, o in triples:
             if p in self.properties:
                 if isinstance(o, Literal):
@@ -297,19 +335,18 @@ class SPARQL:
                 raise SPARQLError(
                     f"Unknown property or connection: {p}: valid connections are {self.connections.keys()}, valid properties are {self.properties.keys()}")
 
-        # print("Query after connections", query)
-
-        self.input_query = query  # Save query for debugging
         output, _ = self._client.query(query, blobs)
-        self.output_response = output  # Save response for debugging
-        # print("Output", json.dumps(output, indent=2))
-
-        # print("Processing bindings")
-        solutions = set()
+        solutions = set()  # process_bindings uses this to avoid yielding duplicate solutions
         yield from process_bindings(output)
-        self.solutions = solutions  # Save solutions for debugging
 
-        # raise NotImplementedError("Query execution not implemented")
+        if self.debug:  # Debugging
+            self.bindings = bindings
+            self.commands = commands
+            self.input_query = query
+            self.object_prefixes = object_prefixes
+            self.output_response = output
+            self.solutions = solutions
+            self.triples = triples
         return
 
     def _decode_descriptor(self, literal: "Literal") -> bytes:
@@ -320,7 +357,7 @@ class SPARQL:
         from rdflib import Literal
         return Literal(json.dumps(vector.tolist()))
 
-    def _optimize_query(self, query: List[dict]) -> List[dict]:
+    def _optimize_query(self, query: List[dict], object_prefixes: List["URIRef"]) -> List[dict]:
         """
         Optimize the query by reordering Find commands
 
@@ -328,11 +365,11 @@ class SPARQL:
         """
         # Sort by number of constraints, descending, alphabetical by command name
         # TODO: Could use statistics from schema to optimize further
-        query = sorted(query,
-                       key=lambda x: (-len(list(x.values())[0].get("constraints", [])), list(x.keys())[0]))
+        query, object_prefixes = list(zip(*sorted(zip(query, object_prefixes),
+                                                  key=lambda x: (-len(list(x[0].values())[0].get("constraints", [])), list(x[0].keys())[0]))))
         for i, command in enumerate(query, start=1):
             list(command.values())[0]["_ref"] = i
-        return query
+        return query, object_prefixes
 
     def _apply_context_to_triples(self, ctx: "QueryContext",
                                   triples: List[Tuple["Identifier",
