@@ -218,7 +218,7 @@ class SPARQL:
         def process_bindings(output, ctx: "QueryContext" = ctx, i=0, ids=set()):
             """Processes AperatureDB response and yields bindings
 
-            Operates recursively, processing each command in the query to generate bindings 
+            Operates recursively, processing each command in the query to generate bindings
             for each variable, multiplying the number of bindings at each step.
             Uses `solutions` to avoid yielding duplicate solutions.
             """
