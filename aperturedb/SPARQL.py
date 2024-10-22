@@ -53,6 +53,11 @@ class SPARQL:
         self.knn_properties = set(self.namespaces["knn"] + p for p in [
                                   "similarTo", "set", "vector", "k_neighbors", "knn_first", "distance", "engine", "metric"])
 
+    def __del__(self):
+        from rdflib.plugins.sparql import CUSTOM_EVALS
+        if CUSTOM_EVALS.get("aperturedb") == self.eval:
+            del CUSTOM_EVALS["aperturedb"]
+
     def _make_uri(self, prefix, suffix):
         return self.namespaces[prefix] + quote(suffix)
 
