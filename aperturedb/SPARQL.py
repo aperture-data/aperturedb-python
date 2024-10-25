@@ -18,7 +18,7 @@ class SPARQL:
         """SPARQL compatability layer for ApertureDB
 
         Args:
-            client: ApertureDB client. If not uppliued, then `create_connector()` is used to create a new client.
+            client: ApertureDB client. If not suppliued, then `create_connector()` is used to create a new client.
             debug: bool. If True, then certain intermediate results are stored in the object.
         """
         self.debug = debug
