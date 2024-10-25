@@ -340,7 +340,7 @@ class SPARQL:
                 raise SPARQLError(
                     f"Unknown property or connection: {p}: valid connections are {self.connections.keys()}, valid properties are {self.properties.keys()}")
 
-        output, _ = self._client.query(query, blobs)
+        result, output, _ = aperturedb.CommonLibrary.execute_query(client, query, blobs)
         solutions = set()  # process_bindings uses this to avoid yielding duplicate solutions
         yield from process_bindings(output)
 
