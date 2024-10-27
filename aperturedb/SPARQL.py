@@ -333,7 +333,7 @@ class SPARQL:
                 raise SPARQLError(
                     f"Unknown property or connection: {p}: valid connections are {self.connections.keys()}, valid properties are {self.properties.keys()}")
 
-        result, output, _ = execute_query(client, query, blobs)
+        result, output, _ = execute_query(self.client, query, blobs)
         solutions = set()  # process_bindings uses this to avoid yielding duplicate solutions
         yield from process_bindings(output)
 
