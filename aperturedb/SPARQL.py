@@ -8,20 +8,25 @@ from typing import Dict, Generator, List, Tuple, Union, Optional
 from urllib.parse import quote, unquote
 import json
 import math
+import logging
 
 from aperturedb.CommonLibrary import create_connector
 from aperturedb.Utils import Utils
 
 
 class SPARQL:
-    def __init__(self, client=None, debug=False):
+    def __init__(self, client=None, debug=False, log_level=None):
         """SPARQL compatability layer for ApertureDB
 
         Args:
             client: ApertureDB client. If not uppliued, then `create_connector()` is used to create a new client.
             debug: bool. If True, then certain intermediate results are stored in the object.
+            log_level: int. The logging level to use for the ApertureDB client.
         """
         self.debug = debug
+        self.logger = logging.getLogger(__name__)
+        if log_level is not None:
+            self.logger.setLevel(log_level)
 
         try:
             import rdflib
@@ -52,6 +57,8 @@ class SPARQL:
             self.graph.bind(k, v)
         self.knn_properties = set(self.namespaces["knn"] + p for p in [
                                   "similarTo", "set", "vector", "k_neighbors", "knn_first", "distance", "engine", "metric"])
+
+        self.logger.info(f"SPARQL loaded {len(self.connections)} connections and {len(self.properties)} properties")
 
     def __del__(self):
         from rdflib.plugins.sparql import CUSTOM_EVALS
@@ -241,46 +248,31 @@ class SPARQL:
             assert all(isinstance(v, Variable)
                        for v, _ in bindings2), bindings2
             assert all(ctx[v] is None for v, _ in bindings2), bindings2
-            # print(
-            #     f"Processing bindings {i=} {command_body=} {result_body=} {len(entities)=} {bindings2=} {ids=}")
 
             if isinstance(entities, list):
                 entities = {None: entities}
 
-            # print(f"Processing entities {entities=}")
             for id_, ee in entities.items():
-                # print(f"Processing entities {id_=} {ee=}")
                 if id_ is not None and id_ not in ids:
-                    # print("Skipping", id_, ids)
                     continue
-                # print(f"Iterating over entities {ee=}")
                 for e in ee:
-                    # print(f"Processing entity {e=} {bindings2=}")
                     assert "_uniqueid" in e, e
                     id2 = e["_uniqueid"]
-                    # print(f"{id2=}")
                     ids2 = ids.union({id2})
-                    # print(f"{ids=} {ids2=}")
                     ctx2 = ctx.push()  # not always necessary
-                    # print(f"{ctx=} {ctx2=}")
                     if bindings2:
-                        # print("Processing bindings", bindings2)
                         for v, prop in bindings2:
-                            # print(f"Processing binding {v=} {prop=}")
                             assert prop in e, (prop, e)
                             assert ctx2[v] is None, (v, ctx2[v])
                             if prop == "_uniqueid":
                                 uri = URIRef(
                                     object_prefixes[i] + e["_uniqueid"])
-                                # print(f"{v} <- {uri}")
                                 ctx2[v] = uri
                             else:
                                 literal = Literal(e[prop])
-                                # print(f"{v} <- {literal}")
                                 ctx2[v] = literal
                         yield from process_bindings(output, ctx2, i + 1, ids2)
                     else:
-                        # print("No bindings")
                         yield from process_bindings(output, ctx, i + 1, ids2)
 
         from rdflib import RDF, Literal
@@ -352,6 +344,7 @@ class SPARQL:
             self.output_response = output
             self.solutions = solutions
             self.triples = triples
+        self.logger.info(f"Evaluated BGP query with {len(triples)} triples, produced {len(commands)} commands, and {len(solutions)} solutions")
         return
 
     def _decode_descriptor(self, literal: "Literal") -> bytes:
