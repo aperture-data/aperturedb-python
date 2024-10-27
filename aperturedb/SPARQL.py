@@ -10,7 +10,7 @@ import json
 import math
 import logging
 
-from aperturedb.CommonLibrary import create_connector
+from aperturedb.CommonLibrary import create_connector, execute_query
 from aperturedb.Utils import Utils
 
 
@@ -332,7 +332,7 @@ class SPARQL:
                 raise SPARQLError(
                     f"Unknown property or connection: {p}: valid connections are {self.connections.keys()}, valid properties are {self.properties.keys()}")
 
-        result, output, _ = aperturedb.CommonLibrary.execute_query(client, query, blobs)
+        result, output, _ = execute_query(client, query, blobs)
         solutions = set()  # process_bindings uses this to avoid yielding duplicate solutions
         yield from process_bindings(output)
 
