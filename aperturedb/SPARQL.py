@@ -58,7 +58,8 @@ class SPARQL:
         self.knn_properties = set(self.namespaces["knn"] + p for p in [
                                   "similarTo", "set", "vector", "k_neighbors", "knn_first", "distance", "engine", "metric"])
 
-        self.logger.info(f"SPARQL loaded {len(self.connections)} connections and {len(self.properties)} properties")
+        self.logger.info(
+            f"SPARQL loaded {len(self.connections)} connections and {len(self.properties)} properties")
 
     def __del__(self):
         from rdflib.plugins.sparql import CUSTOM_EVALS
@@ -344,7 +345,8 @@ class SPARQL:
             self.output_response = output
             self.solutions = solutions
             self.triples = triples
-        self.logger.info(f"Evaluated BGP query with {len(triples)} triples, produced {len(commands)} commands, and {len(solutions)} solutions")
+        self.logger.info(
+            f"Evaluated BGP query with {len(triples)} triples, produced {len(commands)} commands, and {len(solutions)} solutions")
         return
 
     def _decode_descriptor(self, literal: "Literal") -> bytes:
