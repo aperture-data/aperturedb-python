@@ -19,7 +19,7 @@ class SPARQL:
         """SPARQL compatability layer for ApertureDB
 
         Args:
-            client: ApertureDB client. If not uppliued, then `create_connector()` is used to create a new client.
+            client: ApertureDB client. If not suppliued, then `create_connector()` is used to create a new client.
             debug: bool. If True, then certain intermediate results are stored in the object.
             log_level: int. The logging level to use for the ApertureDB client.
         """
@@ -332,7 +332,7 @@ class SPARQL:
                 raise SPARQLError(
                     f"Unknown property or connection: {p}: valid connections are {self.connections.keys()}, valid properties are {self.properties.keys()}")
 
-        output, _ = self._client.query(query, blobs)
+        result, output, _ = aperturedb.CommonLibrary.execute_query(client, query, blobs)
         solutions = set()  # process_bindings uses this to avoid yielding duplicate solutions
         yield from process_bindings(output)
 
