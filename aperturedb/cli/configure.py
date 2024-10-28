@@ -164,7 +164,14 @@ def create(
     if from_json:
         assert interactive, "Interactive mode must be enabled for --from-json"
         json_str = typer.prompt("Enter JSON string", hide_input=True)
-        gen_config = _create_configuration_from_json(json_str)
+        gen_config = _create_configuration_from_json(
+            json_str, name=name, name_required=True)
+
+        if gen_config.name in configs and not overwrite:
+            console.log(
+                f"Configuration named '{gen_config.name}' already exists. Use --overwrite to overwrite.",
+                style="bold yellow")
+            raise typer.Exit(code=2)
     else:
         if interactive:
             if name is None:
