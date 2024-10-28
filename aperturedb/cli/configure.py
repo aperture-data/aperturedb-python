@@ -155,6 +155,7 @@ def create(
     except json.JSONDecodeError:
         active = True
 
+    # Check if the configuration already exists (before interaction)
     if name is not None and name in configs and not overwrite:
         console.log(
             f"Configuration named '{name}' already exists. Use --overwrite to overwrite.",
@@ -166,12 +167,6 @@ def create(
         json_str = typer.prompt("Enter JSON string", hide_input=True)
         gen_config = _create_configuration_from_json(
             json_str, name=name, name_required=True)
-
-        if gen_config.name in configs and not overwrite:
-            console.log(
-                f"Configuration named '{gen_config.name}' already exists. Use --overwrite to overwrite.",
-                style="bold yellow")
-            raise typer.Exit(code=2)
     else:
         if interactive:
             if name is None:
@@ -200,6 +195,13 @@ def create(
             use_ssl=db_use_ssl,
             use_rest=db_use_rest
         )
+
+    # Check if the configuration already exists (after interaction)
+    if gen_config.name in configs and not overwrite:
+        console.log(
+            f"Configuration named '{gen_config.name}' already exists. Use --overwrite to overwrite.",
+            style="bold yellow")
+        raise typer.Exit(code=2)
 
     configs[name] = gen_config
     if active:
