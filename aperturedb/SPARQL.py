@@ -97,21 +97,27 @@ class SPARQL:
         self.schema = self._utils.get_schema()
         self.connections = {}
         self.connections = {}
-        for c, d in self.schema["connections"]["classes"].items():
-            uri = self._make_uri("c", c)
-            if uri not in self.connections:
-                self.connections[uri] = (set(), set())
-            self.connections[uri][0].add(d["src"])
-            self.connections[uri][1].add(d["dst"])
+        if "connections" not in self.schema:
+            self.logger.warning("No connections found in schema")
+        else:
+            for c, d in self.schema["connections"]["classes"].items():
+                uri = self._make_uri("c", c)
+                if uri not in self.connections:
+                    self.connections[uri] = (set(), set())
+                self.connections[uri][0].add(d["src"])
+                self.connections[uri][1].add(d["dst"])
 
         self.properties = {}
-        for e, d in self.schema["entities"]["classes"].items():
-            for p in d["properties"]:
-                uri = self._make_uri("p", p)
-                if uri not in self.properties:
-                    self.properties[uri] = set()
-                self.properties[uri].add(e)
-            self.namespaces[f"{e}"] = self._make_uri("o", e + "/")
+        if "properties" not in self.schema:
+            self.logger.warning("No properties found in schema")
+        else:
+            for e, d in self.schema["entities"]["classes"].items():
+                for p in d["properties"]:
+                    uri = self._make_uri("p", p)
+                    if uri not in self.properties:
+                        self.properties[uri] = set()
+                    self.properties[uri].add(e)
+                self.namespaces[f"{e}"] = self._make_uri("o", e + "/")
 
     def eval(self, ctx: "QueryContext", part: "CompValue"
              ) -> Generator["FrozenBindings", None, None]:
