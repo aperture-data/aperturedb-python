@@ -53,7 +53,8 @@ def __create_connector(configuration: Configuration):
     return connector
 
 
-def _create_configuration_from_json(config: Union[Dict, str]) -> Connector:
+def _create_configuration_from_json(config: Union[Dict, str],
+                                    name: Optional[str] = None, name_required: bool = False) -> Connector:
     """
     **Create a connector to the database from a JSON configuration.**
 
@@ -64,7 +65,11 @@ def _create_configuration_from_json(config: Union[Dict, str]) -> Connector:
         Connector: The connector to the database.
     """
     if isinstance(config, str):
-        config = json.loads(config)
+        try:
+            config = json.loads(config)
+        except json.JSONDecodeError as e:
+            # Cannot print the JSON string because it may contain a password.
+            assert False, f"problem decoding JSON config string: {e}"
     assert isinstance(
         config, dict), f"config must be a dict or a JSON object string: {type(config)}"
 
@@ -80,7 +85,12 @@ def _create_configuration_from_json(config: Union[Dict, str]) -> Connector:
     if 'port' not in config:
         config["port"] = 55555
 
-    if 'name' not in config:
+    if name is not None:
+        config["name"] = name  # will overwrite the name in the config
+
+    if name_required:
+        assert "name" in config, f"name is required in the configuration: {clean_config}"
+    elif 'name' not in config:
         config["name"] = "from_json"
 
     configuration = Configuration(**config)
