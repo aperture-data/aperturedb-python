@@ -30,7 +30,7 @@ class TestConfigure():
         fake_folder = tmp
         fake_file = os.path.join(tmp, "adb.json")
         with patch.multiple(typer,
-                            get_app_dir = MagicMock(return_value = fake_folder)):
+                            get_app_dir=MagicMock(return_value=fake_folder)):
             runner = CliRunner()
             result = runner.invoke(app, ["create", "test"])
             assert result.exit_code == 0
@@ -43,7 +43,7 @@ class TestConfigure():
         fake_folder = tmp
         fake_file = os.path.join(tmp, ".aperturedb", "adb.json")
         with patch.multiple(os,
-                            getcwd = MagicMock(return_value = fake_folder)):
+                            getcwd=MagicMock(return_value=fake_folder)):
             runner = CliRunner()
             result = runner.invoke(app, ["create", "test", "--no-as-global"])
             assert result.exit_code == 0
@@ -54,9 +54,45 @@ class TestConfigure():
             fake_folder = tmp
             fake_file = os.path.join(tmp, "adb.json")
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = fake_folder)):
+                                get_app_dir=MagicMock(return_value=fake_folder)):
                 runner = CliRunner()
                 result = runner.invoke(app, ["create", "test"])
+                assert result.exit_code == 0
+                self.check_contents(fake_file, None, "test")
+
+    def test_create_from_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_folder = tmp
+            fake_file = os.path.join(tmp, "adb.json")
+            with patch.multiple(typer,
+                                get_app_dir=MagicMock(return_value=fake_folder)):
+                runner = CliRunner()
+                result = runner.invoke(app, ["create", "--from-json"],
+                                       input='{"name": "test", "host": "test", "port": 1234, "username": "test", "password": "test"}')
+                assert result.exit_code == 0
+                self.check_contents(fake_file, None, "test")
+
+    def test_create_from_json_with_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_folder = tmp
+            fake_file = os.path.join(tmp, "adb.json")
+            with patch.multiple(typer,
+                                get_app_dir=MagicMock(return_value=fake_folder)):
+                runner = CliRunner()
+                result = runner.invoke(app, ["create", "--from-json", "test"],
+                                       input='{"host": "test", "port": 1234, "username": "test", "password": "test"}')
+                assert result.exit_code == 0
+                self.check_contents(fake_file, None, "test")
+
+    def test_create_from_json_with_two_names(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_folder = tmp
+            fake_file = os.path.join(tmp, "adb.json")
+            with patch.multiple(typer,
+                                get_app_dir=MagicMock(return_value=fake_folder)):
+                runner = CliRunner()
+                result = runner.invoke(app, ["create", "--from-json", "test"],
+                                       input='{"name": "test2", "host": "test", "port": 1234, "username": "test", "password": "test"}')
                 assert result.exit_code == 0
                 self.check_contents(fake_file, None, "test")
 
@@ -65,7 +101,7 @@ class TestConfigure():
             fake_folder = tmp
             fake_file = os.path.join(tmp, ".aperturedb", "adb.json")
             with patch.multiple(os,
-                                getcwd = MagicMock(return_value = fake_folder)):
+                                getcwd=MagicMock(return_value=fake_folder)):
                 runner = CliRunner()
                 result = runner.invoke(
                     app, ["create", "test", "--no-as-global"])
@@ -79,7 +115,7 @@ class TestConfigure():
             with open(fake_file, "w") as outstream:
                 pass
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = fake_folder)):
+                                get_app_dir=MagicMock(return_value=fake_folder)):
                 runner = CliRunner()
                 result = runner.invoke(app, ["create", "test"])
                 assert result.exit_code == 0
@@ -93,7 +129,7 @@ class TestConfigure():
             with open(fake_file, "w") as outstream:
                 pass
             with patch.multiple(os,
-                                getcwd = MagicMock(return_value = fake_folder)):
+                                getcwd=MagicMock(return_value=fake_folder)):
                 runner = CliRunner()
                 result = runner.invoke(
                     app, ["create", "test", "--no-as-global"])
@@ -104,9 +140,9 @@ class TestConfigure():
         with tempfile.TemporaryDirectory() as tmp:
             fake_folder = tmp
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = fake_folder)):
+                                get_app_dir=MagicMock(return_value=fake_folder)):
                 with patch.multiple(os,
-                                    getcwd = MagicMock(return_value = fake_folder)):
+                                    getcwd=MagicMock(return_value=fake_folder)):
                     runner = CliRunner()
                     result = runner.invoke(app, ["ls"])
                     assert result.exit_code == 0
@@ -120,9 +156,9 @@ class TestConfigure():
             with open(fake_file, "w") as outstream:
                 pass
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = fake_folder)):
+                                get_app_dir=MagicMock(return_value=fake_folder)):
                 with patch.multiple(os,
-                                    getcwd = MagicMock(return_value = fake_folder)):
+                                    getcwd=MagicMock(return_value=fake_folder)):
                     runner = CliRunner()
                     result = runner.invoke(app, ["ls"])
                     assert "Failed to decode json" in result.stdout
@@ -135,11 +171,11 @@ class TestConfigure():
                 outstream.write(json.dumps(config, indent=2))
 
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = fake_folder)):
+                                get_app_dir=MagicMock(return_value=fake_folder)):
 
                 with tempfile.TemporaryDirectory() as tmp_local:
                     with patch.multiple(os,
-                                        getcwd = MagicMock(return_value = tmp_local)):
+                                        getcwd=MagicMock(return_value=tmp_local)):
 
                         runner = CliRunner()
                         result = runner.invoke(app, ["ls"])
@@ -152,7 +188,7 @@ class TestConfigure():
         with tempfile.TemporaryDirectory() as tmp_global:
 
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = tmp_global)):
+                                get_app_dir=MagicMock(return_value=tmp_global)):
 
                 with tempfile.TemporaryDirectory() as tmp_local:
                     fake_folder = tmp_local
@@ -162,7 +198,7 @@ class TestConfigure():
                     with open(fake_file, "w") as outstream:
                         outstream.write(json.dumps(config, indent=2))
                     with patch.multiple(os,
-                                        getcwd = MagicMock(return_value = tmp_local)):
+                                        getcwd=MagicMock(return_value=tmp_local)):
                         runner = CliRunner()
                         result = runner.invoke(app, ["ls"])
                         assert result.exit_code == 0
@@ -177,7 +213,7 @@ class TestConfigure():
                 outstream.write(json.dumps(config, indent=2))
 
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = tmp_global)):
+                                get_app_dir=MagicMock(return_value=tmp_global)):
 
                 with tempfile.TemporaryDirectory() as tmp_local:
                     fake_folder = tmp_local
@@ -187,7 +223,7 @@ class TestConfigure():
                     with open(fake_file, "w") as outstream:
                         outstream.write(json.dumps(config, indent=2))
                     with patch.multiple(os,
-                                        getcwd = MagicMock(return_value = tmp_local)):
+                                        getcwd=MagicMock(return_value=tmp_local)):
                         runner = CliRunner()
                         result = runner.invoke(app, ["ls"])
                         assert result.exit_code == 0
@@ -202,7 +238,7 @@ class TestConfigure():
                 outstream.write(json.dumps(config, indent=2))
 
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = tmp_global)):
+                                get_app_dir=MagicMock(return_value=tmp_global)):
 
                 with tempfile.TemporaryDirectory() as tmp_local:
                     fake_folder = tmp_local
@@ -215,7 +251,7 @@ class TestConfigure():
                     with open(fake_file, "w") as outstream:
                         outstream.write(json.dumps(lc, indent=2))
                     with patch.multiple(os,
-                                        getcwd = MagicMock(return_value = tmp_local)):
+                                        getcwd=MagicMock(return_value=tmp_local)):
                         runner = CliRunner()
                         result = runner.invoke(
                             app, ["activate", "second", "--no-as-global"])
@@ -228,7 +264,7 @@ class TestConfigure():
                 outstream.write(json.dumps(config, indent=2))
 
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = tmp_global)):
+                                get_app_dir=MagicMock(return_value=tmp_global)):
 
                 with tempfile.TemporaryDirectory() as tmp_local:
                     fake_folder = tmp_local
@@ -238,7 +274,7 @@ class TestConfigure():
                     with open(fake_file, "w") as outstream:
                         outstream.write(json.dumps(config, indent=2))
                     with patch.multiple(os,
-                                        getcwd = MagicMock(return_value = tmp_local)):
+                                        getcwd=MagicMock(return_value=tmp_local)):
                         runner = CliRunner()
                         result = runner.invoke(
                             app, ["activate", "first", "--as-global"])
@@ -251,7 +287,7 @@ class TestConfigure():
                 outstream.write(json.dumps(config, indent=2))
 
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = tmp_global)):
+                                get_app_dir=MagicMock(return_value=tmp_global)):
 
                 with tempfile.TemporaryDirectory() as tmp_local:
                     fake_folder = tmp_local
@@ -264,7 +300,7 @@ class TestConfigure():
                     with open(fake_file, "w") as outstream:
                         outstream.write(json.dumps(config, indent=2))
                     with patch.multiple(os,
-                                        getcwd = MagicMock(return_value = tmp_local)):
+                                        getcwd=MagicMock(return_value=tmp_local)):
                         runner = CliRunner()
                         result = runner.invoke(
                             app, ["activate", "second", "--as-global"])
@@ -277,7 +313,7 @@ class TestConfigure():
                 outstream.write(json.dumps(config, indent=2))
 
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = tmp_global)):
+                                get_app_dir=MagicMock(return_value=tmp_global)):
 
                 with tempfile.TemporaryDirectory() as tmp_local:
                     fake_folder = tmp_local
@@ -290,7 +326,7 @@ class TestConfigure():
                     with open(fake_file, "w") as outstream:
                         outstream.write(json.dumps(lc, indent=2))
                     with patch.multiple(os,
-                                        getcwd = MagicMock(return_value = tmp_local)):
+                                        getcwd=MagicMock(return_value=tmp_local)):
                         runner = CliRunner()
                         result = runner.invoke(app, ["activate", "first"])
                         assert result.exit_code == 0
@@ -302,7 +338,7 @@ class TestConfigure():
                 outstream.write(json.dumps(config, indent=2))
 
             with patch.multiple(typer,
-                                get_app_dir = MagicMock(return_value = tmp_global)):
+                                get_app_dir=MagicMock(return_value=tmp_global)):
 
                 with tempfile.TemporaryDirectory() as tmp_local:
                     fake_folder = tmp_local
@@ -314,7 +350,7 @@ class TestConfigure():
                     with open(fake_file, "w") as outstream:
                         outstream.write(json.dumps(config, indent=2))
                     with patch.multiple(os,
-                                        getcwd = MagicMock(return_value = tmp_local)):
+                                        getcwd=MagicMock(return_value=tmp_local)):
                         runner = CliRunner()
                         result = runner.invoke(app, ["activate", "blah"])
                         assert result.exit_code == 2
