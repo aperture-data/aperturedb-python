@@ -110,14 +110,14 @@ SELECT (COUNT(*) AS ?count) ?ingredient WHERE {
     ('Do a descriptor search for a random image',
      f"""
 SELECT ?i ?distance ?d ?caption WHERE {{
-?d knn:similarTo [ 
-    knn:set 'ViT-B/16' ; 
+?d knn:similarTo [
+    knn:set 'ViT-B/16' ;
     knn:k_neighbors 20 ;
     knn:vector "{SPARQL.encode_descriptor(np.random.rand(512))}" ;
-    knn:distance ?distance 
+    knn:distance ?distance
 ] ;
     c:ANY ?i . # Use fake connection because we can't say c:_DescriptorConnection
-    ?i p:caption ?caption . 
+    ?i p:caption ?caption .
 }}
 """)])
 def test_sparql(load_cookbook, sparql, query, description):
