@@ -67,7 +67,9 @@ dev = [
     "pre-commit",
     "pytest",
     "build",
-    "fuse-python ; platform_system == 'Linux'"
+    "fuse-python ; platform_system == 'Linux'",
+    "clip",
+    "rdflib",
 ]
 
 # The following would provide a command line executable called `sample`
