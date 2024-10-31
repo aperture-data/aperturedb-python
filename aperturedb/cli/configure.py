@@ -202,6 +202,7 @@ def create(
             use_rest=db_use_rest
         )
 
+    assert name is not None, "Configuration name must be specified"
     configs[name] = gen_config
     if active:
         configs["active"] = name
