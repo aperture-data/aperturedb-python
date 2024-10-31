@@ -97,20 +97,21 @@ class SPARQL:
         self.schema = self._utils.get_schema()
         self.connections = {}
         self.connections = {}
-        if "connections" not in self.schema:
-            self.logger.warning("No connections found in schema")
-        else:
+        if self.schema is None:
+            self.logger.warning("No schema found in ApertureDB")
+            return
+        if "connections" in self.schema and self.schema["connections"] is not None and "classes" in self.schema["connections"]:
             for c, d in self.schema["connections"]["classes"].items():
                 uri = self._make_uri("c", c)
                 if uri not in self.connections:
                     self.connections[uri] = (set(), set())
                 self.connections[uri][0].add(d["src"])
                 self.connections[uri][1].add(d["dst"])
+        if not self.connections:
+            self.logger.warning("No connections found in schema")
 
         self.properties = {}
-        if "properties" not in self.schema:
-            self.logger.warning("No properties found in schema")
-        else:
+        if "entities" in self.schema and self.schema["entities"] is not None and "classes" in self.schema["entities"]:
             for e, d in self.schema["entities"]["classes"].items():
                 for p in d["properties"]:
                     uri = self._make_uri("p", p)
@@ -118,6 +119,8 @@ class SPARQL:
                         self.properties[uri] = set()
                     self.properties[uri].add(e)
                 self.namespaces[f"{e}"] = self._make_uri("o", e + "/")
+        if not self.properties:
+            self.logger.warning("No properties found in schema")
 
     def eval(self, ctx: "QueryContext", part: "CompValue"
              ) -> Generator["FrozenBindings", None, None]:
@@ -359,6 +362,7 @@ class SPARQL:
         import numpy as np
         return np.array(json.loads(literal.toPython())).astype(np.float32).tobytes()
 
+    @classmethod
     def encode_descriptor(self, vector: "np.array") -> "Literal":
         from rdflib import Literal
         return Literal(json.dumps(vector.tolist()))
