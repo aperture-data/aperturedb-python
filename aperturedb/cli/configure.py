@@ -5,6 +5,7 @@ from pathlib import Path
 
 import typer
 from typing_extensions import Annotated
+from typing import Optional
 
 from aperturedb.cli.console import console
 from aperturedb.Configuration import Configuration
@@ -108,7 +109,8 @@ def ls(log_to_console: bool = True):
 
 @app.command()
 def create(
-        name: Annotated[str, typer.Argument(help="Name of this configuration for easy reference")],
+        name: Annotated[Optional[str], typer.Argument(
+            help="Name of this configuration for easy reference")] = None,
         active: Annotated[bool, typer.Option(help="Set as active")] = False,
         as_global: Annotated[bool, typer.Option(
             help="Project level vs global level")] = True,
@@ -127,12 +129,18 @@ def create(
     Create a new configuration for the client.
 
     If --from-json is used, then the options --host, --port, --username, --password, --use-rest, and --use-ssl will be ignored.
-    The JSON string will be obtained from one of the following places (in order):
-    1) The environment variable APERTUREDB_JSON;
-    2) An entry for APERTUREDB_JSON in a .env file;
-    3) In interactive mode, the user will be prompted to enter the JSON string.  This will be treated as a password entry.
+    The user will be prompted to enter the JSON string.
+    This will be treated as a password entry.
+
     See https://docs.aperturedata.dev/Setup/client/configuration for more information on JSON configurations.
     """
+
+    def check_for_overwrite(name):
+        if name in configs and not overwrite:
+            console.log(
+                f"Configuration named '{name}' already exists. Use --overwrite to overwrite.",
+                style="bold yellow")
+            raise typer.Exit(code=2)
 
     db_host = host
     db_port = port
@@ -154,33 +162,23 @@ def create(
     except json.JSONDecodeError:
         active = True
 
-    if name in configs and not overwrite:
-        console.log(
-            f"Configuration named '{name}' already exists. Use --overwrite to overwrite.",
-            style="bold yellow")
-        raise typer.Exit(code=2)
+    if name is not None:
+        check_for_overwrite(name)
 
     if from_json:
-        json_str = os.getenv("APERTUREDB_JSON")
-        if json_str is None:
-            try:
-                from dotenv import dotenv_values
-                env = dotenv_values(".env")
-                json_str = env.get("APERTUREDB_JSON")
-            except ImportError:
-                console.log("Unable to use the dotenv package")
-                pass
-        if json_str is None:
-            if interactive:
-                json_str = typer.prompt(
-                    "Enter JSON string", hide_input=True)
-        if json_str is None:
-            console.log(
-                "JSON string not found. Please set APERTUREDB_JSON environment variable create a .env file with APERTUREDB_JSON entry, or enter config parameters in interactive mode")
-            return
-        gen_config = _create_configuration_from_json(json_str)
+        assert interactive, "Interactive mode must be enabled for --from-json"
+        json_str = typer.prompt("Enter JSON string", hide_input=True)
+        gen_config = _create_configuration_from_json(
+            json_str, name=name, name_required=True)
+        check_for_overwrite(gen_config.name)
+        name = gen_config.name
     else:
         if interactive:
+            if name is None:
+                name = typer.prompt(
+                    "Enter configuration name", default=name)
+                assert name is not None, "Configuration name must be specified"
+                check_for_overwrite(name)
             db_host = typer.prompt(
                 f"Enter {APP_NAME} host name", default=db_host)
             db_port = typer.prompt(
@@ -204,6 +202,7 @@ def create(
             use_rest=db_use_rest
         )
 
+    assert name is not None, "Configuration name must be specified"
     configs[name] = gen_config
     if active:
         configs["active"] = name
