@@ -171,6 +171,7 @@ def create(
         gen_config = _create_configuration_from_json(
             json_str, name=name, name_required=True)
         check_for_overwrite(gen_config.name)
+        name = gen_config.name
     else:
         if interactive:
             if name is None:
@@ -201,6 +202,7 @@ def create(
             use_rest=db_use_rest
         )
 
+    assert name is not None, "Configuration name must be specified"
     configs[name] = gen_config
     if active:
         configs["active"] = name
