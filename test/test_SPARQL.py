@@ -52,9 +52,9 @@ def load_cookbook(utils: Utils, db):
         runpy.run_path(str(file_path), run_name="__main__")
 
         data = ImageDataCSV("dishes.adb.csv")
-        data = CLIPPyTorchEmbeddings(data)
-        # data = ImageProperties(data)
-        data = CommonProperties(data)
+        data = CLIPPyTorchEmbeddings(data, client=db)
+        data = ImageProperties(data, client=db)
+        data = CommonProperties(data, client=db)
         loader = ParallelLoader(db)
         loader.ingest(data, batchsize=100, stats=True)
 

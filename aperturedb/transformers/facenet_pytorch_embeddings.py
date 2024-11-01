@@ -4,8 +4,6 @@ from PIL import Image
 import io
 import time
 from .facenet import generate_embedding
-from aperturedb.CommonLibrary import create_connector
-from aperturedb.Utils import Utils
 
 
 class FacenetPyTorchEmbeddings(Transformer):
@@ -26,7 +24,7 @@ class FacenetPyTorchEmbeddings(Transformer):
         # Let's sample some data to figure out the descriptorset we need.
         if len(self._add_image_index) > 0:
             sample = self._get_embedding_from_blob(self.data[0][1][0])
-            utils = Utils(create_connector())
+            utils = self.get_utils()
             utils.add_descriptorset(self.search_set_name, dim=len(sample) // 4)
 
     def _get_embedding_from_blob(self, image_blob: bytes):

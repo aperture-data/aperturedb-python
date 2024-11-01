@@ -1,4 +1,6 @@
 from aperturedb.Subscriptable import Subscriptable
+from aperturedb.CommonLibrary import create_connector
+from aperturedb.Utils import Utils
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ class Transformer(Subscriptable):
 
     """
 
-    def __init__(self, data: Subscriptable, **kwargs) -> None:
+    def __init__(self, data: Subscriptable, client=None, **kwargs) -> None:
         self.data = data
 
         # Inspect the first element to get the number of queries and blobs
@@ -56,6 +58,7 @@ class Transformer(Subscriptable):
         self._blobs = len(x[1])
         self._blob_index = []
         self._add_image_index = []
+        self._client = client
 
         bc = 0
         for i, c in enumerate(x[0]):
@@ -77,3 +80,11 @@ class Transformer(Subscriptable):
 
     def __len__(self):
         return len(self.data)
+
+    def get_client(self):
+        if self._client is None:
+            self._client = create_connector()
+        return self._client
+
+    def get_utils(self):
+        return Utils(self.get_client())
