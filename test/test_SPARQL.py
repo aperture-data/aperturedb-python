@@ -8,6 +8,7 @@ import pytest
 import numpy as np
 import pandas as pd
 import os.path as osp
+import tempfile
 from aperturedb.Query import QueryBuilder, Query
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
@@ -34,37 +35,38 @@ def load_cookbook(utils: Utils, db):
     utils.remove_all_indexes()
     utils.remove_all_objects()
 
+    temp_dir = tempfile.mkdtemp()
+    # temp_path = Path(temp_dir)
+    original_dir = os.getcwd()
+    os.chdir(temp_dir)
+
     # Define the URL and file path for the script
-    file_url = "https://raw.githubusercontent.com/aperture-data/Cookbook/refs/heads/main/scripts/load_cookbook_data.sh"
-    file_path = Path("load_cookbook_data.sh")
+    file_url = "https://raw.githubusercontent.com/aperture-data/Cookbook/refs/heads/main/scripts/convert_ingredients_adb_csv.py"
+    file_path = Path("convert_ingredients_adb_csv.py")
 
-    # Download the script file
-    response = requests.get(file_url)
-    file_path.write_text(response.text)
+    try:
+        # Download the script file
+        response = requests.get(file_url)
+        file_path.write_text(response.text)
 
-    # Run the script
-    subprocess.run(["bash", str(file_path)], check=True)
+        runpy.run_path(str(file_path), run_name="__main__")
 
-    # Remove the script file
-    file_path.unlink()
+        data = ImageDataCSV("dishes.adb.csv")
+        data = CLIPPyTorchEmbeddings(data)
+        # data = ImageProperties(data)
+        data = CommonProperties(data)
+        loader = ParallelLoader(db)
+        loader.ingest(data, batchsize=100, stats=True)
 
-    data = ImageDataCSV("data/dishes.adb.csv")
-    data = CLIPPyTorchEmbeddings(data)
-    # data = ImageProperties(data)
-    data = CommonProperties(data)
-    loader = ParallelLoader(db)
-    loader.ingest(data, batchsize=100, stats=True)
+        data = EntityDataCSV("ingredients.adb.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data, batchsize=100, stats=True)
 
-    data = EntityDataCSV("data/ingredients.adb.csv")
-    loader = ParallelLoader(db)
-    loader.ingest(data, batchsize=100, stats=True)
-
-    data = ConnectionDataCSV("data/dish_ingredients.adb.csv")
-    loader = ParallelLoader(db)
-    loader.ingest(data, batchsize=100, stats=True)
-
-    # Delete data directory
-    shutil.rmtree("data")
+        data = ConnectionDataCSV("dish_ingredients.adb.csv")
+        loader = ParallelLoader(db)
+        loader.ingest(data, batchsize=100, stats=True)
+    finally:
+        os.chdir(original_dir)
 
 
 # Tag the test functions that depend on the setup as external_network
