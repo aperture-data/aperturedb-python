@@ -1,7 +1,5 @@
 from aperturedb.transformers.transformer import Transformer
 from aperturedb.Subscriptable import Subscriptable
-from aperturedb.Utils import Utils
-from aperturedb.CommonLibrary import create_connector
 
 from PIL import Image
 import io
@@ -19,7 +17,7 @@ class ImageProperties(Transformer):
 
     def __init__(self, data: Subscriptable, **kwargs) -> None:
         super().__init__(data, **kwargs)
-        utils = Utils(create_connector())
+        utils = self.get_utils()
 
         if "adb_data_source" not in utils.get_indexed_props("_Image"):
             utils.create_entity_index("_Image", "adb_data_source")

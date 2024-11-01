@@ -19,7 +19,7 @@ class CommonProperties(Transformer):
             adb_timestamp: Timestamp for the data
             adb_main_object: Main object for the data
         """
-        super().__init__(data)
+        super().__init__(data, **kwargs)
 
         # Statically set some properties, these are not in the data
         self.adb_data_source = kwargs.get("adb_data_source", None)

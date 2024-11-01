@@ -152,3 +152,4 @@ docker/pytorch-gpu/aperturedata/*
 /test/input/images/
 
 .aperturedb
+test/data/
