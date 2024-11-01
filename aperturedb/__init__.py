@@ -9,7 +9,7 @@ import platform
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.4.35"
+__version__ = "0.4.36"
 
 # set log level
 formatter = logging.Formatter(
