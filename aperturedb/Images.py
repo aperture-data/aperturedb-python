@@ -139,6 +139,7 @@ class Images(Entities):
         client: The database connector, perhaps as returned by `CommonLibrary.create_connector`
     """
     db_object = "_Image"
+    query_object = "Image"
 
     def inspect(self, use_thumbnails=True) -> Union[Tuple[widgets.IntSlider, widgets.Output], DataFrame]:
         df = super(Images, self).inspect()
@@ -253,11 +254,12 @@ class Images(Entities):
         end = min(start + self.batch_size, len(self.images_ids))
 
         query = []
+        FindCommand = f"Find{self.query_object}"
 
         for idx in range(start, end):
 
             find = {
-                "FindImage": {
+                FindCommand: {
                     "constraints": {
                         self.img_id_prop: ["==", self.images_ids[idx]]
                     },
@@ -266,7 +268,7 @@ class Images(Entities):
             }
 
             if self.operations and len(self.operations.operations_arr) > 0:
-                find["FindImage"]["operations"] = self.operations.operations_arr
+                find[FindCommand]["operations"] = self.operations.operations_arr
             query.append(find)
 
         _, res, imgs = execute_query(self.client, query, [])
@@ -293,9 +295,10 @@ class Images(Entities):
             return
 
         uniqueid = self.images_ids[index]
+        FindCommand = f"Find{self.query_object}"
 
         query = [{
-            "FindImage": {
+            FindCommand: {
                 "_ref": 1,
                 "constraints": {
                     self.img_id_prop: ["==", uniqueid]
@@ -349,14 +352,14 @@ class Images(Entities):
                     if tag_key and tag_format:
                         tag = tag_format.format(poly[tag_key])
                         tags.append(tag)
-                        meta.append(res[0]["FindImage"]["entities"][0])
+                        meta.append(res[0][FindCommand]["entities"][0])
 
                     bounds.append(poly["_bounds"])
                     converted = []
                     for vert in poly["_vertices"]:
                         v = resolve(
                             np.array(vert),
-                            res[0]["FindImage"]["entities"][0],
+                            res[0][FindCommand]["entities"][0],
                             operations)
                         converted.append(v)
                     polygons.append(converted)
@@ -399,9 +402,10 @@ class Images(Entities):
             return
 
         uniqueid = self.images_ids[index]
+        FindCommand = f"Find{self.query_object}"
 
         query = [{
-            "FindImage": {
+            FindCommand: {
                 "_ref": 1,
                 "constraints": {
                     self.img_id_prop: ["==", uniqueid]
@@ -442,15 +446,15 @@ class Images(Entities):
                     resolved = resolve(
                         box,
                         # image to bb is 1:n relation
-                        res[0]["FindImage"]["entities"][0],
+                        res[0][FindCommand]["entities"][0],
                         operations)
                     bboxes.append(resolved)
                     tags.append(bbox[self.bbox_label_prop])
-                    meta.append(res[0]["FindImage"]["entities"][0])
+                    meta.append(res[0][FindCommand]["entities"][0])
                     bounds.append(box)
         except Exception as e:
             logger.warn(
-                f"Cannot retrieve bounding boxes for image {uniqueid}", exc_info=True)
+                f"Cannot retrieve bounding boxes for {self.query_object}: {uniqueid}", exc_info=True)
         finally:
             self.images_bboxes[uniqueid_str]["bboxes"] = bboxes
             self.images_bboxes[uniqueid_str]["tags"] = tags
@@ -486,7 +490,7 @@ class Images(Entities):
             self.__retrieve_batch(index)
 
         if self.images[str(uniqueid)] == None:
-            print("Image was not retrieved")
+            print(f"{self.query_object} was not retrieved")
 
         return self.images[str(uniqueid)]
 
@@ -555,33 +559,34 @@ class Images(Entities):
         self.overlays = []
         self.color_for_tag = {}
 
-        query = {"FindImage": {}}
+        FindCommand = f"Find{self.query_object}"
+        query = {FindCommand: {}}
 
         if constraints:
-            query["FindImage"]["constraints"] = constraints.constraints
+            query[FindCommand]["constraints"] = constraints.constraints
 
         if format:
-            query["FindImage"]["as_format"] = format
+            query[FindCommand]["as_format"] = format
 
-        query["FindImage"]["results"] = {}
+        query[FindCommand]["results"] = {}
 
         if limit:
-            query["FindImage"]["results"]["limit"] = limit
+            query[FindCommand]["results"]["limit"] = limit
 
         if sort:
-            query["FindImage"]["results"]["sort"] = sort
+            query[FindCommand]["results"]["sort"] = sort
 
-        query["FindImage"]["results"]["list"] = []
-        query["FindImage"]["results"]["list"].append(self.img_id_prop)
+        query[FindCommand]["results"]["list"] = []
+        query[FindCommand]["results"]["list"].append(self.img_id_prop)
 
         # Only retrieve images when needed
-        query["FindImage"]["blobs"] = False
+        query[FindCommand]["blobs"] = False
 
         _, response, images = execute_query(
             self.client, query=[query], blobs=[])
 
         try:
-            entities = response[0]["FindImage"]["entities"]
+            entities = response[0][FindCommand]["entities"]
 
             for ent in entities:
                 self.images_ids.append(ent[self.img_id_prop])
@@ -638,11 +643,12 @@ class Images(Entities):
     def get_similar_images(self, set_name, n_neighbors):
 
         imgs_return = Images(self.client)
+        FindCommand = f"Find{self.query_object}"
 
         for uniqueid in self.images_ids:
 
             query = [{
-                "FindImage": {
+                FindCommand: {
                     "_ref": 1,
                     "constraints": {
                         self.img_id_prop:  ["==", uniqueid]
@@ -671,7 +677,7 @@ class Images(Entities):
                     "uniqueids": True,
                 }
             }, {
-                "FindImage": {
+                FindCommand: {
                     "is_connected_to": {
                         "ref": 1,
                     },
@@ -691,7 +697,7 @@ class Images(Entities):
                 # Images are not sorted by distance, so we need to sort them
                 # That's why we use "group_by_source":
                 # To have a mapping between descriptors and associated images.
-                imgs_map = response[1]["FindImage"]["entities"]
+                imgs_map = response[1][FindCommand]["entities"]
 
                 for desc_id in ordered_descs_ids:
                     img_info = imgs_map[desc_id][0]
@@ -924,7 +930,7 @@ class Images(Entities):
         schema = dbutils.get_schema()
 
         try:
-            dictio = schema["entities"]["classes"]["_Image"]["properties"]
+            dictio = schema["entities"]["classes"][self.db_object]["properties"]
             props_array = [key for key, val in dictio.items()]
         except:
             props_array = []
@@ -946,12 +952,13 @@ class Images(Entities):
             return {}
 
         return_dictionary = {}
+        FindCommand = f"Find{self.query_object}"
 
         try:
             for uniqueid in self.images_ids:
 
                 query = [{
-                    "FindImage": {
+                    FindCommand: {
                         "_ref": 1,
                         "constraints": {
                             self.img_id_prop: ["==", uniqueid]
@@ -966,8 +973,26 @@ class Images(Entities):
                 _, res, images = execute_query(self.client, query, [])
 
                 return_dictionary[str(
-                    uniqueid)] = res[0]["FindImage"]["entities"][0]
+                    uniqueid)] = res[0][FindCommand]["entities"][0]
         except:
             print("Cannot retrieved properties")
 
         return return_dictionary
+
+
+class Frames(Images):
+    """
+    **The python wrapper of frame images in ApertureDB.**
+
+    Frames in ApertureDB are quite similar to images and so
+    are modeled in python as a subclass.
+
+
+    Args:
+        client: The database connector, perhaps as returned by `CommonLibrary.create_connector`
+    """
+    db_object = "_Frame"
+    query_object = "Frame"
+    def __init__(self, client, batch_size=100, response=None, **kwargs):
+        super().__init__(client,
+                response,batch_size=batch_size,response=response, kwargs)
