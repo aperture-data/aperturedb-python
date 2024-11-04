@@ -996,4 +996,4 @@ class Frames(Images):
 
     def __init__(self, client, batch_size=100, response=None, **kwargs):
         super().__init__(client,
-                         response, batch_size=batch_size, response=response, kwargs)
+                         response, batch_size=batch_size, response=response, **kwargs)
