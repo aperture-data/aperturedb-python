@@ -303,7 +303,6 @@ class Images(Entities):
                     "list": ["adb_image_width", "adb_image_height"]
                 },
             }
-        }
 
         find_poly_params = {
                 "image_ref": 1,
