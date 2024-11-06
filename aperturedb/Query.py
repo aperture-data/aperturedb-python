@@ -47,7 +47,8 @@ class RangeType(str, Enum):
 
 config = Config.SAVE_NAME
 
-def class_entity(db_class): 
+
+def class_entity(db_class):
     members = [m.value for m in ObjectType]
     if db_class.startswith("_"):
         if oclass in members:
@@ -57,6 +58,7 @@ def class_entity(db_class):
                 f"Invalid Object type. Should not begin with _, except for {members}")
     else:
         return "Entity"
+
 
 def get_handlers():
     sources = Sources(n_download_retries=3)
@@ -273,7 +275,7 @@ class QueryBuilder():
 
     @classmethod
     def build_command(self, oclass, params, operation):
-        oclass = oclass if not isinstance(oclass,ObjectType) else oclass.value
+        oclass = oclass if not isinstance(oclass, ObjectType) else oclass.value
         command = {
             f"{operation}Entity": params
         }

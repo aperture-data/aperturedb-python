@@ -14,7 +14,7 @@ from aperturedb import Utils
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
 from aperturedb.CommonLibrary import execute_query
-from aperturedb.Query import QueryBuilder, ObjectType,class_entity
+from aperturedb.Query import QueryBuilder, ObjectType, class_entity
 from ipywidgets import widgets
 from IPython.display import display, HTML
 import base64
@@ -265,7 +265,8 @@ class Images(Entities):
 
             if self.operations and len(self.operations.operations_arr) > 0:
                 find_params["operations"] = self.operations.operations_arr
-            query.append(QueryBuilder.find_command(self.db_object, params=find_params))
+            query.append(QueryBuilder.find_command(
+                self.db_object, params=find_params))
 
         _, res, imgs = execute_query(self.client, query, [])
 
@@ -335,8 +336,10 @@ class Images(Entities):
             tags = []
             meta = []
             query = [
-                    QueryBuilder.find_command(self.db_object, params=find_image_params),
-                    QueryBuilder.find_command(ObjectType.POLYGON, params=find_poly_params)
+                    QueryBuilder.find_command(
+                        self.db_object, params=find_image_params),
+                    QueryBuilder.find_command(
+                        ObjectType.POLYGON, params=find_poly_params)
                     ]
             result, res, _ = execute_query(
                 client=self.client, query=query, blobs=[])
