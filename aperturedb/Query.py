@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from aperturedb.Constraints import Constraints
 from aperturedb.Operations import Operations
@@ -48,7 +48,7 @@ class RangeType(str, Enum):
 config = Config.SAVE_NAME
 
 
-def class_entity(db_class):
+def class_entity(db_class: Union[str,ObjectType] ):
     members = [m.value for m in ObjectType]
     db_class = db_class if not isinstance(
         db_class, ObjectType) else db_class.value
@@ -268,15 +268,15 @@ def generate_add_query(
 
 class QueryBuilder():
     @classmethod
-    def find_command(self, oclass: str | ObjectType, params: dict) -> dict:
+    def find_command(self, oclass: Union[str, ObjectType], params: dict) -> dict:
         return self.build_command(oclass, params, "Find")
 
     @classmethod
-    def add_command(self, oclass: str | ObjectType, params: dict) -> dict:
+    def add_command(self, oclass: Union[str, ObjectType], params: dict) -> dict:
         return self.build_command(oclass, params, "Add")
 
     @classmethod
-    def build_command(self, oclass, params, operation):
+    def build_command(self, oclass: Union[str, ObjectType] , params: dict, operation:str)-> dict:
         oclass = oclass if not isinstance(oclass, ObjectType) else oclass.value
         command = {
             f"{operation}Entity": params
