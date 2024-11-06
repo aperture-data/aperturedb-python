@@ -8,6 +8,8 @@ from aperturedb.Connector import Connector
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Query import QueryBuilder
 import pandas as pd
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Entities(Subscriptable):
@@ -69,10 +71,10 @@ class Entities(Subscriptable):
         cls.client = client
 
         query = spec.query()
-        print(f"query={query}")
+        logger.debug(f"query={query}")
         res, r, b = execute_query(client, query, [])
         if res > 0:
-            print(f"resp={r}")
+            logger.warning(f"resp={r}")
         results = []
         for wc, req, blobs, resp in zip(
                 spec.command_properties(prop="with_class"),
@@ -92,8 +94,8 @@ class Entities(Subscriptable):
 
                 results.append(entities)
             except Exception as e:
-                print(e)
-                print(cls.known_entities)
+                logging.warning(f"Exception: {e}")
+                logging.warning(f"Entities: {cls.known_entities}")
                 raise e
 
         cls.__postprocess__(entities=results[-1], with_adjacent=with_adjacent)
@@ -243,6 +245,11 @@ class Entities(Subscriptable):
                 client=self.client, response=r[1][list(r[1].keys())[0]]["entities"], type=entity_class))
         return result
 
+    def get_object_name(self) -> str:
+        as_str = self.db_object if not isinstance(
+            self.db_object, ObjectType) else self.db_object.value
+        return as_str[1:]
+
     def get_blob(self, entity) -> Any:
         """
         Helper to get blobs for FindImage, FindVideo and FindBlob commands.
@@ -262,7 +269,7 @@ class Entities(Subscriptable):
         if self.spec and self.spec.operations:
             cmd_params["operations"] = self.spec.operations.operations_arr
         query = [
-            QueryBuilder().find_command(self.db_object, params=cmd_params)
+            QueryBuilder.find_command(self.db_object, params=cmd_params)
         ]
         res, r, b = execute_query(self.client, query, [])
         return b[0]
