@@ -262,7 +262,7 @@ class Entities(Subscriptable):
         if self.spec and self.spec.operations:
             cmd_params["operations"] = self.spec.operations.operations_arr
         query = [
-            QueryBuilder().find_command(self.db_object, params=cmd_params)
+            QueryBuilder.find_command(self.db_object, params=cmd_params)
         ]
         res, r, b = execute_query(self.client, query, [])
         return b[0]
