@@ -48,20 +48,21 @@ def pytest_generate_tests(metafunc):
     if all(func in metafunc.fixturenames for func in ["insert_data_from_csv", "modify_data_from_csv"]) and \
             metafunc.module.__name__ in ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv,modify_data_from_csv", [
-                             pytest.param([True, True], marks=pytest.mark.dask),
+                             pytest.param(
+                                 [True, True], marks=pytest.mark.dask),
                              pytest.param([False, False])],
                              indirect=True, ids=["with_dask", "without_dask"])
     elif "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
-                             pytest.param( True, marks=pytest.mark.dask) ,
-                             pytest.param( False)],
-                                      indirect=True, ids=["with_dask", "without_dask"])
+                             pytest.param(True, marks=pytest.mark.dask),
+                             pytest.param(False)],
+                             indirect=True, ids=["with_dask", "without_dask"])
     elif "modify_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("modify_data_from_csv", [
-                             pytest.param( True, marks=pytest.mark.dask) ,
-                             pytest.param( False )],
+                             pytest.param(True, marks=pytest.mark.dask),
+                             pytest.param(False)],
                              indirect=True, ids=["with_dask", "without_dask"])
 
 

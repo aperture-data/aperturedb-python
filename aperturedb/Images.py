@@ -257,10 +257,10 @@ class Images(Entities):
         for idx in range(start, end):
 
             find_params = {
-                    "constraints": {
-                        self.img_id_prop: ["==", self.images_ids[idx]]
-                    },
-                    "blobs": True
+                "constraints": {
+                    self.img_id_prop: ["==", self.images_ids[idx]]
+                },
+                "blobs": True
             }
 
             if self.operations and len(self.operations.operations_arr) > 0:
@@ -294,20 +294,20 @@ class Images(Entities):
         uniqueid = self.images_ids[index]
 
         find_image_params = {
-                "_ref": 1,
-                "constraints": {
-                    self.img_id_prop: ["==", uniqueid]
-                },
-                "blobs": False,
-                "results": {
-                    "list": ["adb_image_width", "adb_image_height"]
-                },
-            }
+            "_ref": 1,
+            "constraints": {
+                self.img_id_prop: ["==", uniqueid]
+            },
+            "blobs": False,
+            "results": {
+                "list": ["adb_image_width", "adb_image_height"]
+            },
+        }
 
         find_poly_params = {
-                "image_ref": 1,
-                "bounds": True,
-                "vertices": True,
+            "image_ref": 1,
+            "bounds": True,
+            "vertices": True,
         }
 
         if constraints and constraints.constraints:
@@ -335,17 +335,18 @@ class Images(Entities):
             tags = []
             meta = []
             query = [
-                    QueryBuilder.find_command(
-                        self.db_object, params=find_image_params),
-                    QueryBuilder.find_command(
-                        ObjectType.POLYGON, params=find_poly_params)
-                    ]
+                QueryBuilder.find_command(
+                    self.db_object, params=find_image_params),
+                QueryBuilder.find_command(
+                    ObjectType.POLYGON, params=find_poly_params)
+            ]
             result, res, _ = execute_query(
                 client=self.client, query=query, blobs=[])
 
             if "entities" in res[1]["FindPolygon"]:
                 polys = res[1]["FindPolygon"]["entities"]
-                operations = self.query["operations"] if self.query and "operations" in self.query else [ ]
+                operations = self.query["operations"] if self.query and "operations" in self.query else [
+                ]
                 FindCommand = class_entity(self.db_object)
                 for poly in polys:
                     if tag_key and tag_format:
@@ -403,28 +404,30 @@ class Images(Entities):
         uniqueid = self.images_ids[index]
 
         find_image_params = {
-                "_ref": 1,
-                "constraints": {
-                    self.img_id_prop: ["==", uniqueid]
-                },
-                "results": {
-                    "list": ["adb_image_width", "adb_image_height"]
-                },
-                "blobs": False,
-            }
+            "_ref": 1,
+            "constraints": {
+                self.img_id_prop: ["==", uniqueid]
+            },
+            "results": {
+                "list": ["adb_image_width", "adb_image_height"]
+            },
+            "blobs": False,
+        }
 
         find_bbox_params = {
-                "image_ref": 1,
-                "_ref": 2,
-                "blobs": False,
-                "coordinates": True,
-                "labels": True
-            }
+            "image_ref": 1,
+            "_ref": 2,
+            "blobs": False,
+            "coordinates": True,
+            "labels": True
+        }
 
         query = [
-                QueryBuilder.find_command(self.db_object, params=find_image_params),
-                QueryBuilder.find_command(ObjectType.BOUNDING_BOX, params=find_bbox_params),
-                ]
+            QueryBuilder.find_command(
+                self.db_object, params=find_image_params),
+            QueryBuilder.find_command(
+                ObjectType.BOUNDING_BOX, params=find_bbox_params),
+        ]
 
         if constraints and constraints.constraints:
             find_bbox_params["constraints"] = constraints.constraints
@@ -451,7 +454,8 @@ class Images(Entities):
                         operations)
                     bboxes.append(resolved)
                     tags.append(bbox[self.bbox_label_prop])
-                    meta.append(res[0][class_entity(self.db_object) ]["entities"][0])
+                    meta.append(
+                        res[0][class_entity(self.db_object)]["entities"][0])
                     bounds.append(box)
         except Exception as e:
             logger.warn(
@@ -584,18 +588,19 @@ class Images(Entities):
 
         _, response, images = execute_query(
             self.client, query=[
-                    QueryBuilder.find_command(self.db_object, params=find_image_params)
-                ], blobs=[])
+                QueryBuilder.find_command(
+                    self.db_object, params=find_image_params)
+            ], blobs=[])
 
         entities = None
         try:
             cmd, = response[0].keys()
-            entities = response[0][ cmd ]["entities"]
+            entities = response[0][cmd]["entities"]
 
             for ent in entities:
                 self.images_ids.append(ent[self.img_id_prop])
         except Exception as e:
-            print(f"Error with search: {e}\n Response = {response}" )
+            print(f"Error with search: {e}\n Response = {response}")
 
         self.response = entities
 
@@ -651,49 +656,53 @@ class Images(Entities):
         for uniqueid in self.images_ids:
 
             find_image_params = {
-                    "_ref": 1,
-                    "constraints": {
-                        self.img_id_prop:  ["==", uniqueid]
-                    },
-                    "blobs": False,
-                }
+                "_ref": 1,
+                "constraints": {
+                    self.img_id_prop:  ["==", uniqueid]
+                },
+                "blobs": False,
+            }
             find_descriptor_params = {
-                    "set": set_name,
-                    "is_connected_to": {
-                        "ref": 1,
-                    },
-                    "blobs": True
-                }
+                "set": set_name,
+                "is_connected_to": {
+                    "ref": 1,
+                },
+                "blobs": True
+            }
 
             _, response, blobs = execute_query(self.client,
-                    [
-                    QueryBuilder.find_command(self.db_object, params=find_image_params),
-                    QueryBuilder.find_command(ObjectType.DESCRIPTOR, params=find_descriptor_params)
-                    ], [])
+                                               [
+                                                   QueryBuilder.find_command(
+                                                       self.db_object, params=find_image_params),
+                                                   QueryBuilder.find_command(
+                                                       ObjectType.DESCRIPTOR, params=find_descriptor_params)
+                                               ], [])
 
             find_descriptor_params = {
-                    "_ref": 1,
-                    "set": set_name,
-                    "k_neighbors": n_neighbors + 1,
-                    "blobs":     False,
-                    "distances": True,
-                    "uniqueids": True,
-                }
+                "_ref": 1,
+                "set": set_name,
+                "k_neighbors": n_neighbors + 1,
+                "blobs":     False,
+                "distances": True,
+                "uniqueids": True,
+            }
             find_image_params = {
-                    "is_connected_to": {
-                        "ref": 1,
-                    },
-                    "group_by_source": True,
-                    "results": {
-                        "list": [self.img_id_prop]
-                    }
+                "is_connected_to": {
+                    "ref": 1,
+                },
+                "group_by_source": True,
+                "results": {
+                    "list": [self.img_id_prop]
                 }
+            }
 
             _, response, blobs = execute_query(self.client,
-                    [
-                    QueryBuilder.find_command(ObjectType.DESCRIPTOR, params=find_descriptor_params),
-                    QueryBuilder.find_command(self.db_object, params=find_image_params)
-                    ], blobs)
+                                               [
+                                                   QueryBuilder.find_command(
+                                                       ObjectType.DESCRIPTOR, params=find_descriptor_params),
+                                                   QueryBuilder.find_command(
+                                                       self.db_object, params=find_image_params)
+                                               ], blobs)
 
             try:
                 descriptors = response[0]["FindDescriptor"]["entities"]
@@ -703,7 +712,7 @@ class Images(Entities):
                 # That's why we use "group_by_source":
                 # To have a mapping between descriptors and associated images.
                 cmd, = response[1].keys()
-                imgs_map = response[1][ cmd ]["entities"]
+                imgs_map = response[1][cmd]["entities"]
 
                 for desc_id in ordered_descs_ids:
                     img_info = imgs_map[desc_id][0]
@@ -963,23 +972,22 @@ class Images(Entities):
             for uniqueid in self.images_ids:
 
                 find_image_params = {
-                        "_ref": 1,
-                        "constraints": {
-                            self.img_id_prop: ["==", uniqueid]
-                        },
-                        "blobs": False,
-                        "results": {
-                            "list": prop_list
-                        }
+                    "_ref": 1,
+                    "constraints": {
+                        self.img_id_prop: ["==", uniqueid]
+                    },
+                    "blobs": False,
+                    "results": {
+                        "list": prop_list
                     }
+                }
 
                 _, res, images = execute_query(self.client, [
-                    QueryBuilder.find_command(self.db_object, params=find_image_params)]
-                    , [])
+                    QueryBuilder.find_command(self.db_object, params=find_image_params)], [])
 
                 cmd, = res[0].keys()
                 return_dictionary[str(
-                    uniqueid)] = res[0][ cmd ]["entities"][0]
+                    uniqueid)] = res[0][cmd]["entities"][0]
         except:
             print("Cannot retrieved properties")
 

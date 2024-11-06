@@ -246,9 +246,9 @@ class Entities(Subscriptable):
         return result
 
     def get_object_name(self) -> str:
-        as_str = self.db_object if not isinstance(self.db_object, ObjectType) else self.db_object.value
+        as_str = self.db_object if not isinstance(
+            self.db_object, ObjectType) else self.db_object.value
         return as_str[1:]
-
 
     def get_blob(self, entity) -> Any:
         """
