@@ -455,7 +455,7 @@ class Images(Entities):
                     bounds.append(box)
         except Exception as e:
             logger.warn(
-                f"Cannot retrieve bounding boxes for {self.query_object}: {uniqueid}", exc_info=True)
+                f"Cannot retrieve bounding boxes for {self.get_object_name()}: {uniqueid}", exc_info=True)
         finally:
             self.images_bboxes[uniqueid_str]["bboxes"] = bboxes
             self.images_bboxes[uniqueid_str]["tags"] = tags
@@ -491,7 +491,7 @@ class Images(Entities):
             self.__retrieve_batch(index)
 
         if self.images[str(uniqueid)] == None:
-            print(f"{self.query_object} was not retrieved")
+            print(f"{self.get_object_name()} was not retrieved")
 
         return self.images[str(uniqueid)]
 
@@ -560,8 +560,6 @@ class Images(Entities):
         self.overlays = []
         self.color_for_tag = {}
 
-        FindCommand = f"Find{self.query_object}"
-        query = {FindCommand: {}}
         find_image_params = {}
 
         if constraints:
@@ -589,13 +587,15 @@ class Images(Entities):
                     QueryBuilder.find_command(self.db_object, params=find_image_params)
                 ], blobs=[])
 
+        entities = None
         try:
-            entities = response[0][ class_entity(self.db_object)]["entities"]
+            cmd, = response[0].keys()
+            entities = response[0][ cmd ]["entities"]
 
             for ent in entities:
                 self.images_ids.append(ent[self.img_id_prop])
-        except:
-            print("Error with search: {}".format(response))
+        except Exception as e:
+            print(f"Error with search: {e}\n Response = {response}" )
 
         self.response = entities
 
@@ -702,7 +702,8 @@ class Images(Entities):
                 # Images are not sorted by distance, so we need to sort them
                 # That's why we use "group_by_source":
                 # To have a mapping between descriptors and associated images.
-                imgs_map = response[1][ class_entity(self.db_object) ]["entities"]
+                cmd, = response[1].keys()
+                imgs_map = response[1][ cmd ]["entities"]
 
                 for desc_id in ordered_descs_ids:
                     img_info = imgs_map[desc_id][0]
@@ -935,7 +936,7 @@ class Images(Entities):
         schema = dbutils.get_schema()
 
         try:
-            dictio = schema["entities"]["classes"][class_entity(self.db_object)]["properties"]
+            dictio = schema["entities"]["classes"][self.db_object.value]["properties"]
             props_array = [key for key, val in dictio.items()]
         except:
             props_array = []
@@ -976,8 +977,9 @@ class Images(Entities):
                     QueryBuilder.find_command(self.db_object, params=find_image_params)]
                     , [])
 
+                cmd, = res[0].keys()
                 return_dictionary[str(
-                    uniqueid)] = res[0][ class_entity(self.db_object) ]["entities"][0]
+                    uniqueid)] = res[0][ cmd ]["entities"][0]
         except:
             print("Cannot retrieved properties")
 
