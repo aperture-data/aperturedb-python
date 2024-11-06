@@ -688,7 +688,6 @@ class Images(Entities):
                         "list": [self.img_id_prop]
                     }
                 }
-            }]
 
             _, response, blobs = execute_query(self.client,
                     [
