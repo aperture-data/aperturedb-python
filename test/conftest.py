@@ -26,34 +26,44 @@ import dbinfo
 def pytest_generate_tests(metafunc):
     if "db" in metafunc.fixturenames:
         metafunc.parametrize("db", [
-            {"db": Connector(
-                host = dbinfo.DB_TCP_HOST,
-                port = dbinfo.DB_TCP_PORT,
-                user = dbinfo.DB_USER,
-                password = dbinfo.DB_PASSWORD,
-                use_ssl = True,
-                retry_max_attempts=3,
-                retry_interval_seconds=0)},
-            {"db": ConnectorRest(
-                host = dbinfo.DB_REST_HOST,
-                port = dbinfo.DB_REST_PORT,
-                user = dbinfo.DB_USER,
-                password = dbinfo.DB_PASSWORD,
-                use_ssl = False,
-            )}
+            pytest.param(
+                {"db": Connector(
+                    host=dbinfo.DB_TCP_HOST,
+                    port=dbinfo.DB_TCP_PORT,
+                    user=dbinfo.DB_USER,
+                    password=dbinfo.DB_PASSWORD,
+                    use_ssl=True,
+                    retry_max_attempts=3,
+                    retry_interval_seconds=0)},
+                marks=pytest.mark.tcp),
+            pytest.param(
+                {"db": ConnectorRest(
+                    host=dbinfo.DB_REST_HOST,
+                    port=dbinfo.DB_REST_PORT,
+                    user=dbinfo.DB_USER,
+                    password=dbinfo.DB_PASSWORD,
+                    use_ssl=False)},
+                marks=pytest.mark.http)
         ], indirect=True, ids=["TCP", "HTTP"])
     if all(func in metafunc.fixturenames for func in ["insert_data_from_csv", "modify_data_from_csv"]) and \
             metafunc.module.__name__ in ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv,modify_data_from_csv", [
-                             [True, True], [False, False]], indirect=True, ids=["with_dask", "without_dask"])
+                             pytest.param(
+                                 [True, True], marks=pytest.mark.dask),
+                             pytest.param([False, False])],
+                             indirect=True, ids=["with_dask", "without_dask"])
     elif "insert_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("insert_data_from_csv", [
-                             True, False], indirect=True, ids=["with_dask", "without_dask"])
+                             pytest.param(True, marks=pytest.mark.dask),
+                             pytest.param(False)],
+                             indirect=True, ids=["with_dask", "without_dask"])
     elif "modify_data_from_csv" in metafunc.fixturenames and metafunc.module.__name__ in \
             ["test.test_Data"]:
         metafunc.parametrize("modify_data_from_csv", [
-                             True, False], indirect=True, ids=["with_dask", "without_dask"])
+                             pytest.param(True, marks=pytest.mark.dask),
+                             pytest.param(False)],
+                             indirect=True, ids=["with_dask", "without_dask"])
 
 
 @pytest.fixture()

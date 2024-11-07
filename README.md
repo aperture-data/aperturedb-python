@@ -40,10 +40,10 @@ export GCP_SERVICE_ACCOUNT_KEY=<content of a GCP SERVICE ACCOUNT JSON file>
 bash run_test.sh
 ```
 
-Running specefic tests can be accomplished by invoking it with pytest as follows:
+Running specific tests can be accomplished by invoking it with pytest as follows:
 
 ```bash
-cd test && docker compose up -d && PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m python -m pytest test_Session.py -v --log-cli-level=DEBUG
+cd test && docker compose up -d && PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_Session.py -v --log-cli-level=DEBUG
 ```
 
 # Reporting bugs
