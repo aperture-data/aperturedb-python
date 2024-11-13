@@ -1,3 +1,5 @@
+set -e
+
 echo "Building aperturedb"
 rm -rf build/ dist/ vdms.egg-info/
 python3 -m build
