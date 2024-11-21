@@ -347,7 +347,7 @@ class Images(Entities):
                 polys = res[1]["FindPolygon"]["entities"]
                 operations = self.query["operations"] if self.query and "operations" in self.query else [
                 ]
-                FindCommand = "Find"+class_entity(self.db_object)
+                FindCommand = "Find" + class_entity(self.db_object)
                 for poly in polys:
                     if tag_key and tag_format:
                         tag = tag_format.format(poly[tag_key])
@@ -439,7 +439,7 @@ class Images(Entities):
             tags = []
             meta = []
             bounds = []
-            FindCommand = "Find"+class_entity(self.db_object)
+            FindCommand = "Find" + class_entity(self.db_object)
             result, res, images = execute_query(
                 client=self.client, query=query, blobs=[])
             if "entities" in res[1]["FindBoundingBox"]:
