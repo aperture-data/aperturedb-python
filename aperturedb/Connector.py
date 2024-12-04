@@ -118,8 +118,6 @@ class Connector(object):
 
 
     Some parameters are mainly of use when copying the object. `shared_data` and `authenticate` are designed for this.
-
-    
     """
 
     def __init__(self, host="localhost", port=55555,
