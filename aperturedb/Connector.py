@@ -106,8 +106,8 @@ class Connector(object):
         str (password): Password to specify while connecting to ApertureDB.
         str (token): Token to use while connecting to the database.
         bool (use_ssl): Use SSL to encrypt communication with the database.
-        bool (authenticate): If connection needs to authenticate
-        object (shared_data): If connection needs to authenticate
+        bool (authenticate): Whether connection needs to authenticate
+        object (shared_data): Passed in authentication data ( for when authenticate is no )
         VerifyType (verify_ssl): Rule for verifying a SSL connection
         bool (use_keepalive): Set keepalive on the connection with the database.
             This has two benefits: It reduces the chance of disconnection for a long-running query,
@@ -375,15 +375,12 @@ class Connector(object):
                         ssl.VerifyMode.CERT_REQUIRED if check_cert else ssl.VerifyMode.CERT_NONE
 
                 if check_cert:
-                    print("Check")
                     if not 'ADB_SSL_CA_FILE' in os.environ:
                         self.context.load_default_certs()
                     else:
                         self.context.load_verify_locations(cafile=os.environ['ADB_SSL_CA_FILE'])
-                else:
-                    print("No Check")
-                self.conn = self.context.wrap_socket(self.conn)
 
+                self.conn = self.context.wrap_socket(self.conn)
 
 
         except BaseException as e:
