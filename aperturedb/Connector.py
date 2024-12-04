@@ -35,6 +35,8 @@ import time
 import json
 import ssl
 import logging
+import fnmatch
+from enum import Enum,auto
 from datetime import datetime, timedelta
 
 import keepalive
@@ -78,8 +80,14 @@ class Session():
 
         return True
 
+class VerifyType(Enum):
+    NONE = auto()
+    KNOWN_HOSTS = auto()
+    ALL = auto()
+
 
 class Connector(object):
+    default_known_hosts = [ "*.aperturedata.io" ]
     """
     **Class to facilitate connections with an instance of ApertureDB**
 
@@ -98,11 +106,19 @@ class Connector(object):
         str (password): Password to specify while connecting to ApertureDB.
         str (token): Token to use while connecting to the database.
         bool (use_ssl): Use SSL to encrypt communication with the database.
+        bool (authenticate): If connection needs to authenticate
+        object (shared_data): If connection needs to authenticate
+        VerifyType (verify_ssl): Rule for verifying a SSL connection
         bool (use_keepalive): Set keepalive on the connection with the database.
             This has two benefits: It reduces the chance of disconnection for a long-running query,
             and it means that disconnections are detected sooner.
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
+
+
+    Some parameters are mainly of use when copying the object. `shared_data` and `authenticate` are designed for this.
+
+    
     """
 
     def __init__(self, host="localhost", port=55555,
@@ -110,6 +126,7 @@ class Connector(object):
                  use_ssl=True,
                  shared_data=None,
                  authenticate=True,
+                 verify_ssl=VerifyType.KNOWN_HOSTS,
                  use_keepalive=True,
                  retry_interval_seconds=1,
                  retry_max_attempts=3,
@@ -161,10 +178,22 @@ class Connector(object):
         else:
             self.shared_data = shared_data
 
-        self.should_authenticate = authenticate
+        self.verify_type = verify_ssl
+        self.verify_names = self.default_known_hosts 
+        self.should_authenticate = authenticate 
         # One time flag to indicate if we ever connected,
         # to prevent logging of connection errors on first connect.
         self._ever_connected = False
+
+    @classmethod
+    def set_default_known_hosts( cls, new_hosts: List[str] ):
+        cls.default_known_hosts = new_hosts
+
+    def set_known_hosts( self, new_hosts: List[str] ):
+        self.verify_names = new_hosts
+
+    def get_known_hosts( self ): 
+        return self.verify_names
 
     def authenticate(self, shared_data, user, password, token):
         """
@@ -336,8 +365,26 @@ class Connector(object):
                 self.context.check_hostname = False
                 # TODO, we need to add support for local certificates
                 # For now, we let the server send us the certificate
-                self.context.verify_mode = ssl.VerifyMode.CERT_NONE
+
+                check_cert = self.verify_type == VerifyType.ALL
+                if self.verify_type == VerifyType.KNOWN_HOSTS:
+                    check_cert = any(map(
+                        lambda h: fnmatch.fnmatch(self.host, h), self.verify_names))
+
+                self.context.verify_mode = \
+                        ssl.VerifyMode.CERT_REQUIRED if check_cert else ssl.VerifyMode.CERT_NONE
+
+                if check_cert:
+                    print("Check")
+                    if not 'ADB_SSL_CA_FILE' in os.environ:
+                        self.context.load_default_certs()
+                    else:
+                        self.context.load_verify_locations(cafile=os.environ['ADB_SSL_CA_FILE'])
+                else:
+                    print("No Check")
                 self.conn = self.context.wrap_socket(self.conn)
+
+
 
         except BaseException as e:
             self.conn.close()
