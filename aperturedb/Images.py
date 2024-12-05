@@ -347,7 +347,7 @@ class Images(Entities):
                 polys = res[1]["FindPolygon"]["entities"]
                 operations = self.query["operations"] if self.query and "operations" in self.query else [
                 ]
-                FindCommand = class_entity(self.db_object)
+                FindCommand = "Find" + class_entity(self.db_object)
                 for poly in polys:
                     if tag_key and tag_format:
                         tag = tag_format.format(poly[tag_key])
@@ -439,6 +439,7 @@ class Images(Entities):
             tags = []
             meta = []
             bounds = []
+            FindCommand = "Find" + class_entity(self.db_object)
             result, res, images = execute_query(
                 client=self.client, query=query, blobs=[])
             if "entities" in res[1]["FindBoundingBox"]:
@@ -455,7 +456,7 @@ class Images(Entities):
                     bboxes.append(resolved)
                     tags.append(bbox[self.bbox_label_prop])
                     meta.append(
-                        res[0][class_entity(self.db_object)]["entities"][0])
+                        res[0][FindCommand]["entities"][0])
                     bounds.append(box)
         except Exception as e:
             logger.warn(
@@ -1008,5 +1009,4 @@ class Frames(Images):
     db_object = ObjectType.FRAME
 
     def __init__(self, client, batch_size=100, response=None, **kwargs):
-        super().__init__(client,
-                         response, batch_size=batch_size, response=response, **kwargs)
+        super().__init__(client, batch_size=batch_size, response=response, **kwargs)
