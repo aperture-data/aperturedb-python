@@ -1,3 +1,4 @@
+import hashlib
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.transformers.transformer import Transformer
 from PIL import Image
@@ -41,11 +42,22 @@ class FacenetPyTorchEmbeddings(Transformer):
         for ic in self._add_image_index:
             serialized = self._get_embedding_from_blob(
                 x[1][self._add_image_index.index(ic)])
+            # If the image already has an image_sha256, we use it.
+            image_sha256 = x[0][ic]["AddImage"].get("properties", {}).get(
+                "adb_image_sha256", None)
+            if not image_sha256:
+                image_sha256 = hashlib.sha256(x[1][ic]).hexdigest()
             x[1].append(serialized)
             x[0].append(
                 {
                     "AddDescriptor": {
                         "set": self.search_set_name,
+                        "properties": {
+                            "image_sha256": image_sha256,
+                        },
+                        "if_not_found": {
+                            "image_sha256": ["==", image_sha256],
+                        },
                         "connect": {
                             "ref": x[0][ic]["AddImage"]["_ref"]
                         }
