@@ -112,7 +112,7 @@ class Utils(object):
             }
         }]
 
-        res, _ = self.client.query(query)
+        res, _ = self.execute(query)
 
         schema = {}
 
