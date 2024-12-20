@@ -32,12 +32,6 @@ RESULT=$?
 if [[ $RESULT != 0 ]]; then
 	echo "Test failed; outputting db log:"
 	if [[ "${APERTUREDB_LOG_PATH}" != "" ]]; then
-		for i in $(ls "${APERTUREDB_LOG_PATH}"/*); do
-			echo "===================="
-			echo "Log file: $i"
-			echo "===================="
-			cat -n $i
-		done
 
 		BUCKET=python-ci-runs
 		NOW=$(date -Iseconds)
@@ -45,7 +39,7 @@ if [[ $RESULT != 0 ]]; then
 
 		tar czf ${ARCHIVE_NAME} ${APERTUREDB_LOG_PATH}
 		aws s3 cp ${ARCHIVE_NAME} s3://${BUCKET}/aperturedb-${NOW}.tgz
-
+		echo "Log output to s3://${BUCKET}/aperturedb-${NOW}.tgz"
 	else
 		echo "Unable to output log, APERTUREDB_LOG_PATH not set."
 	fi
