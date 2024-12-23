@@ -70,10 +70,11 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             schema = self.utils.get_schema()
 
             indexes_needed = generator.get_indices()
-            for schema_type, schema_type_plural in [("entity", "entities"), ("connection", ("cconnections"))]:
+            for schema_type, schema_type_plural in [("entity", "entities"), ("connection", "connections")]:
                 for entity_class in indexes_needed.get(schema_type, {}):
                     for property_name in indexes_needed[schema_type][entity_class]:
-                        if property_name not in schema.get(schema_type_plural, {}).get('classes', {}).get(entity_class, {}).get('properties', {}):
+                        schema_type = schema.get(schema_type_plural, {}) or {}
+                        if property_name not in schema_type.get('classes', {}).get(entity_class, {}).get('properties', {}):
                             if not self.utils.create_entity_index(entity_class, property_name):
                                 logger.warning(
                                     f"Failed to create index for {entity_class}.{property_name}")
