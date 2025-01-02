@@ -44,7 +44,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         Currently, it only creates indices for the properties that are
         also used for constraint.
 
-        Requires a generator that has a get_indices method that returns
+        Will only run when the argument generator has a get_indices method that returns
         a dictionary of the form:
 
         ``` python
