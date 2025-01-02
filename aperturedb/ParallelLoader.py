@@ -69,10 +69,10 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         if hasattr(generator, "get_indices"):
             schema = self.utils.get_schema()
 
-            indexes_needed = generator.get_indices()
+            indices_needed = generator.get_indices()
             for schema_type, schema_type_plural in [("entity", "entities"), ("connection", "connections")]:
-                for entity_class in indexes_needed.get(schema_type, {}):
-                    for property_name in indexes_needed[schema_type][entity_class]:
+                for entity_class in indices_needed.get(schema_type, {}):
+                    for property_name in indices_needed[schema_type][entity_class]:
                         schema_type = schema.get(schema_type_plural, {}) or {}
                         if property_name not in schema_type.get('classes', {}).get(entity_class, {}).get('properties', {}):
                             if not self.utils.create_entity_index(entity_class, property_name):
