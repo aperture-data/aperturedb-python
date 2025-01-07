@@ -37,7 +37,7 @@ if error_file_name is not None:
     error_file_tmpl = Template(error_file_name)
     template_items = {
         # python isodate has ':', not valid in files in windows.
-        "now": str(datetime.datetime.now().isoformat()).replace(':',''),
+        "now": str(datetime.datetime.now().isoformat()).replace(':', ''),
         "node": str(platform.node())
     }
     error_file_handler = logging.FileHandler(error_file_tmpl.safe_substitute(
