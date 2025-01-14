@@ -32,6 +32,19 @@ app = typer.Typer(callback=load_fuse)
 class OutputTypes(str, Enum):
     STDOUT = "stdout"
     MOUNT_COCO = "mount_coco"
+    RAW_JSON = "raw_json"
+
+
+def dump_as_raw_json(client: Connector, transaction: dict, **kwargs):
+    from aperturedb.CommonLibrary import execute_query
+
+    result, response, blobs = execute_query(
+        client=client,
+        query=transaction,
+        blobs=[])
+    print(json.dumps(response, indent=2))
+    for i, blob in enumerate(blobs):
+        print(f"len(blob[{i}]) = {len(blob[i])}")
 
 
 def dump_to_stdout(client: Connector, transaction: dict, **kwargs):
@@ -87,7 +100,8 @@ def from_json_file(
     client = create_connector()
 
     output_types = {
-        OutputTypes.STDOUT: dump_to_stdout
+        OutputTypes.STDOUT: dump_to_stdout,
+        OutputTypes.RAW_JSON: dump_as_raw_json
     }
     global FUSE_AVAIALBLE
     if FUSE_AVAIALBLE:
