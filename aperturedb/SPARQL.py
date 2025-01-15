@@ -19,7 +19,7 @@ class SPARQL:
         """SPARQL compatability layer for ApertureDB
 
         Args:
-            client: ApertureDB client. If not suppliued, then `create_connector()` is used to create a new client.
+            client: ApertureDB client. If not supplied, then `create_connector()` is used to create a new client.
             debug: bool. If True, then certain intermediate results are stored in the object.
             log_level: int. The logging level to use for the ApertureDB client.
         """
@@ -540,14 +540,20 @@ class SPARQL:
         command_name = "Find" + type[1:]
         query = [
             {command_name: {
+                "results": { "list": ["_uniqueid"] },
                 "constraints": {
                     "_uniqueid": ["in", uniqueids],
                 },
                 "blobs": True,
             }},
         ]
-        _, blobs = self._client.query(query)
-        return blobs
+        res, blobs = self._client.query(query)
+        # Put blobs in a dictionary for faster lookup
+        id_blobs = { e["_uniqueid"]: blobs[e["_blob_index"]]
+            for e in res[0][command_name]['entities'] }
+        # Put the results in the same order as the inputs
+        results = [ id_blobs.get(uniqueid) for uniqueid in uniqueids ]
+        return results
 
     def get_image(self, uri: Union[str, "URIRef"]) -> "np.ndarray":
         """
