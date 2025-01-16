@@ -36,6 +36,14 @@ class OutputTypes(str, Enum):
 
 
 def dump_as_raw_json(client: Connector, transaction: dict, **kwargs):
+    """
+    Function to pass the result of a transaction as raw json to stdout.
+    Does not handle blobs.
+
+    Args:
+        client (Connector): The client to the database
+        transaction (dict): Query to be executed.
+    """
     from aperturedb.CommonLibrary import execute_query
 
     result, response, blobs = execute_query(
@@ -43,8 +51,6 @@ def dump_as_raw_json(client: Connector, transaction: dict, **kwargs):
         query=transaction,
         blobs=[])
     print(json.dumps(response, indent=2))
-    for i, blob in enumerate(blobs):
-        print(f"len(blob[{i}]) = {len(blob[i])}")
 
 
 def dump_to_stdout(client: Connector, transaction: dict, **kwargs):
