@@ -230,7 +230,8 @@ def create_connector(
     return __create_connector(config)
 
 
-def execute_query(client: Connector, query: Commands, blobs: Blobs,
+def execute_query(client: Connector, query: Commands,
+                  blobs: Blobs = [],
                   success_statuses: list[int] = [0],
                   response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
                   strict_response_validation: bool = False, cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
