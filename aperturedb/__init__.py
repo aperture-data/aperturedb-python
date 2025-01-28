@@ -6,6 +6,13 @@ import json
 import requests
 from string import Template
 import platform
+import faulthandler
+import signal
+
+# https://docs.python.org/3/library/faulthandler.html
+# Register SIGUSR1 to dump the stack trace
+# Good for debugging a running process
+faulthandler.register(signal.SIGUSR1.value)
 
 logger = logging.getLogger(__name__)
 
