@@ -106,7 +106,8 @@ def get_specific(obj: BaseModel) -> dict:
     elif obj.type == ObjectType.DESCRIPTORSET:
         return {
             "name": obj.name,
-            "dimensions": obj.dimensions
+            "dimensions": obj.dimensions,
+            "metric": "CS"
         }, []
     return {}, []
 
@@ -205,7 +206,6 @@ def generate_add_query(
         params["if_not_found"] = {
             "id": ["==", props["id"] if "id" in props else obj.id]
         }
-        params["metric"] = "CS"
     for k, v in specific_params.items():
         params[k] = v
     blobs.extend(specific_blobs)
