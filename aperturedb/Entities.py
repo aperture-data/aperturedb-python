@@ -4,6 +4,7 @@ from aperturedb.Query import Query, ObjectType
 
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Constraints import Constraints
+from aperturedb.Operations import Operations
 from aperturedb.Connector import Connector
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Query import QueryBuilder
@@ -198,7 +199,10 @@ class Entities(Subscriptable):
             ]
             res, r, b = execute_query(self.client, query, [])
 
-    def get_connected_entities(self,  etype: Union[ObjectType, str], constraints: Constraints = None) -> List[Entities]:
+    def get_connected_entities(self,
+                               etype: Union[ObjectType, str],
+                               constraints: Constraints = None,
+                               operations: Operations = None) -> List[Entities]:
         """
         Gets all entities adjacent to and clustered around items of the collection
 
@@ -230,6 +234,8 @@ class Entities(Subscriptable):
             }
             if constraints:
                 params_dst["constraints"] = constraints.constraints
+            if operations:
+                params_dst["operations"] = operations.operations_arr
 
             query = [
                 QueryBuilder.find_command(self.db_object, params=params_src),
