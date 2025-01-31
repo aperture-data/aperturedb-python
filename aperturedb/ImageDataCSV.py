@@ -245,7 +245,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
             allowed = ", ".join(self.source_types)
             if self.header[0] == 'index' and self.header[1] in self.source_types:
                 raise Exception(f"Error with CSV: 'index' is first column" +
-                    "please drop('index') to use")
+                                "please drop('index') to use")
             else:
                 raise Exception(
                     f"Error with CSV file field: {field}. Allowed values: {allowed}")
