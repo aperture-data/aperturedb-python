@@ -243,8 +243,12 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         if self.header[0] not in self.source_types:
             field = self.header[0]
             allowed = ", ".join(self.source_types)
-            raise Exception(
-                f"Error with CSV file field: {field}. Allowed values: {allowed}")
+            if self.header[0] == 'index' and self.header[1] in self.source_types:
+                raise Exception(f"Error with CSV: 'index' is first column" +
+                    "please drop('index') to use")
+            else:
+                raise Exception(
+                    f"Error with CSV file field: {field}. Allowed values: {allowed}")
 
 
 class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):

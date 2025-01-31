@@ -62,6 +62,10 @@ class CSVParser(Subscriptable):
                 self.df = pd.read_csv(filename)
             else:
                 self.df = df
+
+                if not hasattr( self.df.index, "start" ):
+                    raise ValueError("Supplied Dataframe's index missing 'start'" +
+                        "(Probably a filtered DataFrame - try reset_index )")
         else:
             # It'll impact the number of partitions, and memory usage.
             # TODO: tune this for the best performance.
