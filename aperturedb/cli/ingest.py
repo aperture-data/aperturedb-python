@@ -130,8 +130,6 @@ def from_generator(filepath: Annotated[str, typer.Argument(
         all_transformers = transformer + user_transformer
         data = _apply_pipeline(data, all_transformers,
                                adb_data_source=f"{module_name}.{mclass.__name__}")
-    else:
-        console.log("No transformer applied")
 
     if debug:
         _debug_samples(data, sample_count, module_name)
@@ -209,10 +207,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         all_transformers = transformer + user_transformer
         data = _apply_pipeline(data, all_transformers,
                                adb_data_source=f"{ingest_type}.{os.path.basename(filepath)}")
-    else:
-        console.log("No transformer applied")
+
     client = create_connector()
-    console.log(client)
 
     loader = ParallelLoader(client)
     if debug:
