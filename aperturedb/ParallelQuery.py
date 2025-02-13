@@ -214,7 +214,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.times_arr.append(query_time)
         self.actual_stats.append(worker_stats)
 
-    def worker(self, thid: int, generator, start: int, end: int):
+    def worker(self, thid: int, generator, start: int, end: int, run_event) -> None:
         # A new connection will be created for each thread
         client = self.client.clone()
 
@@ -223,9 +223,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
         if (end - start) % self.batchsize > 0:
             total_batches += 1
 
-        logger.info(f"Worker {thid} executing {total_batches} batches")
+        logger.info(
+            f"Worker {thid} executing {total_batches} batches, {self.stats=}")
         for i in range(total_batches):
-
+            if not run_event.is_set():
+                break
             batch_start = start + i * self.batchsize
             batch_end = min(batch_start + self.batchsize, end)
 
@@ -238,8 +240,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
                 self.error_counter += 1
 
-            if thid == 0 and self.stats:
-                self.pb.update((i + 1) / total_batches)
+            if self.stats:
+                self.pb.update(self.batchsize)
+        logger.info(f"Worker {thid} executed {total_batches} batches")
 
     def get_objects_existed(self) -> int:
         return sum([stat["objects_existed"]
@@ -307,7 +310,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             logger.info(
                 f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}"
             )
-            self.run(generator, batchsize, numthreads, stats)
+            self.trun(generator, batchsize, numthreads, stats)
 
     def print_stats(self) -> None:
 

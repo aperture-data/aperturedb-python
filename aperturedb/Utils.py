@@ -4,7 +4,7 @@ This class contains a collection of helper functions to interact with the databa
 """
 from aperturedb.Query import QueryBuilder
 from aperturedb.CommonLibrary import execute_query
-from aperturedb import ProgressBar
+from tqdm import tqdm
 from aperturedb.Connector import Connector
 import logging
 import json
@@ -595,38 +595,42 @@ class Utils(object):
 
         total = count
 
-        pb = ProgressBar.ProgressBar()
+        pb = tqdm(total=total, desc=f"Removing {type} {class_name}",
+                  unit="elements", unit_scale=True, dynamic_ncols=True)
 
         find = "Find" + cmd
         dele = "Delete" + cmd
-        while count > 0:
+        try:
+            while count > 0:
 
-            q = [{
-                find: {
-                    "_ref": 1,
-                    "with_class": class_name,
-                    "results": {
-                        "limit": batch_size
+                q = [{
+                    find: {
+                        "_ref": 1,
+                        "with_class": class_name,
+                        "results": {
+                            "limit": batch_size
+                        }
                     }
-                }
-            }, {
-                dele: {
-                    "ref": 1
-                }
-            }]
+                }, {
+                    dele: {
+                        "ref": 1
+                    }
+                }]
 
-            try:
-                self.execute(q)
-            except:
-                return False
+                try:
+                    self.execute(q)
+                except:
+                    return False
 
-            self.print(
-                f"Delete transaction of {batch_size} elements took: {self.client.get_last_query_time()}")
+                self.print(
+                    f"Delete transaction of {batch_size} elements took: {self.client.get_last_query_time()}")
 
-            count -= batch_size
+                count -= batch_size
 
-            if self.verbose:
-                pb.update(abs((count - total) / total))
+                if self.verbose:
+                    pb.update(batch_size)
+        finally:
+            pb.close()
 
         return True
 
