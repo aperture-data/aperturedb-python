@@ -1,6 +1,8 @@
 
 from aperturedb import ParallelQuery
 from aperturedb.Connector import Connector
+from aperturedb.Utils import Utils
+from aperturedb.Subscriptable import Subscriptable
 
 import numpy as np
 import logging
@@ -18,11 +20,11 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
     def __init__(self, client: Connector, dry_run: bool = False):
         super().__init__(client, dry_run=dry_run)
+        self.utils = Utils(self.client)
         self.type = "element"
 
     def get_existing_indices(self):
-        schema_result, _ = self.client.query([{"GetSchema": {}}])
-        schema = schema_result[0]["GetSchema"]
+        schema = self.utils.get_schema()
         existing_indices = {}
         if schema:
             for index_type in (("entity", "entities"), ("connection", "connections")):
@@ -36,49 +38,56 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                                 cls_name, set()).add(prop_name)
         return existing_indices
 
-    def create_indices(self, indices) -> None:
-        if len(indices) == 0:
-            return
+    def query_setup(self, generator: Subscriptable) -> None:
+        """
+        Runs the setup for the loader, which includes creating indices
+        Currently, it only creates indices for the properties that are
+        also used for constraint.
 
-        existing_indices = self.get_existing_indices()
-        new_indices = []
-        for tp, classes in indices.items():
-            ex_classes = existing_indices.get(tp, {})
-            for cls, props in classes.items():
-                ex_props = ex_classes.get(cls, set())
-                for prop in props - ex_props:
-                    new_indices.append({
-                        "index_type": tp,
-                        "class": cls,
-                        "property_key": prop
-                    })
+        Will only run when the argument generator has a get_indices method that returns
+        a dictionary of the form:
 
-        if len(new_indices) == 0:
-            return
+        ``` python
+        {
+            "entity": {
+                "class_name": ["property_name"]
+            },
+        }
 
-        logger.info(
-            f"Creating {len(new_indices)} indices: {new_indices}.")
+        or
 
-        create_indices = [{"CreateIndex": idx} for idx in new_indices]
+        {
+            "connection": {
+                "class_name": ["property_name"]
+            },
+        }
+        ```
 
-        res, _ = self.client.query(
-            create_indices)
-
-        if self.client.check_status(res) != 0:
-            logger.warning(
-                "Failed to create indices; ingestion will be slow.")
-            logger.warning(res)
-
-    def query_setup(self, generator) -> None:
+        Args:
+            generator (Subscriptable): The Subscriptable object that is being ingested
+        """
         if hasattr(generator, "get_indices"):
-            self.create_indices(generator.get_indices())
+            schema = self.utils.get_schema()
 
-    def ingest(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
+            indices_needed = generator.get_indices()
+            for schema_type, schema_type_plural in [("entity", "entities"), ("connection", "connections")]:
+                for entity_class in indices_needed.get(schema_type, {}):
+                    for property_name in indices_needed[schema_type][entity_class]:
+                        schema_type = schema.get(schema_type_plural, {}) or {}
+                        if property_name not in schema_type.get('classes', {}).get(entity_class, {}).get('properties', {}):
+                            if not self.utils.create_entity_index(entity_class, property_name):
+                                logger.warning(
+                                    f"Failed to create index for {entity_class}.{property_name}")
+                        else:
+                            logger.info(
+                                f"Index for {entity_class}.{property_name} already exists")
+
+    def ingest(self, generator: Subscriptable, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
         """
         **Method to ingest data into the database**
 
         Args:
-            generator (_type_): The list of data, or a class derived from [Subscriptable](/python_sdk/helpers/Subscriptable) to be ingested.
+            generator (Subscriptable): The list of data, or a class derived from [Subscriptable](/python_sdk/helpers/Subscriptable) to be ingested.
             batchsize (int, optional): The size of batch to be used. Defaults to 1.
             numthreads (int, optional): Number of workers to create. Defaults to 4.
             stats (bool, optional): If stats need to be presented, realtime. Defaults to False.

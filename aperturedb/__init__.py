@@ -6,10 +6,17 @@ import json
 import requests
 from string import Template
 import platform
+import faulthandler
+import signal
+
+# https://docs.python.org/3/library/faulthandler.html
+# Register SIGUSR1 to dump the stack trace
+# Good for debugging a running process
+faulthandler.register(signal.SIGUSR1.value)
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.4.40"
+__version__ = "0.4.41"
 
 # set log level
 formatter = logging.Formatter(
@@ -36,7 +43,8 @@ if "ADB_LOG_FILE" in os.environ:
 if error_file_name is not None:
     error_file_tmpl = Template(error_file_name)
     template_items = {
-        "now": str(datetime.datetime.now().isoformat()),
+        # python isodate has ':', not valid in files in windows.
+        "now": str(datetime.datetime.now().isoformat()).replace(':', ''),
         "node": str(platform.node())
     }
     error_file_handler = logging.FileHandler(error_file_tmpl.safe_substitute(

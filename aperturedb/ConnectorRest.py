@@ -70,6 +70,8 @@ class ConnectorRest(Connector):
             shared_data=shared_data,
             config=config)
 
+        # A Convenience feature to not require the port
+        # Relies on common ports for http and https, but can be overriden
         if port is None:
             self.port = 443 if use_ssl else 80
         else:
@@ -85,7 +87,7 @@ class ConnectorRest(Connector):
         self.last_query_time = 0
 
         self.url = ('https' if self.use_ssl else 'http') + \
-            '://' + host + ':' + str(port) + '/api/'
+            '://' + host + ':' + str(self.port) + '/api/'
 
         self.token = token
 
