@@ -47,7 +47,7 @@ class Parallelizer:
 
         return self.times_arr
 
-    def trun(self, generator, batchsize: int, numthreads: int, stats: bool):
+    def batched_run(self, generator, batchsize: int, numthreads: int, stats: bool):
         run_event = threading.Event()
         run_event.set()
         self._reset(batchsize, numthreads)

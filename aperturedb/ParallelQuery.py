@@ -310,7 +310,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             logger.info(
                 f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}"
             )
-            self.trun(generator, batchsize, numthreads, stats)
+            self.batched_run(generator, batchsize, numthreads, stats)
 
     def print_stats(self) -> None:
 
