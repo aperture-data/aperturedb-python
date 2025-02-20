@@ -69,10 +69,6 @@ jobs:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
-        apt-get update
-        apt-get install -y python3.10-venv
-        pip3 install build
-        pip3 install twine
         bash publish.sh
 
     - name: Tag release version
