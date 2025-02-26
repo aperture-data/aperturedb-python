@@ -153,8 +153,10 @@ build_notebook_image(){
     mkdir -p docker/notebook/aperturedata
     cp -r aperturedb pyproject.toml LICENSE README.md docker/notebook/aperturedata
     LATEST_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
+    CPU_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook:cpu
     echo "Building image ${NOTEBOOK_IMAGE}"
     docker build -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
+    docker build -t ${CPU_IMAGE} -f docker/notebook/Dockerfile.cpu .
     if [ "${NO_PUSH}" != "true" ]
     then
         docker push --all-tags ${DOCKER_REPOSITORY}/aperturedb-notebook
