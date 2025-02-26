@@ -7,10 +7,10 @@ def main(params):
 
     downloader = ImageDownloader.ImageDownloader(
         check_if_present=True, n_download_retries=2)
-    downloader.run(ImageDownloader.ImageDownloaderCSV(params.in_file),
-                   numthreads=32,
-                   batchsize=1,
-                   stats=True)
+    downloader.batched_run(ImageDownloader.ImageDownloaderCSV(params.in_file),
+                           numthreads=32,
+                           batchsize=1,
+                           stats=True)
     return downloader.error_counter == 0
 
 

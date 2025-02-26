@@ -144,7 +144,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
 
         self.times_arr.append(time.time() - start)
 
-    def worker(self, thid, generator, start, end):
+    def worker(self, thid, generator, start, end, run_event):
 
         for i in range(start, end):
 
@@ -152,8 +152,8 @@ class ImageDownloader(Parallelizer.Parallelizer):
 
             self.download_image(url, filename)
 
-            if thid == 0 and self.stats:
-                self.pb.update((i - start) / (end - start))
+            if self.stats:
+                self.pb.update(1)
 
     def print_stats(self):
 
