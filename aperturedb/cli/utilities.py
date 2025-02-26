@@ -36,7 +36,7 @@ def execute(command: CommandTypes,
 
     utils = Utils(create_connector())
     available_commands = {
-        CommandTypes.STATUS: lambda: print(utils),
+        CommandTypes.STATUS: lambda: print(utils.status()),
         CommandTypes.SUMMARY: utils.summary,
         CommandTypes.REMOVE_ALL: lambda: confirm(
             CommandTypes.REMOVE_ALL, force) and utils.remove_all_objects(),
