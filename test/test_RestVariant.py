@@ -8,13 +8,17 @@ import json
 import time
 import logging
 from types import SimpleNamespace
+import pytest
 
-from aperturedb import ConnectorRest
+from aperturedb.ConnectorRest import ConnectorRest
+import dbinfo
 
 logger = logging.getLogger(__name__)
 
 
 class ConnectorRestVariant(ConnectorRest):
+    __test__ = False  # Do not run use this class as part of the test suite
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Test to see if it still works if we drop the terminal slash from the URL
@@ -79,3 +83,22 @@ class ConnectorRestVariant(ConnectorRest):
             raise Exception(
                 f"Could not query ApertureDB {self.config} using REST.")
         return (self.last_response, response_blob_array)
+
+
+class TestRestVariant:
+    @pytest.mark.http
+    def test_rest_variant(self):
+        connector = ConnectorRestVariant(
+            dbinfo.DB_URL,
+            dbinfo.DB_USER,
+            dbinfo.DB_PASSWORD,
+            dbinfo.DB_NAME)
+        connector.connect()
+        query = [
+            {"GetStatus": {}}
+        ]
+        response, blobs = connector.query(query)
+        assert response["status"] == "success"
+        assert response["message"] == "Node created successfully"
+        assert len(blobs) == 0
+        connector.close()
