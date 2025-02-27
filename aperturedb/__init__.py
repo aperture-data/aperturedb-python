@@ -16,7 +16,7 @@ faulthandler.register(signal.SIGUSR1.value)
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.4.42"
+__version__ = "0.4.43"
 
 # set log level
 formatter = logging.Formatter(
