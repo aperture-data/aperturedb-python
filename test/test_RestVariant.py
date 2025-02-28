@@ -10,6 +10,9 @@ import logging
 from types import SimpleNamespace
 import pytest
 
+import cv2
+import numpy as np
+
 from aperturedb.ConnectorRest import ConnectorRest
 import dbinfo
 
@@ -86,6 +89,13 @@ class ConnectorRestVariant(ConnectorRest):
 
 
 class TestRestVariant:
+    @staticmethod
+    def random_image(size: Tuple[int, int] = (100, 100)) -> bytes:
+        imarray = np.random.randint(
+            low=0, high=255, size=(*size, 3), dtype=np.uint8)
+        jpeg = cv2.imencode('.jpg', imarray)[1].tobytes()
+        return jpeg
+
     @pytest.mark.http
     def test_rest_variant(self):
         connector = ConnectorRestVariant(
@@ -95,10 +105,13 @@ class TestRestVariant:
             dbinfo.DB_NAME)
         connector.connect()
         query = [
-            {"GetStatus": {}}
+            {"AdddImage": {}},
+            {"AdddImage": {}},
+            {"AdddImage": {}}
         ]
-        response, blobs = connector.query(query)
+        blobs = [self.random_image() for _ in range(3)]
+        response, blobs_out = connector.query(query, blobs)
         assert response["status"] == "success"
         assert response["message"] == "Node created successfully"
-        assert len(blobs) == 0
+        assert len(blobs_out) == 0
         connector.close()
