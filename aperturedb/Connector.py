@@ -129,7 +129,7 @@ class Connector(object):
         self.query_connection_error_suppression_delta = timedelta(seconds=30)
 
         if encoded is not None:
-            config = Configuration.reinflate( encoded )
+            config = Configuration.reinflate(encoded)
 
         if config is None:
             self.host = host

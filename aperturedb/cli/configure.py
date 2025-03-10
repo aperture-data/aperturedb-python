@@ -124,7 +124,8 @@ def create(
             help="Interactive mode")] = True,
         overwrite: Annotated[bool, typer.Option(
             help="overwrite existing configuration")] = False,
-        from_json: Annotated[bool, typer.Option(help="create config from a JSON string")] = False,
+        from_json: Annotated[bool, typer.Option(
+            help="create config from a JSON string")] = False,
         from_encoded: Annotated[bool, typer.Option(help="create config from an encoded string")] = False):
     """
     Create a new configuration for the client.
@@ -176,7 +177,7 @@ def create(
     elif from_encoded:
         assert interactive, "Interactive mode must be enabled for --from-encoded"
         encoded_str = typer.prompt("Enter encoded string", hide_input=True)
-        gen_config = Configuration.reinflate( encoded_str )
+        gen_config = Configuration.reinflate(encoded_str)
         name = gen_config.name
 
     else:
@@ -248,9 +249,10 @@ def activate(
     with open(config_path.as_posix(), "w") as config_file:
         config_file.write(json.dumps(configs, indent=2, cls=ObjEncoder))
 
+
 @app.command()
 def tokenize(name: Annotated[str, typer.Argument(
-                        help="Name of the configuration to tokenize")],
+        help="Name of the configuration to tokenize")],
         as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
     """
     Makes a token from the configuration
@@ -274,7 +276,5 @@ def tokenize(name: Annotated[str, typer.Argument(
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
 
-    print( "{} Encoded: {}"
-            .format( to_tokenize.name,  to_tokenize.deflate())) 
-
-
+    print("{} Encoded: {}"
+          .format(to_tokenize.name,  to_tokenize.deflate()))

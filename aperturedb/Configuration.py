@@ -4,7 +4,8 @@ import json
 from base64 import b64encode, b64decode
 
 APERTURE_CLOUD = ".cloud.aperturedata.io"
-AD_CLOUD_SCHEME= "adbc://"
+AD_CLOUD_SCHEME = "adbc://"
+
 
 @dataclass(repr=False)
 class Configuration:
@@ -31,32 +32,31 @@ class Configuration:
     def deflate(self) -> list:
         deflate_version = 1
         host = self.host
-        if host.endswith(APERTURE_CLOUD): 
-            host = "adbc://{}".format(host[:-1*len(APERTURE_CLOUD)])
-        as_list = [deflate_version,host,self.port,self.username,self.password,self.name,int(self.use_ssl),
-                int(self.use_rest),int(self.use_keepalive),
-                self.retry_interval_seconds, self.retry_max_attempts]
-        simplified = json.dumps( as_list )
+        if host.endswith(APERTURE_CLOUD):
+            host = "adbc://{}".format(host[:-1 * len(APERTURE_CLOUD)])
+        as_list = [deflate_version, host, self.port, self.username, self.password, self.name, int(self.use_ssl),
+                   int(self.use_rest), int(self.use_keepalive),
+                   self.retry_interval_seconds, self.retry_max_attempts]
+        simplified = json.dumps(as_list)
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded
 
     @classmethod
-    def reinflate(cls, encoded_str:list) -> object:
+    def reinflate(cls, encoded_str: list) -> object:
         decoded = b64decode(encoded_str.encode('utf-8'))
-        as_list = json.loads( decoded.decode('utf-8')) 
+        as_list = json.loads(decoded.decode('utf-8'))
         if as_list[0] != 1:
-            raise ValueError(f"version identifier of configuration was"\
-                    "{as_list[0]}, which is not supported")
-        host, port, username, password, name, use_ssl,\
-                use_rest,use_keepalive, retry_interval_seconds,\
-                retry_max_attempts = as_list[1:]
+            raise ValueError(f"version identifier of configuration was"
+                             "{as_list[0]}, which is not supported")
+        host, port, username, password, name, use_ssl, \
+            use_rest, use_keepalive, retry_interval_seconds, \
+            retry_max_attempts = as_list[1:]
         if host.startswith(AD_CLOUD_SCHEME):
             host = host[len(AD_CLOUD_SCHEME):] + APERTURE_CLOUD
         use_ssl = bool(use_ssl)
         use_rest = bool(use_rest)
         use_keepaliave = bool(use_keepalive)
         c = Configuration(
-                host,port,username,password,name,use_ssl,use_rest,use_keepalive,
-                retry_interval_seconds,retry_max_attempts)
+            host, port, username, password, name, use_ssl, use_rest, use_keepalive,
+            retry_interval_seconds, retry_max_attempts)
         return c
-
