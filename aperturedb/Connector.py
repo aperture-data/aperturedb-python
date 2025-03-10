@@ -103,6 +103,7 @@ class Connector(object):
             and it means that disconnections are detected sooner.
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
+        str (encoded): Configuration as a deflated compressed string
     """
 
     def __init__(self, host="localhost", port=55555,
@@ -113,7 +114,8 @@ class Connector(object):
                  use_keepalive=True,
                  retry_interval_seconds=1,
                  retry_max_attempts=3,
-                 config: Optional[Configuration] = None):
+                 config: Optional[Configuration] = None,
+                 encoded: Optional[str] = None):
         """
         Constructor for the Connector class.
         """
@@ -125,6 +127,9 @@ class Connector(object):
         # suppress connection warnings which occur more than this time
         # after the last query
         self.query_connection_error_suppression_delta = timedelta(seconds=30)
+
+        if encoded is not None:
+            config = Configuration.reinflate( encoded )
 
         if config is None:
             self.host = host
