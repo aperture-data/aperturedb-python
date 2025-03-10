@@ -177,9 +177,7 @@ def create(
         assert interactive, "Interactive mode must be enabled for --from-encoded"
         encoded_str = typer.prompt("Enter encoded string", hide_input=True)
         gen_config = Configuration.reinflate( encoded_str )
-        print(gen_config)
         name = gen_config.name
-        return
 
     else:
         if interactive:
