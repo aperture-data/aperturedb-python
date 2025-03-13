@@ -7,6 +7,10 @@ from aperturedb.cli.console import console
 
 app = typer.Typer()
 
+import aperturedb.cli.tokens as tokens
+app.add_typer(tokens.app, name="tokens",
+              help="Manage database access tokens")
+
 
 class CommandTypes(str, Enum):
     STATUS = "status"
@@ -25,9 +29,9 @@ def confirm(command: CommandTypes, force: bool):
         typer.echo("Aborting...")
         raise typer.Abort()
     return True
+    
 
-
-@app.command()
+@app.command(help="Execute a command on the database")
 def execute(command: CommandTypes,
             force: Annotated[bool, typer.Option(help="Do not confirm")] = False):
 

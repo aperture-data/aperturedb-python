@@ -277,3 +277,11 @@ def tokenize(name: Annotated[str, typer.Argument(
 
     print("{} Encoded: {}"
           .format(to_tokenize.name,  to_tokenize.deflate()))
+
+@app.command()
+def tt(name: Annotated[str, typer.Argument(help="x_to_tok")],
+        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
+    global_config_path = _config_file_path(True)
+    gc, ga = get_configurations(global_config_path)
+
+    Configuration.test(gc[ga],name)
