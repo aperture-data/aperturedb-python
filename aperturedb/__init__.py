@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Register SIGUSR1 to dump the stack trace
 # Good for debugging a running process
 
-if os.getenv("ADB_DEBUGGABLE", None) != None: 
+if os.getenv("ADB_DEBUGGABLE", None) != None:
     if sys.platform == "win32":
         logger.warn("Unable to configure debugging support for win32")
     else:
