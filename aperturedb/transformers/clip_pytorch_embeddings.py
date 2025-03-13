@@ -25,7 +25,7 @@ class CLIPPyTorchEmbeddings(Transformer):
             sample = generate_embedding(self.data[0][1][0])
             utils = self.get_utils()
             utils.add_descriptorset(
-                self.search_set_name, dim=len(sample) // 4, metic=["CS"])
+                self.search_set_name, dim=len(sample) // 4, metric=["CS"])
 
     def getitem(self, subscript):
         x = self.data[subscript]
