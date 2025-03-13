@@ -8,15 +8,21 @@ from string import Template
 import platform
 import faulthandler
 import signal
+import sys
+
+__version__ = "0.4.43"
+
+logger = logging.getLogger(__name__)
 
 # https://docs.python.org/3/library/faulthandler.html
 # Register SIGUSR1 to dump the stack trace
 # Good for debugging a running process
-faulthandler.register(signal.SIGUSR1.value)
 
-logger = logging.getLogger(__name__)
-
-__version__ = "0.4.43"
+if os.getenv("ADB_DEBUGGABLE", None) != None: 
+    if sys.platform == "win32":
+        logger.warn("Unable to configure debugging support for win32")
+    else:
+        faulthandler.register(signal.SIGUSR1.value)
 
 # set log level
 formatter = logging.Formatter(
