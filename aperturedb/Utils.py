@@ -473,7 +473,8 @@ class Utils(object):
 
         return total_connections
 
-    def add_descriptorset(self, name: str, dim: int, metric="L2", engine="FaissFlat",
+    def add_descriptorset(self, name: str, dim: int, metric=["CS"],
+                          engine=["HNSW"],
                           properties: Optional[Dict] = None) -> bool:
         """
         Add a descriptor set to the database.
