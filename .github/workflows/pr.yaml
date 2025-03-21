@@ -35,5 +35,11 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-      run: RUN_TESTS=true NO_PUSH=true BRANCH_NAME=${{ github.event.pull_request.head.ref }} TARGET_BRANCH_NAME=${{ github.event.pull_request.base.ref }} ./ci.sh
+        RUN_TESTS: true
+        NO_PUSH: true
+        BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        TARGET_BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
+        APERTUREDB_IMAGE: aperturedata/aperturedb:vci_develop
+        BUILD_DEPENDENCIES: false
+      run: ./ci.sh
       shell: bash
