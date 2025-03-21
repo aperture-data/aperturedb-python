@@ -71,6 +71,7 @@ configs:
       server {
         listen 80;
         listen 443 ssl;
+        client_max_body_size 256m;
         ssl_certificate /etc/nginx/certificate/tls.crt;
         ssl_certificate_key /etc/nginx/certificate/tls.key;
         location / {

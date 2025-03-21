@@ -40,6 +40,5 @@ jobs:
         BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         TARGET_BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
         APERTUREDB_IMAGE: aperturedata/aperturedb:vci_develop
-        BUILD_DEPENDENCIES: false
       run: ./ci.sh
       shell: bash
