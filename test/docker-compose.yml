@@ -49,7 +49,6 @@ services:
     image: aperturedata/aperturedata-platform-web-private:1.20.2
     restart: always
 
-
   nginx:
     depends_on:
       ca:
