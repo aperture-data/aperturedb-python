@@ -39,6 +39,9 @@ jobs:
         NO_PUSH: true
         BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         TARGET_BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
-        APERTUREDB_IMAGE: aperturedata/aperturedb:vci_develop
+        ADB_REPO: aperturedata/aperturedb
+        ADB_TAG: vci_develop
+        LENS_REPO: aperturedata/lens
+        LENS_TAG: vci_develop
       run: ./ci.sh
       shell: bash

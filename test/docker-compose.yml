@@ -12,9 +12,9 @@ services:
         condition: service_completed_successfully
       aperturedb:
         condition: service_started
-    image: aperturedata/lenz:v0.18.9
+    image: $LENZ_REPO:$LENZ_TAG
     ports:
-      - 55557:55551
+      - 55556:55551
     restart: always
     environment:
       LNZ_HEALTH_PORT: 58085
@@ -30,12 +30,10 @@ services:
       - ./aperturedb/certificate:/etc/lenz/certificate
 
   aperturedb:
-    image: $APERTUREDB_IMAGE
+    image: $ADB_REPO:$ADB_TAG
     volumes:
       - ./aperturedb/db:/aperturedb/db
       - ./aperturedb/logs:/aperturedb/logs
-    ports:
-      - 55556:55553
     restart: always
     environment:
       ADB_KVGD_DB_SIZE: "204800"
