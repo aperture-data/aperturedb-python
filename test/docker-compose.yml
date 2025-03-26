@@ -78,3 +78,7 @@ configs:
           proxy_pass http://lenz:8080;
         }
       }
+
+networks:
+  default:
+    name: test_network_$RUNNER_NAME
