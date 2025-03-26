@@ -31,7 +31,34 @@ pip install -e .[dev]
 
 
 # Running tests
-The tests are inside the `test` dir.
+The tests are inside the `test` dir. Currently these get run in Linux container. Refer to `docker/tests` and `test/run_test_container` for details. Following explanation assumes that the current working directory is `test`.
+
+The tests bring up a set of components in an isolated network, namely:
+- aperturedb-community
+- lenz
+- nginx
+- ca (for initial provisioning of certificates)
+- webui
+
+
+To connect to this setup, the ports are exposed to the host as follows:
+- 55556 for TCP connection to aperturedb (via lenz).
+- 8087 for HTTP connection to aperturedb (via nginx).
+
+
+
+This can be done manually as:
+```bash
+docker compose up -d
+```
+
+## Changes to run the tests in development environment.
+Edit the file `test/dbinfo.py` to loook like the following.
+- DB_TCP_HOST = `localhost`
+- DB_REST_HOST = `localhost`
+- DB_TCP_PORT  = `55556`
+- DB_REST_PORT = `8087`
+
 
 All the tests can be run with:
 
@@ -43,8 +70,22 @@ bash run_test.sh
 Running specific tests can be accomplished by invoking it with pytest as follows:
 
 ```bash
-cd test && docker compose up -d && PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_Session.py -v --log-cli-level=DEBUG
+PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_Session.py -v -s --log-cli-level=DEBUG
 ```
+
+**NOTE:The running environment is assumed to be Linux x86_64. There might be certain changes required for them to be run on MacOS or Windows python environments.**
+
+## Certain Environment variables that affect the runtime beaviour of the SDK.
+
+These can be used as debugging aids.
+
+| Variable | type | Comments | Default value |
+| --- | --- | --- | --- |
+|ADB_DEBUGGABLE | boolean | allows the application to register a fault handler that dumps a trace when SIGUSR1 is sent to the process | not set |
+|LOG_FILE_LEVEL |  <a href="https://docs.python.org/3/library/logging.html#logging-levels">log levels</a> | The threshold for emitting log messages into the error<timestamp>.log file | WARN |
+|LOG_CONSOLE_LEVEL | <a href="https://docs.python.org/3/library/logging.html#logging-levels">log levels</a> | The threshold for emitting log messages into stdout | ERROR |
+|ADB_LOG_FILE | string | custom file path for the LOG file | not set|
+
 
 # Reporting bugs
 Any error in the functionality / documentation / tests maybe reported by creating a
