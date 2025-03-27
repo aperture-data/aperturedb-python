@@ -3,13 +3,13 @@
 set -u
 set -e
 
-docker compose down --remove-orphans
+docker compose -f docker-compose.ci.yml down --remove-orphans
 # ensure latest db
-docker compose pull aperturedb
+docker compose pull
 rm -rf aperturedb/db
 rm -rf output
 mkdir -m 777 output
-docker compose up -d
+docker compose -f docker-compose.ci.yml up -d
 
 LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
