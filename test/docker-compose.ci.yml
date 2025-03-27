@@ -15,8 +15,6 @@ services:
       aperturedb:
         condition: service_started
     image: $LENZ_REPO:$LENZ_TAG
-    ports:
-      - 55556:55551
     restart: always
     environment:
       LNZ_HEALTH_PORT: 58085
@@ -55,9 +53,6 @@ services:
         condition: service_completed_successfully
     image: nginx
     restart: always
-    ports:
-      - 8087:80
-      - 8443:443
     configs:
       - source: nginx.conf
         target: /etc/nginx/conf.d/default.conf

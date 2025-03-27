@@ -18,7 +18,7 @@ or an installation with only the core part of the SDK
 pip install aperturedb
 ```
 
-A complete [reference](https://docs.aperturedata.io/category/aperturedb-python-sdk) of this SDK is available on the offical [ApertureDB Documentation](https://docs.aperturedata.io)
+A complete [reference](https://docs.aperturedata.io/category/aperturedb-python-sdk) of this SDK is available on the official [ApertureDB Documentation](https://docs.aperturedata.io)
 
 
 # Development setup
