@@ -22,7 +22,7 @@ fi
 echo "running tests on docker image $REPOSITORY"
 
 docker run \
-    --network test_network_${RUNNER_NAME} \
+    --network ${RUNNER_NAME}_default \
     -v $(pwd)/output:/aperturedata/test/output \
     -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
     -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
