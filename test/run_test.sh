@@ -26,8 +26,10 @@ echo $GCP_SERVICE_ACCOUNT_KEY > $CREDENTIALS_FILE
 export GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE
 # capture errors
 set +e
-PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_*.py -v
+PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_*.py -v | tee output/test.log
 RESULT=$?
+mkdir -p ${APERTUREDB_LOG_PATH}../client
+cp error*.log -v ${APERTUREDB_LOG_PATH}../client
 
 if [[ $RESULT != 0 ]]; then
 	echo "Test failed; outputting db log:"
