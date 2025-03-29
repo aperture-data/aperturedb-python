@@ -6,6 +6,7 @@ set -e
 #Ensure clean environment (as much as possible)
 docker compose -f docker-compose.yml down --remove-orphans
 docker network rm ${RUNNER_NAME}_default || true
+
 # ensure latest db
 docker compose pull
 
@@ -40,9 +41,4 @@ docker run \
     -e GATEWAY=${GATEWAY} \
     $REPOSITORY
 
-echo "Tests completed"
-echo "aperturedb log:"
-docker compose logs aperturedb
-echo "===================="
-echo "webui test log:"
-docker compose logs webui
+echo "Tests completed successfully"
