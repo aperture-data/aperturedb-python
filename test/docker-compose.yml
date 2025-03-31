@@ -80,8 +80,3 @@ configs:
           proxy_pass http://lenz:8080;
         }
       }
-
-networks:
-  default:
-    name: "${RUNNER_NAME}_default"
-    external: true

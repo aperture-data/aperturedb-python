@@ -5,7 +5,7 @@ set -e
 
 #Ensure clean environment (as much as possible)
 docker compose -f docker-compose.yml down --remove-orphans
-docker network rm ${RUNNER_NAME}_default || true
+docker network rm ${RUNNER_NAME}_host_default || true
 
 # ensure latest db
 docker compose pull
@@ -13,8 +13,8 @@ docker compose pull
 rm -rf output
 mkdir -m 777 output
 
-docker network create ${RUNNER_NAME}_default
-GATEWAY=$(docker network inspect ${RUNNER_NAME}_default | jq -r .[0].IPAM.Config[0].Gateway)
+docker network create ${RUNNER_NAME}_host_default
+GATEWAY=$(docker network inspect ${RUNNER_NAME}_host_default | jq -r .[0].IPAM.Config[0].Gateway)
 echo "Gateway: $GATEWAY"
 export GATEWAY
 docker compose -f docker-compose.yml up -d
