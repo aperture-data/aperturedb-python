@@ -27,9 +27,9 @@ export GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE
 # capture errors
 set +e
 CLIENT_PATH=${APERTUREDB_LOG_PATH}/../client
+mkdir -p ${CLIENT_PATH}
 PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_*.py -v | tee ${CLIENT_PATH}/test.log
 RESULT=$?
-mkdir -p ${CLIENT_PATH}
 cp error*.log -v ${CLIENT_PATH}
 
 if [[ $RESULT != 0 ]]; then
