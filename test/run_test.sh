@@ -40,7 +40,7 @@ if [[ $RESULT != 0 ]]; then
 		NOW=$(date -Iseconds)
 		ARCHIVE_NAME=logs.tar.gz
 
-		tar czf ${ARCHIVE_NAME} ${APERTUREDB_LOG_PATH}
+		tar czf ${ARCHIVE_NAME} ${APERTUREDB_LOG_PATH}/..
 		aws s3 cp ${ARCHIVE_NAME} s3://${BUCKET}/aperturedb-${NOW}.tgz
 		echo "Log output to s3://${BUCKET}/aperturedb-${NOW}.tgz"
 	else
