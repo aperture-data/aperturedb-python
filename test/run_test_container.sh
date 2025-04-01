@@ -3,13 +3,21 @@
 set -u
 set -e
 
-docker compose down --remove-orphans
+#Ensure clean environment (as much as possible)
+docker compose -f docker-compose.yml down --remove-orphans
+docker network rm ${RUNNER_NAME}_host_default || true
+
 # ensure latest db
-docker compose pull aperturedb
-rm -rf aperturedb/db
+docker compose pull
+
 rm -rf output
 mkdir -m 777 output
-docker compose up -d
+
+docker network create ${RUNNER_NAME}_host_default
+GATEWAY=$(docker network inspect ${RUNNER_NAME}_host_default | jq -r .[0].IPAM.Config[0].Gateway)
+echo "Gateway: $GATEWAY"
+export GATEWAY
+docker compose -f docker-compose.yml up -d
 
 LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
@@ -22,7 +30,7 @@ fi
 echo "running tests on docker image $REPOSITORY"
 
 docker run \
-    --network test_default \
+    --network ${RUNNER_NAME}_default \
     -v $(pwd)/output:/aperturedata/test/output \
     -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
     -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
@@ -30,11 +38,7 @@ docker run \
     -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
     -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
     -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
+    -e GATEWAY=${GATEWAY} \
     $REPOSITORY
 
-echo "Tests completed"
-echo "aperturedb log:"
-docker compose logs aperturedb
-echo "===================="
-echo "webui test log:"
-docker compose logs webui
+echo "Tests completed successfully"

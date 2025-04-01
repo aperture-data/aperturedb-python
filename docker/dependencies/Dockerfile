@@ -8,7 +8,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        python3-venv
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 ENV VIRTUAL_ENV=/opt/venv
 ENV NODEJS_LTS=v20.12.2
 RUN python3 -m venv $VIRTUAL_ENV

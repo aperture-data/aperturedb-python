@@ -19,7 +19,7 @@ class SPARQL:
         """SPARQL compatability layer for ApertureDB
 
         Args:
-            client: ApertureDB client. If not suppliued, then `create_connector()` is used to create a new client.
+            client: ApertureDB client. If not supplied, then `create_connector()` is used to create a new client.
             debug: bool. If True, then certain intermediate results are stored in the object.
             log_level: int. The logging level to use for the ApertureDB client.
         """
@@ -540,14 +540,22 @@ class SPARQL:
         command_name = "Find" + type[1:]
         query = [
             {command_name: {
+                "results": {"list": ["_uniqueid"]},
                 "constraints": {
                     "_uniqueid": ["in", uniqueids],
                 },
                 "blobs": True,
             }},
         ]
-        _, blobs = self._client.query(query)
-        return blobs
+        res, blobs = self._client.query(query)
+        # Put blobs in a dictionary for faster lookup
+        entities = res[0][command_name].get("entities", [])
+        id_blobs = {e["_uniqueid"]: blobs[e["_blob_index"]] for e in entities}
+        # Put the results in the same order as the inputs
+        results = [id_blobs.get(uniqueid) for uniqueid in uniqueids]
+        if any(blob is None for blob in results):
+            self.logger.warning("Some blobs were not found")
+        return results
 
     def get_image(self, uri: Union[str, "URIRef"]) -> "np.ndarray":
         """
@@ -572,10 +580,13 @@ class SPARQL:
         blobs = self.get_blobs(uris, type="_Image")
         images = []
         for blob in blobs:
-            nparr = np.fromstring(blob, np.uint8)
-            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            images.append(image)
+            if blob is not None:
+                nparr = np.fromstring(blob, np.uint8)
+                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                images.append(image)
+            else:
+                images.append(None)
         return images
 
     def show_images(self, uris: List[Union[str, "URIRef"]]):
@@ -591,7 +602,8 @@ class SPARQL:
         rows = math.ceil(len(images) / columns)
         for i, image in enumerate(images):
             plt.subplot(rows, columns, i + 1)
-            plt.imshow(image)
+            if image is not None:
+                plt.imshow(image)
             plt.axis("off")
         plt.show()
 
