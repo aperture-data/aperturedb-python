@@ -200,7 +200,8 @@ def create_connector(
 
     if key is not None:
         if name is not None:
-            raise ValueError("Specify only name or key when creating a connector")
+            raise ValueError(
+                "Specify only name or key when creating a connector")
         logger.info(f"Using configuration from key parameter")
         config = Configuration.reinflate(key)
     elif name is not None:

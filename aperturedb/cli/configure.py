@@ -11,7 +11,6 @@ from aperturedb.Configuration import Configuration
 from aperturedb.CommonLibrary import _create_configuration_from_json
 
 
-
 class ObjEncoder(json.JSONEncoder):
     """
     A bit of boiler plate to allow us to serialize our Configuration object.
