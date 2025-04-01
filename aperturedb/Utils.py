@@ -905,8 +905,8 @@ class Utils(object):
         self.execute(q)
 
 
-def create_connector():
+def create_connector(name=None, key=None):
     from aperturedb.CommonLibrary import create_connector, issue_deprecation_warning
     issue_deprecation_warning("Utils.create_connector",
                               "CommonLibrary.create_connector")
-    return create_connector()
+    return create_connector(name=name, key=key)

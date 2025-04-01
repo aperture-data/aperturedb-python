@@ -129,9 +129,8 @@ class Connector(object):
         self.query_connection_error_suppression_delta = timedelta(seconds=30)
 
         if key is not None:
-            config = Configuration.reinflate(key)
-
-        if config is None:
+            self.config = Configuration.reinflate(key)
+        elif config is None:
             self.host = host
             self.port = port
             self.use_ssl = use_ssl

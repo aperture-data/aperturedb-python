@@ -153,13 +153,14 @@ def _store_config(config: Configuration, name: str):
 
 def create_connector(
     name: Optional[str] = None,
+    key: Optional[str] = None,
     create_config_for_colab_secret=True,
 ) -> Connector:
     """
     **Create a connector to the database.**
 
     This function chooses a configuration in the folowing order:
-    1. The configuration named by the `name` parameter.
+    1. The configuration named by the `name` parameter or `key` parameter
     2. The configuration described in the `APERTUREDB_JSON` environment variable.
     3. The configuration described in the `APERTUREDB_JSON` Google Colab secret.
     4. The configuration described in the `APERTUREDB_JSON` secret in a `.env` file.
@@ -197,7 +198,12 @@ def create_connector(
             return configs["local"][name]
         assert False, f"Configuration '{name}' not found ({source})."
 
-    if name is not None:
+    if key is not None:
+        if name is not None:
+            raise ValueError("Specify only name or key when creating a connector")
+        logger.info(f"Using configuration from key parameter")
+        config = Configuration.reinflate(key)
+    elif name is not None:
         logger.info(f"Using configuration '{name}' explicitly")
         config = lookup_config_by_name(name, "explicit")
     elif (data := os.environ.get("APERTUREDB_JSON")) is not None and data != "":
