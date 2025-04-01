@@ -38,13 +38,13 @@ class Configuration:
                    int(self.use_rest), int(self.use_keepalive),
                    self.retry_interval_seconds, self.retry_max_attempts]
         simplified = json.dumps(as_list)
-        encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
-        return encoded
+        encoded_key = b64encode(simplified.encode('utf-8')).decode('utf-8')
+        return encoded_key
 
     @classmethod
-    def reinflate(cls, encoded_str: list) -> object:
-        decoded = b64decode(encoded_str.encode('utf-8'))
-        as_list = json.loads(decoded.decode('utf-8'))
+    def reinflate(cls, encoded_key: list) -> object:
+        decoded_key = b64decode(encoded_key.encode('utf-8'))
+        as_list = json.loads(decoded_key.decode('utf-8'))
         if as_list[0] != 1:
             raise ValueError(f"version identifier of configuration was"
                              "{as_list[0]}, which is not supported")
