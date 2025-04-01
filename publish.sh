@@ -2,10 +2,16 @@ set -e
 
 echo "Building aperturedb"
 rm -rf build/ dist/ vdms.egg-info/
-python3 -m build
 
+docker build --no-cache -t CI/twine -f docker/twine/Dockerfile .
 echo "Uploading aperturedb"
-twine upload --skip-existing --verbose dist/*
+
+docker rm -f publisher || true
+docker run --rm --name publisher \
+  -e "TWINE_USERNAME=${TWINE_USERNAME}" \
+  -e "TWINE_PASSWORD=${TWINE_PASSWORD}" \
+  -v ./:/publish \
+  CI/twine bash -c "cd /publish && python -m build && twine upload --skip-existing --verbose dist/*"
 
 RELEASE_IMAGE="aperturedata/aperturedb-python:latest"
 source version.sh && read_version

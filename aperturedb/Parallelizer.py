@@ -1,9 +1,9 @@
 import math
 import time
+import threading
+
 from threading import Thread
-
-
-from aperturedb import ProgressBar
+from tqdm import tqdm as tqdm
 
 
 class Parallelizer:
@@ -28,10 +28,7 @@ class Parallelizer:
     ```
     """
 
-    def __init__(self, progress_to_file=""):
-
-        self.pb_file = progress_to_file
-
+    def __init__(self):
         self._reset()
 
     def _reset(self, batchsize: int = 1, numthreads: int = 1):
@@ -46,17 +43,13 @@ class Parallelizer:
         self.error_counter = 0
         self.actual_stats = []
 
-        if self.pb_file:
-            self.pb = ProgressBar.ProgressBar(self.pb_file)
-        else:
-            self.pb = ProgressBar.ProgressBar()
-
     def get_times(self):
 
         return self.times_arr
 
-    def run(self, generator, batchsize: int, numthreads: int, stats: bool):
-
+    def batched_run(self, generator, batchsize: int, numthreads: int, stats: bool):
+        run_event = threading.Event()
+        run_event.set()
         self._reset(batchsize, numthreads)
         self.stats = stats
         self.generator = generator
@@ -65,7 +58,8 @@ class Parallelizer:
             self.total_actions = generator.sample_count
         else:
             self.total_actions = len(generator)
-
+        self.pb = tqdm(total=self.total_actions, desc="Progress",
+                       unit="batches", unit_scale=True, dynamic_ncols=True)
         start_time = time.time()
 
         if self.total_actions < batchsize:
@@ -82,15 +76,22 @@ class Parallelizer:
                           self.total_actions)
 
             thread_add = Thread(target=self.worker,
-                                args=(i, generator, idx_start, idx_end))
+                                args=(i, generator, idx_start, idx_end, run_event))
             thread_arr.append(thread_add)
 
         a = [th.start() for th in thread_arr]
-        a = [th.join() for th in thread_arr]
+        try:
+            while run_event.is_set() and any([th.is_alive() for th in thread_arr]):
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("Interrupted ... Shutting down workers")
+        finally:
+            run_event.clear()
+            a = [th.join() for th in thread_arr]
 
         # Update progress bar to completion
         if self.stats:
-            self.pb.update(1)
+            self.pb.close()
 
         self.total_actions_time = time.time() - start_time
 

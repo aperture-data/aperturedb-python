@@ -1,0 +1,35 @@
+# Pull base image.
+FROM aperturedata/aperturedb-notebook:dependencies
+
+RUN mkdir /aperturedata
+ADD docker/notebook/aperturedata /aperturedata
+
+COPY docker/notebook/scripts/start.sh /start.sh
+RUN  chmod 755 /start.sh
+
+# Add Tini. Tini operates as a process subreaper for jupyter.
+# This prevents kernel crashes.
+# ENV TINI_VERSION v0.6.0
+# ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
+# RUN chmod +x /usr/bin/tini
+# ENTRYPOINT ["/usr/bin/tini", "--"]
+RUN cd /aperturedata && pip install -e "."
+RUN echo "adb --install-completion" | bash
+
+# Install useful JupyterLab extensions
+RUN pip install jupyter-resource-usage
+
+# Suppress the annoying announcements popup
+RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements"
+
+# Install torch and torchvision cpu version
+RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+RUN pip install facenet-pytorch --no-deps
+
+# Install CLIP (for running transformers)
+RUN pip install git+https://github.com/openai/CLIP.git
+
+RUN apt update && apt install -y curl && apt clean
+
+EXPOSE 8888
+CMD ["/start.sh"]
