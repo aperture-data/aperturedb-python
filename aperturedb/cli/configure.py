@@ -125,11 +125,11 @@ def create(
             help="overwrite existing configuration")] = False,
         from_json: Annotated[bool, typer.Option(
             help="create config from a JSON string")] = False,
-        from_encoded: Annotated[bool, typer.Option(help="create config from an encoded string")] = False):
+        from_key: Annotated[bool, typer.Option(help="create config from an encoded string")] = False):
     """
     Create a new configuration for the client.
 
-    If --from-json is used, then the options --host, --port, --username, --password, --use-rest, and --use-ssl will be ignored.
+    If --from-json or --from-key is used, then the options --host, --port, --username, --password, --use-rest, and --use-ssl will be ignored.
     The user will be prompted to enter the JSON string.
     This will be treated as a password entry.
 
@@ -173,8 +173,8 @@ def create(
             json_str, name=name, name_required=True)
         check_for_overwrite(gen_config.name)
         name = gen_config.name
-    elif from_encoded:
-        assert interactive, "Interactive mode must be enabled for --from-encoded"
+    elif from_key:
+        assert interactive, "Interactive mode must be enabled for --from-key"
         encoded_str = typer.prompt("Enter encoded string", hide_input=True)
         gen_config = Configuration.reinflate(encoded_str)
         name = gen_config.name
