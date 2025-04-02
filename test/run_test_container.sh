@@ -13,7 +13,7 @@ function check_containers_networks(){
 function run_aperturedb_instance(){
     TAG=$1
     #Ensure clean environment (as much as possible)
-    docker compose -f docker-compose.yml down --remove-orphans
+    RUNNER_NAME=$TAG docker compose -f docker-compose.yml down --remove-orphans
     docker network rm ${TAG}_host_default || true
 
     # ensure latest db
@@ -71,7 +71,7 @@ docker run \
     -e FILTER="not http" \
     $REPOSITORY &
 
-pi2d=$!
+pid2=$!
 wait $pid1
 exit_code1=$?
 wait $pid2
