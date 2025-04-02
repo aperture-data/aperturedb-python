@@ -38,7 +38,7 @@ LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
 RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
-check_containers_networks() | tee "$RUNNER_INFO_PATH"/runner_state.log
+check_containers_networks | tee "$RUNNER_INFO_PATH"/runner_state.log
 
 REPOSITORY="aperturedata/aperturedb-python-tests"
 if ! [ -z ${1+x} ]
