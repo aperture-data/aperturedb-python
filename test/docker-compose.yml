@@ -34,7 +34,7 @@ services:
   aperturedb:
     image: $ADB_REPO:$ADB_TAG
     volumes:
-      - ./aperturedb/db:/aperturedb/db
+      - ./aperturedb/db_$RUNNER_NAME:/aperturedb/db
       - ./aperturedb/logs:/aperturedb/logs
     restart: always
     environment:

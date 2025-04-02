@@ -28,7 +28,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE
 set +e
 CLIENT_PATH=${APERTUREDB_LOG_PATH}/../client
 mkdir -p ${CLIENT_PATH}
-PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_*.py -v | tee ${CLIENT_PATH}/test.log
+PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest -m "$FILTER" test_*.py -v | tee ${CLIENT_PATH}/test.log
 RESULT=$?
 cp error*.log -v ${CLIENT_PATH}
 
@@ -39,10 +39,10 @@ if [[ $RESULT != 0 ]]; then
 		BUCKET=python-ci-runs
 		NOW=$(date -Iseconds)
 		ARCHIVE_NAME=logs.tar.gz
-
+		DESTINATION="s3://${BUCKET}/aperturedb-${NOW}-${FILTER}.tgz"
 		tar czf ${ARCHIVE_NAME} ${APERTUREDB_LOG_PATH}/..
-		aws s3 cp ${ARCHIVE_NAME} s3://${BUCKET}/aperturedb-${NOW}.tgz
-		echo "Log output to s3://${BUCKET}/aperturedb-${NOW}.tgz"
+		aws s3 cp ${ARCHIVE_NAME} $DESTINATION
+		echo "Log output to $DESTINATION"
 	else
 		echo "Unable to output log, APERTUREDB_LOG_PATH not set."
 	fi
