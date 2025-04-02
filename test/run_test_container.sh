@@ -33,16 +33,12 @@ IP_REGEX='[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
 GATEWAY_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_http" | grep $IP_REGEX )
 GATEWAY_NON_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_non_http" | grep $IP_REGEX )
 
+# The LOG_PATH and RUNNER_INFO_PATH are set to the current working directory
 LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
+RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
-RUNNER_INFO="$(pwd)/aperturedb/logs/runner_state"
-if [ -f "$RUNNER_INFO" ]; then
-    echo "Runner info dir exists, removing it"
-    rm -f "$RUNNER_INFO"
-fi
-mkdir -p "$RUNNER_INFO"
-check_containers_networks() | tee "$RUNNER_INFO"/runner_state.log
+check_containers_networks() | tee "$RUNNER_INFO_PATH"/runner_state.log
 
 REPOSITORY="aperturedata/aperturedb-python-tests"
 if ! [ -z ${1+x} ]

@@ -26,7 +26,7 @@ echo $GCP_SERVICE_ACCOUNT_KEY > $CREDENTIALS_FILE
 export GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE
 # capture errors
 set +e
-CLIENT_PATH=${APERTUREDB_LOG_PATH}/../client
+CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${FILTER}"
 mkdir -p ${CLIENT_PATH}
 PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest -m "$FILTER" test_*.py -v | tee ${CLIENT_PATH}/test.log
 RESULT=$?

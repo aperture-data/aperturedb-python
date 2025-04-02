@@ -99,7 +99,7 @@ echo "Repository: ${DOCKER_REPOSITORY}"
 build_tests(){
     TESTS_IMAGE=${DOCKER_REPOSITORY}/aperturedb-python-tests:latest
     mkdir -p docker/tests/aperturedata
-    sudo rm -rf test/aperturedb/{db*,logs}
+    sudo rm -rf test/aperturedb/{db*,logs} && sudo mkdir -m 777 -p test/aperturedb/logs/runner_state
     cp -r aperturedb pyproject.toml README.md docker/tests/aperturedata
     mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
