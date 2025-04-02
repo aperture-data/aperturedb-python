@@ -25,8 +25,6 @@ dependencies = [
     'matplotlib', 'pandas', 'kaggle!=1.6.15', 'google-cloud-storage',
     'ipython',  'ipywidgets', 'pydantic', 'devtools', 'typer',
     "opencv-python-headless",
-    # Pinning this to be able to install google-cloud-bigquery
-    'grpcio-status==1.48.2',
     # Pinning this to resolve test errors temporarily
     'ipywidgets==8.0.4',
     'keepalive-socket==0.0.1',
