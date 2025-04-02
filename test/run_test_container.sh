@@ -88,4 +88,4 @@ fi
 
 echo "Tests completed successfully"
 echo " --- Runner name: ${RUNNER_NAME} ---"
-check_containers_networks()
+check_containers_networks
