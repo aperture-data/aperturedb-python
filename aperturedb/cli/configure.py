@@ -86,6 +86,17 @@ def ls(log_to_console: bool = True):
             check_configured(as_global)
             console.log(f"Failed to decode json '{config_path.as_posix()}'")
 
+    for env_key,plain_json in [["APERTUREDB_JSON",True],["APERTUREDB_KEY",False]]:
+        if (data := os.environ.get(env_key)) is not None and data != "" :
+            if plain_json:
+                config = _create_configuration_from_json(data)
+            else:
+                config = Configuration.reinflate(data)
+            if not "environment" in all_configs:
+                all_configs["environment"] = {}
+            all_configs["environment"][env_key] = config
+            all_configs["active"] = f"env:{env_key}"
+
     if "global" in all_configs or "local" in all_configs:
         if "global" in all_configs and len(all_configs["global"]) == 0 \
                 and "local" in all_configs and len(all_configs["local"]) == 0:
