@@ -56,7 +56,11 @@ class CSVParser(Subscriptable):
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
             "blobs_relative_to_csv"]
-        self.use_dask = "use_dask" in kwargs and kwargs["use_dask"] and USE_DASK
+        self.use_dask = False
+        if "use_dask" in kwargs and kwargs["use_dask"]:
+            if not USE_DASK:
+               logger.warning("Requested to use dask for loading, but dask is not installed")
+            self.use_dask = USE_DASK
         df = kwargs["df"] if "df" in kwargs else None
 
         self.relative_path_prefix = os.path.dirname(self.filename) if self.blobs_relative_to_csv \
