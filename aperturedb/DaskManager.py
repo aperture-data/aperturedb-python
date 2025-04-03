@@ -3,15 +3,19 @@ import logging
 from threading import Lock
 import time
 from types import SimpleNamespace
-import dask
-from dask.distributed import Client, LocalCluster, progress
 from aperturedb.Connector import Connector
 
 import multiprocessing as mp
 
 from aperturedb.Stats import Stats
 
-dask.config.set({"dataframe.convert-string": False})
+WITH_DASK=True
+try:
+    import dask
+    from dask.distributed import Client, LocalCluster, progress
+except ImportError:
+    WITH_DASK=False
+    dask.config.set({"dataframe.convert-string": False})
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +27,15 @@ class DaskManager:
     """
 
     def __init__(self, num_workers: int = -1):
+        # if no dask, this is a stub class.
+        if not WITH_DASK:
+            return
         self.__num_workers = num_workers
         # The -1 magic number is to use as many 90% of the cores (1 worker per core).
         # This can be overridden by the user.
         # Create a pool of workers.
         # TODO: see if the same pool can be reused for multiple tasks.
+
         workers = self.__num_workers if self.__num_workers != \
             -1 else int(0.9 * mp.cpu_count())
 

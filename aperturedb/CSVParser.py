@@ -2,10 +2,15 @@ from typing import Set
 import pandas as pd
 import logging
 from aperturedb.Subscriptable import Subscriptable
-from dask import dataframe
 import os
 import multiprocessing as mp
 import re
+
+WITH_DASK=True
+try:
+    from dask import dataframe
+except ImportError:
+    WITH_DASK=False
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +56,7 @@ class CSVParser(Subscriptable):
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
             "blobs_relative_to_csv"]
-        self.use_dask = "use_dask" in kwargs and kwargs["use_dask"]
+        self.use_dask = "use_dask" in kwargs and kwargs["use_dask"] and USE_DASK
         df = kwargs["df"] if "df" in kwargs else None
 
         self.relative_path_prefix = os.path.dirname(self.filename) if self.blobs_relative_to_csv \
