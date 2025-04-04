@@ -1,6 +1,5 @@
 import json
 import os
-from json import JSONEncoder
 from pathlib import Path
 
 import typer
@@ -12,7 +11,7 @@ from aperturedb.Configuration import Configuration
 from aperturedb.CommonLibrary import _create_configuration_from_json
 
 
-class ObjEncoder(JSONEncoder):
+class ObjEncoder(json.JSONEncoder):
     """
     A bit of boiler plate to allow us to serialize our Configuration object.
     """
@@ -124,11 +123,13 @@ def create(
             help="Interactive mode")] = True,
         overwrite: Annotated[bool, typer.Option(
             help="overwrite existing configuration")] = False,
-        from_json: Annotated[bool, typer.Option(help="create config from a JSON string")] = False):
+        from_json: Annotated[bool, typer.Option(
+            help="create config from a JSON string")] = False,
+        from_key: Annotated[bool, typer.Option(help="create config from an encoded string")] = False):
     """
     Create a new configuration for the client.
 
-    If --from-json is used, then the options --host, --port, --username, --password, --use-rest, and --use-ssl will be ignored.
+    If --from-json or --from-key is used, then the options --host, --port, --username, --password, --use-rest, and --use-ssl will be ignored.
     The user will be prompted to enter the JSON string.
     This will be treated as a password entry.
 
@@ -172,6 +173,12 @@ def create(
             json_str, name=name, name_required=True)
         check_for_overwrite(gen_config.name)
         name = gen_config.name
+    elif from_key:
+        assert interactive, "Interactive mode must be enabled for --from-key"
+        encoded_str = typer.prompt("Enter encoded string", hide_input=True)
+        gen_config = Configuration.reinflate(encoded_str)
+        name = gen_config.name
+
     else:
         if interactive:
             if name is None:
@@ -240,3 +247,33 @@ def activate(
 
     with open(config_path.as_posix(), "w") as config_file:
         config_file.write(json.dumps(configs, indent=2, cls=ObjEncoder))
+
+
+@app.command()
+def tokenize(name: Annotated[str, typer.Argument(
+        help="Name of the configuration to tokenize")],
+        as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
+    """
+    Makes a token from the configuration
+    """
+    global_config_path = _config_file_path(True)
+    gc, ga = get_configurations(global_config_path)
+
+    config_path = _config_file_path(as_global)
+    configs = {}
+    to_tokenize = None
+    try:
+        configs, ac = get_configurations(config_path.as_posix())
+        if name not in configs and name not in gc:
+            console.log(f"Configuration {name} not found")
+            raise typer.Exit(code=2)
+        to_tokenize = configs[name]
+    except FileNotFoundError:
+        check_configured(as_global=False) or \
+            check_configured(as_global=True, show_error=True)
+    except json.JSONDecodeError:
+        check_configured(as_global=False) or \
+            check_configured(as_global=True, show_error=True)
+
+    print("{} Encoded: {}"
+          .format(to_tokenize.name,  to_tokenize.deflate()))
