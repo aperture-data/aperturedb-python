@@ -11,6 +11,7 @@ function check_containers_networks(){
 }
 
 function run_aperturedb_instance(){
+    set -e
     TAG=$1
     #Ensure clean environment (as much as possible)
     RUNNER_NAME=$TAG docker compose -f docker-compose.yml down --remove-orphans
