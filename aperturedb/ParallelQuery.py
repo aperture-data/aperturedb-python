@@ -241,7 +241,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.error_counter += 1
 
             if self.stats:
-                self.pb.update(self.batchsize)
+                self.pb.update(batch_end - batch_start)
         logger.info(f"Worker {thid} executed {total_batches} batches")
 
     def get_objects_existed(self) -> int:
