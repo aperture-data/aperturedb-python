@@ -41,8 +41,8 @@ jobs:
         BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         TARGET_BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
         ADB_REPO: aperturedata/aperturedb
-        ADB_TAG: vci_develop
+        ADB_TAG: dev
         LENZ_REPO: aperturedata/lenz
-        LENZ_TAG: vci_develop
+        LENZ_TAG: dev
       run: ./ci.sh
       shell: bash

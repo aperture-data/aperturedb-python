@@ -63,9 +63,9 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         RUNNER_NAME: ${{ runner.name }}
         ADB_REPO: aperturedata/aperturedb
-        ADB_TAG: vci_develop
+        ADB_TAG: dev
         LENZ_REPO: aperturedata/lenz
-        LENZ_TAG: vci_develop
+        LENZ_TAG: dev
       run: BUILD_COMPLETE=true ./ci.sh
       shell: bash
 

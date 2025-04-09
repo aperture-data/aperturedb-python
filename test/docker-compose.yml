@@ -46,7 +46,7 @@ services:
       ADB_FORCE_SSL: false
 
   webui:
-    image: aperturedata/aperturedata-platform-web-private:1.20.2
+    image: aperturedata/aperturedata-platform-web-private:latest
     restart: always
 
   nginx:
