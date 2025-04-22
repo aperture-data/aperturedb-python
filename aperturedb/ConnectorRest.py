@@ -32,6 +32,7 @@ import json
 import logging
 
 from types import SimpleNamespace
+from typing import Optional
 from aperturedb.Connector import Connector
 from aperturedb.Configuration import Configuration
 
@@ -53,12 +54,14 @@ class ConnectorRest(Connector):
         str (password): Password to specify while connecting to ApertureDB.
         str (token): Token to use while connecting to the database.
         bool (use_ssl): Use SSL to encrypt communication with the database.
+        str (key): Apeture Key, configuration as a deflated compressed string
     """
 
     def __init__(self, host="localhost", port=None,
                  user="", password="", token="",
                  use_ssl=True, shared_data=None,
-                 config: Configuration = None):
+                 config: Optional[Configuration] = None,
+                 key: Optional[str] = None):
         self.use_keepalive = False
         super().__init__(
             host=host,
@@ -68,7 +71,8 @@ class ConnectorRest(Connector):
             token=token,
             use_ssl=use_ssl,
             shared_data=shared_data,
-            config=config)
+            config=config,
+            key=key)
 
         # A Convenience feature to not require the port
         # Relies on common ports for http and https, but can be overriden

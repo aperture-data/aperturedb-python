@@ -135,7 +135,7 @@ dmypy.json
 *.adb.csv
 *.jpg
 *.npy
-test/aperturedb/db/
+test/aperturedb/db*/
 test/input/blobs/
 docs/examples/
 examples/*/coco
@@ -153,3 +153,4 @@ docker/pytorch-gpu/aperturedata/*
 
 .aperturedb
 test/data/
+test/aperturedb/certificate/
