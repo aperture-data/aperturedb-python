@@ -89,8 +89,8 @@ def ls(log_to_console: bool = True):
             check_configured(as_global)
             console.log(f"Failed to decode json '{config_path.as_posix()}'")
 
-    for env_key,plain_json in [["APERTUREDB_JSON",True],["APERTUREDB_KEY",False]]:
-        if (data := os.environ.get(env_key)) is not None and data != "" :
+    for env_key, plain_json in [["APERTUREDB_JSON", True], ["APERTUREDB_KEY", False]]:
+        if (data := os.environ.get(env_key)) is not None and data != "":
             if plain_json:
                 config = _create_configuration_from_json(data)
             else:
@@ -266,7 +266,8 @@ def activate(
 @app.command()
 def get_key(name: Annotated[str, typer.Argument(
         help="Name of the configuration to get a key for")] = None,
-        user: Annotated[str, typer.Option(help="User to get a key for (default is config user)")] = None,
+        user: Annotated[str, typer.Option(
+            help="User to get a key for (default is config user)")] = None,
         as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
     """
     Makes a token from the configuration
@@ -278,7 +279,8 @@ def get_key(name: Annotated[str, typer.Argument(
     try:
         configs, active = get_configurations(config_path.as_posix())
         if not active and name is None:
-            console.log(f"No configuration specified and no active configuration found")
+            console.log(
+                f"No configuration specified and no active configuration found")
             raise typer.Exit(code=2)
         if name is None:
             name = active
@@ -293,15 +295,16 @@ def get_key(name: Annotated[str, typer.Argument(
             key_user = user
 
         if configs[name].has_user_keys():
-            user_key = configs[name].get_user_key( key_user )
-        
-        if user_key is None:
-            conn = __create_connector( configs[name] )
+            user_key = configs[name].get_user_key(key_user)
 
-            user_key = keys.generate_user_key( conn, key_user )
-            configs[name].add_user_key(key_user,user_key)
+        if user_key is None:
+            conn = __create_connector(configs[name])
+
+            user_key = keys.generate_user_key(conn, key_user)
+            configs[name].add_user_key(key_user, user_key)
             with open(config_path.as_posix(), "w") as config_file:
-                config_file.write(json.dumps(configs, indent=2, cls=ObjEncoder))
+                config_file.write(json.dumps(
+                    configs, indent=2, cls=ObjEncoder))
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
@@ -310,4 +313,3 @@ def get_key(name: Annotated[str, typer.Argument(
             check_configured(as_global=True, show_error=True)
 
     print(f"{user_key}")
-

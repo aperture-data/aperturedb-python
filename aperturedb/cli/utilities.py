@@ -32,7 +32,7 @@ def confirm(command: CommandTypes, force: bool):
         typer.echo("Aborting...")
         raise typer.Abort()
     return True
-    
+
 
 @app.command(help="Execute a command on the database")
 def execute(command: CommandTypes,

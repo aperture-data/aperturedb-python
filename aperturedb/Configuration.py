@@ -30,7 +30,7 @@ class Configuration:
 
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
-        auth_mode =  "token" if self.token is not None else "password"
+        auth_mode = "token" if self.token is not None else "password"
         return f"[{self.host}:{self.port} as {self.username} using {mode} with SSL={self.use_ssl} auth={auth_mode}]"
 
     def deflate(self) -> list:
@@ -47,51 +47,54 @@ class Configuration:
 
     def has_user_keys(self) -> bool:
         return self.user_keys is not None
+
     def add_user_key(self, user, key):
         if self.user_keys is None:
             self.user_keys = dict()
         if not user in self.user_keys:
             self.user_keys[user] = []
-        self.user_keys[user].insert(0,key)
+        self.user_keys[user].insert(0, key)
 
     def get_user_key(self, for_user: str) -> str:
-        if self.user_keys is None or not ( for_user in self.user_keys ) \
+        if self.user_keys is None or not (for_user in self.user_keys) \
                 or len(self.user_keys[for_user]) == 0:
             return None
         return self.user_keys[for_user][0]
 
-    def set_user_keys(self, keys: dict ) -> None:
+    def set_user_keys(self, keys: dict) -> None:
         self.user_keys = keys
 
     @classmethod
-    def create_web_token(cls,host: str, port:int,  token_string: str) -> None:
+    def create_web_token(cls, host: str, port: int,  token_string: str) -> None:
         if token_string.startswith("adbp_"):
             token_string = token_string[5:]
 
         if host.endswith(APERTURE_CLOUD):
             host = host[:-1 * len(APERTURE_CLOUD)]
-            m = re.match("(.*)\.farm(\d+)$",host)
+            m = re.match("(.*)\.farm(\d+)$", host)
             if m is not None:
-                host= "{}.{}".format(m.group(1) , int(m.group(2)))
+                host = "{}.{}".format(m.group(1), int(m.group(2)))
 
-            host = "a://{}".format( host )
+            host = "a://{}".format(host)
 
         if port == 55555:
-            web_token_json = [2,host,token_string]
+            web_token_json = [2, host, token_string]
         else:
-            web_token_json = [2,host,port,token_string]
+            web_token_json = [2, host, port, token_string]
         simplified = json.dumps(web_token_json)
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded
+
     @classmethod
     def reinflate(cls, encoded_str: list) -> object:
         try:
             decoded = b64decode(encoded_str.encode('utf-8'))
             as_list = json.loads(decoded.decode('utf-8'))
         except:
-            raise Exception("Unable to make configuration from the provided string")
+            raise Exception(
+                "Unable to make configuration from the provided string")
         version = as_list[0]
-        if version not in (1,2):
+        if version not in (1, 2):
             raise ValueError("version identifier of configuration was"
                              f"g{as_list[0]}, which is not supported")
         if version == 1:
@@ -109,13 +112,14 @@ class Configuration:
         elif version == 2:
             host = as_list[1]
             if host.startswith("a://"):
-                m = re.match("a://([^.]*)\.(\d+)",host)
-                host = "{}.farm{:04d}.cloud.aperturedata.io".format( m.group(1),int(m.group(2)))
+                m = re.match("a://([^.]*)\.(\d+)", host)
+                host = "{}.farm{:04d}.cloud.aperturedata.io".format(
+                    m.group(1), int(m.group(2)))
 
             cur_arg = 2
             # second arg is port
-            if isinstance(as_list[2],int):
-                cur_arg =3 
+            if isinstance(as_list[2], int):
+                cur_arg = 3
             else:
                 port = 55555
 
@@ -129,7 +133,8 @@ class Configuration:
                 token = as_list[cur_arg]
             else:
                 username = as_list[cur_arg]
-                password = as_list[cur_arg+1]
+                password = as_list[cur_arg + 1]
 
-            c = Configuration( host, port, username, password, name, token = token )
+            c = Configuration(host, port, username,
+                              password, name, token = token)
         return c
