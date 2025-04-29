@@ -287,27 +287,19 @@ def get_key(name: Annotated[str, typer.Argument(
             raise typer.Exit(code=2)
         configs["active"] = active
 
+        if user is None:
+            key_user = configs[name].username
+        else:
+            key_user = user
+
         if configs[name].has_user_keys():
-            if user is None:
-                user_key = configs[name].user_keys[0]
-            else:
-                user_key = configs[name].get_user_key( user )
+            user_key = configs[name].get_user_key( key_user )
         
         if user_key is None:
             conn = __create_connector( configs[name] )
-            if user is None:
-                # we can either generate token using this data ( and password )
-                # user_key = configs[name].deflate()
-                # or generate a token for it.
-                user_key = keys.generate_user_key( conn, configs[name].username )
-                # we choose token based key, for safety.
-            else:
-                user_key = keys.generate_user_key( conn, user )
 
-            if configs[name].user_keys is None:
-                configs[name].user_keys = [ user_key ]
-            else:
-                configs[name].user_keys.insert(0,user_key)
+            user_key = keys.generate_user_key( conn, key_user )
+            configs[name].add_user_key(key_user,user_key)
             with open(config_path.as_posix(), "w") as config_file:
                 config_file.write(json.dumps(configs, indent=2, cls=ObjEncoder))
     except FileNotFoundError:

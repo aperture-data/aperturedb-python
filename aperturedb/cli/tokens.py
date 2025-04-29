@@ -11,8 +11,8 @@ from aperturedb.Connector import Connector
 app = typer.Typer()
 
 
-@app.command(help="List User Authentication Keys")
-def list(user: Annotated[str, typer.Argument(help="The user the display keys for")]):
+@app.command(help="List User Authentication Tokens")
+def list(user: Annotated[str, typer.Argument(help="The user the display tokens for")]):
     conn = create_connector()
     res,_ = conn.query([{"GetUserDetails":{"username": user}}])
     utokens = res[0]['GetUserDetails']['tokens']
@@ -21,7 +21,7 @@ def list(user: Annotated[str, typer.Argument(help="The user the display keys for
     else:
         print(utokens)
 
-@app.command(help="Generate an Authentication Token for a user")
+@app.command(help="Generate an Authentication token for a user")
 def generate(silent: Annotated[bool, typer.Argument(help="Only return token, don't print it.")] = False):
     conn = create_connector()
     token = generate_token(conn)
@@ -35,7 +35,7 @@ def generate_token(conn:Connector):
     created = r[0]["GenerateToken"]
     return created['token']
 
-@app.command(help="Assign an Authenticationtoken to a user")
+@app.command(help="Assign an Authentication token to a user")
 def assign( user: Annotated[str, typer.Argument(help="user to assign the token to")],
      token: Annotated[str, typer.Argument(help="Token to be assigned")]):
     conn = create_connector()

@@ -26,7 +26,7 @@ class Configuration:
     # This is useful when the aperturedb server is not ready yet.
     retry_max_attempts: int = 3
     token: str = None
-    user_keys: list = None
+    user_keys: dict = None
 
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
@@ -47,16 +47,20 @@ class Configuration:
 
     def has_user_keys(self) -> bool:
         return self.user_keys is not None
+    def add_user_key(self, user, key):
+        if self.user_keys is None:
+            self.user_keys = dict()
+        if not user in self.user_keys:
+            self.user_keys[user] = []
+        self.user_keys[user].insert(0,key)
 
-    def has_get_user_key(self, for_user: str) -> str:
-        matching = filter( lambda c: c.username == name, [
-            Configuration.reinflate(c) for c in self.user_keys ])
-        if len(matching) == 0:
+    def get_user_key(self, for_user: str) -> str:
+        if self.user_keys is None or not ( for_user in self.user_keys ) \
+                or len(self.user_keys[for_user]) == 0:
             return None
-        else:
-            return matching[0].deflate()
+        return self.user_keys[for_user][0]
 
-    def set_user_keys(self, keys: list ) -> None:
+    def set_user_keys(self, keys: dict ) -> None:
         self.user_keys = keys
 
     @classmethod
