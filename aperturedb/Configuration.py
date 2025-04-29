@@ -26,6 +26,7 @@ class Configuration:
     # This is useful when the aperturedb server is not ready yet.
     retry_max_attempts: int = 3
     token: str = None
+    user_keys: list = None
 
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
@@ -44,6 +45,20 @@ class Configuration:
         encoded_key = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded_key
 
+    def has_user_keys(self) -> bool:
+        return self.user_keys is not None
+
+    def has_get_user_key(self, for_user: str) -> str:
+        matching = filter( lambda c: c.username == name, [
+            Configuration.reinflate(c) for c in self.user_keys ])
+        if len(matching) == 0:
+            return None
+        else:
+            return matching[0].deflate()
+
+    def set_user_keys(self, keys: list ) -> None:
+        self.user_keys = keys
+
     @classmethod
     def create_web_token(cls,host: str, port:int,  token_string: str) -> None:
         if token_string.startswith("adbp_"):
@@ -61,7 +76,6 @@ class Configuration:
             web_token_json = [2,host,token_string]
         else:
             web_token_json = [2,host,port,token_string]
-        print(f"Pre Encode {web_token_json}")
         simplified = json.dumps(web_token_json)
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded

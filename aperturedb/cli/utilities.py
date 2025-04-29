@@ -7,9 +7,12 @@ from aperturedb.cli.console import console
 
 app = typer.Typer()
 
+import aperturedb.cli.keys as keys
 import aperturedb.cli.tokens as tokens
+app.add_typer(keys.app, name="keys",
+              help="Manage Aperturedb keys")
 app.add_typer(tokens.app, name="tokens",
-              help="Manage database access tokens")
+              help="Manage database authentication tokens")
 
 
 class CommandTypes(str, Enum):
