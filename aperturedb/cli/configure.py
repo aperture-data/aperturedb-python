@@ -38,6 +38,11 @@ def _config_file_path(as_global: bool):
         config_path: Path = Path(app_dir) / f"{APP_NAME_CLI}.json"
     return config_path
 
+def has_environment_configuration():
+    for known_variable in ["APERTUREDB_KEY","APERTUREDB_JSON"]:
+        if (data := os.environ.get(known_variable)) is not None and data != "":
+            return True
+    return False
 
 def check_configured(as_global: bool, show_error: bool = False):
     config_path = _config_file_path(as_global)

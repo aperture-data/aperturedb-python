@@ -130,7 +130,7 @@ class Configuration:
             token = None
             # if 1 argument left, treat as token.
             if len(as_list) - cur_arg == 1:
-                token = as_list[cur_arg]
+                token = "adbp_" +as_list[cur_arg]
             else:
                 username = as_list[cur_arg]
                 password = as_list[cur_arg + 1]

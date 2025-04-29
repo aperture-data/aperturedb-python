@@ -222,9 +222,11 @@ class Connector(object):
 
         query = [{
             "Authenticate": {
-                "username": user,
             }
         }]
+
+        if user is not None:
+            query[0]["Authenticate"]["username"] = user
 
         if password:
             query[0]["Authenticate"]["password"] = password
