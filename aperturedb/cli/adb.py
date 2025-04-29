@@ -15,7 +15,7 @@ app.add_typer(transact.app, name="transact",
 @app.callback()
 def check_context(ctx: typer.Context):
     if ctx.invoked_subcommand != "config" and not \
-        configure.has_environment_configuration():
+            configure.has_environment_configuration():
         configure.check_configured(as_global=False) or \
             configure.check_configured(as_global=True, show_error=True)
 
