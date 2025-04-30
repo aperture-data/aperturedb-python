@@ -11,7 +11,7 @@ import sys
 import threading
 
 
-__version__ = "0.4.45"
+__version__ = "0.4.44"
 
 logger = logging.getLogger(__name__)
 
