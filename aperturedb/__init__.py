@@ -2,15 +2,16 @@
 import logging
 import datetime
 import os
-import json
-import requests
+
 from string import Template
 import platform
 import faulthandler
 import signal
 import sys
+import threading
 
-__version__ = "0.4.45"
+
+__version__ = "0.4.44"
 
 logger = logging.getLogger(__name__)
 
@@ -64,13 +65,26 @@ error_console_handler.setLevel(log_console_level)
 error_console_handler.setFormatter(formatter)
 logger.addHandler(error_console_handler)
 
-try:
-    latest_version = json.loads(requests.get(
-        "https://pypi.org/pypi/aperturedb/json").text)["info"]["version"]
-except Exception as e:
-    logger.warning(
-        f"Failed to get latest version: {e}. You are using version {__version__}")
-    latest_version = None
-if __version__ != latest_version:
-    logger.warning(
-        f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
+
+def check_latest_version():
+    """
+    Check if the current version is the latest version.
+    """
+    import json
+    import requests
+
+    try:
+        latest_version = json.loads(requests.get(
+            "https://pypi.org/pypi/aperturedb/json").text)["info"]["version"]
+    except Exception as e:
+        logger.warning(
+            f"Failed to get latest version: {e}. You are using version {__version__}")
+        latest_version = None
+    if __version__ != latest_version:
+        logger.warning(
+            f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
+
+
+checker_thread = threading.Thread(target=check_latest_version)
+checker_thread.daemon = True
+checker_thread.start()
