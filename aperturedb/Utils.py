@@ -908,24 +908,27 @@ class Utils(object):
                          "ERROR"], f"Invalid log level: {level}"
         q = [{"UserLogMessage": {"text": message, "type": level}}]
         self.execute(q)
+
     def generate_token(self):
         gen_token_cmd = [{"GenerateToken": {}}]
-        response, _ = self.execute( gen_token_cmd )
+        response, _ = self.execute(gen_token_cmd)
         created = response[0]["GenerateToken"]
         return created['token']
 
     def assign_token(self, user: str, token: str) -> None:
-        assign_token_query = [{"UpdateUser": {"username": user, "add_tokens": [token]}}]
+        assign_token_query = [
+            {"UpdateUser": {"username": user, "add_tokens": [token]}}]
 
         try:
-            response, _ = self.execute( assign_token_query)
+            response, _ = self.execute(assign_token_query)
         except Exception as e:
             raise Exception(f"Error assigning token: {e}")
 
-    def remove_token(self, user: str, token: str ) -> None:
-        remove_token_query = [{"UpdateUser": {"username": user, "remove_tokens": [token]}}]
+    def remove_token(self, user: str, token: str) -> None:
+        remove_token_query = [
+            {"UpdateUser": {"username": user, "remove_tokens": [token]}}]
         try:
-            response, _ = self.execute( remove_token_query)
+            response, _ = self.execute(remove_token_query)
         except Exception as e:
             raise Exception(f"Error removing token: {e}")
 
