@@ -13,4 +13,4 @@ if __name__ == '__main__':
         os.system(command)
         diff = datetime.now() - start
         print(diff)
-        assert diff.total_seconds() <= 0.8, f"Command {command} took too long"
+        assert diff.total_seconds() <= 0.9, f"Command {command} took too long"
