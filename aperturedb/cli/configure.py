@@ -7,8 +7,9 @@ from typing_extensions import Annotated
 from typing import Optional
 
 from aperturedb.cli.console import console
+import aperturedb.cli.keys as keys
 from aperturedb.Configuration import Configuration
-from aperturedb.CommonLibrary import _create_configuration_from_json
+from aperturedb.CommonLibrary import _create_configuration_from_json, __create_connector
 
 
 class ObjEncoder(json.JSONEncoder):
@@ -38,6 +39,13 @@ def _config_file_path(as_global: bool):
     return config_path
 
 
+def has_environment_configuration():
+    for known_variable in ["APERTUREDB_KEY", "APERTUREDB_JSON"]:
+        if (data := os.environ.get(known_variable)) is not None and data != "":
+            return True
+    return False
+
+
 def check_configured(as_global: bool, show_error: bool = False):
     config_path = _config_file_path(as_global)
     file_exists = config_path.exists()
@@ -63,6 +71,8 @@ def get_configurations(file: str):
                 password=config["password"],
                 use_rest=config["use_rest"],
                 use_ssl=config["use_ssl"])
+            if "user_keys" in config:
+                configs[c].set_user_keys(config["user_keys"])
     active = configurations["active"]
     return configs, active
 
@@ -85,6 +95,17 @@ def ls(log_to_console: bool = True):
         except json.JSONDecodeError:
             check_configured(as_global)
             console.log(f"Failed to decode json '{config_path.as_posix()}'")
+
+    for env_key, plain_json in [["APERTUREDB_JSON", True], ["APERTUREDB_KEY", False]]:
+        if (data := os.environ.get(env_key)) is not None and data != "":
+            if plain_json:
+                config = _create_configuration_from_json(data)
+            else:
+                config = Configuration.reinflate(data)
+            if not "environment" in all_configs:
+                all_configs["environment"] = {}
+            all_configs["environment"][env_key] = config
+            all_configs["active"] = f"env:{env_key}"
 
     if "global" in all_configs or "local" in all_configs:
         if "global" in all_configs and len(all_configs["global"]) == 0 \
@@ -250,24 +271,47 @@ def activate(
 
 
 @app.command()
-def tokenize(name: Annotated[str, typer.Argument(
-        help="Name of the configuration to tokenize")],
+def get_key(name: Annotated[str, typer.Argument(
+        help="Name of the configuration to get a key for")] = None,
+        user: Annotated[str, typer.Option(
+            help="User to get a key for (default is config user)")] = None,
         as_global: Annotated[bool, typer.Option(help="Project level vs global level")] = True):
     """
     Makes a token from the configuration
     """
-    global_config_path = _config_file_path(True)
-    gc, ga = get_configurations(global_config_path)
 
     config_path = _config_file_path(as_global)
     configs = {}
-    to_tokenize = None
+    user_key = None
     try:
-        configs, ac = get_configurations(config_path.as_posix())
+        configs, active = get_configurations(config_path.as_posix())
+        if not active and name is None:
+            console.log(
+                f"No configuration specified and no active configuration found")
+            raise typer.Exit(code=2)
+        if name is None:
+            name = active
         if name not in configs and name not in gc:
             console.log(f"Configuration {name} not found")
             raise typer.Exit(code=2)
-        to_tokenize = configs[name]
+        configs["active"] = active
+
+        if user is None:
+            key_user = configs[name].username
+        else:
+            key_user = user
+
+        if configs[name].has_user_keys():
+            user_key = configs[name].get_user_key(key_user)
+
+        if user_key is None:
+            conn = __create_connector(configs[name])
+
+            user_key = keys.generate_user_key(conn, key_user)
+            configs[name].add_user_key(key_user, user_key)
+            with open(config_path.as_posix(), "w") as config_file:
+                config_file.write(json.dumps(
+                    configs, indent=2, cls=ObjEncoder))
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
@@ -275,5 +319,4 @@ def tokenize(name: Annotated[str, typer.Argument(
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
 
-    print("{} Encoded: {}"
-          .format(to_tokenize.name,  to_tokenize.deflate()))
+    print(f"{user_key}")

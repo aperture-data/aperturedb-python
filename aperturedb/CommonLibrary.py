@@ -37,6 +37,7 @@ def __create_connector(configuration: Configuration):
             host=configuration.host,
             port=configuration.port,
             user=configuration.username,
+            token=configuration.token,
             password=configuration.password,
             use_ssl=configuration.use_ssl,
             config=configuration)
@@ -45,6 +46,7 @@ def __create_connector(configuration: Configuration):
             host=configuration.host,
             port=configuration.port,
             user=configuration.username,
+            token=configuration.token,
             password=configuration.password,
             use_ssl=configuration.use_ssl,
             config=configuration)

@@ -2,13 +2,14 @@
 
 This is the Python SDK for building applications with [ApertureDB](https://docs.aperturedata.io/Introduction/WhatIsAperture).
 
-This comprises of utilities to get sata in and out of ApertureDB in an optimal manner.
-A quick [getting started guide](https://docs.aperturedata.io/HowToGuides/start/Setup) is useful to start building with this SDK.
+This comprises of utilities to get data in and out of ApertureDB in an optimal manner.
+A quick [getting started guide](https://docs.aperturedata.io/Setup/QuickStart) is useful to start building with this SDK.
 For more concrete examples, please refer to:
-* [Simple examples and concepts](https://docs.aperturedata.io/category/simple-usage-examples)
-* [Advanced usage examples](https://docs.aperturedata.io/category/advanced-usage-examples)
+* [Simple examples and concepts](https://docs.aperturedata.io/category/start-with-basics)
+* [Advanced usage examples](https://docs.aperturedata.io/category/build-ml-examples)
+* [Sample applications](https://docs.aperturedata.io/category/build-applications)
 
-# Installing in a custom virtual enviroment
+# Installing in a custom virtual environment
 ```bash
 pip install aperturedb[complete]
 ```
