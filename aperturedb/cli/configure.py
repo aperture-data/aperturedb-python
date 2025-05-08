@@ -126,7 +126,6 @@ def ls(log_to_console: bool = True):
 
     return all_configs
 
-
 @app.command()
 def create(
         name: Annotated[Optional[str], typer.Argument(
@@ -266,6 +265,60 @@ def activate(
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
 
+    with open(config_path.as_posix(), "w") as config_file:
+        config_file.write(json.dumps(configs, indent=2, cls=ObjEncoder))
+
+@app.command()
+def remove(
+        name: Annotated[Optional[str], typer.Argument(
+            help="Name of this configuration to remove")] ,
+        remove_if_active: Annotated[bool, typer.Option(
+            help="If true; if active, remove and assign other configuration to be active; If false refuse to delete if active")] = False,
+        new_active: Annotated[str, typer.Option(
+            help="If deleting active, use name as new active")]=None,
+        as_global: Annotated[bool, typer.Option(
+            help="Project level vs global level")] = True):
+    """
+    Remove a configuration from a Configuriation file
+    """
+    config_path = _config_file_path(as_global)
+    configs = {}
+    config_level = "global" if as_global else "project"
+    try:
+        configs, ac = get_configurations(config_path.as_posix())
+    except FileNotFoundError as e:
+            console.log(
+                f"No configuration available at {config_level} level.") 
+            raise typer.Exit(code=2)
+    except json.JSONDecodeError:
+            console.log(
+                f"Configuration file at {config_level} level was malformed.") 
+            raise typer.Exit(code=2)
+
+    if not name in configs:
+        console.log(
+                f"Configuration file at {config_level} level does not have a config with the name {name}.")
+        raise typer.Exit(code=2)
+
+    change_active=False
+    if name == ac:
+        change_active=True
+        if new_active is None and not remove_if_active:
+            console.log(
+                f"Configuration {name} is active and no options for removing active were supplied.")
+            raise typer.Exit(code=2)
+        if new_active is not None and not new_active in configs:
+            console.log(
+                f"Configuration {new_active} does not exist in Configuration file at {config_level} and cannot be set active") 
+            raise typer.Exit(code=2)
+
+    del configs[name] 
+    if change_active:
+        if new_active:
+            ac = new_active
+        else:
+            ac = next(iter(configs))
+    configs["active"] = ac
     with open(config_path.as_posix(), "w") as config_file:
         config_file.write(json.dumps(configs, indent=2, cls=ObjEncoder))
 
