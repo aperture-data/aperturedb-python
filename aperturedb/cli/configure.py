@@ -38,9 +38,11 @@ def _config_file_path(as_global: bool) -> Path:
         config_path: Path = Path(app_dir) / f"{APP_NAME_CLI}.json"
     return config_path
 
-def _write_config( Path: config_path, config:dict ):
+
+def _write_config(Path: config_path, config: dict):
     with open(config_path.as_posix(), "w") as config_file:
         config_file.write(json.dumps(config, indent=2, cls=ObjEncoder))
+
 
 def has_environment_configuration():
     for known_variable in ["APERTUREDB_KEY", "APERTUREDB_JSON"]:
@@ -240,7 +242,7 @@ def create(
     else:
         configs["active"] = ac
 
-    _write_config(config_path,configs)
+    _write_config(config_path, configs)
 
 
 @app.command()
@@ -268,7 +270,7 @@ def activate(
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
 
-    _write_config(config_path,configs)
+    _write_config(config_path, configs)
 
 
 @app.command()
@@ -322,7 +324,7 @@ def remove(
         else:
             ac = next(iter(configs))
     configs["active"] = ac
-    _write_config(config_path,configs)
+    _write_config(config_path, configs)
 
 
 @app.command()
@@ -364,7 +366,7 @@ def get_key(name: Annotated[str, typer.Argument(
 
             user_key = keys.generate_user_key(conn, key_user)
             configs[name].add_user_key(key_user, user_key)
-            _write_config(config_path,configs)
+            _write_config(config_path, configs)
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
