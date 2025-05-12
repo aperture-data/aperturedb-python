@@ -39,7 +39,7 @@ def _config_file_path(as_global: bool) -> Path:
     return config_path
 
 
-def _write_config(config_path:Path, config: dict):
+def _write_config(config_path: Path, config: dict):
     with open(config_path.as_posix(), "w") as config_file:
         config_file.write(json.dumps(config, indent=2, cls=ObjEncoder))
 
