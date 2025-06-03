@@ -22,6 +22,7 @@ def generate_user_key(conn: Connector, user: str):
     u = Utils(conn)
     token = u.generate_token()
     u.assign_token(user, token)
-    key = Configuration.create_web_token(
-        conn.config.host, conn.config.port, token)
+    key = Configuration.create_aperturedb_key(
+        conn.config.host, conn.config.port, token, config.use_rest,
+        config.use_ssl)
     return key

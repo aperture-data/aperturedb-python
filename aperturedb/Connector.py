@@ -130,6 +130,10 @@ class Connector(object):
 
         if key is not None:
             self.config = Configuration.reinflate(key)
+            self.host = self.config.host
+            self.port = self.config.port
+            self.use_ssl = self.config.use_ssl
+            token = self.config.token
         elif config is None:
             self.host = host
             self.port = port
@@ -143,6 +147,7 @@ class Connector(object):
                 username=user,
                 password=password,
                 name="runtime",
+                token=token,
                 use_keepalive=use_keepalive,
                 retry_interval_seconds=retry_interval_seconds,
                 retry_max_attempts=retry_max_attempts
@@ -153,6 +158,7 @@ class Connector(object):
             self.port = config.port
             self.use_ssl = config.use_ssl
             self.use_keepalive = config.use_keepalive
+            token = config.token
 
         self.conn = None
 
@@ -530,13 +536,9 @@ class Connector(object):
             Connector: Clone of original Connector
         """
         return type(self)(
-            self.host,
-            self.port,
-            self.config.username,
-            self.config.password,
-            self.token,
-            use_ssl=self.use_ssl,
-            shared_data=self.shared_data)
+            shared_data=self.shared_data,
+            config=self.config)
+
 
     def create_new_connection(self):
         from aperturedb.CommonLibrary import issue_deprecation_warning
