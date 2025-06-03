@@ -539,7 +539,6 @@ class Connector(object):
             shared_data=self.shared_data,
             config=self.config)
 
-
     def create_new_connection(self):
         from aperturedb.CommonLibrary import issue_deprecation_warning
         issue_deprecation_warning(
