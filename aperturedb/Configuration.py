@@ -93,10 +93,10 @@ class Configuration:
         if port != default_port:
             host = f"{host}:{port}"
         if token_string is not None:
-            web_token_json = [1,key_type,host,token_string]
+            key_json = [1,key_type,host,token_string]
         else:
-            web_token_json = [1,key_type,host,username,password]
-        simplified = json.dumps(web_token_json, separators=(',',':'))
+            key_json = [1,key_type,host,username,password]
+        simplified = json.dumps(key_json, separators=(',',':'))
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded
 
