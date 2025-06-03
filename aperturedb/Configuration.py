@@ -5,7 +5,7 @@ import re
 from base64 import b64encode, b64decode
 
 APERTURE_CLOUD = ".cloud.aperturedata.io"
-AD_CLOUD_SCHEME = "adbc://"
+APERTUREKEY_VERSION = 1
 
 
 @dataclass(repr=False)
@@ -34,16 +34,8 @@ class Configuration:
         return f"[{self.host}:{self.port} as {self.username} using {mode} with SSL={self.use_ssl} auth={auth_mode}]"
 
     def deflate(self) -> list:
-        deflate_version = 1
-        host = self.host
-        if host.endswith(APERTURE_CLOUD):
-            host = "adbc://{}".format(host[:-1 * len(APERTURE_CLOUD)])
-        as_list = [deflate_version, host, self.port, self.username, self.password, self.name, int(self.use_ssl),
-                   int(self.use_rest), int(self.use_keepalive),
-                   self.retry_interval_seconds, self.retry_max_attempts]
-        simplified = json.dumps(as_list)
-        encoded_key = b64encode(simplified.encode('utf-8')).decode('utf-8')
-        return encoded_key
+        return self.create_aperturedb_key( self.host, self.port,self.token,
+                self.use_rest, self.use_ssl,self.username,self.password)
 
     def has_user_keys(self) -> bool:
         return self.user_keys is not None
@@ -65,8 +57,28 @@ class Configuration:
         self.user_keys = keys
 
     @classmethod
-    def create_web_token(cls, host: str, port: int,  token_string: str) -> None:
-        if token_string.startswith("adbp_"):
+    def config_to_key_type(cls, compressed_host: bool,  use_rest:bool, use_ssl:bool ):
+        return ( 4 if compressed_host else 0) + \
+               ( 2 if use_rest else 0 ) + \
+               ( 1 if use_ssl else 0 )
+    @classmethod
+    def key_type_to_config(cls, key_type:int ): \
+        return [ bool( key_type & 4 ),
+                bool( key_type & 2 ),
+                bool( key_type & 1 )]
+
+    @classmethod
+    def config_default_port(cls, use_rest: bool , use_ssl:bool ):
+        if use_rest:
+            return 443 if use_ssl else 80
+        else:
+            return 55555
+
+    @classmethod
+    def create_aperturedb_key(cls, host: str, port: int,  token_string: str,
+            use_rest:bool, use_ssl:bool, username:str = None, password:str = None) -> None:
+        compressed = False
+        if token_string is not None and  token_string.startswith("adbp_"):
             token_string = token_string[5:]
 
         if host.endswith(APERTURE_CLOUD):
@@ -74,19 +86,23 @@ class Configuration:
             m = re.match("(.*)\.farm(\d+)$", host)
             if m is not None:
                 host = "{}.{}".format(m.group(1), int(m.group(2)))
+                compressed = True
 
-            host = "a://{}".format(host)
-
-        if port == 55555:
-            web_token_json = [2, host, token_string]
+        key_type = cls.config_to_key_type( compressed, use_rest, use_ssl )
+        default_port = cls.config_default_port( use_rest, use_ssl )
+        if port != default_port:
+            host = f"{host}:{port}"
+        if token_string is not None:
+            web_token_json = [1,key_type,host,token_string]
         else:
-            web_token_json = [2, host, port, token_string]
-        simplified = json.dumps(web_token_json)
+            web_token_json = [1,key_type,host,username,password]
+        simplified = json.dumps(web_token_json, separators=(',',':'))
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded
 
     @classmethod
     def reinflate(cls, encoded_str: list) -> object:
+        name = "default_key"
         try:
             decoded = b64decode(encoded_str.encode('utf-8'))
             as_list = json.loads(decoded.decode('utf-8'))
@@ -94,47 +110,33 @@ class Configuration:
             raise Exception(
                 "Unable to make configuration from the provided string")
         version = as_list[0]
-        if version not in (1, 2):
+        if version not in (1,):
             raise ValueError("version identifier of configuration was"
-                             f"g{as_list[0]}, which is not supported")
-        if version == 1:
-            host, port, username, password, name, use_ssl, \
-                use_rest, use_keepalive, retry_interval_seconds, \
-                retry_max_attempts = as_list[1:]
-            if host.startswith(AD_CLOUD_SCHEME):
-                host = host[len(AD_CLOUD_SCHEME):] + APERTURE_CLOUD
-            use_ssl = bool(use_ssl)
-            use_rest = bool(use_rest)
-            use_keepaliave = bool(use_keepalive)
-            c = Configuration(
-                host, port, username, password, name, use_ssl, use_rest, use_keepalive,
-                retry_interval_seconds, retry_max_attempts)
-        elif version == 2:
-            host = as_list[1]
-            if host.startswith("a://"):
-                m = re.match("a://([^.]*)\.(\d+)", host)
-                host = "{}.farm{:04d}.cloud.aperturedata.io".format(
-                    m.group(1), int(m.group(2)))
+                             f"{as_list[0]}, which is not supported")
+        is_compressed, use_rest, use_ssl = cls.key_type_to_config( as_list[1] )
+        host = as_list[2]
+        token = username = password = None
+        if len(as_list) == 4:
+            token = "adbp_" + as_list[3]
+        elif len(as_list) == 5:
+            username,password = as_list[3,]
 
-            cur_arg = 2
-            # second arg is port
-            if isinstance(as_list[2], int):
-                cur_arg = 3
-            else:
-                port = 55555
+        port_match = re.match(".*:(\d+)$", host)
+        if port_match is not None:
+            port = int(port_match.group(1))
+            host = host[:-1 * ( len(port_match.group(1))+1)]
+        else:
+            port = cls.config_default_port( use_rest, use_ssl )
 
-            name = "default"
-
-            username = None
-            password = None
-            token = None
-            # if 1 argument left, treat as token.
-            if len(as_list) - cur_arg == 1:
-                token = "adbp_" + as_list[cur_arg]
-            else:
-                username = as_list[cur_arg]
-                password = as_list[cur_arg + 1]
-
-            c = Configuration(host, port, username,
-                              password, name, token = token)
+        if is_compressed:
+            try:
+                first,second = host.split('.')
+                host = "{}.farm{:04d}.{}".format(first,second,APERTUREDB_CLOUD)
+            except Exception as e:
+                raise ValueError(f"Unable to parse compressed host: {host} Error: {e}")
+            
+        c = Configuration(
+            host, port, username, password, name, use_ssl, use_rest)
+        if token:
+            c.token = token
         return c
