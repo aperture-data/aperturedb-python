@@ -59,7 +59,7 @@ class Parallelizer:
         else:
             self.total_actions = len(generator)
         self.pb = tqdm(total=self.total_actions, desc="Progress",
-                       unit="batches", unit_scale=True, dynamic_ncols=True)
+                       unit="items", unit_scale=True, dynamic_ncols=True)
         start_time = time.time()
 
         if self.total_actions < batchsize:
