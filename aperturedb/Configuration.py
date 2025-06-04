@@ -4,8 +4,14 @@ import json
 import re
 from base64 import b64encode, b64decode
 
-APERTURE_CLOUD = ".cloud.aperturedata.io"
-APERTUREKEY_VERSION = 1
+APERTUREDB_CLOUD = ".cloud.aperturedata.io"
+APERTUREDB_KEY_VERSION = 1
+FLAG_USE_COMPRESSED_HOST = 4
+FLAG_USE_REST = 2
+FLAG_USE_SSL = 1
+DEFAULT_HTTP_PORT = 80
+DEFAULT_HTTPS_PORT = 443
+DEFAULT_TCP_PORT = 55555
 
 
 @dataclass(repr=False)
@@ -58,22 +64,22 @@ class Configuration:
 
     @classmethod
     def config_to_key_type(cls, compressed_host: bool,  use_rest: bool, use_ssl: bool):
-        return (4 if compressed_host else 0) + \
-               (2 if use_rest else 0) + \
-               (1 if use_ssl else 0)
+        return (FLAG_USE_COMPRESSED_HOST if compressed_host else 0) + \
+               (FLAG_USE_REST if use_rest else 0) + \
+               (FLAG_USE_SSL if use_ssl else 0)
 
     @classmethod
     def key_type_to_config(cls, key_type: int): \
-        return [bool(key_type & 4),
-                bool(key_type & 2),
-                bool(key_type & 1)]
+        return [bool(key_type & FLAG_USE_COMPRESSED_HOST),
+                bool(key_type & FLAG_USE_REST),
+                bool(key_type & FLAG_USE_SSL)]
 
     @classmethod
     def config_default_port(cls, use_rest: bool, use_ssl: bool):
         if use_rest:
-            return 443 if use_ssl else 80
+            return DEFAULT_HTTPS_PORT if use_ssl else DEFAULT_HTTP_PORT
         else:
-            return 55555
+            return DEFAULT_TCP_PORT
 
     @classmethod
     def create_aperturedb_key(cls, host: str, port: int,  token_string: str,
@@ -82,8 +88,8 @@ class Configuration:
         if token_string is not None and token_string.startswith("adbp_"):
             token_string = token_string[5:]
 
-        if host.endswith(APERTURE_CLOUD):
-            host = host[:-1 * len(APERTURE_CLOUD)]
+        if host.endswith(APERTUREDB_CLOUD):
+            host = host[:-1 * len(APERTUREDB_CLOUD)]
             m = re.match("(.*)\.farm(\d+)$", host)
             if m is not None:
                 host = "{}.{}".format(m.group(1), int(m.group(2)))
@@ -94,9 +100,9 @@ class Configuration:
         if port != default_port:
             host = f"{host}:{port}"
         if token_string is not None:
-            key_json = [1, key_type, host, token_string]
+            key_json = [APERTUREDB_KEY_VERSION, key_type, host, token_string]
         else:
-            key_json = [1, key_type, host, username, password]
+            key_json = [APERTUREDB_KEY_VERSION, key_type, host, username, password]
         simplified = json.dumps(key_json, separators=(',', ':'))
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded
@@ -111,16 +117,16 @@ class Configuration:
             raise Exception(
                 "Unable to make configuration from the provided string")
         version = as_list[0]
-        if version not in (1,):
+        if version not in (APERTUREDB_KEY_VERSION,):
             raise ValueError("version identifier of configuration was"
-                             f"{as_list[0]}, which is not supported")
+                             f"{version}, which is not supported")
         is_compressed, use_rest, use_ssl = cls.key_type_to_config(as_list[1])
         host = as_list[2]
         token = username = password = None
         if len(as_list) == 4:
             token = "adbp_" + as_list[3]
         elif len(as_list) == 5:
-            username, password = as_list[3,]
+            username, password = as_list[3:]
 
         port_match = re.match(".*:(\d+)$", host)
         if port_match is not None:
@@ -132,8 +138,8 @@ class Configuration:
         if is_compressed:
             try:
                 first, second = host.split('.')
-                host = "{}.farm{:04d}.{}".format(
-                    first, second, APERTUREDB_CLOUD)
+                host = "{}.farm{:04d}{}".format(
+                    first, int(second), APERTUREDB_CLOUD)
             except Exception as e:
                 raise ValueError(
                     f"Unable to parse compressed host: {host} Error: {e}")
