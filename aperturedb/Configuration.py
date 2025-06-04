@@ -102,7 +102,8 @@ class Configuration:
         if token_string is not None:
             key_json = [APERTUREDB_KEY_VERSION, key_type, host, token_string]
         else:
-            key_json = [APERTUREDB_KEY_VERSION, key_type, host, username, password]
+            key_json = [APERTUREDB_KEY_VERSION,
+                        key_type, host, username, password]
         simplified = json.dumps(key_json, separators=(',', ':'))
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded
