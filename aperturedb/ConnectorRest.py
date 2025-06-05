@@ -91,9 +91,7 @@ class ConnectorRest(Connector):
         self.last_query_time = 0
 
         self.url = ('https' if self.use_ssl else 'http') + \
-            '://' + host + ':' + str(self.port) + '/api/'
-
-        self.token = token
+            '://' + self.host + ':' + str(self.port) + '/api/'
 
     def __del__(self):
         logger.info("Done with connector REST.")
