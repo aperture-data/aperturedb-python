@@ -214,6 +214,14 @@ def create_connector(
         logger.info(
             f"Using configuration from APERTUREDB_KEY environment variable")
         config = Configuration.reinflate(data)
+    elif (data := _get_colab_secret("APERTUREDB_KEY")) is not None and data != "":
+        logger.info(
+            f"Using configuration from APERTUREDB_KEY Google Colab secret")
+        config = _create_configuration_from_json(data)
+        if create_config_for_colab_secret:
+            logger.info(
+                f"Creating and activating configuration from APERTUREDB_KEY Google Colab secret")
+            _store_config(config, 'google_colab')
     elif (data := os.environ.get("APERTUREDB_JSON")) is not None and data != "":
         logger.info(
             f"Using configuration from APERTUREDB_JSON environment variable")
