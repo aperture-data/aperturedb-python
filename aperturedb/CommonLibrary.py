@@ -164,11 +164,12 @@ def create_connector(
     This function chooses a configuration in the folowing order:
     1. The configuration named by the `name` parameter or `key` parameter
     2. The configuration described in the `APERTUREDB_KEY` environment variable.
-    3. The configuration described in the `APERTUREDB_JSON` environment variable.
-    4. The configuration described in the `APERTUREDB_JSON` Google Colab secret.
-    5. The configuration described in the `APERTUREDB_JSON` secret in a `.env` file.
-    6. The configuration named by the `APERTUREDB_CONFIG` environment variable.
-    7. The active configuration.
+    3. The configuration described in the `APERTUREDB_KEY` Google Colab secret.
+    4. The configuration described in the `APERTUREDB_JSON` environment variable.
+    5. The configuration described in the `APERTUREDB_JSON` Google Colab secret.
+    6. The configuration described in the `APERTUREDB_JSON` secret in a `.env` file.
+    7. The configuration named by the `APERTUREDB_CONFIG` environment variable.
+    8. The active configuration.
 
     If there are both global and local configurations with the same name, the global configuration is preferred.
 
@@ -217,7 +218,7 @@ def create_connector(
     elif (data := _get_colab_secret("APERTUREDB_KEY")) is not None and data != "":
         logger.info(
             f"Using configuration from APERTUREDB_KEY Google Colab secret")
-        config = _create_configuration_from_json(data)
+        config = Configuration.reinflate(data)
         if create_config_for_colab_secret:
             logger.info(
                 f"Creating and activating configuration from APERTUREDB_KEY Google Colab secret")
