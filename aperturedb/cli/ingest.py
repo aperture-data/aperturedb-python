@@ -38,7 +38,7 @@ def _debug_samples(data, sample_count, module_name):
         with open(module_name + f"_{i}" + ".raw", "w") as f:
             f.write(str(query))
         with open(module_name + f"_{i}" + ".json", "w") as f:
-            f.write(json.dumps(query, indent=2))
+            f.write(json.dumps(query, indent=2, default=str))
         for j, blob in enumerate(blobs):
             with open(module_name + f"_{i}_{j}" + ".jpg", "wb") as f:
                 f.write(blob)
@@ -86,6 +86,22 @@ def _create_pipeline(transformers: List[str]):
     return pipeline
 
 
+def _process_data(data, sample_count, module_name, batchsize, num_workers, stats, debug):
+    if debug:
+        _debug_samples(data, sample_count, module_name)
+    else:
+        from aperturedb.ParallelLoader import ParallelLoader
+        from aperturedb.CommonLibrary import create_connector
+
+        client = create_connector()
+        loader = ParallelLoader(client)
+        loader.ingest(
+            data,
+            stats=stats,
+            batchsize=batchsize,
+            numthreads=num_workers)
+
+
 @app.command()
 def from_generator(filepath: Annotated[str, typer.Argument(
     help="Path to python module for ingestion [BETA]")],
@@ -93,6 +109,8 @@ def from_generator(filepath: Annotated[str, typer.Argument(
         help="Number of samples to ingest (-1 for all)")] = -1,
     debug: Annotated[bool, typer.Option(
         help="Debug mode")] = False,
+    stats: Annotated[bool, typer.Option(
+        help="Show realtime statistics with summary")] = True,
     batchsize: Annotated[int, typer.Option(
         help="Size of the batch")] = 1,
     num_workers: Annotated[int, typer.Option(
@@ -105,11 +123,8 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     """
     Ingest data from a Data generator [BETA].
     """
-    from aperturedb.ParallelLoader import ParallelLoader
-    from aperturedb.CommonLibrary import create_connector, import_module_by_path
 
-    client = create_connector()
-    loader = ParallelLoader(client)
+    from aperturedb.CommonLibrary import import_module_by_path
 
     module = import_module_by_path(filepath)
 
@@ -131,14 +146,15 @@ def from_generator(filepath: Annotated[str, typer.Argument(
         data = _apply_pipeline(data, all_transformers,
                                adb_data_source=f"{module_name}.{mclass.__name__}")
 
-    if debug:
-        _debug_samples(data, sample_count, module_name)
-    else:
-        loader.ingest(
-            data,
-            stats=True,
-            batchsize=batchsize,
-            numthreads=num_workers)
+    _process_data(
+        data,
+        sample_count=sample_count,
+        module_name=module_name,
+        batchsize=batchsize,
+        num_workers=num_workers,
+        stats=stats,
+        debug=debug
+    )
 
     while hasattr(data, "ncalls"):
         console.log(
@@ -182,9 +198,6 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     from aperturedb.VideoDataCSV import VideoDataCSV
     from aperturedb.DescriptorDataCSV import DescriptorDataCSV
     from aperturedb.DescriptorSetDataCSV import DescriptorSetDataCSV
-    from aperturedb.ParallelLoader import ParallelLoader
-
-    from aperturedb.CommonLibrary import create_connector
 
     ingest_types = {
         IngestType.BLOB: BlobDataCSV,
@@ -208,14 +221,65 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         data = _apply_pipeline(data, all_transformers,
                                adb_data_source=f"{ingest_type}.{os.path.basename(filepath)}")
 
-    client = create_connector()
+    _process_data(
+        data,
+        sample_count=sample_count,
+        module_name=os.path.basename(filepath),
+        batchsize=batchsize,
+        num_workers=num_workers,
+        stats=stats,
+        debug=debug
+    )
 
-    loader = ParallelLoader(client)
-    if debug:
-        _debug_samples(data, sample_count, filepath)
-    else:
-        loader.ingest(data, batchsize=batchsize,
-                      numthreads=num_workers, stats=stats)
+
+@app.command()
+def from_croissant(
+    url: Annotated[str, typer.Argument(
+        help="URL to the MLCroissant dataset")],
+    flatten_json: Annotated[bool, typer.Option(
+        help="Flatten JSON data")] = False,
+    sample_count: Annotated[int, typer.Option(
+        help="Number of samples to ingest (-1 for all)")] = -1,
+    debug: Annotated[bool, typer.Option(
+        help="Debug mode")] = False,
+    stats: Annotated[bool, typer.Option(
+        help="Show realtime statistics with summary")] = True,
+    batchsize: Annotated[int, typer.Option(
+        help="Size of the batch")] = 1,
+    num_workers: Annotated[int, typer.Option(
+        help="Number of workers for ingestion")] = 1,
+):
+    """
+    Ingest data from MLCroissant dataset.
+    """
+    try:
+        import mlcroissant as mlc
+        import pandas as pd
+    except ImportError:
+        console.log(
+            "mlcroissant is not installed. Please install it with `pip install -U mlcroissant`.")
+        typer.Abort()
+
+    croissant_dataset = mlc.Dataset(url)
+    from aperturedb.MLCroissant import MLCroissantRecordSet
+    for record_set in croissant_dataset.metadata.record_sets:
+        console.log(f"Record Set: {record_set.name} ({record_set.uuid})")
+        data = MLCroissantRecordSet(
+            croissant_dataset.records(record_set=record_set.uuid),
+            name=record_set.name,
+            flatten_json=flatten_json
+        )
+        data.sample_count = len(data) if sample_count == -1 else sample_count
+
+        _process_data(
+            data,
+            sample_count=sample_count,
+            module_name=record_set.name or "record",
+            batchsize=batchsize,
+            num_workers=num_workers,
+            stats=stats,
+            debug=debug
+        )
 
 
 @app.command()
