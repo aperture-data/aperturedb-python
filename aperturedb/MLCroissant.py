@@ -9,16 +9,11 @@ import pandas as pd
 
 
 from aperturedb.Subscriptable import Subscriptable
-from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.Query import QueryBuilder
-from aperturedb.CommonLibrary import (
-    create_connector
-)
 from aperturedb.CommonLibrary import execute_query
 
 
 import dataclasses
-from typer import Typer
 import hashlib
 
 from aperturedb.DataModels import IdentityDataModel
@@ -80,10 +75,15 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     literals = {}
     subitems = {}
     blobs = {}
+
+    # If name is not specified, or begins with _, this enures that it
+    # complies with the ApertureDB naming conventions
+    name = f"E_{name or 'Record'}"
+
     for k, v in row_dict.items():
+        k = f"F_{k}"
         item = v
         if isinstance(item, PIL.Image.Image):
-            # item = item.convert("RGB")
             buffer = io.BytesIO()
             item.save(buffer, format=item.format)
             blobs[k] = buffer.getvalue()
@@ -100,7 +100,7 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
         literals["adb_uuid"] = hashlib.sha256(
             str_rep.encode('utf-8')).hexdigest()
 
-    q = QueryBuilder.add_command(name or "Record", {
+    q = QueryBuilder.add_command(name, {
         "properties": literals,
     })
     if flatten_json:
