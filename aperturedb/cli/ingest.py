@@ -42,7 +42,7 @@ def _debug_samples(data, sample_count, module_name):
         with open(module_name + f"_{i}" + ".raw", "w") as f:
             f.write(str(query))
         with open(module_name + f"_{i}" + ".json", "w") as f:
-            f.write(json.dumps(query, indent=2, default=str))
+            json.dump(query, f, indent=2, ensure_ascii=False)
         for j, blob in enumerate(blobs):
             with open(module_name + f"_{i}_{j}" + ".jpg", "wb") as f:
                 f.write(blob)
@@ -291,7 +291,7 @@ def from_croissant(
         _process_data(
             data,
             sample_count=actual_sample_count,
-            module_name=record_set.name or "record",
+            module_name=record_set.name or record_set.uuid,
             batchsize=batchsize,
             num_workers=num_workers,
             stats=stats,
