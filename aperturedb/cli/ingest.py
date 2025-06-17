@@ -33,6 +33,10 @@ class TransformerType(str, Enum):
 def _debug_samples(data, sample_count, module_name):
     import json
     print(f"len(data)={len(data)}")
+    if len(data) < sample_count:
+        sample_count = len(data)
+        console.log(
+            f"Sample count is greater than data length. Using {sample_count} samples instead.")
     for i, r in enumerate(data[0:sample_count]):
         query, blobs = r
         with open(module_name + f"_{i}" + ".raw", "w") as f:
@@ -254,26 +258,38 @@ def from_croissant(
     """
     try:
         import mlcroissant as mlc
-        import pandas as pd
     except ImportError:
         console.log(
             "mlcroissant is not installed. Please install it with `pip install -U mlcroissant`.")
         typer.Abort()
 
+    from aperturedb.MLCroissant import MLCroissantRecordSet, persist_metadata
+
     croissant_dataset = mlc.Dataset(url)
-    from aperturedb.MLCroissant import MLCroissantRecordSet
+    metadata = persist_metadata(croissant_dataset)
+    _process_data(
+        [metadata],
+        sample_count=1,
+        module_name="croissant_metadata",
+        batchsize=batchsize,
+        num_workers=num_workers,
+        stats=stats,
+        debug=debug
+    )
     for record_set in croissant_dataset.metadata.record_sets:
-        console.log(f"Record Set: {record_set.name} ({record_set.uuid})")
+        console.log(
+            f"Record Set: {record_set.name} ({record_set.uuid}) with {sample_count} samples")
+        actual_sample_count = len(data) if sample_count == -1 else sample_count
         data = MLCroissantRecordSet(
             croissant_dataset.records(record_set=record_set.uuid),
             name=record_set.name,
-            flatten_json=flatten_json
+            flatten_json=flatten_json,
+            sample_count=actual_sample_count
         )
-        data.sample_count = len(data) if sample_count == -1 else sample_count
 
         _process_data(
             data,
-            sample_count=sample_count,
+            sample_count=actual_sample_count,
             module_name=record_set.name or "record",
             batchsize=batchsize,
             num_workers=num_workers,

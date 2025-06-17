@@ -1,6 +1,6 @@
 import io
 import json
-from typing import Any, List
+from typing import Any, List, Tuple
 
 import PIL
 import PIL.Image
@@ -34,6 +34,14 @@ class DatasetModel(IdentityDataModel):
 
 
 def deserialize_record(record):
+    """These are the types of records that we expect to deserialize, from croissant Records.
+
+    Args:
+        record (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     deserialized = record
     if record is None:
         deserialized = "Not Available"
@@ -48,10 +56,16 @@ def deserialize_record(record):
             deserialized = json.loads(deserialized)
         except:
             pass
+    if isinstance(deserialized, list):
+        deserialized = [deserialize_record(item) for item in deserialized]
+    if isinstance(deserialized, dict):
+        deserialized = {k: deserialize_record(
+            v) for k, v in deserialized.items()}
+
     return deserialized
 
 
-def persist_metadata(client, dataset: mlc.Dataset) -> DatasetModel:
+def persist_metadata(dataset: mlc.Dataset) -> Tuple[List[dict], List[bytes]]:
 
     ds = DatasetModel(
         name=dataset.metadata.name,
@@ -65,16 +79,14 @@ def persist_metadata(client, dataset: mlc.Dataset) -> DatasetModel:
     )
     q, b, _ = generate_add_query(ds)
 
-    result, response, blobs = execute_query(
-        client, q, b, success_statuses=[0, 2])
-    assert result == 0, response
-    return ds
+    return q, b
 
 
 def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     literals = {}
     subitems = {}
     blobs = {}
+    o_literalse = {}
 
     # If name is not specified, or begins with _, this enures that it
     # complies with the ApertureDB naming conventions
@@ -91,15 +103,17 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
 
         record = deserialize_record(item)
         if flatten_json and isinstance(record, list):
-            subitems[k] = str(record)
+            subitems[k] = record
         else:
-            literals[k] = str(record)
+            literals[k] = record
+            o_literalse[k] = item
 
     if flatten_json:
         str_rep = "".join([f"{str(k)}{str(v)}" for k, v in literals.items()])
         literals["adb_uuid"] = hashlib.sha256(
             str_rep.encode('utf-8')).hexdigest()
 
+    literals["adb_class_name"] = name
     q = QueryBuilder.add_command(name, {
         "properties": literals,
     })
@@ -140,9 +154,18 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
 
 
 class MLCroissantRecordSet(Subscriptable):
-    def __init__(self, record_set: mlc.RecordSet, name: str, flatten_json: bool):
+    def __init__(self, record_set: mlc.RecordSet, name: str, flatten_json: bool, sample_count: int = 0):
         self.record_set = record_set
-        self.df = pd.DataFrame(record_set)
+        samples = []
+        count = 0
+        for record in record_set:
+            samples.append({k: v for k, v in record.items()})
+            count += 1
+            if count == sample_count:
+                break
+
+        self.df = pd.json_normalize(samples)
+        self.sample_count = len(samples)
         self.name = name
         self.flatten_json = flatten_json
         self.indexed_entities = set()
