@@ -282,9 +282,10 @@ def from_croissant(
         actual_sample_count = len(data) if sample_count == -1 else sample_count
         data = MLCroissantRecordSet(
             croissant_dataset.records(record_set=record_set.uuid),
-            name=record_set.name,
+            name=record_set.name or record_set.uuid,
             flatten_json=flatten_json,
-            sample_count=actual_sample_count
+            sample_count=actual_sample_count,
+            uuid=record_set.uuid
         )
 
         _process_data(

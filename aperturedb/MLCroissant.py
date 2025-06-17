@@ -19,6 +19,8 @@ import hashlib
 from aperturedb.DataModels import IdentityDataModel
 from aperturedb.Query import generate_add_query
 
+MAX_REF_VALUE = 99999
+
 
 class RecordSetModel(IdentityDataModel):
     name: str
@@ -116,6 +118,11 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     literals["adb_class_name"] = name
     q = QueryBuilder.add_command(name, {
         "properties": literals,
+        "connect": {
+            "ref": MAX_REF_VALUE,
+            "class": "hasRecord",
+            "direction": "in",
+        }
     })
     if flatten_json:
         q[list(q.keys())[-1]]["if_not_found"] = {
@@ -154,8 +161,15 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
 
 
 class MLCroissantRecordSet(Subscriptable):
-    def __init__(self, record_set: mlc.RecordSet, name: str, flatten_json: bool, sample_count: int = 0):
+    def __init__(
+            self,
+            record_set: mlc.Records,
+            name: str,
+            flatten_json: bool,
+            sample_count: int = 0,
+            uuid: str = None):
         self.record_set = record_set
+        self.uuid = uuid
         samples = []
         count = 0
         for record in record_set:
@@ -175,6 +189,14 @@ class MLCroissantRecordSet(Subscriptable):
         # Convert the row to a dictionary
         row_dict = row.to_dict()
 
+        find_recordset_query = QueryBuilder.find_command(
+            "RecordSetModel", {
+                "_ref": MAX_REF_VALUE,
+                "constraints": {
+                    "uuid": ["==", self.uuid]
+                }
+            })
+
         q, blobs = dict_to_query(row_dict, self.name, self.flatten_json)
         indexes_to_create = []
         for command in q:
@@ -191,7 +213,7 @@ class MLCroissantRecordSet(Subscriptable):
                     }
                 }
                 indexes_to_create.append(index_command)
-        return indexes_to_create + q, blobs
+        return indexes_to_create + [find_recordset_query] + q, blobs
 
     def __len__(self):
         return len(self.df)
