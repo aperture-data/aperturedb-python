@@ -2,6 +2,7 @@
 
 set -u
 set -e
+set -o pipefail
 
 mkdir -p output
 rm -rf output/*
