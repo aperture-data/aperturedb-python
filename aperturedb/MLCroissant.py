@@ -1,23 +1,22 @@
+import dataclasses
+import hashlib
 import io
 import json
-from typing import Any, List, Tuple
-
-import PIL
-import PIL.Image
+import logging
+import PIL.GifImagePlugin
 import mlcroissant as mlc
+import PIL.Image
 import pandas as pd
 
+from typing import Any, List, Tuple
 
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Query import QueryBuilder
-from aperturedb.CommonLibrary import execute_query
-
-
-import dataclasses
-import hashlib
-
 from aperturedb.DataModels import IdentityDataModel
 from aperturedb.Query import generate_add_query
+
+
+logger = logging.getLogger(__name__)
 
 MAX_REF_VALUE = 99999
 
@@ -54,10 +53,20 @@ def deserialize_record(record):
     if record == pd.NaT:
         deserialized = "Not Available Time"
     if isinstance(deserialized, str):
-        try:
-            deserialized = json.loads(deserialized)
-        except:
-            pass
+        if deserialized.startswith("[") or deserialized.startswith("{"):
+            # If it looks like a list or dict, try to parse it as JSON
+            try:
+                deserialized = json.loads(deserialized)
+            except json.JSONDecodeError:
+                logger.info(f"Failed to parse JSON: {deserialized}")
+
+            try:
+                deserialized = json.loads(deserialized.replace("'", "\""))
+            except Exception as e:
+                logger.info(
+                    f"Failed to parse JSON: {deserialized} with error {e}")
+                pass
+
     if isinstance(deserialized, list):
         deserialized = [deserialize_record(item) for item in deserialized]
     if isinstance(deserialized, dict):
@@ -84,10 +93,33 @@ def persist_metadata(dataset: mlc.Dataset) -> Tuple[List[dict], List[bytes]]:
     return q, b
 
 
+def try_parse(value: str) -> Any:
+    """Attempts to parse a string value into a more appropriate type."""
+    parsed = value.strip()
+    # try:
+    #     # Try to parse as JSON
+    #     parsed = json.loads(parsed)
+    # except json.JSONDecodeError:
+    #     logger.info(f"Failed to parse JSON: {parsed}")
+    #     pass
+
+    if parsed.startswith("http"):
+        # If it looks like a list, try to parse it as a list
+        from aperturedb.Sources import Sources
+        sources = Sources(n_download_retries=3)
+        result, buffer = sources.load_from_http_url(
+            parsed, validator=lambda x: True)
+        if result:
+            parsed = PIL.Image.open(io.BytesIO(buffer))
+
+    return parsed
+
+
 def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     literals = {}
     subitems = {}
-    blobs = {}
+    known_image_blobs = {}
+    unknown_blobs = {}
     o_literalse = {}
 
     # If name is not specified, or begins with _, this enures that it
@@ -97,18 +129,38 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     for k, v in row_dict.items():
         k = f"F_{k}"
         item = v
+        # Pre processed items from croissant.
         if isinstance(item, PIL.Image.Image):
             buffer = io.BytesIO()
             item.save(buffer, format=item.format)
-            blobs[k] = buffer.getvalue()
+            known_image_blobs[k] = buffer.getvalue()
             continue
 
         record = deserialize_record(item)
+        if isinstance(record, str):
+            record = try_parse(record)
+
+            # Post processed items from SDK.
+            if isinstance(record, PIL.GifImagePlugin.GifImageFile):
+                buffer = io.BytesIO()
+                record.save(buffer, format=record.format)
+                unknown_blobs[k] = buffer.getvalue()
+                continue
+
+            if isinstance(record, PIL.Image.Image):
+                buffer = io.BytesIO()
+                record.save(buffer, format=record.format)
+                known_image_blobs[k] = buffer.getvalue()
+                continue
+
         if flatten_json and isinstance(record, list):
             subitems[k] = record
         else:
             literals[k] = record
             o_literalse[k] = item
+
+    with open(f"raw_croissant_{name}.json", "wb") as f:
+        f.write(o_literalse.__str__().encode('utf-8'))
 
     if flatten_json:
         str_rep = "".join([f"{str(k)}{str(v)}" for k, v in literals.items()])
@@ -130,7 +182,8 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
         }
 
     dependents = []
-    if len(subitems) > 0 or len(blobs) > 0:
+    if len(subitems) > 0 or len(known_image_blobs) > 0 or len(unknown_blobs) > 0:
+        # We need to create a reference to this record
         q[list(q.keys())[-1]]["_ref"] = 1
 
     for key in subitems:
@@ -144,8 +197,8 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
             dependents.extend(subitem_query)
 
     from aperturedb.Query import ObjectType
-    image_blobs = []
-    for blob in blobs:
+    blobs = []
+    for blob in known_image_blobs:
         image_query = QueryBuilder.add_command(ObjectType.IMAGE, {
             "properties": literals,
             "connect": {
@@ -154,10 +207,22 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
                 "direction": "out"
             }
         })
-        image_blobs.append(blobs[blob])
+        blobs.append(known_image_blobs[blob])
         dependents.append(image_query)
 
-    return [q] + dependents, image_blobs
+    for blob in unknown_blobs:
+        blob_query = QueryBuilder.add_command(ObjectType.BLOB, {
+            "properties": literals,
+            "connect": {
+                "ref": 1,
+                "class": blob,
+                "direction": "out"
+            }
+        })
+        blobs.append(unknown_blobs[blob])
+        dependents.append(blob_query)
+
+    return [q] + dependents, blobs
 
 
 class MLCroissantRecordSet(Subscriptable):
@@ -178,16 +243,14 @@ class MLCroissantRecordSet(Subscriptable):
             if count == sample_count:
                 break
 
-        self.df = pd.json_normalize(samples)
+        self.samples = samples
         self.sample_count = len(samples)
         self.name = name
         self.flatten_json = flatten_json
         self.indexed_entities = set()
 
     def getitem(self, subscript):
-        row = self.df.iloc[subscript]
-        # Convert the row to a dictionary
-        row_dict = row.to_dict()
+        row_dict = self.samples[subscript]
 
         find_recordset_query = QueryBuilder.find_command(
             "RecordSetModel", {
@@ -201,7 +264,7 @@ class MLCroissantRecordSet(Subscriptable):
         indexes_to_create = []
         for command in q:
             cmd = list(command.keys())[-1]
-            if cmd == "AddImage":
+            if cmd in ["AddImage", "AddBlob", "AddVideo"]:
                 continue
             indexable_entity = command[list(command.keys())[-1]]["class"]
             if indexable_entity not in self.indexed_entities:
@@ -216,4 +279,4 @@ class MLCroissantRecordSet(Subscriptable):
         return indexes_to_create + [find_recordset_query] + q, blobs
 
     def __len__(self):
-        return len(self.df)
+        return len(self.samples)
