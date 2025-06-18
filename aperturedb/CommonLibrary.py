@@ -324,7 +324,7 @@ def execute_query(client: Connector, query: Commands,
                     warn_list.append(wr)
         if len(warn_list) != 0:
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(query)}\r\n{json.dumps(warn_list)}")
+                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(warn_list, default=str)}")
             result = 2
 
     return result, r, b

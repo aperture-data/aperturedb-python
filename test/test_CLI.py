@@ -32,7 +32,7 @@ class TestConfigure():
         with patch.multiple(typer,
                             get_app_dir=MagicMock(return_value=fake_folder)):
             runner = CliRunner()
-            result = runner.invoke(app, ["create", "test"])
+            result = runner.invoke(app, ["create", "test", "--no-interactive"])
             assert result.exit_code == 0
             self.check_contents(fake_file, None, "test")
 
@@ -45,7 +45,8 @@ class TestConfigure():
         with patch.multiple(os,
                             getcwd=MagicMock(return_value=fake_folder)):
             runner = CliRunner()
-            result = runner.invoke(app, ["create", "test", "--no-as-global"])
+            result = runner.invoke(
+                app, ["create", "test", "--no-as-global", "--no-interactive"])
             assert result.exit_code == 0
             self.check_contents(fake_file, None, "test")
 
@@ -56,7 +57,8 @@ class TestConfigure():
             with patch.multiple(typer,
                                 get_app_dir=MagicMock(return_value=fake_folder)):
                 runner = CliRunner()
-                result = runner.invoke(app, ["create", "test"])
+                result = runner.invoke(
+                    app, ["create", "test", "--no-interactive"])
                 assert result.exit_code == 0
                 self.check_contents(fake_file, None, "test")
 
@@ -104,7 +106,7 @@ class TestConfigure():
                                 getcwd=MagicMock(return_value=fake_folder)):
                 runner = CliRunner()
                 result = runner.invoke(
-                    app, ["create", "test", "--no-as-global"])
+                    app, ["create", "test", "--no-as-global", "--no-interactive"])
                 assert result.exit_code == 0
                 self.check_contents(fake_file, None, "test")
 
@@ -117,7 +119,8 @@ class TestConfigure():
             with patch.multiple(typer,
                                 get_app_dir=MagicMock(return_value=fake_folder)):
                 runner = CliRunner()
-                result = runner.invoke(app, ["create", "test"])
+                result = runner.invoke(
+                    app, ["create", "test", "--no-interactive"])
                 assert result.exit_code == 0
                 self.check_contents(fake_file, None, "test")
 
@@ -132,7 +135,7 @@ class TestConfigure():
                                 getcwd=MagicMock(return_value=fake_folder)):
                 runner = CliRunner()
                 result = runner.invoke(
-                    app, ["create", "test", "--no-as-global"])
+                    app, ["create", "test", "--no-as-global", "--no-interactive"])
                 assert result.exit_code == 0
                 self.check_contents(fake_file, None, "test")
 
