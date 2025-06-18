@@ -77,7 +77,10 @@ class ConnectorRest(Connector):
         # A Convenience feature to not require the port
         # Relies on common ports for http and https, but can be overriden
         if port is None:
-            self.port = 443 if use_ssl else 80
+            if config is None:
+                self.port = 443 if use_ssl else 80
+            else:
+                self.port = config.port
         else:
             self.port = port
 
