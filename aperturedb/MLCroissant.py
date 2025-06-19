@@ -28,6 +28,7 @@ class RecordSetModel(IdentityDataModel):
 
 
 class DatasetModel(IdentityDataModel):
+    url: str = ""
     name: str = "Croissant Dataset automatically ingested into ApertureDB"
     description: str = f"A dataset loaded from a croissant json-ld"
     version: str = "1.0.0"
@@ -76,9 +77,12 @@ def deserialize_record(record):
     return deserialized
 
 
-def persist_metadata(dataset: mlc.Dataset) -> Tuple[List[dict], List[bytes]]:
-
+def persist_metadata(dataset: mlc.Dataset, url: str) -> Tuple[List[dict], List[bytes]]:
+    """
+    Persist the metadata of a croissant dataset into ApertureDB.
+    """
     ds = DatasetModel(
+        url=url,
         name=dataset.metadata.name,
         description=dataset.metadata.description,
         version=dataset.metadata.version or "1.0.0",
@@ -96,12 +100,6 @@ def persist_metadata(dataset: mlc.Dataset) -> Tuple[List[dict], List[bytes]]:
 def try_parse(value: str) -> Any:
     """Attempts to parse a string value into a more appropriate type."""
     parsed = value.strip()
-    # try:
-    #     # Try to parse as JSON
-    #     parsed = json.loads(parsed)
-    # except json.JSONDecodeError:
-    #     logger.info(f"Failed to parse JSON: {parsed}")
-    #     pass
 
     if parsed.startswith("http"):
         # If it looks like a list, try to parse it as a list
@@ -122,12 +120,10 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     unknown_blobs = {}
     o_literalse = {}
 
-    # If name is not specified, or begins with _, this enures that it
-    # complies with the ApertureDB naming conventions
-    name = f"E_{name or 'Record'}"
+    name = name.split("/")[-1]  # Use the last part of the name
 
     for k, v in row_dict.items():
-        k = f"F_{k}"
+        k = k.split("/")[-1]  # Use the last part of the key
         item = v
         # Pre processed items from croissant.
         if isinstance(item, PIL.Image.Image):
@@ -159,9 +155,6 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
             literals[k] = record
             o_literalse[k] = item
 
-    with open(f"raw_croissant_{name}.json", "wb") as f:
-        f.write(o_literalse.__str__().encode('utf-8'))
-
     if flatten_json:
         str_rep = "".join([f"{str(k)}{str(v)}" for k, v in literals.items()])
         literals["adb_uuid"] = hashlib.sha256(
@@ -188,11 +181,12 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
 
     for key in subitems:
         for item in subitems[key]:
-            subitem_query = dict_to_query(item, f"{name}.{key}", flatten_json)
+            subitem_query, blobs = dict_to_query(
+                item, f"{name}.{key}", flatten_json)
             subitem_query[0][list(subitem_query[0].keys())[-1]]["connect"] = {
                 "ref": 1,
                 "class": key,
-                "direction": "out",
+                "direction": "in",
             }
             dependents.extend(subitem_query)
 
@@ -200,11 +194,11 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     blobs = []
     for blob in known_image_blobs:
         image_query = QueryBuilder.add_command(ObjectType.IMAGE, {
-            "properties": literals,
+            "properties": {"adb_class_name": literals["adb_class_name"] + "." + "image"},
             "connect": {
                 "ref": 1,
                 "class": blob,
-                "direction": "out"
+                "direction": "in"
             }
         })
         blobs.append(known_image_blobs[blob])
@@ -212,11 +206,11 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
 
     for blob in unknown_blobs:
         blob_query = QueryBuilder.add_command(ObjectType.BLOB, {
-            "properties": literals,
+            "properties": {"adb_class_name": literals["adb_class_name"] + "." + "blob"},
             "connect": {
                 "ref": 1,
                 "class": blob,
-                "direction": "out"
+                "direction": "in"
             }
         })
         blobs.append(unknown_blobs[blob])

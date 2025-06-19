@@ -266,7 +266,7 @@ def from_croissant(
     from aperturedb.MLCroissant import MLCroissantRecordSet, persist_metadata
 
     croissant_dataset = mlc.Dataset(url)
-    metadata = persist_metadata(croissant_dataset)
+    metadata = persist_metadata(croissant_dataset, url)
     _process_data(
         [metadata],
         sample_count=1,
