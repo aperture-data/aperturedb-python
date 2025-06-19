@@ -18,7 +18,10 @@ from aperturedb.Query import generate_add_query
 
 logger = logging.getLogger(__name__)
 
+
 MAX_REF_VALUE = 99999
+# This is useful to identify the class of the record in ApertureDB.
+CLASS_PROPERTY_NAME = "adb_class_name"
 
 
 class RecordSetModel(IdentityDataModel):
@@ -102,7 +105,7 @@ def try_parse(value: str) -> Any:
     parsed = value.strip()
 
     if parsed.startswith("http"):
-        # If it looks like a list, try to parse it as a list
+        # Download the content from the URL
         from aperturedb.Sources import Sources
         sources = Sources(n_download_retries=3)
         result, buffer = sources.load_from_http_url(
@@ -118,12 +121,24 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     subitems = {}
     known_image_blobs = {}
     unknown_blobs = {}
-    o_literalse = {}
+    o_literals = {}
 
     name = name.split("/")[-1]  # Use the last part of the name
+    # If name is not specified, or begins with _, this ensures that it
+    # complies with the ApertureDB naming conventions
+    if not name or name.startswith("_"):
+        safe_name = f"E_{name or 'Record'}"  # Uncomment if you want
+        logger.warning(
+            f"Entity Name '{name}' is not valid. Using {safe_name}.")
+        name = safe_name
 
     for k, v in row_dict.items():
         k = k.split("/")[-1]  # Use the last part of the key
+        if not k or k.startswith("_"):
+            safe_key = f"F_{k or 'Field'}"
+            logger.warning(
+                f"Property name '{k}' is not valid. Using {safe_key}.")
+            k = safe_key
         item = v
         # Pre processed items from croissant.
         if isinstance(item, PIL.Image.Image):
@@ -153,14 +168,15 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
             subitems[k] = record
         else:
             literals[k] = record
-            o_literalse[k] = item
+            # Original value from croissant. This is useful for debugging.
+            o_literals[k] = item
 
     if flatten_json:
         str_rep = "".join([f"{str(k)}{str(v)}" for k, v in literals.items()])
         literals["adb_uuid"] = hashlib.sha256(
             str_rep.encode('utf-8')).hexdigest()
 
-    literals["adb_class_name"] = name
+    literals[CLASS_PROPERTY_NAME] = name
     q = QueryBuilder.add_command(name, {
         "properties": literals,
         "connect": {
@@ -194,7 +210,7 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     blobs = []
     for blob in known_image_blobs:
         image_query = QueryBuilder.add_command(ObjectType.IMAGE, {
-            "properties": {"adb_class_name": literals["adb_class_name"] + "." + "image"},
+            "properties": {CLASS_PROPERTY_NAME: literals[CLASS_PROPERTY_NAME] + "." + "image"},
             "connect": {
                 "ref": 1,
                 "class": blob,
@@ -206,7 +222,7 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
 
     for blob in unknown_blobs:
         blob_query = QueryBuilder.add_command(ObjectType.BLOB, {
-            "properties": {"adb_class_name": literals["adb_class_name"] + "." + "blob"},
+            "properties": {CLASS_PROPERTY_NAME: literals[CLASS_PROPERTY_NAME] + "." + "blob"},
             "connect": {
                 "ref": 1,
                 "class": blob,
