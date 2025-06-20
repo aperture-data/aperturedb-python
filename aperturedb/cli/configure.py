@@ -198,12 +198,12 @@ def create(
         gen_config = _create_configuration_from_json(
             json_str, name=name, name_required=True)
         check_for_overwrite(gen_config.name)
-        name = gen_config.name
+        name = name if name is not None else gen_config.name
     elif from_key:
         assert interactive, "Interactive mode must be enabled for --from-key"
         encoded_str = typer.prompt("Enter encoded string", hide_input=True)
         gen_config = Configuration.reinflate(encoded_str)
-        name = gen_config.name
+        name = name if name is not None else gen_config.name
 
     else:
         if interactive:

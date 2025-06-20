@@ -46,6 +46,9 @@ if ! [ -z ${1+x} ]
 then
      REPOSITORY="$1"
 fi
+
+sleep 20 # wait for the containers to be up and running
+
 echo "running tests on docker image $REPOSITORY with $GATEWAY_HTTP and $GATEWAY_NON_HTTP"
 docker run \
     -v $(pwd)/output:/aperturedata/test/output \
