@@ -376,7 +376,7 @@ class Connector(object):
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
-            query_str = json.dumps(query)
+            query_str = json.dumps(query, default=str)
         else:
             query_str = query
 
