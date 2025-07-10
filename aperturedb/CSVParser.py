@@ -80,7 +80,7 @@ class CSVParser(Subscriptable):
         # most users don't supply their own df, so this is mostly a sanity check
         # for when an advanced user has done filtering and have a IntervalIndex.
         if not isinstance(self.df.index,pd.RangeIndex):
-            raise Exception(f"CSVParser requires a RangeIndex. the supplied DataFrame has a type(self.df.index) index.")
+            raise Exception(f"CSVParser requires a RangeIndex. the supplied DataFrame has a {type(self.df.index)} index.")
         # len for dask dataframe needs a client.
         if not self.use_dask and len(self.df) == 0:
             logger.error("Dataframe empty. Is the CSV file ok?")
