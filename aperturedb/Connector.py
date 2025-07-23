@@ -133,6 +133,7 @@ class Connector(object):
             self.host = self.config.host
             self.port = self.config.port
             self.use_ssl = self.config.use_ssl
+            self.use_keepalive = use_keepalive
             token = self.config.token
         elif config is None:
             self.host = host
