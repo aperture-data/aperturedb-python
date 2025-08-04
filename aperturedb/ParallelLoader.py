@@ -79,8 +79,9 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                             indexes.setdefault("connection", {}).setdefault(
                                 cls_name, set()).add(prop_name)
             else:
-                exception_msg = f"Unexpected schema format for connection class '{
-                    cls_name}': {cls_schema}"
+                exception_msg = (
+                    f"Unexpected schema format for connection class '{cls_name}': {cls_schema}"
+                )
                 logger.error(exception_msg)
                 raise ValueError(exception_msg)
 
