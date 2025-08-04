@@ -72,7 +72,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                         indexes.setdefault("connection", {}).setdefault(
                             cls_name, set()).add(prop_name)
             elif isinstance(cls_schema, list):
-                # If cls_schema is a list, we assume it contains property names directly
+                # If cls_schema is a list, we assume it contains dictionaries of property schemas
                 for conn in cls_schema:
                     for prop_name, prop_schema in conn.items():
                         if prop_schema[1]:  # indicates property has an index
