@@ -23,20 +23,82 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         self.utils = Utils(self.client)
         self.type = "element"
 
-    def get_existing_indices(self):
-        schema = self.utils.get_schema()
-        existing_indices = {}
-        if schema:
-            for index_type in (("entity", "entities"), ("connection", "connections")):
-                foo = schema.get(index_type[1]) or {}
-                bar = foo.get("classes") or {}
-                for cls_name, cls_schema in bar.items():
-                    props = cls_schema.get("properties") or {}
-                    for prop_name, prop_schema in props.items():
+    def get_entity_indexes(self, schema: dict) -> dict:
+        """
+        Returns a dictionary of indexes for entities' properties.
+
+        Args:
+            schema (dict): The schema dictionary to get indexes from.
+
+        Returns:
+            dict: A dictionary of entity indexes.
+        """
+
+        indexes = {}
+
+        entities = schema.get("entities") or {}
+        cls_names = entities.get("classes") or {}
+        for cls_name, cls_schema in cls_names.items():
+            properties = cls_schema.get("properties", {})
+            for prop_name, prop_schema in properties.items():
+                if prop_schema[1]:  # indicates property has an index
+                    indexes.setdefault("entity", {}).setdefault(
+                        cls_name, set()).add(prop_name)
+
+        return indexes
+
+    def get_connection_indexes(self, schema: dict) -> dict:
+        """
+        Returns a dictionary of indexes for connections' properties.
+
+        Args:
+            schema (dict): The schema dictionary to get indexes from.
+
+        Returns:
+            dict: A dictionary of connection indexes.
+        """
+
+        indexes = {}
+
+        connections = schema.get("connections") or {}
+        cls_names = connections.get("classes") or {}
+        for cls_name, cls_schema in cls_names.items():
+
+            # check if cls_schema is a dict or an array
+            if isinstance(cls_schema, dict):
+                properties = cls_schema.get("properties", {})
+                for prop_name, prop_schema in properties.items():
+                    if prop_schema[1]:  # indicates property has an index
+                        indexes.setdefault("connection", {}).setdefault(
+                            cls_name, set()).add(prop_name)
+            elif isinstance(cls_schema, list):
+                # If cls_schema is a list, we assume it contains property names directly
+                for conn in cls_schema:
+                    for prop_name, prop_schema in conn.items():
                         if prop_schema[1]:  # indicates property has an index
-                            existing_indices.setdefault(index_type[0], {}).setdefault(
+                            indexes.setdefault("connection", {}).setdefault(
                                 cls_name, set()).add(prop_name)
-        return existing_indices
+            else:
+                exception_msg = f"Unexpected schema format for connection class '{
+                    cls_name}': {cls_schema}"
+                logger.error(exception_msg)
+                raise ValueError(exception_msg)
+
+        return indexes
+
+    def get_existing_indices(self):
+
+        indexes = {}
+        schema = self.utils.get_schema()
+
+        if schema:
+            entity_indexes     = self.get_entity_indexes(schema)
+            connection_indexes = self.get_connection_indexes(schema)
+
+            # Combine both entity and connection indexes
+            indexes = {**entity_indexes, **connection_indexes}
+
+        return indexes
 
     def query_setup(self, generator: Subscriptable) -> None:
         """
