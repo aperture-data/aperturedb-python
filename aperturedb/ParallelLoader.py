@@ -39,7 +39,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         entities = schema.get("entities") or {}
         cls_names = entities.get("classes") or {}
         for cls_name, cls_schema in cls_names.items():
-            properties = cls_schema.get("properties", {})
+            properties = cls_schema.get("properties") or {}
             for prop_name, prop_schema in properties.items():
                 if prop_schema[1]:  # indicates property has an index
                     indexes.setdefault("entity", {}).setdefault(
@@ -62,11 +62,12 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
         connections = schema.get("connections") or {}
         cls_names = connections.get("classes") or {}
+
         for cls_name, cls_schema in cls_names.items():
 
-            # check if cls_schema is a dict or an array
+            # check if cls_schema is a dict or a list
             if isinstance(cls_schema, dict):
-                properties = cls_schema.get("properties", {})
+                properties = cls_schema.get("properties") or {}
                 for prop_name, prop_schema in properties.items():
                     if prop_schema[1]:  # indicates property has an index
                         indexes.setdefault("connection", {}).setdefault(
@@ -80,7 +81,8 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                                 cls_name, set()).add(prop_name)
             else:
                 exception_msg = (
-                    f"Unexpected schema format for connection class '{cls_name}': {cls_schema}"
+                    f"Unexpected schema format for connection class '{
+                        cls_name}': {cls_schema}"
                 )
                 logger.error(exception_msg)
                 raise ValueError(exception_msg)
