@@ -392,12 +392,10 @@ class Connector(object):
             try:
                 self._connect()
             except socket.error as e:
-                # autopep8: off
                 logger.error(
                     f"Error connecting to server: {self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
-                # autopep8: on
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
@@ -546,8 +544,7 @@ class Connector(object):
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {
-                        count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
+                    f"[Attempt {count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
                     exc_info=True,
                     stack_info=True)
                 time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)

@@ -79,7 +79,18 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                         indexes.setdefault("connection", {}).setdefault(
                             cls_name, set()).add(prop_name)
             elif isinstance(cls_schema, list):
-                # If cls_schema is a list, we assume it contains dictionaries of property schemas
+                # If cls_schema is a list, this occurs when the schema defines multiple connection variants
+                # for the same class. Each element in the list is expected to be a dictionary representing
+                # a connection variant, with a "properties" key containing the property schemas.
+                # Example schema format:
+                # "connections": {
+                #     "classes": {
+                #         "SomeConnectionClass": [
+                #             {"properties": {"prop1": [...], "prop2": [...]}},
+                #             {"properties": {"prop3": [...], "prop4": [...]}},
+                #         ]
+                #     }
+                # }
                 for connection in cls_schema:
                     for prop_name, prop_schema in (connection.get("properties") or {}).items():
                         if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
