@@ -1,4 +1,3 @@
-
 from aperturedb import ParallelQuery
 from aperturedb.Connector import Connector
 from aperturedb.Utils import Utils
@@ -6,6 +5,16 @@ from aperturedb.Subscriptable import Subscriptable
 
 import numpy as np
 import logging
+
+# For each property of each Entity or Connection,
+# the following information is returned as an array of 3 elements of the form [matched, has_index_flag, type]:
+# - matched: Number of objects that match the search.
+# - has_index_flag: Indicates whether the property is indexed or not.
+# - type: Type for the property. See supported types.
+# https://docs.aperturedata.io/query_language/Reference/db_commands/GetSchema
+
+PROPERTIES_SCHEMA_INDEX_FLAG = 1
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +50,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         for cls_name, cls_schema in cls_names.items():
             properties = cls_schema.get("properties") or {}
             for prop_name, prop_schema in properties.items():
-                if prop_schema[1]:  # indicates property has an index
+                if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
                     indexes.setdefault("entity", {}).setdefault(
                         cls_name, set()).add(prop_name)
 
@@ -69,14 +78,14 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             if isinstance(cls_schema, dict):
                 properties = cls_schema.get("properties") or {}
                 for prop_name, prop_schema in properties.items():
-                    if prop_schema[1]:  # indicates property has an index
+                    if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
                         indexes.setdefault("connection", {}).setdefault(
                             cls_name, set()).add(prop_name)
             elif isinstance(cls_schema, list):
                 # If cls_schema is a list, we assume it contains dictionaries of property schemas
                 for conn in cls_schema:
                     for prop_name, prop_schema in conn.items():
-                        if prop_schema[1]:  # indicates property has an index
+                        if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
                             indexes.setdefault("connection", {}).setdefault(
                                 cls_name, set()).add(prop_name)
             else:
