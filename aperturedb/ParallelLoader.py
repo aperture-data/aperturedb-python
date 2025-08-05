@@ -12,7 +12,6 @@ import logging
 # - has_index_flag: Indicates whether the property is indexed or not.
 # - type: Type for the property. See supported types.
 # https://docs.aperturedata.io/query_language/Reference/db_commands/GetSchema
-
 PROPERTIES_SCHEMA_INDEX_FLAG = 1
 
 logger = logging.getLogger(__name__)
@@ -46,10 +45,9 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         indexes = {}
 
         entities = schema.get("entities") or {}
-        cls_names = entities.get("classes") or {}
-        for cls_name, cls_schema in cls_names.items():
-            properties = cls_schema.get("properties") or {}
-            for prop_name, prop_schema in properties.items():
+
+        for cls_name, cls_schema in (entities.get("classes") or {}).items():
+            for prop_name, prop_schema in (cls_schema.get("properties") or {}).items():
                 if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
                     indexes.setdefault("entity", {}).setdefault(
                         cls_name, set()).add(prop_name)
@@ -76,23 +74,20 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
             # check if cls_schema is a dict or a list
             if isinstance(cls_schema, dict):
-                properties = cls_schema.get("properties") or {}
-                for prop_name, prop_schema in properties.items():
+                for prop_name, prop_schema in (cls_schema.get("properties") or {}).items():
                     if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
                         indexes.setdefault("connection", {}).setdefault(
                             cls_name, set()).add(prop_name)
             elif isinstance(cls_schema, list):
                 # If cls_schema is a list, we assume it contains dictionaries of property schemas
-                for conn in cls_schema:
-                    for prop_name, prop_schema in conn.items():
+                for connection in cls_schema:
+                    for prop_name, prop_schema in (connection.get("properties") or {}).items():
                         if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
                             indexes.setdefault("connection", {}).setdefault(
                                 cls_name, set()).add(prop_name)
             else:
-                exception_msg = (
-                    f"Unexpected schema format for connection class '{
-                        cls_name}': {cls_schema}"
-                )
+                exception_msg = "Unexpected schema format for connection class "
+                exception_msg += f"'{cls_name}': {cls_schema}"
                 logger.error(exception_msg)
                 raise ValueError(exception_msg)
 

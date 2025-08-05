@@ -392,11 +392,12 @@ class Connector(object):
             try:
                 self._connect()
             except socket.error as e:
+                # autopep8: off
                 logger.error(
-                    f"Error connecting to server: {
-                        self.config} \r\n{details}. {e=}",
+                    f"Error connecting to server: {self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
+                # autopep8: on
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
