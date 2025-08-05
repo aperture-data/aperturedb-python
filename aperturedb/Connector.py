@@ -49,6 +49,29 @@ logger = logging.getLogger(__name__)
 
 
 PROTOCOL_VERSION = 1
+DEFAULT_PORT = 55555
+DEFAULT_RETRY_INTERVAL_SECONDS = 1
+DEFAULT_RETRY_MAX_ATTEMPTS = 3
+DEFAULT_SESSION_EXPIRY_OFFSET_SEC = 10
+DEFAULT_QUERY_CONNECTION_ERROR_SUPPRESSION_DELTA_SEC = 30
+
+MESSAGE_LENGTH_FORMAT = '@I'
+MESSAGE_LENGTH_SIZE = struct.calcsize(MESSAGE_LENGTH_FORMAT)
+
+# aperturedb's param ADB_MAX_CONNECTION_MESSAGE_SIZE_MB = 2048 by default
+DEFAULT_MAX_MESSAGE_SIZE_MB = 2048
+
+# Protocol types
+PROTOCOL_TCP = 1
+PROTOCOL_SSL = 2
+
+# Status codes
+STATUS_OK = 0
+STATUS_ERROR_DEFAULT = -2
+
+# Retry constants for session renewal
+RENEW_SESSION_MAX_ATTEMPTS = 3
+RENEW_SESSION_RETRY_INTERVAL_SEC = 1
 
 
 class UnauthorizedException(Exception):
@@ -73,7 +96,7 @@ class Session():
 
         # This triggers refresh if the session is about to expire.
         if session_age > self.session_token_ttl - \
-                int(os.getenv("SESSION_EXPIRY_OFFSET_SEC", 10)):
+                int(os.getenv("SESSION_EXPIRY_OFFSET_SEC", DEFAULT_SESSION_EXPIRY_OFFSET_SEC)):
             return False
 
         return True
@@ -106,14 +129,14 @@ class Connector(object):
         str (key): Apeture Key, configuration as a deflated compressed string
     """
 
-    def __init__(self, host="localhost", port=55555,
+    def __init__(self, host="localhost", port=DEFAULT_PORT,
                  user="", password="", token="",
                  use_ssl=True,
                  shared_data=None,
                  authenticate=True,
                  use_keepalive=True,
-                 retry_interval_seconds=1,
-                 retry_max_attempts=3,
+                 retry_interval_seconds=DEFAULT_RETRY_INTERVAL_SECONDS,
+                 retry_max_attempts=DEFAULT_RETRY_MAX_ATTEMPTS,
                  config: Optional[Configuration] = None,
                  key: Optional[str] = None):
         """
@@ -126,7 +149,8 @@ class Connector(object):
         self.last_query_timestamp = None
         # suppress connection warnings which occur more than this time
         # after the last query
-        self.query_connection_error_suppression_delta = timedelta(seconds=30)
+        self.query_connection_error_suppression_delta = timedelta(
+            seconds=DEFAULT_QUERY_CONNECTION_ERROR_SUPPRESSION_DELTA_SEC)
 
         if key is not None:
             self.config = Configuration.reinflate(key)
@@ -196,20 +220,20 @@ class Connector(object):
             self.connected = False
 
     def _send_msg(self, data):
-        # aperturedb's param ADB_MAX_CONNECTION_MESSAGE_SIZE_MB = 256 by default
-        if len(data) > (256 * 2**20):
+        if len(data) > (DEFAULT_MAX_MESSAGE_SIZE_MB * 2**20):
             logger.warning(
                 "Message sent is larger than default for ApertureDB Server. Server may disconnect.")
 
-        sent_len = struct.pack('@I', len(data))  # send size first
+        sent_len = struct.pack(MESSAGE_LENGTH_FORMAT,
+                               len(data))  # send size first
         x = self.conn.send(sent_len + data)
-        return x == len(data) + 4
+        return x == len(data) + MESSAGE_LENGTH_SIZE
 
     def _recv_msg(self):
-        recv_len = self.conn.recv(4)  # get message size
+        recv_len = self.conn.recv(MESSAGE_LENGTH_SIZE)  # get message size
         if recv_len == b'':
             return None
-        recv_len = struct.unpack('@I', recv_len)[0]
+        recv_len = struct.unpack(MESSAGE_LENGTH_FORMAT, recv_len)[0]
         response = bytearray(recv_len)
         read = 0
         while read < recv_len:
@@ -250,7 +274,7 @@ class Connector(object):
                 "Unexpected response from server upon authenticate request: " +
                 str(response))
         session_info = response[0]["Authenticate"]
-        if session_info["status"] != 0:
+        if session_info["status"] != STATUS_OK:
             raise Exception(session_info["info"])
 
         self.shared_data.session = Session(
@@ -280,7 +304,7 @@ class Connector(object):
         logger.info(f"Refresh token response: \r\n{response}")
         if isinstance(response, list):
             session_info = response[0]["RefreshToken"]
-            if session_info["status"] != 0:
+            if session_info["status"] != STATUS_OK:
                 # Refresh token failed, we need to re-authenticate
                 # This is possible with a long lived connector, where
                 # the session token and the refresh token have expired.
@@ -320,7 +344,7 @@ class Connector(object):
 
             # Handshake with server to negotiate protocol
 
-            protocol = 2 if self.use_ssl else 1
+            protocol = PROTOCOL_SSL if self.use_ssl else PROTOCOL_TCP
 
             hello_msg = struct.pack('@II', PROTOCOL_VERSION, protocol)
 
@@ -368,7 +392,8 @@ class Connector(object):
                 self._connect()
             except socket.error as e:
                 logger.error(
-                    f"Error connecting to server: {self.config} \r\n{details}. {e=}",
+                    f"Error connecting to server: {
+                        self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
 
@@ -513,16 +538,17 @@ class Connector(object):
 
     def _renew_session(self):
         count = 0
-        while count < 3:
+        while count < RENEW_SESSION_MAX_ATTEMPTS:
             try:
                 self._check_session_status()
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of 3] Failed to refresh token.",
+                    f"[Attempt {
+                        count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
                     exc_info=True,
                     stack_info=True)
-                time.sleep(1)
+                time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)
                 count += 1
 
     def clone(self) -> Connector:
@@ -583,7 +609,7 @@ class Connector(object):
             int: The value recieved from the server, or -2 if not found.
         """
         # Default status is -2, which is an error, but not a server error.
-        status = -2
+        status = STATUS_ERROR_DEFAULT
         if (isinstance(json_res, dict)):
             if ("status" not in json_res):
                 status = self.check_status(json_res[list(json_res.keys())[0]])
