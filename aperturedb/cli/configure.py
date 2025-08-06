@@ -74,6 +74,7 @@ def get_configurations(file: str):
                 port=config["port"],
                 username=config["username"],
                 password=config["password"],
+                token=config["token"] if "token" in config else None,
                 use_rest=config["use_rest"],
                 use_ssl=config["use_ssl"])
             if "user_keys" in config:
