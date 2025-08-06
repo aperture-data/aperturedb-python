@@ -7,7 +7,7 @@ class Blobs(Entities):
     """
     **The object mapper representation of blobs in ApertureDB.**
 
-    This class is a layer on top of the native query.
+    This class is a layer on top of the native query. Force CI to run.
     It facilitates interactions with blobs in the database in the pythonic way.
     """
     db_object = "_Blob"
