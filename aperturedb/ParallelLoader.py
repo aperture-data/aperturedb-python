@@ -1,4 +1,3 @@
-
 from aperturedb import ParallelQuery
 from aperturedb.Connector import Connector
 from aperturedb.Utils import Utils
@@ -6,6 +5,15 @@ from aperturedb.Subscriptable import Subscriptable
 
 import numpy as np
 import logging
+
+# For each property of each Entity or Connection,
+# the following information is returned as an array of 3 elements of the form [matched, has_index_flag, type]:
+# - matched: Number of objects that match the search.
+# - has_index_flag: Indicates whether the property is indexed or not.
+# - type: Type for the property. See supported types.
+# https://docs.aperturedata.io/query_language/Reference/db_commands/GetSchema
+PROPERTIES_SCHEMA_INDEX_FLAG = 1
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,20 +31,92 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         self.utils = Utils(self.client)
         self.type = "element"
 
-    def get_existing_indices(self):
-        schema = self.utils.get_schema()
-        existing_indices = {}
-        if schema:
-            for index_type in (("entity", "entities"), ("connection", "connections")):
-                foo = schema.get(index_type[1]) or {}
-                bar = foo.get("classes") or {}
-                for cls_name, cls_schema in bar.items():
-                    props = cls_schema.get("properties") or {}
-                    for prop_name, prop_schema in props.items():
-                        if prop_schema[1]:  # indicates property has an index
-                            existing_indices.setdefault(index_type[0], {}).setdefault(
+    def get_entity_indexes(self, schema: dict) -> dict:
+        """
+        Returns a dictionary of indexes for entities' properties.
+
+        Args:
+            schema (dict): The schema dictionary to get indexes from.
+
+        Returns:
+            dict: A dictionary of entity indexes.
+        """
+
+        indexes = {}
+
+        entities = schema.get("entities") or {}
+
+        for cls_name, cls_schema in (entities.get("classes") or {}).items():
+            for prop_name, prop_schema in (cls_schema.get("properties") or {}).items():
+                if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
+                    indexes.setdefault("entity", {}).setdefault(
+                        cls_name, set()).add(prop_name)
+
+        return indexes
+
+    def get_connection_indexes(self, schema: dict) -> dict:
+        """
+        Returns a dictionary of indexes for connections' properties.
+
+        Args:
+            schema (dict): The schema dictionary to get indexes from.
+
+        Returns:
+            dict: A dictionary of connection indexes.
+        """
+
+        indexes = {}
+
+        connections = schema.get("connections") or {}
+        cls_names = connections.get("classes") or {}
+
+        for cls_name, cls_schema in cls_names.items():
+
+            # check if cls_schema is a dict or a list
+            if isinstance(cls_schema, dict):
+                for prop_name, prop_schema in (cls_schema.get("properties") or {}).items():
+                    if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
+                        indexes.setdefault("connection", {}).setdefault(
+                            cls_name, set()).add(prop_name)
+            elif isinstance(cls_schema, list):
+                # If cls_schema is a list, this occurs when the schema defines multiple connection variants
+                # for the same class. Each element in the list is expected to be a dictionary representing
+                # a connection variant, with a "properties" key containing the property schemas.
+                # Example schema format:
+                # "connections": {
+                #     "classes": {
+                #         "SomeConnectionClass": [
+                #             {"properties": {"prop1": [...], "prop2": [...]}},
+                #             {"properties": {"prop3": [...], "prop4": [...]}},
+                #         ]
+                #     }
+                # }
+                for connection in cls_schema:
+                    for prop_name, prop_schema in (connection.get("properties") or {}).items():
+                        if prop_schema[PROPERTIES_SCHEMA_INDEX_FLAG]:
+                            indexes.setdefault("connection", {}).setdefault(
                                 cls_name, set()).add(prop_name)
-        return existing_indices
+            else:
+                exception_msg = "Unexpected schema format for connection class "
+                exception_msg += f"'{cls_name}': {cls_schema}"
+                logger.error(exception_msg)
+                raise ValueError(exception_msg)
+
+        return indexes
+
+    def get_existing_indices(self):
+
+        indexes = {}
+        schema = self.utils.get_schema()
+
+        if schema:
+            entity_indexes     = self.get_entity_indexes(schema)
+            connection_indexes = self.get_connection_indexes(schema)
+
+            # Combine both entity and connection indexes
+            indexes = {**entity_indexes, **connection_indexes}
+
+        return indexes
 
     def query_setup(self, generator: Subscriptable) -> None:
         """
