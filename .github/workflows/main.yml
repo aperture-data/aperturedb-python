@@ -9,8 +9,7 @@ jobs:
   build_and_test:
 
     runs-on:
-    - self-hosted
-    - deployer
+    - benchmarks
 
     steps:
 
