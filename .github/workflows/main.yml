@@ -9,7 +9,7 @@ jobs:
   build_and_test:
 
     runs-on:
-    - benchmarks
+    - benchmark
 
     steps:
 
