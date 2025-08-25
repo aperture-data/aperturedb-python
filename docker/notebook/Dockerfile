@@ -1,6 +1,9 @@
 # Pull base image.
 FROM aperturedata/aperturedb-notebook:dependencies
 
+ARG PIP_INDEX_URL=https://pypi.org/simple
+ARG PIP_TRUSTED_HOST=pypi.org
+
 RUN mkdir /aperturedata
 ADD docker/notebook/aperturedata /aperturedata
 
@@ -13,7 +16,7 @@ RUN  chmod 755 /start.sh
 # ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
 # RUN chmod +x /usr/bin/tini
 # ENTRYPOINT ["/usr/bin/tini", "--"]
-RUN cd /aperturedata && pip install -e ".[dev]"
+RUN cd /aperturedata && PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} pip install -e ".[dev]"
 RUN echo "adb --install-completion" | bash
 
 # Install useful JupyterLab extensions
@@ -23,7 +26,7 @@ RUN pip install jupyter-resource-usage
 RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements"
 
 # Install CLIP (for running transformers)
-RUN pip install git+https://github.com/openai/CLIP.git
+RUN PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} pip install git+https://github.com/openai/CLIP.git
 
 RUN apt update && apt install -y curl && apt clean
 

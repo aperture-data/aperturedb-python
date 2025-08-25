@@ -1,5 +1,8 @@
 FROM ubuntu:22.04
 
+ARG PIP_INDEX_URL=https://pypi.org/simple
+ARG PIP_TRUSTED_HOST=pypi.org
+
 # Updated as per the newest release.
 ENV OPENCV_VERSION=4.7.0
 
@@ -52,6 +55,6 @@ RUN wget -q https://github.com/opencv/opencv/archive/$OPENCV_VERSION.tar.gz && \
         -D OPENCV_PYTHON3_INSTALL_PATH=/opt/venv/lib/python3.10/site-packages .. && \
     make -j6 && make install
 
-RUN pip install jupyterlab jupyterlab-dash dash-cytoscape plotly jupyter-dash numpy
+RUN PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} pip install jupyterlab jupyterlab-dash dash-cytoscape plotly jupyter-dash numpy
 RUN jupyter lab build
 RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements"
