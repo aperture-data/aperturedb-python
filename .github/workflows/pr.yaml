@@ -44,5 +44,7 @@ jobs:
         ADB_TAG: dev
         LENZ_REPO: aperturedata/lenz
         LENZ_TAG: dev
+        PIP_TRUSTED_HOST: ${{ secrets.PIP_CACHE_SERVER }}
+        PIP_INDEX_URL: "http://${{ secrets.PIP_CACHE_SERVER }}:3141/root/pypi/+simple/"
       run: ./ci.sh
       shell: bash
