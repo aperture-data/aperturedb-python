@@ -129,8 +129,8 @@ def insert_data_from_csv(db, request):
             data = data[:rec_count]
 
         loader = ParallelLoader(db)
-        loader.ingest(data, batchsize=99,
-                      numthreads=8,
+        loader.ingest(data, batchsize=503,
+                      numthreads=4,
                       stats=True,
                       )
 
