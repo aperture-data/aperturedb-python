@@ -151,12 +151,14 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             indices_needed = generator.get_indices()
 
             # Create indexes for entities
+            for entity_class in indices_needed.get("entity", {}):
                 for property_name in indices_needed["entity"].get(entity_class, []):
                     if not self.utils.create_entity_index(entity_class, property_name):
                         logger.warning(
                             f"Failed to create index for {entity_class}.{property_name}")
 
             # Create indexes for connections
+            for connection_class in indices_needed.get("connection", {}):
                 for property_name in indices_needed["connection"].get(connection_class, []):
                     if not self.utils.create_connection_index(connection_class, property_name):
                         logger.warning(
