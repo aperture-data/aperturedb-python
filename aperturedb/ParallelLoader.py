@@ -120,9 +120,8 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
     def query_setup(self, generator: Subscriptable) -> None:
         """
-        Runs the setup for the loader, which includes creating indices
-        Currently, it only creates indices for the properties that are
-        also used for constraint.
+        Runs the setup for the loader, which includes creating indices.
+        Currently, it only creates indices for the properties that are used for constraint.
 
         Will only run when the argument generator has a get_indices method that returns
         a dictionary of the form:
@@ -150,17 +149,20 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             schema = self.utils.get_schema()
 
             indices_needed = generator.get_indices()
-            for schema_type, schema_type_plural in [("entity", "entities"), ("connection", "connections")]:
-                for entity_class in indices_needed.get(schema_type, {}):
-                    for property_name in indices_needed[schema_type][entity_class]:
-                        schema_type = schema.get(schema_type_plural, {}) or {}
-                        if property_name not in schema_type.get('classes', {}).get(entity_class, {}).get('properties', {}):
-                            if not self.utils.create_entity_index(entity_class, property_name):
-                                logger.warning(
-                                    f"Failed to create index for {entity_class}.{property_name}")
-                        else:
-                            logger.info(
-                                f"Index for {entity_class}.{property_name} already exists")
+
+            # Create indexes for entities
+            for entity_class in indices_needed.get("entity", {}):
+                for property_name in indices_needed["entity"][entity_class]:
+                    if not self.utils.create_entity_index(entity_class, property_name):
+                        logger.warning(
+                            f"Failed to create index for {entity_class}.{property_name}")
+
+            # Create indexes for connections
+            for connection_class in indices_needed.get("connection", {}):
+                for property_name in indices_needed["connection"][connection_class]:
+                    if not self.utils.create_connection_index(connection_class, property_name):
+                        logger.warning(
+                            f"Failed to create index for {connection_class}.{property_name}")
 
     def ingest(self, generator: Subscriptable, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
         """
