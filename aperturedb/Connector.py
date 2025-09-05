@@ -137,7 +137,7 @@ class Connector(object):
 
     shared_data and authenticate are not Configuration class based options, and
     have no overrides.
-    
+
     """
 
     def __init__(self, host="localhost", port=DEFAULT_PORT,
@@ -191,7 +191,6 @@ class Connector(object):
         self.use_keepalive = self.config.use_keepalive
         self.token = self.config.token
         self.conn = None
-
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
