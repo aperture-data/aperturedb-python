@@ -153,22 +153,18 @@ class Connector(object):
         self.query_connection_error_suppression_delta = timedelta(
             seconds=DEFAULT_QUERY_CONNECTION_ERROR_SUPPRESSION_DELTA_SEC)
 
-        if key is not None:
-            self.config = Configuration.reinflate(key)
-            self.host = self.config.host
-            self.port = self.config.port
-            self.use_ssl = self.config.use_ssl
-            token = self.config.token
-        elif config is None:
-            self.host = host
-            self.port = port
-            self.use_ssl = use_ssl
-            self.use_keepalive = use_keepalive
+        # we either have a config ( as a key or as object ) or not.
+        if key is not None or config is not None:
+            if key is not None:
+                self.config = Configuration.reinflate(key)
+            else:
+                self.config = config
+        else:
             # Create a configuration object, to show better error messages
             self.config = Configuration(
-                host=self.host,
-                port=self.port,
-                use_ssl=self.use_ssl,
+                host=host,
+                port=port,
+                use_ssl=use_ssl,
                 username=user,
                 password=password,
                 name="runtime",
@@ -177,17 +173,15 @@ class Connector(object):
                 retry_interval_seconds=retry_interval_seconds,
                 retry_max_attempts=retry_max_attempts
             )
-        else:
-            self.config = config
-            self.host = config.host
-            self.port = config.port
-            self.use_ssl = config.use_ssl
-            self.use_keepalive = config.use_keepalive
-            token = config.token
 
+        # now we do.
+        self.host = self.config.host
+        self.port = self.config.port
+        self.use_ssl = self.config.use_ssl
+        self.use_keepalive = config.use_keepalive
+        self.token = token
         self.conn = None
 
-        self.token = token
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
