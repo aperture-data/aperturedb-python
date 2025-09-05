@@ -128,6 +128,16 @@ class Connector(object):
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
         str (key): Apeture Key, configuration as a deflated compressed string
+
+    The Configuration class options:
+    host,port,user,password,token,use_ssl,use_keepalive,retry_interval_seconds,retrun_max_attempts
+    are all ignored in the initializer if a config or key is passed in.
+
+    If a key is passed in, it is chosen over a config.
+
+    shared_data and authenticate are not Configuration class based options, and
+    have no overrides.
+    
     """
 
     def __init__(self, host="localhost", port=DEFAULT_PORT,
