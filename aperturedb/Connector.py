@@ -188,8 +188,8 @@ class Connector(object):
         self.host = self.config.host
         self.port = self.config.port
         self.use_ssl = self.config.use_ssl
-        self.use_keepalive = config.use_keepalive
-        self.token = token
+        self.use_keepalive = self.config.use_keepalive
+        self.token = self.config.token
         self.conn = None
 
 
