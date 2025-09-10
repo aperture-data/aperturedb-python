@@ -63,7 +63,7 @@ def dump_to_stdout(client: Connector, transaction: dict, **kwargs):
     console.log(result)
     console.log(response)
     for i, blob in enumerate(blobs):
-        console.log(f"len(blob[{i}]) = {len(blob[i])}")
+        console.log(f"len(blob[{i}]) = {len(blob)}")
 
 
 def mount_as_coco_ds(client: Connector, transaction: dict, **kwargs):
