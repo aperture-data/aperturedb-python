@@ -59,7 +59,7 @@ class ConnectorRest(Connector):
 
     def __init__(self, host="localhost", port=None,
                  user="", password="", token="",
-                 use_ssl=True, shared_data=None,
+                 use_ssl=True, ca_cert=None, shared_data=None,
                  config: Optional[Configuration] = None,
                  key: Optional[str] = None):
         self.use_keepalive = False
@@ -70,6 +70,7 @@ class ConnectorRest(Connector):
             password=password,
             token=token,
             use_ssl=use_ssl,
+            ca_cert=ca_cert,
             shared_data=shared_data,
             config=config,
             key=key)

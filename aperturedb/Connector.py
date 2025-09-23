@@ -143,6 +143,7 @@ class Connector(object):
     def __init__(self, host="localhost", port=DEFAULT_PORT,
                  user="", password="", token="",
                  use_ssl=True,
+                 ca_cert=None,
                  shared_data=None,
                  authenticate=True,
                  use_keepalive=True,
@@ -373,12 +374,43 @@ class Connector(object):
 
                 # Server is ok with SSL, we switch over SSL.
                 self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                self.context.check_hostname = False
+                if self.config.ca_cert:
+                    self.context.load_verify_locations(
+                        cafile=self.config.ca_cert
+                    )
                 # TODO, we need to add support for local certificates
                 # For now, we let the server send us the certificate
-                self.context.verify_mode = ssl.VerifyMode.CERT_NONE
-                self.conn = self.context.wrap_socket(self.conn)
+                try:
+                    self.conn = self.context.wrap_socket(
+                        self.conn, server_hostname=self.host)
+                except ssl.SSLCertVerificationError as e:
+                    logger.error(f"Error verifying certificate: {e}")
+                    logger.error(
+                        f"The host name must match the certificate: {self.host}")
+                    logger.error(
+                        f"You can use the ca_cert parameter to specify a custom CA certificate")
+                    assert False, "Certificate verification failed" + \
+                        f"The host name must match the certificate: {self.host} " + os.linesep + \
+                        f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
+                        f"Refer to the documentation for more information: https://docs.aperturedata.io/administration/troubleshooting " + os.linesep + \
+                        f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)"
+                except ssl.SSLError as e:
+                    logger.error(f"Error wrapping socket: {e}")
+                    self.conn.close()
+                    self.connected = False
+                    raise
 
+        except FileNotFoundError as e:
+            logger.error(f"Error verifying certificate: {e}")
+            logger.error(
+                f"The certificate file does not exist: {self.config.ca_cert}")
+            logger.error(
+                f"You can use the ca_cert parameter to specify a custom CA certificate")
+            assert False, "Certificate verification failed" + \
+                f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
+                f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
+                f"Refer to the documentation for more information: https://docs.aperturedata.io/administration/troubleshooting " + os.linesep + \
+                f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)"
         except BaseException as e:
             self.conn.close()
             self.connected = False

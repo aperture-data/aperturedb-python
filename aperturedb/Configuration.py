@@ -33,6 +33,7 @@ class Configuration:
     retry_max_attempts: int = 3
     token: str = None
     user_keys: dict = None
+    ca_cert: str = None
 
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
@@ -41,7 +42,7 @@ class Configuration:
 
     def deflate(self) -> list:
         return self.create_aperturedb_key(self.host, self.port, self.token,
-                                          self.use_rest, self.use_ssl, self.username, self.password)
+                                          self.use_rest, self.use_ssl, self.username, self.password, self.ca_cert)
 
     def has_user_keys(self) -> bool:
         return self.user_keys is not None
@@ -83,7 +84,7 @@ class Configuration:
 
     @classmethod
     def create_aperturedb_key(cls, host: str, port: int,  token_string: str,
-                              use_rest: bool, use_ssl: bool, username: str = None, password: str = None) -> None:
+                              use_rest: bool, use_ssl: bool, username: str = None, password: str = None, ca_cert: str = None) -> None:
         compressed = False
         if token_string is not None and token_string.startswith("adbp_"):
             token_string = token_string[5:]
@@ -146,7 +147,7 @@ class Configuration:
                     f"Unable to parse compressed host: {host} Error: {e}")
 
         c = Configuration(
-            host, port, username, password, name, use_ssl, use_rest)
+            host, port, username, password, name, use_ssl, use_rest, ca_cert=ca_cert)
         if token:
             c.token = token
         return c

@@ -76,7 +76,8 @@ def get_configurations(file: str):
                 password=config["password"],
                 token=config["token"] if "token" in config else None,
                 use_rest=config["use_rest"],
-                use_ssl=config["use_ssl"])
+                use_ssl=config["use_ssl"],
+                ca_cert=config.get("ca_cert", None))
             if "user_keys" in config:
                 configs[c].set_user_keys(config["user_keys"])
     active = configurations["active"]
@@ -146,6 +147,7 @@ def create(
         password: Annotated[str, typer.Option(help="Password")] = "admin",
         use_rest: Annotated[bool, typer.Option(help="Use REST")] = False,
         use_ssl: Annotated[bool, typer.Option(help="Use SSL")] = True,
+        ca_cert: Annotated[str, typer.Option(help="CA certificate")] = None,
         interactive: Annotated[bool, typer.Option(
             help="Interactive mode")] = True,
         overwrite: Annotated[bool, typer.Option(
@@ -176,7 +178,7 @@ def create(
     db_password = password
     db_use_rest = use_rest
     db_use_ssl = use_ssl
-
+    db_ca_cert = ca_cert
     config_path = _config_file_path(as_global)
     configs = {}
     try:
@@ -225,6 +227,11 @@ def create(
                 f"Use REST [Note: Only if ApertureDB is setup to receive HTTP requests]", default=db_use_rest)
             db_use_ssl = typer.confirm(
                 f"Use SSL [Note: ApertureDB's defaults do not allow non SSL traffic]", default=db_use_ssl)
+            db_ca_cert = typer.prompt(
+                f"Enter {APP_NAME} CA certificate's (if custom CA is used)", default=db_ca_cert)
+            db_ca_cert = os.path.abspath(db_ca_cert)
+            assert os.path.exists(
+                db_ca_cert), "CA certificate file does not exist"
 
         gen_config = Configuration(
             name=name,
@@ -233,7 +240,8 @@ def create(
             username=db_username,
             password=db_password,
             use_ssl=db_use_ssl,
-            use_rest=db_use_rest
+            use_rest=db_use_rest,
+            ca_cert=db_ca_cert
         )
 
     assert name is not None, "Configuration name must be specified"
