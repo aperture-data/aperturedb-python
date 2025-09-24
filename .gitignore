@@ -154,3 +154,5 @@ docker/pytorch-gpu/aperturedata/*
 .aperturedb
 test/data/
 test/aperturedb/certificate/
+.devcontainer/aperturedb/
+.devcontainer/ca/
