@@ -87,7 +87,7 @@ class DaskManager:
             client.host,
             client.port,
             client.use_ssl,
-            client.ca_cert,
+            client.config.ca_cert,
             client.shared_data.session,
             type(client))
         computation = computation.persist()
