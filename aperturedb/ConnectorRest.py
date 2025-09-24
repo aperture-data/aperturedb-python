@@ -35,10 +35,32 @@ from types import SimpleNamespace
 from typing import Optional
 from aperturedb.Connector import Connector
 from aperturedb.Configuration import Configuration
+from requests.adapters import HTTPAdapter
+import ssl
 
 logger = logging.getLogger(__name__)
 
 PROTOCOL_VERSION = 1
+
+
+class CustomHTTPAdapter(HTTPAdapter):
+    def __init__(self, ca_cert: Optional[str]):
+        self.ca_cert = ca_cert
+        super().__init__()
+
+    def init_poolmanager(self, *args, **kwargs):
+        # this creates a default context with secure default settings,
+        # which enables server certficiate verification using the
+        # system's default CA certificates
+        context = ssl.create_default_context()
+        if self.ca_cert:
+            context.load_verify_locations(cafile=self.ca_cert)
+
+        # alternatively, you could create your own context manually
+        # but this does NOT enable server certificate verification
+        # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+
+        super().init_poolmanager(*args, **kwargs, ssl_context=context)
 
 
 class ConnectorRest(Connector):
@@ -90,6 +112,11 @@ class ConnectorRest(Connector):
         # Since we will be making same call to the same URL, making a session
         # REF: https://requests.readthedocs.io/en/latest/user/advanced/
         self.http_session = requests.Session()
+        if self.config.ca_cert:
+            adapter = CustomHTTPAdapter(ca_cert=self.config.ca_cert)
+        else:
+            adapter = CustomHTTPAdapter(ca_cert=None)
+        self.http_session.mount('https://', adapter=adapter)
 
         self.last_response   = ''
         self.last_query_time = 0
