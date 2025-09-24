@@ -176,6 +176,7 @@ class Connector(object):
                 host=host,
                 port=port,
                 use_ssl=use_ssl,
+                ca_cert=ca_cert,
                 username=user,
                 password=password,
                 name="runtime",
