@@ -2,11 +2,20 @@ name: $RUNNER_NAME
 
 services:
   ca:
-    image: alpine/openssl
+    image: nginx
     restart: on-failure
-    command: req -x509 -newkey rsa:4096 -days 3650 -nodes -keyout /cert/tls.key -out /cert/tls.crt -subj "/C=US/O=ApertureData Inc./CN=localhost"
+    command: |
+      bash -c "
+      openssl genpkey -algorithm RSA -out /ca/ca.key -aes256 -pass pass:1234
+      openssl req -x509 -new -nodes -key /ca/ca.key -sha256 -days 3650 -out /ca/ca.crt -subj \"/C=US/ST=CA/L=Los Gatos/O=ApertureData/OU=ApertureDataCA/CN=ApertureDataCA\" -passin pass:1234
+      openssl genrsa -out /cert/tls.key 4096
+      openssl req -new -key /cert/tls.key -out /ca/tcp.csr -days 3650 -subj \"/C=US/ST=NY/L=NYC/O=instance/OU=instanceDB/CN=${DB_TCP_CN:-localhost}\"
+      openssl x509 -req  -CA /ca/ca.crt -CAkey /ca/ca.key -in /ca/tcp.csr -out /cert/tcp.crt -passin pass:1234
+      openssl req -new -key /cert/tls.key -out /ca/http.csr -days 3650 -subj \"/C=US/ST=NY/L=NYC/O=instance/OU=instanceDB/CN=${DB_HTTP_CN:-localhost}\"
+      openssl x509 -req  -CA /ca/ca.crt -CAkey /ca/ca.key -in /ca/http.csr -out /cert/http.crt -passin pass:1234"
     volumes:
       - ./aperturedb/certificate:/cert
+      - ./ca:/ca
 
   lenz:
     depends_on:
@@ -26,7 +35,7 @@ services:
       LNZ_REPLICAS: 1
       LNZ_ADB_MAX_CONCURRENCY: 48
       LNZ_FORCE_SSL: false
-      LNZ_CERTIFICATE_PATH: /etc/lenz/certificate/tls.crt
+      LNZ_CERTIFICATE_PATH: /etc/lenz/certificate/tcp.crt
       LNZ_PRIVATE_KEY_PATH: /etc/lenz/certificate/tls.key
     volumes:
       - ./aperturedb/certificate:/etc/lenz/certificate
@@ -71,7 +80,7 @@ configs:
         listen 80;
         listen 443 ssl;
         client_max_body_size 256m;
-        ssl_certificate /etc/nginx/certificate/tls.crt;
+        ssl_certificate /etc/nginx/certificate/http.crt;
         ssl_certificate_key /etc/nginx/certificate/tls.key;
         location / {
           proxy_pass http://webui;

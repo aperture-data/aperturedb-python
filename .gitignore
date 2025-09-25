@@ -156,3 +156,4 @@ test/data/
 test/aperturedb/certificate/
 .devcontainer/aperturedb/
 .devcontainer/ca/
+test/ca/

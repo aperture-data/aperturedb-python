@@ -33,6 +33,7 @@ def pytest_generate_tests(metafunc):
                     user=dbinfo.DB_USER,
                     password=dbinfo.DB_PASSWORD,
                     use_ssl=True,
+                    ca_cert=dbinfo.CA_CERT,
                     retry_max_attempts=3,
                     retry_interval_seconds=0)},
                 marks=pytest.mark.tcp),
@@ -42,7 +43,8 @@ def pytest_generate_tests(metafunc):
                     port=dbinfo.DB_REST_PORT,
                     user=dbinfo.DB_USER,
                     password=dbinfo.DB_PASSWORD,
-                    use_ssl=False)},
+                    ca_cert=dbinfo.CA_CERT,
+                    use_ssl=True)},
                 marks=pytest.mark.http)
         ], indirect=True, ids=["TCP", "HTTP"])
     if all(func in metafunc.fixturenames for func in ["insert_data_from_csv", "modify_data_from_csv"]) and \
