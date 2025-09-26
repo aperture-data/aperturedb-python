@@ -125,6 +125,7 @@ class Configuration:
                              f"{version}, which is not supported")
         is_compressed, use_rest, use_ssl = cls.key_type_to_config(as_list[1])
         host = as_list[2]
+        pem = None
 
         if version == APERTUREDB_KEY_VERSION:
             pem = as_list[3]
@@ -155,6 +156,7 @@ class Configuration:
                 raise ValueError(
                     f"Unable to parse compressed host: {host} Error: {e}")
 
+        # TODO: set pem here
         c = Configuration(
             host, port, username, password, name, use_ssl, use_rest)
         if token:
