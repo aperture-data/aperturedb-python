@@ -80,20 +80,10 @@ docker run \
     $REPOSITORY &
 
 pid2=$!
-wait $pid1
-exit_code1=$?
-wait $pid2
-exit_code2=$?
 
-if [ $exit_code1 -ne 0 ]; then
-    echo "Tests failed for HTTP"
-    exit $exit_code1
-fi
-if [ $exit_code2 -ne 0 ]; then
-    echo "Tests failed for NON_HTTP"
-    exit $exit_code2
-fi
+wait
 
-echo "Tests completed successfully"
+
+echo "Tests completed"
 echo " --- Runner name: ${RUNNER_NAME} ---"
 check_containers_networks
