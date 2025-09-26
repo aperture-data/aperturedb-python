@@ -65,7 +65,7 @@ docker run \
     $REPOSITORY &
 
 pid1=$!
-docker run -it\
+docker run \
     -v $(pwd)/output:/aperturedata/test/output \
     -v $(pwd)/ca:/ca \
     --network=${RUNNER_NAME}_non_http_default \
