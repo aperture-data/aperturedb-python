@@ -84,8 +84,10 @@ class Configuration:
             return DEFAULT_TCP_PORT
 
     @classmethod
-    def create_aperturedb_key(cls, host: str, port: int,  token_string: str,
-                              use_rest: bool, use_ssl: bool, username: str = None, password: str = None) -> None:
+    def create_aperturedb_key(
+            cls, host: str, port: int,  token_string: str,
+            use_rest: bool, use_ssl: bool, ca_cert: str = None,
+            username: str = None, password: str = None) -> None:
         compressed = False
         if token_string is not None and token_string.startswith("adbp_"):
             token_string = token_string[5:]
@@ -102,7 +104,8 @@ class Configuration:
         if port != default_port:
             host = f"{host}:{port}"
         if token_string is not None:
-            key_json = [APERTUREDB_KEY_VERSION, key_type, host, ca_cert, token_string]
+            key_json = [APERTUREDB_KEY_VERSION,
+                        key_type, host, ca_cert, token_string]
         else:
             key_json = [APERTUREDB_KEY_VERSION,
                         key_type, host, ca_cert, username, password]
@@ -120,7 +123,7 @@ class Configuration:
             raise Exception(
                 "Unable to make configuration from the provided string")
         version = as_list[0]
-        if version not in (APERTUREDB_KEY_VERSION,APERTUREDB_OLD_KEY_VERSION):
+        if version not in (APERTUREDB_KEY_VERSION, APERTUREDB_OLD_KEY_VERSION):
             raise ValueError("version identifier of configuration was"
                              f"{version}, which is not supported")
         is_compressed, use_rest, use_ssl = cls.key_type_to_config(as_list[1])
@@ -138,7 +141,7 @@ class Configuration:
         elif len(as_list) == list_offset + 2:
             username, password = as_list[list_offset:]
         else:
-            rase ValueError("Bad format for key list")
+            raise ValueError("Bad format for key list")
 
         port_match = re.match(".*:(\d+)$", host)
         if port_match is not None:
@@ -156,9 +159,8 @@ class Configuration:
                 raise ValueError(
                     f"Unable to parse compressed host: {host} Error: {e}")
 
-        # TODO: set pem here
         c = Configuration(
-            host, port, username, password, name, use_ssl, use_rest)
+            host, port, username, password, name, use_ssl, use_rest, ca_cert=pem)
         if token:
             c.token = token
         return c
