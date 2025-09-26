@@ -52,7 +52,7 @@ sleep 20 # wait for the containers to be up and running
 echo "running tests on docker image $REPOSITORY with $GATEWAY_HTTP and $GATEWAY_NON_HTTP"
 docker run \
     -v $(pwd)/output:/aperturedata/test/output \
-    -v $(pwd)/ca:/ca \
+    -v $(pwd)/${RUNNER_NAME}_http_ca:/ca \
     --network=${RUNNER_NAME}_http_default \
     -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
     -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
@@ -67,7 +67,7 @@ docker run \
 pid1=$!
 docker run \
     -v $(pwd)/output:/aperturedata/test/output \
-    -v $(pwd)/ca:/ca \
+    -v $(pwd)/${RUNNER_NAME}_non_http_ca:/ca \
     --network=${RUNNER_NAME}_non_http_default \
     -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
     -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
@@ -81,7 +81,19 @@ docker run \
 
 pid2=$!
 
-wait
+wait $pid1
+exit_code1=$?
+wait $pid2
+exit_code2=$?
+
+if [ $exit_code1 -ne 0 ]; then
+    echo "Tests failed for HTTP"
+    exit $exit_code1
+fi
+if [ $exit_code2 -ne 0 ]; then
+    echo "Tests failed for NON_HTTP"
+    exit $exit_code2
+fi
 
 
 echo "Tests completed"

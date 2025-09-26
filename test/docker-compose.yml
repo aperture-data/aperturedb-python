@@ -15,7 +15,7 @@ services:
       openssl x509 -req  -CA /ca/ca.crt -CAkey /ca/ca.key -in /ca/http.csr -out /cert/http.crt -passin pass:1234"
     volumes:
       - ./aperturedb/certificate:/cert
-      - ./ca:/ca
+      - ./${RUNNER_NAME}_ca:/ca
 
   lenz:
     depends_on:

@@ -42,7 +42,7 @@ class Configuration:
 
     def deflate(self) -> list:
         return self.create_aperturedb_key(self.host, self.port, self.token,
-                                          self.use_rest, self.use_ssl, self.username, self.password, self.ca_cert)
+                                          self.use_rest, self.use_ssl, self.username, self.password)
 
     def has_user_keys(self) -> bool:
         return self.user_keys is not None
