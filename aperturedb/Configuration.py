@@ -5,7 +5,8 @@ import re
 from base64 import b64encode, b64decode
 
 APERTUREDB_CLOUD = ".cloud.aperturedata.io"
-APERTUREDB_KEY_VERSION = 1
+APERTUREDB_KEY_VERSION = 2
+APERTUREDB_OLD_KEY_VERSION = 1
 FLAG_USE_COMPRESSED_HOST = 4
 FLAG_USE_REST = 2
 FLAG_USE_SSL = 1
@@ -101,10 +102,10 @@ class Configuration:
         if port != default_port:
             host = f"{host}:{port}"
         if token_string is not None:
-            key_json = [APERTUREDB_KEY_VERSION, key_type, host, token_string]
+            key_json = [APERTUREDB_KEY_VERSION, key_type, host, ca_cert, token_string]
         else:
             key_json = [APERTUREDB_KEY_VERSION,
-                        key_type, host, username, password]
+                        key_type, host, ca_cert, username, password]
         simplified = json.dumps(key_json, separators=(',', ':'))
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded
@@ -119,16 +120,24 @@ class Configuration:
             raise Exception(
                 "Unable to make configuration from the provided string")
         version = as_list[0]
-        if version not in (APERTUREDB_KEY_VERSION,):
+        if version not in (APERTUREDB_KEY_VERSION,APERTUREDB_OLD_KEY_VERSION):
             raise ValueError("version identifier of configuration was"
                              f"{version}, which is not supported")
         is_compressed, use_rest, use_ssl = cls.key_type_to_config(as_list[1])
         host = as_list[2]
+
+        if version == APERTUREDB_KEY_VERSION:
+            pem = as_list[3]
+            list_offset = 4
+        else:
+            list_offset = 3
         token = username = password = None
-        if len(as_list) == 4:
-            token = "adbp_" + as_list[3]
-        elif len(as_list) == 5:
-            username, password = as_list[3:]
+        if len(as_list) == list_offset + 1:
+            token = "adbp_" + as_list[list_offset]
+        elif len(as_list) == list_offset + 2:
+            username, password = as_list[list_offset:]
+        else:
+            rase ValueError("Bad format for key list")
 
         port_match = re.match(".*:(\d+)$", host)
         if port_match is not None:
