@@ -84,7 +84,7 @@ class Configuration:
 
     @classmethod
     def create_aperturedb_key(cls, host: str, port: int,  token_string: str,
-                              use_rest: bool, use_ssl: bool, username: str = None, password: str = None, ca_cert: str = None) -> None:
+                              use_rest: bool, use_ssl: bool, username: str = None, password: str = None) -> None:
         compressed = False
         if token_string is not None and token_string.startswith("adbp_"):
             token_string = token_string[5:]
@@ -147,7 +147,7 @@ class Configuration:
                     f"Unable to parse compressed host: {host} Error: {e}")
 
         c = Configuration(
-            host, port, username, password, name, use_ssl, use_rest, ca_cert=ca_cert)
+            host, port, username, password, name, use_ssl, use_rest)
         if token:
             c.token = token
         return c
