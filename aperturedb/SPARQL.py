@@ -105,8 +105,8 @@ class SPARQL:
                 uri = self._make_uri("c", c)
                 if uri not in self.connections:
                     self.connections[uri] = (set(), set())
-                self.connections[uri][0].add(d["src"])
-                self.connections[uri][1].add(d["dst"])
+                self.connections[uri][0].add(d[0]["src"])
+                self.connections[uri][1].add(d[0]["dst"])
         if not self.connections:
             self.logger.warning("No connections found in schema")
 
