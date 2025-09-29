@@ -425,7 +425,7 @@ class SPARQL:
                 types[k] = intersection
 
         from rdflib import RDF
-        from rdflib.plugins.sparql.sparql import QueryContext, SPARQLError
+        from rdflib.plugins.sparql.sparql import SPARQLError
         types = {}
         for s, p, o in triples:
             s_type = self._deduce_type(s)

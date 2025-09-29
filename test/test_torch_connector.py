@@ -5,7 +5,6 @@ from typing import Union
 
 import torch
 import torch.distributed as dist
-from aperturedb import Images
 from aperturedb import PyTorchDataset
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset

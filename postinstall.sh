@@ -11,7 +11,6 @@ adb config create http --host=nginx --port=443 --use-rest --ca-cert=${CA_CERT} -
 adb --install-completion
 
 pip install pytest rdflib
-pip install facenet-pytorch --no-deps
 
 # Create a default config file, for tests.
 mkdir -p ~/.config/kaggle

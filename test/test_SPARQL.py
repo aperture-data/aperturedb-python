@@ -1,32 +1,22 @@
-from pathlib import Path
+import logging
 import os
-import subprocess
+from pathlib import Path
 import runpy
-import requests
-import shutil
-import pytest
-import numpy as np
-import pandas as pd
-import os.path as osp
 import tempfile
-from aperturedb.Query import QueryBuilder, Query
-from aperturedb.Entities import Entities
-from aperturedb.Constraints import Constraints
-from aperturedb.Images import Images
-from aperturedb.Utils import Utils
-from aperturedb.SPARQL import SPARQL
-from aperturedb.cli.ingest import from_csv, TransformerType, IngestType
-from aperturedb.ImageDataCSV import ImageDataCSV
-from aperturedb.EntityDataCSV import EntityDataCSV
+
+import numpy as np
+import pytest
+import requests
+
 from aperturedb.ConnectionDataCSV import ConnectionDataCSV
-from aperturedb.DescriptorDataCSV import DescriptorDataCSV
+from aperturedb.EntityDataCSV import EntityDataCSV
+from aperturedb.ImageDataCSV import ImageDataCSV
 from aperturedb.ParallelLoader import ParallelLoader
+from aperturedb.SPARQL import SPARQL
+from aperturedb.Utils import Utils
+from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
 from aperturedb.transformers.common_properties import CommonProperties
 from aperturedb.transformers.image_properties import ImageProperties
-from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
-from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
-
-import logging
 logger = logging.getLogger(__name__)
 
 

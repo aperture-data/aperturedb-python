@@ -1,6 +1,4 @@
-import numpy as np
 from aperturedb.ParallelQuery import ParallelQuery
-from aperturedb.Query import QueryBuilder
 
 import logging
 logger = logging.getLogger(__name__)
