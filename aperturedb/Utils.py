@@ -282,8 +282,12 @@ class Utils(object):
         print(f"Total connections types: {total_connections}")
         total_edges = 0
         for c in connections_classes:
-            total_edges += self._object_summary(c,
-                                                r["connections"]["classes"][c])
+            if isinstance(r["connections"]["classes"][c], dict):
+                total_edges += self._object_summary(c,
+                                                    r["connections"]["classes"][c])
+            elif isinstance(r["connections"]["classes"][c], list):
+                for connection in r["connections"]["classes"][c]:
+                    total_edges += self._object_summary(c, connection)
 
         print(f"------------------ Totals -------------------")
         print(f"Total nodes: {total_nodes}")
