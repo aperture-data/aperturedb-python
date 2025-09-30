@@ -184,9 +184,7 @@ class Utils(object):
             for prop, (matched, indexed, typ) in properties.items():
                 table += f'<TR><TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
             for connection, data in connections.items():
-                data_list = data
-                if isinstance(data, dict):
-                    data_list = [data]
+                data_list = [ data ] if isinstance(data, dict) else data_list = [data]
                 for data in data_list:
                     if data['src'] == entity:
                         matched = data["matched"]
