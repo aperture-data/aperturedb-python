@@ -200,9 +200,7 @@ class Utils(object):
 
         if isinstance(connections, dict):
             for connection, data in connections.items():
-                data_list = data
-                if isinstance(data, dict):
-                    data_list = [data]
+                data_list = [ data ] if isinstance(data, dict) else data
                 for data in data_list:
                     dot.edge(f'{data["src"]}:{connection}',
                              f'{data["dst"]}')
