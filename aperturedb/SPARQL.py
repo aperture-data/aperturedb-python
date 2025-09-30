@@ -106,7 +106,7 @@ class SPARQL:
                 if uri not in self.connections:
                     self.connections[uri] = (set(), set())
                 # Due to the change in response format, we need to handle both dict and list.
-                d_list = [ d ]  if isinstance(d, dict) else d
+                d_list = [d] if isinstance(d, dict) else d
 
                 for d in d_list:
                     self.connections[uri][0].add(d["src"])
