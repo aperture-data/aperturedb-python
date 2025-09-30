@@ -74,6 +74,8 @@ RENEW_SESSION_RETRY_INTERVAL_SEC = 1
 STATUS_OK = 0
 STATUS_ERROR_DEFAULT = -2
 
+SETUP_URL = "https://docs.aperturedata.dev/Setup/server/Local#run-aperturedb-along-with-webui-using-docker-compose"
+
 
 class UnauthorizedException(Exception):
     pass
@@ -390,10 +392,10 @@ class Connector(object):
                         f"The host name must match the certificate: {self.host}")
                     logger.error(
                         f"You can use the ca_cert parameter to specify a custom CA certificate")
-                    assert False, "Certificate verification failed" + \
+                    assert False, "Certificate verification failed" + os.linesep + \
                         f"The host name must match the certificate: {self.host} " + os.linesep + \
                         f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
-                        f"Refer to the documentation for more information: https://docs.aperturedata.io/administration/troubleshooting " + os.linesep + \
+                        f"Refer to the documentation for more information: {SETUP_URL}" + os.linesep + \
                         f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)"
                 except ssl.SSLError as e:
                     logger.error(f"Error wrapping socket: {e}")
@@ -407,10 +409,10 @@ class Connector(object):
                 f"The certificate file does not exist: {self.config.ca_cert}")
             logger.error(
                 f"You can use the ca_cert parameter to specify a custom CA certificate")
-            assert False, "Certificate verification failed" + \
+            assert False, "Certificate verification failed" + os.linesep + \
                 f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
                 f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
-                f"Refer to the documentation for more information: https://docs.aperturedata.io/administration/troubleshooting " + os.linesep + \
+                f"Refer to the documentation for more information: {SETUP_URL} " + os.linesep + \
                 f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)"
         except BaseException as e:
             self.conn.close()

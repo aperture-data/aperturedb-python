@@ -1,6 +1,7 @@
 #!/bin/bash
 
 docker compose -f .devcontainer/docker-compose.yml down --remove-orphans
+docker compose -f .devcontainer/docker-compose.yml pull
 docker build -t aperturedata/aperturedb-notebook:dependencies docker/dependencies
 echo RUNNER_NAME=devcontainer > ./.devcontainer/.env
 echo ADB_REPO=aperturedata/aperturedb-community >> ./.devcontainer/.env
