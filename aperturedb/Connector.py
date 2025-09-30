@@ -45,8 +45,25 @@ from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
 from aperturedb.types import CommandResponses
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
+
+# 1. Get a logger instance (or the root logger)
+logger = logging.getLogger(__name__)  # Using __name__ for a named logger
+logger.setLevel(logging.INFO)  # Set the desired logging level
+
+# 2. Create a StreamHandler and specify sys.stdout as the stream
+console_handler = logging.StreamHandler(sys.stdout)
+
+# 3. Create a Formatter to define the log message format
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# 4. Set the formatter for the console handler
+console_handler.setFormatter(formatter)
+
+# 5. Add the console handler to the logger
+logger.addHandler(console_handler)
 
 PROTOCOL_VERSION = 1
 MESSAGE_LENGTH_FORMAT = '@I'
@@ -213,7 +230,10 @@ class Connector(object):
         if not self.authenticated:
             if shared_data.session is None:
                 self.shared_data.lock = Lock()
+                start = time.time()
                 self._authenticate(user, password, token)
+                print(
+                    f"Authenticated in {time.time() - start} seconds.")
             else:
                 self.shared_data = shared_data
             self.authenticated = True
@@ -224,13 +244,22 @@ class Connector(object):
             self.connected = False
 
     def _send_msg(self, data):
+        print(f"Sending message of size {len(data)} bytes")
+
+        start = time.time()
         if len(data) > (DEFAULT_MAX_MESSAGE_SIZE_MB * 2**20):
             logger.warning(
                 "Message sent is larger than default for ApertureDB Server. Server may disconnect.")
 
         sent_len = struct.pack(MESSAGE_LENGTH_FORMAT,
                                len(data))  # send size first
+
+        print("about to send...")
         x = self.conn.send(sent_len + data)
+        print("sent.")
+
+        end = time.time()
+        print(f"Message sent in {end - start} seconds.")
         return x == len(data) + MESSAGE_LENGTH_SIZE
 
     def _recv_msg(self):
@@ -270,7 +299,10 @@ class Connector(object):
             raise Exception(
                 "Either password or token must be specified for authentication")
 
+        start = time.time()
         response, _ = self._query(query)
+        print(
+            f"Authentication actual query time: {time.time() - start} seconds.")
 
         if not isinstance(response, (list, tuple)
                           ) or "Authenticate" not in response[0]:
@@ -331,8 +363,11 @@ class Connector(object):
             raise UnauthorizedException(response)
 
     def _connect(self):
+
+        print("Establishing connection...")
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.conn.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+        print("Socket created.")
+        # self.conn.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
         if self.use_keepalive:
             keepalive.set(self.conn)
 
@@ -340,8 +375,9 @@ class Connector(object):
         # We use startswith for checking the platform following Python's
         # documentation:
         # https://docs.python.org/dev/library/sys.html#sys.platform
-        if sys.platform.startswith('linux'):
-            self.conn.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 1)
+        # if sys.platform.startswith('linux'):
+        #     self.conn.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 1)
+        print(f"Connecting to {self.host}:{self.port} SSL={self.use_ssl}")
 
         try:
             self.conn.connect((self.host, self.port))
@@ -353,10 +389,13 @@ class Connector(object):
             hello_msg = struct.pack('@II', PROTOCOL_VERSION, protocol)
 
             # Send desire protocol
+            print("Sending hello...")
             self._send_msg(hello_msg)
+            print("Sent hello, waiting for response...")
 
             # Receive response from server
             response = self._recv_msg()
+            print("Received response.")
 
             version, server_protocol = struct.unpack('@II', response)
 
@@ -396,11 +435,18 @@ class Connector(object):
                 self._connect()
             except socket.error as e:
                 logger.error(
-                    f"Error connecting to server: {self.config} \r\n{details}. {e=}",
+                    f"Error connecting to server: {
+                        self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
 
     def _query(self, query, blob_array = [], try_resume=True):
+
+        if self.conn is None:
+            self.connect()
+
+        start = time.time()
+
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
@@ -422,13 +468,22 @@ class Connector(object):
         # Serialize with protobuf and send
         data = query_msg.SerializeToString()
 
+        end = time.time()
+        print(f"Query prep time: {end - start} seconds.")
+
         # this is for session refresh attempts
         tries = 0
         while tries < self.config.retry_max_attempts:
+            if tries > 0:
+                print(
+                    f"Retrying query, attempt {tries + 1} of {self.config.retry_max_attempts}")
             try:
+                start = time.time()
                 if self._send_msg(data):
                     response = self._recv_msg()
                     if response is not None:
+                        print(
+                            f"Query response received in {time.time() - start} seconds.")
                         querRes = queryMessage.queryMessage()
                         queryMessage.ParseFromString(querRes, response)
                         response_blob_array = [b for b in querRes.blobs]
@@ -446,16 +501,20 @@ class Connector(object):
                     logger.exception(ssle)
                     logger.warning(
                         f"SSL connection error on process {os.getpid()}")
+                print("SSL connection closed by server.")
             except ssl.SSLError as ssle:
                 # This can happen in a scenario where multiple
                 # processes might be accessing a single connection.
                 # The copy does not make usable connections.
                 logger.exception(ssle)
                 logger.warning(f"SSL error on process {os.getpid()}")
+                print("SSL error.")
             except OSError as ose:
                 logger.exception(ose)
                 logger.warning(f"OS error on process {os.getpid()}")
+                print("OS error, likely connection lost.")
             except AttributeError as ae:
+                print("Attribute error, likely connection lost.")
                 if self.connected:
                     # Only log if we got this while connected.
                     # else it is expected after unification of query/connect
@@ -492,6 +551,9 @@ class Connector(object):
                 {self.authenticated=} \r\n \
                 attempts={tries}/{self.config.retry_max_attempts} \r\n \
                 {self.config=}")
+
+        print(
+            f"Query executed in {time.time() - start} seconds. {self.config}")
         return (self.last_response, response_blob_array)
 
     def query(self, q, blobs=[]):
@@ -547,7 +609,8 @@ class Connector(object):
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
+                    f"[Attempt {
+                        count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
                     exc_info=True,
                     stack_info=True)
                 time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)
