@@ -52,30 +52,35 @@ sleep 20 # wait for the containers to be up and running
 echo "running tests on docker image $REPOSITORY with $GATEWAY_HTTP and $GATEWAY_NON_HTTP"
 docker run \
     -v $(pwd)/output:/aperturedata/test/output \
+    -v $(pwd)/${RUNNER_NAME}_http_ca:/ca \
+    --network=${RUNNER_NAME}_http_default \
     -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
     -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
     -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
     -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
     -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
     -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
-    -e GATEWAY="${GATEWAY_HTTP}" \
+    -e GATEWAY="nginx" \
     -e FILTER="http" \
     $REPOSITORY &
 
 pid1=$!
 docker run \
     -v $(pwd)/output:/aperturedata/test/output \
+    -v $(pwd)/${RUNNER_NAME}_non_http_ca:/ca \
+    --network=${RUNNER_NAME}_non_http_default \
     -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
     -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
     -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
     -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
     -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
     -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
-    -e GATEWAY="${GATEWAY_NON_HTTP}" \
+    -e GATEWAY="lenz" \
     -e FILTER="not http" \
     $REPOSITORY &
 
 pid2=$!
+
 wait $pid1
 exit_code1=$?
 wait $pid2
@@ -90,6 +95,7 @@ if [ $exit_code2 -ne 0 ]; then
     exit $exit_code2
 fi
 
-echo "Tests completed successfully"
+
+echo "Tests completed"
 echo " --- Runner name: ${RUNNER_NAME} ---"
 check_containers_networks
