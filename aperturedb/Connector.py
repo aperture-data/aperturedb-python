@@ -377,7 +377,7 @@ class Connector(object):
 
                 # Server is ok with SSL, we switch over SSL.
                 self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                self.context.verify_mode = CERT_REQUIRED
+                self.context.verify_mode = ssl.CERT_REQUIRED
                 self.context.check_hostname = True
                 if self.config.ca_cert:
                     self.context.load_verify_locations(
