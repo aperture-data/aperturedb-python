@@ -376,7 +376,7 @@ class Connector(object):
             if self.use_ssl:
 
                 # Server is ok with SSL, we switch over SSL.
-                self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                self.context = ssl.create_default_context()
                 if self.config.ca_cert:
                     self.context.load_verify_locations(
                         cafile=self.config.ca_cert
@@ -396,7 +396,8 @@ class Connector(object):
                         f"The host name must match the certificate: {self.host} " + os.linesep + \
                         f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
                         f"Refer to the documentation for more information: {SETUP_URL}" + os.linesep + \
-                        f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)"
+                        f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + os.linesep + \
+                        f"{e=}"
                 except ssl.SSLError as e:
                     logger.error(f"Error wrapping socket: {e}")
                     self.conn.close()
@@ -413,7 +414,8 @@ class Connector(object):
                 f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
                 f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
                 f"Refer to the documentation for more information: {SETUP_URL} " + os.linesep + \
-                f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)"
+                f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + os.linesep + \
+                f"{e=}"
         except BaseException as e:
             self.conn.close()
             self.connected = False
