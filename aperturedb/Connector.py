@@ -392,10 +392,9 @@ class Connector(object):
                     self.conn = self.context.wrap_socket(
                         self.conn, server_hostname=self.host)
                 except ssl.SSLCertVerificationError as e:
-                    logger.error(f"Error verifying certificate: {e}")
-                    logger.error(
+                    logger.exception(
                         f"The host name must match the certificate: {self.host}")
-                    logger.error(
+                    logger.exception(
                         f"You can use the ca_cert parameter to specify a custom CA certificate")
                     assert False, "Certificate verification failed" + os.linesep + \
                         f"The host name must match the certificate: {self.host} " + os.linesep + \
@@ -410,10 +409,9 @@ class Connector(object):
                     raise
 
         except FileNotFoundError as e:
-            logger.error(f"Error verifying certificate: {e}")
-            logger.error(
+            logger.exception(
                 f"The certificate file does not exist: {self.config.ca_cert}")
-            logger.error(
+            logger.exception(
                 f"You can use the ca_cert parameter to specify a custom CA certificate")
             assert False, "Certificate verification failed" + os.linesep + \
                 f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
