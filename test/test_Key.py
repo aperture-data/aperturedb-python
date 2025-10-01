@@ -1,5 +1,4 @@
 import logging
-import typer
 
 from aperturedb.Configuration import Configuration
 

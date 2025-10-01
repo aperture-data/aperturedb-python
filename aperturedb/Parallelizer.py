@@ -102,4 +102,3 @@ class Parallelizer:
         """
             Must be implemented by child class
         """
-        pass

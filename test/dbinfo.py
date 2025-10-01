@@ -1,4 +1,3 @@
-import os
 
 # This file containts information on to access the server
 

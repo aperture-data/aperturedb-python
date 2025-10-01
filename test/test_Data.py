@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import pandas as pd
 import os.path as osp
-from aperturedb.Query import QueryBuilder, Query
+from aperturedb.Query import Query
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
 from aperturedb.Images import Images
