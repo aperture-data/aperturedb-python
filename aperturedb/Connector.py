@@ -376,11 +376,16 @@ class Connector(object):
             if self.use_ssl:
 
                 # Server is ok with SSL, we switch over SSL.
-                self.context = ssl.create_default_context()
+                self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                self.context.verify_mode = CERT_REQUIRED
+                self.context.check_hostname = True
                 if self.config.ca_cert:
                     self.context.load_verify_locations(
                         cafile=self.config.ca_cert
                     )
+                else:
+                    self.context.load_default_certs(ssl.Purpose.SERVER_AUTH)
+
                 # TODO, we need to add support for local certificates
                 # For now, we let the server send us the certificate
                 try:
