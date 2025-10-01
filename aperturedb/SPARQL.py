@@ -106,11 +106,11 @@ class SPARQL:
                 if uri not in self.connections:
                     self.connections[uri] = (set(), set())
                 # Due to the change in response format, we need to handle both dict and list.
-                d0 = d
-                if isinstance(d, list):
-                    d0 = d[0]
-                self.connections[uri][0].add(d0["src"])
-                self.connections[uri][1].add(d0["dst"])
+                d_list = [d] if isinstance(d, dict) else d
+
+                for d in d_list:
+                    self.connections[uri][0].add(d["src"])
+                    self.connections[uri][1].add(d["dst"])
         if not self.connections:
             self.logger.warning("No connections found in schema")
 
