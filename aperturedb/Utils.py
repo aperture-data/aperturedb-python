@@ -184,20 +184,26 @@ class Utils(object):
             for prop, (matched, indexed, typ) in properties.items():
                 table += f'<TR><TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
             for connection, data in connections.items():
-                if data['src'] == entity:
-                    matched = data["matched"]
-                    # dictionary from name to (matched, indexed, type)
-                    properties = data["properties"]
-                    table += f'<TR><TD BGCOLOR="{colors["connection_background"]}" COLSPAN="3" PORT="{connection}"><FONT COLOR="{colors["connection_foreground"]}"><B>{connection}</B> ({matched:,})</FONT></TD></TR>'
-                    if properties:
-                        for prop, (matched, indexed, typ) in properties.items():
-                            table += f'<TR><TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
+                data_list = [data] if isinstance(data, dict) else data
+                for data in data_list:
+                    if data['src'] == entity:
+                        matched = data["matched"]
+                        # dictionary from name to (matched, indexed, type)
+                        properties = data["properties"]
+                        table += f'<TR><TD BGCOLOR="{colors["connection_background"]}" COLSPAN="3" PORT="{connection}"><FONT COLOR="{colors["connection_foreground"]}"><B>{connection}</B> ({matched:,})</FONT></TD></TR>'
+                        if properties:
+                            for prop, (matched, indexed, typ) in properties.items():
+                                table += f'<TR><TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
+
             table += '</TABLE>>'
             dot.node(entity, label=table)
 
-        for connection, data in connections.items():
-            dot.edge(f'{data["src"]}:{connection}',
-                     f'{data["dst"]}')
+        if isinstance(connections, dict):
+            for connection, data in connections.items():
+                data_list = [data] if isinstance(data, dict) else data
+                for data in data_list:
+                    dot.edge(f'{data["src"]}:{connection}',
+                             f'{data["dst"]}')
 
         # Render the diagram inline
         s = Source(dot.source, filename="schema_diagram.gv", format="png")
@@ -282,8 +288,12 @@ class Utils(object):
         print(f"Total connections types: {total_connections}")
         total_edges = 0
         for c in connections_classes:
-            total_edges += self._object_summary(c,
-                                                r["connections"]["classes"][c])
+            connections = r["connections"]["classes"][c]
+            connections_list = [connections] if isinstance(
+                connections, dict) else connections
+
+            for connection in connections_list:
+                total_edges += self._object_summary(c, connection)
 
         print(f"------------------ Totals -------------------")
         print(f"Total nodes: {total_nodes}")
