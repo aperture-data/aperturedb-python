@@ -105,7 +105,7 @@ build_tests(){
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
 
     echo "Building image ${TESTS_IMAGE}"
-    docker build -t ${TESTS_IMAGE} --cache-from ${TESTS_IMAGE} -f docker/tests/Dockerfile .
+    docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${TESTS_IMAGE} --cache-from ${TESTS_IMAGE} -f docker/tests/Dockerfile .
 }
 
 build_complete(){
@@ -114,7 +114,7 @@ build_complete(){
     cp -r aperturedb pyproject.toml README.md LICENSE docker/complete/aperturedata
 
     echo "Building image ${COMPLETE_IMAGE}"
-    docker build -t ${COMPLETE_IMAGE} --cache-from ${COMPLETE_IMAGE} -f docker/complete/Dockerfile .
+    docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${COMPLETE_IMAGE} --cache-from ${COMPLETE_IMAGE} -f docker/complete/Dockerfile .
 }
 
 build_notebook_dependencies_image(){
@@ -134,7 +134,7 @@ build_notebook_dependencies_image(){
     fi
 
     echo "Building image ${DEPS_IMAGE}"
-    docker build -t ${DEPS_IMAGE} ${cache_control} -f docker/dependencies/Dockerfile .
+    docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${DEPS_IMAGE} ${cache_control} -f docker/dependencies/Dockerfile .
     if [  "${PUSH_DEPENDENCIES}" != "true" ]
     then
         # Default
@@ -155,7 +155,7 @@ build_notebook_image(){
     LATEST_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
     CPU_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook:cpu
     echo "Building image ${NOTEBOOK_IMAGE}"
-    docker build -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
+    docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
     docker build -t ${CPU_IMAGE} -f docker/notebook/Dockerfile.cpu .
     if [ "${NO_PUSH}" != "true" ]
     then

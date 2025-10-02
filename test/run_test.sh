@@ -41,7 +41,7 @@ if [[ $RESULT != 0 ]]; then
 		BUCKET=python-ci-runs
 		NOW=$(date -Iseconds)
 		ARCHIVE_NAME=logs.tar.gz
-		DESTINATION="s3://${BUCKET}/aperturedb-${NOW}-${FILTER}.tgz"
+		DESTINATION="s3://${BUCKET}/aperturedb-${NOW}-${FILTER// /_}.tgz"
 		tar czf ${ARCHIVE_NAME} ${APERTUREDB_LOG_PATH}/..
 		aws s3 cp ${ARCHIVE_NAME} $DESTINATION
 		echo "Log output to $DESTINATION"

@@ -1,7 +1,9 @@
 FROM ubuntu:22.04
+ARG PIP_INDEX_URL=https://pypi.org/simple
+ARG PIP_TRUSTED_HOST=pypi.org
 
 # Updated as per the newest release.
-ENV OPENCV_VERSION=4.7.0
+ENV OPENCV_VERSION=4.12.0
 
 RUN apt-get update \
     && apt-get upgrade -y \
@@ -33,7 +35,7 @@ ENV PATH="/opt/node-${NODEJS_LTS}-linux-x64/bin:$PATH"
 # --     Libraries:                   /usr/lib/x86_64-linux-gnu/libpython3.10.so (ver 3.10.6)
 # --     numpy:                       /opt/venv/lib/python3.10/site-packages/numpy/core/include (ver 1.24.1)
 # --     install path:                lib/python3.10/site-packages/cv2/python-3.10
-RUN pip install "numpy<2"
+RUN pip install "numpy"
 
 RUN wget -q https://github.com/opencv/opencv/archive/$OPENCV_VERSION.tar.gz && \
     tar xf $OPENCV_VERSION.tar.gz && rm $OPENCV_VERSION.tar.gz && \
@@ -52,6 +54,6 @@ RUN wget -q https://github.com/opencv/opencv/archive/$OPENCV_VERSION.tar.gz && \
         -D OPENCV_PYTHON3_INSTALL_PATH=/opt/venv/lib/python3.10/site-packages .. && \
     make -j6 && make install
 
-RUN pip install jupyterlab jupyterlab-dash dash-cytoscape plotly jupyter-dash numpy
+RUN PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} pip install jupyterlab jupyterlab-dash dash-cytoscape plotly jupyter-dash numpy
 RUN jupyter lab build
 RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements"

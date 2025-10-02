@@ -24,5 +24,5 @@ def generate_user_key(conn: Connector, user: str):
     u.assign_token(user, token)
     key = Configuration.create_aperturedb_key(
         conn.config.host, conn.config.port, token, conn.config.use_rest,
-        conn.config.use_ssl)
+        conn.config.use_ssl, conn.config.ca_cert)
     return key

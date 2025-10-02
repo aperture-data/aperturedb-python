@@ -74,6 +74,8 @@ RENEW_SESSION_RETRY_INTERVAL_SEC = 1
 STATUS_OK = 0
 STATUS_ERROR_DEFAULT = -2
 
+SETUP_URL = "https://docs.aperturedata.dev/Setup/server/Local#run-aperturedb-along-with-webui-using-docker-compose"
+
 
 class UnauthorizedException(Exception):
     pass
@@ -128,11 +130,22 @@ class Connector(object):
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
         str (key): Apeture Key, configuration as a deflated compressed string
+
+    The Configuration class options:
+    host,port,user,password,token,use_ssl,use_keepalive,retry_interval_seconds,retrun_max_attempts
+    are all ignored in the initializer if a config or key is passed in.
+
+    If a key is passed in, it is chosen over a config.
+
+    shared_data and authenticate are not Configuration class based options, and
+    have no overrides.
+
     """
 
     def __init__(self, host="localhost", port=DEFAULT_PORT,
                  user="", password="", token="",
                  use_ssl=True,
+                 ca_cert=None,
                  shared_data=None,
                  authenticate=True,
                  use_keepalive=True,
@@ -153,22 +166,19 @@ class Connector(object):
         self.query_connection_error_suppression_delta = timedelta(
             seconds=DEFAULT_QUERY_CONNECTION_ERROR_SUPPRESSION_DELTA_SEC)
 
-        if key is not None:
-            self.config = Configuration.reinflate(key)
-            self.host = self.config.host
-            self.port = self.config.port
-            self.use_ssl = self.config.use_ssl
-            token = self.config.token
-        elif config is None:
-            self.host = host
-            self.port = port
-            self.use_ssl = use_ssl
-            self.use_keepalive = use_keepalive
+        # we either have a config ( as a key or as object ) or not.
+        if key is not None or config is not None:
+            if key is not None:
+                self.config = Configuration.reinflate(key)
+            else:
+                self.config = config
+        else:
             # Create a configuration object, to show better error messages
             self.config = Configuration(
-                host=self.host,
-                port=self.port,
-                use_ssl=self.use_ssl,
+                host=host,
+                port=port,
+                use_ssl=use_ssl,
+                ca_cert=ca_cert,
                 username=user,
                 password=password,
                 name="runtime",
@@ -177,17 +187,14 @@ class Connector(object):
                 retry_interval_seconds=retry_interval_seconds,
                 retry_max_attempts=retry_max_attempts
             )
-        else:
-            self.config = config
-            self.host = config.host
-            self.port = config.port
-            self.use_ssl = config.use_ssl
-            self.use_keepalive = config.use_keepalive
-            token = config.token
 
+        # now we do.
+        self.host = self.config.host
+        self.port = self.config.port
+        self.use_ssl = self.config.use_ssl
+        self.use_keepalive = self.config.use_keepalive
+        self.token = self.config.token
         self.conn = None
-
-        self.token = token
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
@@ -370,12 +377,48 @@ class Connector(object):
 
                 # Server is ok with SSL, we switch over SSL.
                 self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                self.context.check_hostname = False
+                self.context.verify_mode = ssl.CERT_REQUIRED
+                self.context.check_hostname = True
+                if self.config.ca_cert:
+                    self.context.load_verify_locations(
+                        cafile=self.config.ca_cert
+                    )
+                else:
+                    self.context.load_default_certs(ssl.Purpose.SERVER_AUTH)
+
                 # TODO, we need to add support for local certificates
                 # For now, we let the server send us the certificate
-                self.context.verify_mode = ssl.VerifyMode.CERT_NONE
-                self.conn = self.context.wrap_socket(self.conn)
+                try:
+                    self.conn = self.context.wrap_socket(
+                        self.conn, server_hostname=self.host)
+                except ssl.SSLCertVerificationError as e:
+                    logger.exception(
+                        f"The host name must match the certificate: {self.host}")
+                    logger.exception(
+                        f"You can use the ca_cert parameter to specify a custom CA certificate")
+                    assert False, "Certificate verification failed" + os.linesep + \
+                        f"The host name must match the certificate: {self.host} " + os.linesep + \
+                        f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
+                        f"Refer to the documentation for more information: {SETUP_URL}" + os.linesep + \
+                        f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + os.linesep + \
+                        f"{e=}"
+                except ssl.SSLError as e:
+                    logger.error(f"Error wrapping socket: {e}")
+                    self.conn.close()
+                    self.connected = False
+                    raise
 
+        except FileNotFoundError as e:
+            logger.exception(
+                f"The certificate file does not exist: {self.config.ca_cert}")
+            logger.exception(
+                f"You can use the ca_cert parameter to specify a custom CA certificate")
+            assert False, "Certificate verification failed" + os.linesep + \
+                f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
+                f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
+                f"Refer to the documentation for more information: {SETUP_URL} " + os.linesep + \
+                f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + os.linesep + \
+                f"{e=}"
         except BaseException as e:
             self.conn.close()
             self.connected = False

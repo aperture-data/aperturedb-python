@@ -50,6 +50,7 @@ class TestSession():
             dbinfo.DB_TCP_PORT,
             dbinfo.DB_USER,
             dbinfo.DB_PASSWORD,
+            ca_cert=dbinfo.CA_CERT,
             retry_max_attempts=3,
             retry_interval_seconds=0)
         db.query([{"FindImage": {"results": {"limit": 5}}}])
@@ -104,6 +105,7 @@ class TestSession():
             dbinfo.DB_TCP_PORT,
             dbinfo.DB_USER,
             dbinfo.DB_PASSWORD,
+            ca_cert=dbinfo.CA_CERT,
             retry_max_attempts=3,
             retry_interval_seconds=0)
         try:
@@ -130,6 +132,7 @@ class TestSession():
             dbinfo.DB_TCP_PORT,
             dbinfo.DB_USER,
             dbinfo.DB_PASSWORD,
+            ca_cert=dbinfo.CA_CERT,
             retry_max_attempts=3,
             retry_interval_seconds=0)
         try:
@@ -158,6 +161,7 @@ class TestSession():
             dbinfo.DB_TCP_PORT,
             dbinfo.DB_USER,
             dbinfo.DB_PASSWORD,
+            ca_cert=dbinfo.CA_CERT,
             retry_max_attempts=3,
             retry_interval_seconds=0)
         try:

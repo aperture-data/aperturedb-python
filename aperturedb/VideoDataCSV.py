@@ -103,8 +103,7 @@ class VideoDataCSV(CSVParser.CSVParser):
         }
 
     def check_video_buf(self, video) -> bool:
-        # check if video is valid
-        print(len(video))
+        # check if video is valid current does not check anything
         return True
 
     def getitem(self, idx):

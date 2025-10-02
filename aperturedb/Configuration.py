@@ -5,7 +5,8 @@ import re
 from base64 import b64encode, b64decode
 
 APERTUREDB_CLOUD = ".cloud.aperturedata.io"
-APERTUREDB_KEY_VERSION = 1
+APERTUREDB_KEY_VERSION = 2
+APERTUREDB_OLD_KEY_VERSION = 1
 FLAG_USE_COMPRESSED_HOST = 4
 FLAG_USE_REST = 2
 FLAG_USE_SSL = 1
@@ -33,6 +34,7 @@ class Configuration:
     retry_max_attempts: int = 3
     token: str = None
     user_keys: dict = None
+    ca_cert: str = None
 
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
@@ -41,7 +43,7 @@ class Configuration:
 
     def deflate(self) -> list:
         return self.create_aperturedb_key(self.host, self.port, self.token,
-                                          self.use_rest, self.use_ssl, self.username, self.password)
+                                          self.use_rest, self.use_ssl, self.ca_cert, self.username, self.password)
 
     def has_user_keys(self) -> bool:
         return self.user_keys is not None
@@ -82,8 +84,10 @@ class Configuration:
             return DEFAULT_TCP_PORT
 
     @classmethod
-    def create_aperturedb_key(cls, host: str, port: int,  token_string: str,
-                              use_rest: bool, use_ssl: bool, username: str = None, password: str = None) -> None:
+    def create_aperturedb_key(
+            cls, host: str, port: int,  token_string: str,
+            use_rest: bool, use_ssl: bool, ca_cert: str = None,
+            username: str = None, password: str = None) -> None:
         compressed = False
         if token_string is not None and token_string.startswith("adbp_"):
             token_string = token_string[5:]
@@ -100,10 +104,11 @@ class Configuration:
         if port != default_port:
             host = f"{host}:{port}"
         if token_string is not None:
-            key_json = [APERTUREDB_KEY_VERSION, key_type, host, token_string]
+            key_json = [APERTUREDB_KEY_VERSION,
+                        key_type, host, ca_cert, token_string]
         else:
             key_json = [APERTUREDB_KEY_VERSION,
-                        key_type, host, username, password]
+                        key_type, host, ca_cert, username, password]
         simplified = json.dumps(key_json, separators=(',', ':'))
         encoded = b64encode(simplified.encode('utf-8')).decode('utf-8')
         return encoded
@@ -118,16 +123,25 @@ class Configuration:
             raise Exception(
                 "Unable to make configuration from the provided string")
         version = as_list[0]
-        if version not in (APERTUREDB_KEY_VERSION,):
+        if version not in (APERTUREDB_KEY_VERSION, APERTUREDB_OLD_KEY_VERSION):
             raise ValueError("version identifier of configuration was"
                              f"{version}, which is not supported")
         is_compressed, use_rest, use_ssl = cls.key_type_to_config(as_list[1])
         host = as_list[2]
+        pem = None
+
+        if version == APERTUREDB_KEY_VERSION:
+            pem = as_list[3]
+            list_offset = 4
+        else:
+            list_offset = 3
         token = username = password = None
-        if len(as_list) == 4:
-            token = "adbp_" + as_list[3]
-        elif len(as_list) == 5:
-            username, password = as_list[3:]
+        if len(as_list) == list_offset + 1:
+            token = "adbp_" + as_list[list_offset]
+        elif len(as_list) == list_offset + 2:
+            username, password = as_list[list_offset:]
+        else:
+            raise ValueError("Bad format for key list")
 
         port_match = re.match(".*:(\d+)$", host)
         if port_match is not None:
@@ -146,7 +160,7 @@ class Configuration:
                     f"Unable to parse compressed host: {host} Error: {e}")
 
         c = Configuration(
-            host, port, username, password, name, use_ssl, use_rest)
+            host, port, username, password, name, use_ssl, use_rest, ca_cert=pem)
         if token:
             c.token = token
         return c
