@@ -377,26 +377,31 @@ class Connector(object):
 
                 # Server is ok with SSL, we switch over SSL.
                 self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                self.context.verify_mode = ssl.CERT_REQUIRED
+                self.context.check_hostname = True
                 if self.config.ca_cert:
                     self.context.load_verify_locations(
                         cafile=self.config.ca_cert
                     )
+                else:
+                    self.context.load_default_certs(ssl.Purpose.SERVER_AUTH)
+
                 # TODO, we need to add support for local certificates
                 # For now, we let the server send us the certificate
                 try:
                     self.conn = self.context.wrap_socket(
                         self.conn, server_hostname=self.host)
                 except ssl.SSLCertVerificationError as e:
-                    logger.error(f"Error verifying certificate: {e}")
-                    logger.error(
+                    logger.exception(
                         f"The host name must match the certificate: {self.host}")
-                    logger.error(
+                    logger.exception(
                         f"You can use the ca_cert parameter to specify a custom CA certificate")
                     assert False, "Certificate verification failed" + os.linesep + \
                         f"The host name must match the certificate: {self.host} " + os.linesep + \
                         f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
                         f"Refer to the documentation for more information: {SETUP_URL}" + os.linesep + \
-                        f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)"
+                        f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + os.linesep + \
+                        f"{e=}"
                 except ssl.SSLError as e:
                     logger.error(f"Error wrapping socket: {e}")
                     self.conn.close()
@@ -404,16 +409,16 @@ class Connector(object):
                     raise
 
         except FileNotFoundError as e:
-            logger.error(f"Error verifying certificate: {e}")
-            logger.error(
+            logger.exception(
                 f"The certificate file does not exist: {self.config.ca_cert}")
-            logger.error(
+            logger.exception(
                 f"You can use the ca_cert parameter to specify a custom CA certificate")
             assert False, "Certificate verification failed" + os.linesep + \
                 f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
                 f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
                 f"Refer to the documentation for more information: {SETUP_URL} " + os.linesep + \
-                f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)"
+                f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + os.linesep + \
+                f"{e=}"
         except BaseException as e:
             self.conn.close()
             self.connected = False
