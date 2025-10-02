@@ -52,6 +52,12 @@ PROTOCOL_VERSION = 1
 MESSAGE_LENGTH_FORMAT = '@I'
 MESSAGE_LENGTH_SIZE = struct.calcsize(MESSAGE_LENGTH_FORMAT)
 
+# Should every host - localhost, and ips be required to pass host check for certificates
+CHECK_ALL_HOSTS = int(os.getenv("ADB_SSL_CHECK_ALL_HOSTS", False ))
+
+# List of hosts which do not need to check certificates when CHECK_ALL_HOSTS is false
+IGNORED_SSL_HOSTS = [ "localhost", "127.0.0.1" ]
+
 # Protocol types
 PROTOCOL_TCP = 1
 PROTOCOL_SSL = 2
@@ -375,15 +381,21 @@ class Connector(object):
 
             if self.use_ssl:
 
+
                 # Server is ok with SSL, we switch over SSL.
+                
+                # decide if we check hostname
+                enforce_check = CHECK_ALL_HOSTS or self.host not in IGNORED_SSL_HOSTS
+
                 self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                self.context.verify_mode = ssl.CERT_REQUIRED
-                self.context.check_hostname = True
+                self.context.check_hostname = enforce_check
+                self.context.verify_mode = ssl.CERT_REQUIRED if enforce_check else ssl.CERT_NONE
+
                 if self.config.ca_cert:
                     self.context.load_verify_locations(
                         cafile=self.config.ca_cert
                     )
-                else:
+                elif enforce_check:
                     self.context.load_default_certs(ssl.Purpose.SERVER_AUTH)
 
                 # TODO, we need to add support for local certificates
