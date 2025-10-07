@@ -35,6 +35,7 @@ class Configuration:
     token: str = None
     user_keys: dict = None
     ca_cert: str = None
+    verify_hostname: bool = True
 
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
@@ -87,7 +88,7 @@ class Configuration:
     def create_aperturedb_key(
             cls, host: str, port: int,  token_string: str,
             use_rest: bool, use_ssl: bool, ca_cert: str = None,
-            username: str = None, password: str = None) -> None:
+            username: str = None, password: str = None, verify_hostname: bool = True) -> None:
         compressed = False
         if token_string is not None and token_string.startswith("adbp_"):
             token_string = token_string[5:]
@@ -99,7 +100,8 @@ class Configuration:
                 host = "{}.{}".format(m.group(1), int(m.group(2)))
                 compressed = True
 
-        key_type = cls.config_to_key_type(compressed, use_rest, use_ssl)
+        key_type = cls.config_to_key_type(
+            compressed, use_rest, use_ssl, verify_hostname)
         default_port = cls.config_default_port(use_rest, use_ssl)
         if port != default_port:
             host = f"{host}:{port}"
@@ -160,7 +162,7 @@ class Configuration:
                     f"Unable to parse compressed host: {host} Error: {e}")
 
         c = Configuration(
-            host, port, username, password, name, use_ssl, use_rest, ca_cert=pem)
+            host, port, username, password, name, use_ssl, use_rest, ca_cert=pem, verify_hostname=verify_hostname)
         if token:
             c.token = token
         return c

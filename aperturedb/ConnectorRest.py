@@ -81,7 +81,7 @@ class ConnectorRest(Connector):
 
     def __init__(self, host="localhost", port=None,
                  user="", password="", token="",
-                 use_ssl=True, ca_cert=None, shared_data=None,
+                 use_ssl=True, ca_cert=None, verify_hostname=True, shared_data=None,
                  config: Optional[Configuration] = None,
                  key: Optional[str] = None):
         self.use_keepalive = False
@@ -93,6 +93,7 @@ class ConnectorRest(Connector):
             token=token,
             use_ssl=use_ssl,
             ca_cert=ca_cert,
+            verify_hostname=verify_hostname,
             shared_data=shared_data,
             config=config,
             key=key)
@@ -112,11 +113,12 @@ class ConnectorRest(Connector):
         # Since we will be making same call to the same URL, making a session
         # REF: https://requests.readthedocs.io/en/latest/user/advanced/
         self.http_session = requests.Session()
-        if self.config.ca_cert:
-            adapter = CustomHTTPAdapter(ca_cert=self.config.ca_cert)
-        else:
-            adapter = CustomHTTPAdapter(ca_cert=None)
-        self.http_session.mount('https://', adapter=adapter)
+        if self.config.verify_hostname:
+            if self.config.ca_cert:
+                adapter = CustomHTTPAdapter(ca_cert=self.config.ca_cert)
+            else:
+                adapter = CustomHTTPAdapter(ca_cert=None)
+            self.http_session.mount('https://', adapter=adapter)
 
         self.last_response   = ''
         self.last_query_time = 0

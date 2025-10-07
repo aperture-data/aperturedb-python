@@ -77,7 +77,8 @@ def get_configurations(file: str):
                 token=config["token"] if "token" in config else None,
                 use_rest=config["use_rest"],
                 use_ssl=config["use_ssl"],
-                ca_cert=config.get("ca_cert", None))
+                ca_cert=config.get("ca_cert", None),
+                verify_hostname=config.get("verify_hostname", True))
             if "user_keys" in config:
                 configs[c].set_user_keys(config["user_keys"])
     active = configurations["active"]

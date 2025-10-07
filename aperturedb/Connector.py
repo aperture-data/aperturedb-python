@@ -149,6 +149,7 @@ class Connector(object):
                  shared_data=None,
                  authenticate=True,
                  use_keepalive=True,
+                 verify_hostname=True,
                  retry_interval_seconds=DEFAULT_RETRY_INTERVAL_SECONDS,
                  retry_max_attempts=DEFAULT_RETRY_MAX_ATTEMPTS,
                  config: Optional[Configuration] = None,
@@ -179,6 +180,7 @@ class Connector(object):
                 port=port,
                 use_ssl=use_ssl,
                 ca_cert=ca_cert,
+                verify_hostname=verify_hostname,
                 username=user,
                 password=password,
                 name="runtime",
@@ -334,6 +336,20 @@ class Connector(object):
         else:
             raise UnauthorizedException(response)
 
+    def _build_ssl_context(self):
+
+        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        if not self.config.verify_hostname:
+            self.context.check_hostname = False
+            self.context.verify_mode = ssl.CERT_NONE
+        elif self.config.ca_cert:
+            self.context.load_verify_locations(
+                cafile=self.config.ca_cert
+            )
+        else:
+            self.context.load_default_certs(ssl.Purpose.SERVER_AUTH)
+        return self.context
+
     def _connect(self):
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
@@ -375,33 +391,27 @@ class Connector(object):
 
             if self.use_ssl:
 
-                # Server is ok with SSL, we switch over SSL.
-                self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                self.context.verify_mode = ssl.CERT_REQUIRED
-                self.context.check_hostname = True
-                if self.config.ca_cert:
-                    self.context.load_verify_locations(
-                        cafile=self.config.ca_cert
-                    )
-                else:
-                    self.context.load_default_certs(ssl.Purpose.SERVER_AUTH)
+                self.context = self._build_ssl_context()
 
                 # TODO, we need to add support for local certificates
                 # For now, we let the server send us the certificate
                 try:
-                    self.conn = self.context.wrap_socket(
-                        self.conn, server_hostname=self.host)
+                    if self.config.verify_hostname:
+                        self.conn = self.context.wrap_socket(
+                            self.conn, server_hostname=self.host)
+                    else:
+                        self.conn = self.context.wrap_socket(
+                            self.conn)
                 except ssl.SSLCertVerificationError as e:
-                    logger.exception(
-                        f"The host name must match the certificate: {self.host}")
+                    logger.exception(f"Certificate verification failed: {e=}")
                     logger.exception(
                         f"You can use the ca_cert parameter to specify a custom CA certificate")
                     assert False, "Certificate verification failed" + os.linesep + \
                         f"The host name must match the certificate: {self.host} " + os.linesep + \
                         f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
                         f"Refer to the documentation for more information: {SETUP_URL}" + os.linesep + \
-                        f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + os.linesep + \
-                        f"{e=}"
+                        f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + \
+                        os.linesep
                 except ssl.SSLError as e:
                     logger.error(f"Error wrapping socket: {e}")
                     self.conn.close()
@@ -410,15 +420,15 @@ class Connector(object):
 
         except FileNotFoundError as e:
             logger.exception(
-                f"The certificate file does not exist: {self.config.ca_cert}")
+                f"The certificate file does not exist: {self.config.ca_cert} with {e=}")
             logger.exception(
                 f"You can use the ca_cert parameter to specify a custom CA certificate")
             assert False, "Certificate verification failed" + os.linesep + \
                 f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
                 f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
                 f"Refer to the documentation for more information: {SETUP_URL} " + os.linesep + \
-                f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + os.linesep + \
-                f"{e=}"
+                f"Alternatively, SSL can be disabled by setting use_ssl=False (not recommended)" + \
+                os.linesep
         except BaseException as e:
             self.conn.close()
             self.connected = False
