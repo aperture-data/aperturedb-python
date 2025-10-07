@@ -337,7 +337,13 @@ class Connector(object):
             raise UnauthorizedException(response)
 
     def _build_ssl_context(self):
-
+        """
+        Builds an SSL context for the connection.
+        There are 3 scenarios:
+        1. verify_hostname is False, we don't verify the hostname
+        2. verify_hostname is True and ca_cert is provided, we verify the hostname using the provided ca_cert
+        3. verify_hostname is True and ca_cert is not provided, we verify the hostname using the system's default CA certificates
+        """
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         if not self.config.verify_hostname:
             self.context.check_hostname = False

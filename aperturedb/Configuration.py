@@ -7,6 +7,7 @@ from base64 import b64encode, b64decode
 APERTUREDB_CLOUD = ".cloud.aperturedata.io"
 APERTUREDB_KEY_VERSION = 2
 APERTUREDB_OLD_KEY_VERSION = 1
+FLAG_VERIFY_HOSTNAME = 8
 FLAG_USE_COMPRESSED_HOST = 4
 FLAG_USE_REST = 2
 FLAG_USE_SSL = 1
@@ -66,16 +67,18 @@ class Configuration:
         self.user_keys = keys
 
     @classmethod
-    def config_to_key_type(cls, compressed_host: bool,  use_rest: bool, use_ssl: bool):
+    def config_to_key_type(cls, compressed_host: bool,  use_rest: bool, use_ssl: bool, verify_hostname: bool):
         return (FLAG_USE_COMPRESSED_HOST if compressed_host else 0) + \
                (FLAG_USE_REST if use_rest else 0) + \
-               (FLAG_USE_SSL if use_ssl else 0)
+               (FLAG_USE_SSL if use_ssl else 0) + \
+               (FLAG_VERIFY_HOSTNAME if verify_hostname else 0)
 
     @classmethod
     def key_type_to_config(cls, key_type: int): \
         return [bool(key_type & FLAG_USE_COMPRESSED_HOST),
                 bool(key_type & FLAG_USE_REST),
-                bool(key_type & FLAG_USE_SSL)]
+                bool(key_type & FLAG_USE_SSL),
+                bool(key_type & FLAG_VERIFY_HOSTNAME)]
 
     @classmethod
     def config_default_port(cls, use_rest: bool, use_ssl: bool):
@@ -128,7 +131,8 @@ class Configuration:
         if version not in (APERTUREDB_KEY_VERSION, APERTUREDB_OLD_KEY_VERSION):
             raise ValueError("version identifier of configuration was"
                              f"{version}, which is not supported")
-        is_compressed, use_rest, use_ssl = cls.key_type_to_config(as_list[1])
+        is_compressed, use_rest, use_ssl, verify_hostname = cls.key_type_to_config(
+            as_list[1])
         host = as_list[2]
         pem = None
 

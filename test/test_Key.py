@@ -5,24 +5,24 @@ from aperturedb.Configuration import Configuration
 logger = logging.getLogger(__name__)
 
 key_pairs = {
-    "WzIsMSwibG9jYWxob3N0IixudWxsLCJhZG1pbiIsImFkbWluIl0=":
+    "WzIsOSwibG9jYWxob3N0IixudWxsLCJhZG1pbiIsImFkbWluIl0=":
     [1, 1, "localhost", "admin", "admin"],
-        "WzIsMCwiMTI3LjAuMC4xOjU1NTU0IixudWxsLCJZUVp1VlVXZlpvQWRaMmtRRUx4UHlGem1kcndZd3RyMEFEYSJd":
+        "WzIsOCwiMTI3LjAuMC4xOjU1NTU0IixudWxsLCJZUVp1VlVXZlpvQWRaMmtRRUx4UHlGem1kcndZd3RyMEFEYSJd":
             [1, 0, "127.0.0.1:55554", "YQZuVUWfZoAdZ2kQELxPyFzmdrwYwtr0ADa"],
-        "WzIsNywid29ya2Zsb3ctbG9hZGVkLWZvMWphdTN0LjAiLG51bGwsImFkbWluIiwiMTIzNEJUUUxQXyUydHQiXQ==":
+        "WzIsMTUsIndvcmtmbG93LWxvYWRlZC1mbzFqYXUzdC4wIixudWxsLCJhZG1pbiIsIjEyMzRCVFFMUF8lMnR0Il0=":
             [1, 7, "workflow-loaded-fo1jau3t.farm0000.cloud.aperturedata.io",
                 "admin", "1234BTQLP_%2tt"],
-        "WzIsNSwidGVzdC0zcWpxdDZrcy40IixudWxsLCJZUVp1VlVXZlpvQWRaMmtRRUx4UHlGem1kcndZd3RyMEFEYSJd":
+        "WzIsMTMsInRlc3QtM3FqcXQ2a3MuNCIsbnVsbCwiWVFadVZVV2Zab0FkWjJrUUVMeFB5RnptZHJ3WXd0cjBBRGEiXQ==":
             [1, 5, "test-3qjqt6ks.farm0004.cloud.aperturedata.io",
                 "YQZuVUWfZoAdZ2kQELxPyFzmdrwYwtr0ADa"],
-        "WzIsMiwiMTkyLjE2OC40LjEyOjU1NTU1IixudWxsLCJhZG1pbiIsImFkbWluIl0=":
+        "WzIsMTAsIjE5Mi4xNjguNC4xMjo1NTU1NSIsbnVsbCwiYWRtaW4iLCJhZG1pbiJd":
         [1, 2, "192.168.4.12:55555", "admin", "admin"],
-        "WzIsMywiYXBlcnR1cmVkYi5iaWdjb3JwLmlvOjE5MTgiLG51bGwsIllRWnVWVVdmWm9BZFoya1FFTHhQeUZ6bWRyd1l3dHIwQURhIl0=":
+        "WzIsMTEsImFwZXJ0dXJlZGIuYmlnY29ycC5pbzoxOTE4IixudWxsLCJZUVp1VlVXZlpvQWRaMmtRRUx4UHlGem1kcndZd3RyMEFEYSJd":
         [1, 3, "aperturedb.bigcorp.io:1918", "YQZuVUWfZoAdZ2kQELxPyFzmdrwYwtr0ADa"],
-        "WzIsNCwidGNwLTU1N2Vwbm4zLjkwOToxOTE4IixudWxsLCJhZG1pbiIsIjg5MEVwTW4rISUyJF8iXQ==":
+        "WzIsMTIsInRjcC01NTdlcG5uMy45MDk6MTkxOCIsbnVsbCwiYWRtaW4iLCI4OTBFcE1uKyElMiRfIl0=":
         [1, 4, "tcp-557epnn3.farm0909.cloud.aperturedata.io:1918",
             "admin", "890EpMn+!%2$_"],
-        "WzIsNiwiaHR0cC05MGpnM3pwcy4xMjo0NDMiLG51bGwsIllRWnVWVVdmWm9BZFoya1FFTHhQeUZ6bWRyd1l3dHIwQURhIl0=":
+        "WzIsMTQsImh0dHAtOTBqZzN6cHMuMTI6NDQzIixudWxsLCJZUVp1VlVXZlpvQWRaMmtRRUx4UHlGem1kcndZd3RyMEFEYSJd":
         [1, 6, "http-90jg3zps.farm0012.cloud.aperturedata.io:443",
             "YQZuVUWfZoAdZ2kQELxPyFzmdrwYwtr0ADa"]
 }
@@ -36,7 +36,8 @@ class TestApertureDBKey():
             config_type = data[1]
             host = data[2]
             username = password = token = None
-            comp, rest, ssl = Configuration.key_type_to_config(config_type)
+            comp, rest, ssl, verify_hostname = Configuration.key_type_to_config(
+                config_type)
             if host.rfind(':') != -1:
                 port = int(host.split(':')[1])
                 host = host.split(':')[0]
@@ -48,7 +49,7 @@ class TestApertureDBKey():
                 username = data[3]
                 password = data[4]
             c = Configuration(host, port, username, password,
-                              "encoding test", use_rest=rest, use_ssl=ssl, token=token)
+                              "encoding test", use_rest=rest, use_ssl=ssl, token=token, verify_hostname=verify_hostname)
             deflated = c.deflate()
             assert deflated == key
 
