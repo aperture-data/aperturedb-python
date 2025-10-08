@@ -39,13 +39,15 @@ class Configuration:
     verify_hostname: bool = True
 
     def __ssl_mode(self) -> str:
-        mode = "SSL_OFF"
-        if self.use_ssl:
-            mode = "SSL_DEFAULT"
-        if not self.verify_hostname:
-            mode = "SSL_NO_VERIFY"
-        if self.ca_cert:
-            mode = "SSL_WITH_CA"
+        mode = "SSL_DEFAULT"
+        if not self.use_ssl:
+            mode = "SSL_OFF"  # with not use_ssl, we don't use SSL
+        else:
+            if not self.verify_hostname:
+                mode = "SSL_NO_VERIFY"  # with verify_hostname=False, we don't verify the hostname
+            elif self.ca_cert:
+                # with verify_hostname=True and ca_cert is provided, we verify the hostname using the provided ca_cert
+                mode = "SSL_WITH_CA"
         return mode
 
     def __repr__(self) -> str:
