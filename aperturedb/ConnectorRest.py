@@ -157,10 +157,11 @@ class ConnectorRest(Connector):
         while tries < self.config.retry_max_attempts:
             tries += 1
             try:
+                # URL takes care of the scheme
                 response = self.http_session.post(self.url,
                                                   headers = headers,
                                                   files   = files,
-                                                  verify  = self.use_ssl)
+                                                  verify  = self.config.use_ssl and self.config.verify_hostname)
                 if response.status_code == 200:
                     # Parse response:
                     json_response       = json.loads(response.text)
