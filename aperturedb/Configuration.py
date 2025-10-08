@@ -38,14 +38,24 @@ class Configuration:
     ca_cert: str = None
     verify_hostname: bool = True
 
+    def __ssl_mode(self) -> str:
+        mode = "SSL_OFF"
+        if self.use_ssl:
+            mode = "SSL_DEFAULT"
+        if not self.verify_hostname:
+            mode = "SSL_NO_VERIFY"
+        if self.ca_cert:
+            mode = "SSL_WITH_CA"
+        return mode
+
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
         auth_mode = "token" if self.token is not None else "password"
-        return f"[{self.host}:{self.port} as {self.username} using {mode} with SSL={self.use_ssl} auth={auth_mode}]"
+        return f"[{self.host}:{self.port} as {self.username} using {mode} with SSL={self.__ssl_mode()} auth={auth_mode}]"
 
     def deflate(self) -> list:
         return self.create_aperturedb_key(self.host, self.port, self.token,
-                                          self.use_rest, self.use_ssl, self.ca_cert, self.username, self.password)
+                                          self.use_rest, self.use_ssl, self.ca_cert, self.username, self.password, self.verify_hostname)
 
     def has_user_keys(self) -> bool:
         return self.user_keys is not None
@@ -135,6 +145,9 @@ class Configuration:
             as_list[1])
         host = as_list[2]
         pem = None
+
+        if version == APERTUREDB_OLD_KEY_VERSION:
+            verify_hostname = True
 
         if version == APERTUREDB_KEY_VERSION:
             pem = as_list[3]
