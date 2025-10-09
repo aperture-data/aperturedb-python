@@ -409,7 +409,6 @@ class Connector(object):
                         self.conn = self.context.wrap_socket(
                             self.conn)
                 except ssl.SSLCertVerificationError as e:
-                    logger.exception(f"Certificate verification failed: {e=}")
                     logger.exception(
                         f"You can use the ca_cert parameter to specify a custom CA certificate")
                     assert False, "Certificate verification failed" + os.linesep + \
@@ -419,14 +418,14 @@ class Connector(object):
                         f"Alternatively, SSL can be disabled by setting verify_hostname=False or use_ssl=False (not recommended)" + \
                         os.linesep
                 except ssl.SSLError as e:
-                    logger.error(f"Error wrapping socket: {e}")
+                    logger.exception(f"Error wrapping socket.")
                     self.conn.close()
                     self.connected = False
                     raise
 
         except FileNotFoundError as e:
             logger.exception(
-                f"The certificate file does not exist: {self.config.ca_cert} with {e=}")
+                f"The certificate file does not exist: {self.config.ca_cert}")
             logger.exception(
                 f"You can use the ca_cert parameter to specify a custom CA certificate")
             assert False, "Certificate verification failed" + os.linesep + \

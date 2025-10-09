@@ -81,10 +81,12 @@ class Configuration:
 
     @classmethod
     def config_to_key_type(cls, compressed_host: bool,  use_rest: bool, use_ssl: bool, verify_hostname: bool):
-        return (FLAG_USE_COMPRESSED_HOST if compressed_host else 0) + \
-               (FLAG_USE_REST if use_rest else 0) + \
-               (FLAG_USE_SSL if use_ssl else 0) + \
-               (FLAG_VERIFY_HOSTNAME if verify_hostname else 0)
+        return (
+            (FLAG_USE_COMPRESSED_HOST if compressed_host else 0) |
+            (FLAG_USE_REST if use_rest else 0) |
+            (FLAG_USE_SSL if use_ssl else 0) |
+            (FLAG_VERIFY_HOSTNAME if verify_hostname else 0)
+        )
 
     @classmethod
     def key_type_to_config(cls, key_type: int): \
