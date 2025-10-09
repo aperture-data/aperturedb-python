@@ -77,7 +77,8 @@ def get_configurations(file: str):
                 token=config["token"] if "token" in config else None,
                 use_rest=config["use_rest"],
                 use_ssl=config["use_ssl"],
-                ca_cert=config.get("ca_cert", None))
+                ca_cert=config.get("ca_cert", None),
+                verify_hostname=config.get("verify_hostname", True))
             if "user_keys" in config:
                 configs[c].set_user_keys(config["user_keys"])
     active = configurations["active"]
@@ -147,7 +148,10 @@ def create(
         password: Annotated[str, typer.Option(help="Password")] = "admin",
         use_rest: Annotated[bool, typer.Option(help="Use REST")] = False,
         use_ssl: Annotated[bool, typer.Option(help="Use SSL")] = True,
-        ca_cert: Annotated[str, typer.Option(help="CA certificate")] = None,
+        ca_cert: Annotated[Optional[str],
+                           typer.Option(help="CA certificate")] = "",
+        verify_hostname: Annotated[bool, typer.Option(
+            help="Verify hostname")] = True,
         interactive: Annotated[bool, typer.Option(
             help="Interactive mode")] = True,
         overwrite: Annotated[bool, typer.Option(
@@ -179,6 +183,7 @@ def create(
     db_use_rest = use_rest
     db_use_ssl = use_ssl
     db_ca_cert = ca_cert
+    db_verify_hostname = verify_hostname
     config_path = _config_file_path(as_global)
     configs = {}
     try:
@@ -228,10 +233,15 @@ def create(
             db_use_ssl = typer.confirm(
                 f"Use SSL [Note: ApertureDB's defaults do not allow non SSL traffic]", default=db_use_ssl)
             db_ca_cert = typer.prompt(
-                f"Enter {APP_NAME} CA certificate's (if custom CA is used)", default=db_ca_cert)
-            db_ca_cert = os.path.abspath(db_ca_cert)
-            assert os.path.exists(
-                db_ca_cert), "CA certificate file does not exist"
+                f"Enter {APP_NAME} CA certificate's path (if custom CA is used)", default=db_ca_cert)
+            if db_ca_cert != "":
+                db_ca_cert = os.path.abspath(db_ca_cert)
+                assert os.path.exists(
+                    db_ca_cert), f"CA certificate file {db_ca_cert} does not exist"
+            else:
+                db_ca_cert = None
+            db_verify_hostname = typer.confirm(
+                f"Verify hostname", default=db_verify_hostname)
 
         gen_config = Configuration(
             name=name,
@@ -241,7 +251,8 @@ def create(
             password=db_password,
             use_ssl=db_use_ssl,
             use_rest=db_use_rest,
-            ca_cert=db_ca_cert
+            ca_cert=db_ca_cert,
+            verify_hostname=db_verify_hostname
         )
 
     assert name is not None, "Configuration name must be specified"
