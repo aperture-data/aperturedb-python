@@ -36,7 +36,8 @@ class TestApertureDBKey():
             config_type = data[1]
             host = data[2]
             username = password = token = None
-            comp, rest, ssl = Configuration.key_type_to_config(config_type)
+            comp, rest, ssl, verify_hostname = Configuration.key_type_to_config(
+                config_type)
             if host.rfind(':') != -1:
                 port = int(host.split(':')[1])
                 host = host.split(':')[0]
@@ -48,7 +49,7 @@ class TestApertureDBKey():
                 username = data[3]
                 password = data[4]
             c = Configuration(host, port, username, password,
-                              "encoding test", use_rest=rest, use_ssl=ssl, token=token)
+                              "encoding test", use_rest=rest, use_ssl=ssl, token=token, verify_hostname=verify_hostname)
             deflated = c.deflate()
             assert deflated == key
 
