@@ -10,7 +10,13 @@ from aperturedb.cli.console import console
 import aperturedb.cli.keys as keys
 from aperturedb.Configuration import Configuration
 from aperturedb.CommonLibrary import _create_configuration_from_json, __create_connector
+import re
 
+
+# alnum for first character, then anum + - for rest.
+CONFIG_NAME_RE = re.compile( \
+        r'^[a-zA-Z0-9]([a-zA-Z0-9-]){0,63}$' \
+)
 
 class ObjEncoder(json.JSONEncoder):
     """
@@ -168,6 +174,11 @@ def create(
 
     See https://docs.aperturedata.dev/Setup/client/configuration for more information on JSON configurations.
     """
+
+    if not CONFIG_NAME_RE.match(name):
+        console.log(f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
+        raise typer.Exit(code=2)
+
 
     def check_for_overwrite(name):
         if name in configs and not overwrite:
@@ -395,3 +406,79 @@ def get_key(name: Annotated[str, typer.Argument(
             check_configured(as_global=True, show_error=True)
 
     print(f"{user_key}")
+
+
+@app.command()
+def get(
+        tag: Annotated[str, typer.Argument(
+            help="Tag of information to get")] ):
+    """
+    Retrieve detail of a config.
+    """
+
+    all_configs = {}
+    for as_global in [True, False]:
+        config_path = _config_file_path(as_global)
+        context = "global" if as_global else "local"
+        try:
+            configs, active = get_configurations(config_path.as_posix())
+            all_configs[context] = configs
+            all_configs["active"] = active
+        except FileNotFoundError:
+            check_configured(as_global)
+        except json.JSONDecodeError:
+            check_configured(as_global)
+            console.log(f"Failed to decode json '{config_path.as_posix()}'")
+            raise typer.Exit(code=2)
+
+
+    used_config = None
+    remaining = ""
+    if tag[0] == ".":
+        used_config = configs[active] 
+        remaining = tag
+    else:
+        m = re.match("^([^. ]*)",tag)
+        if len(m.groups()) != 1:
+            console.log(f"Configuration name {tag} is invalid")
+            raise typer.Exit(code=2)
+        else:
+            name = m.group(0)
+            if not name in configs:
+                console.log(f"No Configuration {name}")
+                raise typer.Exit(code=2)
+            else:
+                used_config = configs[name]
+                remaining = tag[len(name):]
+
+    if remaining[0] != ".":
+        console.log(f"Cannot create configuration data to retrieve from {remaining}")
+        raise typer.Exit(code=2)
+    else:
+        m = re.match("^([^. ]*)",remaining[1:])
+        if len(m.groups()) != 1:
+            console.log(f"Configuration item {remaining[1:]} is invalid")
+            raise typer.Exit(code=2)
+        else:
+            config_item = m.group(0)
+            print_ok = True
+
+            # check if attribut exists or is valid to print.
+            if not config_item in dir(used_config): 
+                print_ok = False
+            else:
+                attrib = getattr( used_config, config_item)
+                # we allow only retreiving string, int or bool values from the
+                # Configuration.
+                allowed_types = [str,int,bool]
+                allowed_commands = [ "auth_mode" ]
+                if config_item in allowed_commands:
+                    attrib = attrib()
+                elif not any([isinstance(attrib, allowed_type) for allowed_type in allowed_types]):
+                    print_ok = False
+
+            if print_ok:
+                print(attrib)
+            else:
+                console.log(f"No Configuration Item {config_item}")
+                raise typer.Exit(code=2)

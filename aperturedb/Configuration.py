@@ -51,9 +51,12 @@ class Configuration:
 
         return mode
 
+    def auth_mode(self) -> str:
+        return  "token" if self.token is not None else "password"
+
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"
-        auth_mode = "token" if self.token is not None else "password"
+        auth_mode = self.auth_mode()
         return f"[{self.host}:{self.port} as {self.username} using {mode} with SSL={self.__ssl_mode()} auth={auth_mode}]"
 
     def deflate(self) -> list:
