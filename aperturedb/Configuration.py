@@ -52,7 +52,7 @@ class Configuration:
         return mode
 
     def auth_mode(self) -> str:
-        return  "token" if self.token is not None else "password"
+        return "token" if self.token is not None else "password"
 
     def __repr__(self) -> str:
         mode = "REST" if self.use_rest else "TCP"

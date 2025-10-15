@@ -14,9 +14,10 @@ import re
 
 
 # alnum for first character, then anum + - for rest.
-CONFIG_NAME_RE = re.compile( \
-        r'^[a-zA-Z0-9]([a-zA-Z0-9-]){0,63}$' \
+CONFIG_NAME_RE = re.compile(
+    r'^[a-zA-Z0-9]([a-zA-Z0-9-]){0,63}$'
 )
+
 
 class ObjEncoder(json.JSONEncoder):
     """
@@ -176,9 +177,9 @@ def create(
     """
 
     if not CONFIG_NAME_RE.match(name):
-        console.log(f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
+        console.log(
+            f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
         raise typer.Exit(code=2)
-
 
     def check_for_overwrite(name):
         if name in configs and not overwrite:
@@ -431,14 +432,13 @@ def get(
             console.log(f"Failed to decode json '{config_path.as_posix()}'")
             raise typer.Exit(code=2)
 
-
     used_config = None
     remaining = ""
     if tag[0] == ".":
-        used_config = configs[active] 
+        used_config = configs[active]
         remaining = tag
     else:
-        m = re.match("^([^. ]*)",tag)
+        m = re.match("^([^. ]*)", tag)
         if len(m.groups()) != 1:
             console.log(f"Configuration name {tag} is invalid")
             raise typer.Exit(code=2)
@@ -452,10 +452,11 @@ def get(
                 remaining = tag[len(name):]
 
     if remaining[0] != ".":
-        console.log(f"Cannot create configuration data to retrieve from {remaining}")
+        console.log(
+            f"Cannot create configuration data to retrieve from {remaining}")
         raise typer.Exit(code=2)
     else:
-        m = re.match("^([^. ]*)",remaining[1:])
+        m = re.match("^([^. ]*)", remaining[1:])
         if len(m.groups()) != 1:
             console.log(f"Configuration item {remaining[1:]} is invalid")
             raise typer.Exit(code=2)
@@ -464,16 +465,16 @@ def get(
             print_ok = True
 
             # check if attribut exists or is valid to print.
-            if not config_item in dir(used_config): 
+            if not config_item in dir(used_config):
                 print("NIID?")
                 print(dir(used_config))
                 print_ok = False
             else:
-                attrib = getattr( used_config, config_item)
+                attrib = getattr(used_config, config_item)
                 # we allow only retreiving string, int or bool values from the
                 # Configuration.
-                allowed_types = [str,int,bool,type(None)]
-                allowed_commands = [ "auth_mode" ]
+                allowed_types = [str, int, bool, type(None)]
+                allowed_commands = ["auth_mode"]
                 if config_item in allowed_commands:
                     attrib = attrib()
                 elif not any([isinstance(attrib, allowed_type) for allowed_type in allowed_types]):
