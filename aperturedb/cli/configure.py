@@ -410,8 +410,8 @@ def get_key(name: Annotated[str, typer.Argument(
 
 @app.command()
 def get(
-        tag: Annotated[str, typer.Argument(
-            help="Tag of information to get")] ):
+        tag: Annotated[str, typer.Argument(help="Tag of information to get")],
+        ignore_unset: Annotated[bool, typer.Option(help="ignore unsetl")] = False):
     """
     Retrieve detail of a config.
     """
@@ -465,12 +465,14 @@ def get(
 
             # check if attribut exists or is valid to print.
             if not config_item in dir(used_config): 
+                print("NIID?")
+                print(dir(used_config))
                 print_ok = False
             else:
                 attrib = getattr( used_config, config_item)
                 # we allow only retreiving string, int or bool values from the
                 # Configuration.
-                allowed_types = [str,int,bool]
+                allowed_types = [str,int,bool,type(None)]
                 allowed_commands = [ "auth_mode" ]
                 if config_item in allowed_commands:
                     attrib = attrib()
@@ -478,7 +480,11 @@ def get(
                     print_ok = False
 
             if print_ok:
-                print(attrib)
+                if attrib is None and not ignore_unset:
+                    console.log(f"Configuration Item {config_item} is unset")
+                    raise typer.Exit(code=2)
+                else:
+                    print(attrib)
             else:
                 console.log(f"No Configuration Item {config_item}")
                 raise typer.Exit(code=2)
