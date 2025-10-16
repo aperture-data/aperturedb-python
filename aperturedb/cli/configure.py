@@ -91,12 +91,7 @@ def get_configurations(file: str):
     active = configurations["active"]
     return configs, active
 
-
-@app.command()
-def ls(log_to_console: bool = True):
-    """
-    List the configurations with their details.
-    """
+def get_all_configs():
     all_configs = {}
     for as_global in [True, False]:
         config_path = _config_file_path(as_global)
@@ -121,6 +116,22 @@ def ls(log_to_console: bool = True):
                 all_configs["environment"] = {}
             all_configs["environment"][env_key] = config
             all_configs["active"] = f"env:{env_key}"
+    return all_configs
+
+def get_active_config( all_configs):
+    active = all_configs["active"]
+    if active.startswith("env:"):
+        return all_configs["environment"][active[4:]] 
+    else:
+        return all_configs["local"][active] if "locan" in all_configs and active in all_configs["local"] \
+                else all_configs["global"][active]
+
+@app.command()
+def ls(log_to_console: bool = True):
+    """
+    List the configurations with their details.
+    """
+    all_configs = get_all_configs()
 
     if "global" in all_configs or "local" in all_configs:
         if "global" in all_configs and len(all_configs["global"]) == 0 \
@@ -417,25 +428,11 @@ def get(
     Retrieve detail of a config.
     """
 
-    all_configs = {}
-    for as_global in [True, False]:
-        config_path = _config_file_path(as_global)
-        context = "global" if as_global else "local"
-        try:
-            configs, active = get_configurations(config_path.as_posix())
-            all_configs[context] = configs
-            all_configs["active"] = active
-        except FileNotFoundError:
-            check_configured(as_global)
-        except json.JSONDecodeError:
-            check_configured(as_global)
-            console.log(f"Failed to decode json '{config_path.as_posix()}'")
-            raise typer.Exit(code=2)
-
+    all_configs = get_all_configs()
     used_config = None
     remaining = ""
     if tag[0] == ".":
-        used_config = configs[active]
+        used_config = get_active_config(all_configs)
         remaining = tag
     else:
         # match config name to config element seperator: .
@@ -445,11 +442,15 @@ def get(
             raise typer.Exit(code=2)
         else:
             name = m.group(1)
-            if not name in configs:
+            has_local = "local" in all_configs
+            if (has_local and not name in all_configs["local"]) or \
+                    not name in all_configs["global"]:
                 console.log(f"No Configuration {name}")
                 raise typer.Exit(code=2)
             else:
-                used_config = configs[name]
+                used_config = all_configs["local"][name] \
+                        if has_local and  name in all_configs["local"] \
+                        else all_configs["global"][name]
                 remaining = tag[len(name):]
 
     if remaining[0] != ".":
