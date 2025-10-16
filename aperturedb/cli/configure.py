@@ -91,6 +91,7 @@ def get_configurations(file: str):
     active = configurations["active"]
     return configs, active
 
+
 def get_all_configs():
     all_configs = {}
     for as_global in [True, False]:
@@ -118,13 +119,15 @@ def get_all_configs():
             all_configs["active"] = f"env:{env_key}"
     return all_configs
 
-def get_active_config( all_configs):
+
+def get_active_config(all_configs):
     active = all_configs["active"]
     if active.startswith("env:"):
-        return all_configs["environment"][active[4:]] 
+        return all_configs["environment"][active[4:]]
     else:
         return all_configs["local"][active] if "locan" in all_configs and active in all_configs["local"] \
-                else all_configs["global"][active]
+            else all_configs["global"][active]
+
 
 @app.command()
 def ls(log_to_console: bool = True):
@@ -449,8 +452,8 @@ def get(
                 raise typer.Exit(code=2)
             else:
                 used_config = all_configs["local"][name] \
-                        if has_local and  name in all_configs["local"] \
-                        else all_configs["global"][name]
+                    if has_local and name in all_configs["local"] \
+                    else all_configs["global"][name]
                 remaining = tag[len(name):]
 
     if remaining[0] != ".":
