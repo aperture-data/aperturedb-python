@@ -13,9 +13,9 @@ from aperturedb.CommonLibrary import _create_configuration_from_json, __create_c
 import re
 
 
-# alnum for first character, then anum + - for rest.
+# alnum for first character, then anum with - or _ for rest. Max Length 64
 CONFIG_NAME_RE = re.compile(
-    r'^[a-zA-Z0-9]([a-zA-Z0-9-]){0,63}$'
+    r'^([a-zA-Z0-9]([a-zA-Z0-9-_]){0,63})'
 )
 
 
@@ -438,12 +438,13 @@ def get(
         used_config = configs[active]
         remaining = tag
     else:
-        m = re.match("^([^. ]*)", tag)
-        if len(m.groups()) != 1:
+        # match config name to config element seperator: .
+        m = re.match(f"{CONFIG_NAME_RE.pattern}\\.", tag)
+        if len(m.groups()) < 1 or len(m.groups(0)) == 0:
             console.log(f"Configuration name {tag} is invalid")
             raise typer.Exit(code=2)
         else:
-            name = m.group(0)
+            name = m.group(1)
             if not name in configs:
                 console.log(f"No Configuration {name}")
                 raise typer.Exit(code=2)
@@ -456,8 +457,9 @@ def get(
             f"Cannot create configuration data to retrieve from {remaining}")
         raise typer.Exit(code=2)
     else:
-        m = re.match("^([^. ]*)", remaining[1:])
-        if len(m.groups()) != 1:
+        # match config name to end of string
+        m = re.match(f"{CONFIG_NAME_RE.pattern}$", remaining[1:])
+        if len(m.groups()) < 1 or len(m.groups(0)) == 0:
             console.log(f"Configuration item {remaining[1:]} is invalid")
             raise typer.Exit(code=2)
         else:
@@ -466,8 +468,6 @@ def get(
 
             # check if attribut exists or is valid to print.
             if not config_item in dir(used_config):
-                print("NIID?")
-                print(dir(used_config))
                 print_ok = False
             else:
                 attrib = getattr(used_config, config_item)
