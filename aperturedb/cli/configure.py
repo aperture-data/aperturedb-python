@@ -190,10 +190,6 @@ def create(
     See https://docs.aperturedata.dev/Setup/client/configuration for more information on JSON configurations.
     """
 
-    if not CONFIG_NAME_RE.match(name):
-        console.log(
-            f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
-        raise typer.Exit(code=2)
 
     def check_for_overwrite(name):
         if name in configs and not overwrite:
@@ -240,6 +236,10 @@ def create(
         name = name if name is not None else gen_config.name
 
     else:
+        if not CONFIG_NAME_RE.match(name):
+            console.log(
+                f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
+            raise typer.Exit(code=2)
         if interactive:
             if name is None:
                 name = typer.prompt(
