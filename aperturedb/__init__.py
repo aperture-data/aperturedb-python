@@ -51,7 +51,8 @@ if error_file_name is not None:
     # without write access; adb is a use case for this.
     class DetachableFileHandler(logging.FileHandler):
         def __init__(self, file_path, delay=False):
-            super().__init__(file_path,delay=delay)
+            super().__init__(file_path, delay=delay)
+
         def emit(self, record):
             try:
                 super().emit(record)
@@ -60,7 +61,8 @@ if error_file_name is not None:
                     if h == self:
                         logger.removeHandler(h)
                         break
-                logging.warning(f"Unable to write to {self.baseFilename}, removing file logging")
+                logging.warning(
+                    f"Unable to write to {self.baseFilename}, removing file logging")
 
     error_file_tmpl = Template(error_file_name)
     template_items = {
