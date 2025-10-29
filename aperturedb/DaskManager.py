@@ -42,7 +42,7 @@ class DaskManager:
         self._cluster.close()
 
     def run(self, QueryClass: type[ParallelQuery], client: Connector, generator, batchsize, stats):
-        def process(df, host, port, use_ssl, session, connnector_type):
+        def process(df, host, port, use_ssl, ca_cert, session, connnector_type):
             metrics = Stats()
             # Dask reads data in partitions, and the first partition is of 2 rows, with all
             # values as 'foo'. This is for sampling the column names and types. Should not process
@@ -56,7 +56,7 @@ class DaskManager:
                 shared_data.session = session
                 shared_data.lock = Lock()
                 client = connnector_type(host=host, port=port,
-                                         use_ssl=use_ssl, shared_data=shared_data)
+                                         use_ssl=use_ssl, ca_cert=ca_cert, shared_data=shared_data)
             except Exception as e:
                 logger.exception(e)
             #from aperturedb.ParallelLoader import ParallelLoader
@@ -87,6 +87,7 @@ class DaskManager:
             client.host,
             client.port,
             client.use_ssl,
+            client.config.ca_cert,
             client.shared_data.session,
             type(client))
         computation = computation.persist()

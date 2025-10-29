@@ -69,7 +69,6 @@ def deserialize_record(record):
             except Exception as e:
                 logger.info(
                     f"Failed to parse JSON: {deserialized} with error {e}")
-                pass
 
     if isinstance(deserialized, list):
         deserialized = [deserialize_record(item) for item in deserialized]

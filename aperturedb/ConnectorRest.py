@@ -35,10 +35,32 @@ from types import SimpleNamespace
 from typing import Optional
 from aperturedb.Connector import Connector
 from aperturedb.Configuration import Configuration
+from requests.adapters import HTTPAdapter
+import ssl
 
 logger = logging.getLogger(__name__)
 
 PROTOCOL_VERSION = 1
+
+
+class CustomHTTPAdapter(HTTPAdapter):
+    def __init__(self, ca_cert: Optional[str]):
+        self.ca_cert = ca_cert
+        super().__init__()
+
+    def init_poolmanager(self, *args, **kwargs):
+        # this creates a default context with secure default settings,
+        # which enables server certficiate verification using the
+        # system's default CA certificates
+        context = ssl.create_default_context()
+        if self.ca_cert:
+            context.load_verify_locations(cafile=self.ca_cert)
+
+        # alternatively, you could create your own context manually
+        # but this does NOT enable server certificate verification
+        # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+
+        super().init_poolmanager(*args, **kwargs, ssl_context=context)
 
 
 class ConnectorRest(Connector):
@@ -59,7 +81,7 @@ class ConnectorRest(Connector):
 
     def __init__(self, host="localhost", port=None,
                  user="", password="", token="",
-                 use_ssl=True, shared_data=None,
+                 use_ssl=True, ca_cert=None, verify_hostname=True, shared_data=None,
                  config: Optional[Configuration] = None,
                  key: Optional[str] = None):
         self.use_keepalive = False
@@ -70,6 +92,8 @@ class ConnectorRest(Connector):
             password=password,
             token=token,
             use_ssl=use_ssl,
+            ca_cert=ca_cert,
+            verify_hostname=verify_hostname,
             shared_data=shared_data,
             config=config,
             key=key)
@@ -89,6 +113,12 @@ class ConnectorRest(Connector):
         # Since we will be making same call to the same URL, making a session
         # REF: https://requests.readthedocs.io/en/latest/user/advanced/
         self.http_session = requests.Session()
+        if self.config.verify_hostname:
+            if self.config.ca_cert:
+                adapter = CustomHTTPAdapter(ca_cert=self.config.ca_cert)
+            else:
+                adapter = CustomHTTPAdapter(ca_cert=None)
+            self.http_session.mount('https://', adapter=adapter)
 
         self.last_response   = ''
         self.last_query_time = 0
@@ -127,10 +157,11 @@ class ConnectorRest(Connector):
         while tries < self.config.retry_max_attempts:
             tries += 1
             try:
+                # URL takes care of the scheme
                 response = self.http_session.post(self.url,
                                                   headers = headers,
                                                   files   = files,
-                                                  verify  = self.use_ssl)
+                                                  verify  = self.config.use_ssl and self.config.verify_hostname)
                 if response.status_code == 200:
                     # Parse response:
                     json_response       = json.loads(response.text)

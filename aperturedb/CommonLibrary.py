@@ -40,6 +40,8 @@ def __create_connector(configuration: Configuration):
             token=configuration.token,
             password=configuration.password,
             use_ssl=configuration.use_ssl,
+            ca_cert=configuration.ca_cert,
+            verify_hostname=configuration.verify_hostname,
             config=configuration)
     else:
         connector = Connector(
@@ -49,6 +51,8 @@ def __create_connector(configuration: Configuration):
             token=configuration.token,
             password=configuration.password,
             use_ssl=configuration.use_ssl,
+            ca_cert=configuration.ca_cert,
+            verify_hostname=configuration.verify_hostname,
             config=configuration)
     logger.debug(
         f"Created connector using: {configuration}. Will connect on query.")
@@ -147,6 +151,7 @@ def _store_config(config: Configuration, name: str):
         password=config.password,
         use_ssl=config.use_ssl,
         use_rest=config.use_rest,
+        ca_cert=config.ca_cert,
         interactive=False,
         overwrite=True,
         active=True,

@@ -10,6 +10,13 @@ from aperturedb.cli.console import console
 import aperturedb.cli.keys as keys
 from aperturedb.Configuration import Configuration
 from aperturedb.CommonLibrary import _create_configuration_from_json, __create_connector
+import re
+
+
+# alnum for first character, then anum with - or _ for rest. Max Length 64
+CONFIG_NAME_RE = re.compile(
+    r'^([a-zA-Z0-9]([a-zA-Z0-9-_]){0,63})'
+)
 
 
 class ObjEncoder(json.JSONEncoder):
@@ -74,20 +81,18 @@ def get_configurations(file: str):
                 port=config["port"],
                 username=config["username"],
                 password=config["password"],
+                token=config["token"] if "token" in config else None,
                 use_rest=config["use_rest"],
                 use_ssl=config["use_ssl"],
-                token=config["token"] if "token" in config else None)
+                ca_cert=config.get("ca_cert", None),
+                verify_hostname=config.get("verify_hostname", True))
             if "user_keys" in config:
                 configs[c].set_user_keys(config["user_keys"])
     active = configurations["active"]
     return configs, active
 
 
-@app.command()
-def ls(log_to_console: bool = True):
-    """
-    List the configurations with their details.
-    """
+def get_all_configs():
     all_configs = {}
     for as_global in [True, False]:
         config_path = _config_file_path(as_global)
@@ -112,6 +117,24 @@ def ls(log_to_console: bool = True):
                 all_configs["environment"] = {}
             all_configs["environment"][env_key] = config
             all_configs["active"] = f"env:{env_key}"
+    return all_configs
+
+
+def get_active_config(all_configs):
+    active = all_configs["active"]
+    if active.startswith("env:"):
+        return all_configs["environment"][active[4:]]
+    else:
+        return all_configs["local"][active] if "locan" in all_configs and active in all_configs["local"] \
+            else all_configs["global"][active]
+
+
+@app.command()
+def ls(log_to_console: bool = True):
+    """
+    List the configurations with their details.
+    """
+    all_configs = get_all_configs()
 
     if "global" in all_configs or "local" in all_configs:
         if "global" in all_configs and len(all_configs["global"]) == 0 \
@@ -146,6 +169,10 @@ def create(
         password: Annotated[str, typer.Option(help="Password")] = "admin",
         use_rest: Annotated[bool, typer.Option(help="Use REST")] = False,
         use_ssl: Annotated[bool, typer.Option(help="Use SSL")] = True,
+        ca_cert: Annotated[Optional[str],
+                           typer.Option(help="CA certificate")] = "",
+        verify_hostname: Annotated[bool, typer.Option(
+            help="Verify hostname")] = True,
         interactive: Annotated[bool, typer.Option(
             help="Interactive mode")] = True,
         overwrite: Annotated[bool, typer.Option(
@@ -176,7 +203,8 @@ def create(
     db_password = password
     db_use_rest = use_rest
     db_use_ssl = use_ssl
-
+    db_ca_cert = ca_cert
+    db_verify_hostname = verify_hostname
     config_path = _config_file_path(as_global)
     configs = {}
     try:
@@ -207,6 +235,10 @@ def create(
         name = name if name is not None else gen_config.name
 
     else:
+        if not CONFIG_NAME_RE.match(name):
+            console.log(
+                f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
+            raise typer.Exit(code=2)
         if interactive:
             if name is None:
                 name = typer.prompt(
@@ -225,6 +257,16 @@ def create(
                 f"Use REST [Note: Only if ApertureDB is setup to receive HTTP requests]", default=db_use_rest)
             db_use_ssl = typer.confirm(
                 f"Use SSL [Note: ApertureDB's defaults do not allow non SSL traffic]", default=db_use_ssl)
+            db_ca_cert = typer.prompt(
+                f"Enter {APP_NAME} CA certificate's path (if custom CA is used)", default=db_ca_cert)
+            if db_ca_cert != "":
+                db_ca_cert = os.path.abspath(db_ca_cert)
+                assert os.path.exists(
+                    db_ca_cert), f"CA certificate file {db_ca_cert} does not exist"
+            else:
+                db_ca_cert = None
+            db_verify_hostname = typer.confirm(
+                f"Verify hostname", default=db_verify_hostname)
 
         gen_config = Configuration(
             name=name,
@@ -233,7 +275,9 @@ def create(
             username=db_username,
             password=db_password,
             use_ssl=db_use_ssl,
-            use_rest=db_use_rest
+            use_rest=db_use_rest,
+            ca_cert=db_ca_cert,
+            verify_hostname=db_verify_hostname
         )
 
     assert name is not None, "Configuration name must be specified"
@@ -376,3 +420,75 @@ def get_key(name: Annotated[str, typer.Argument(
             check_configured(as_global=True, show_error=True)
 
     print(f"{user_key}")
+
+
+@app.command()
+def get(
+        tag: Annotated[str, typer.Argument(help="Tag of information to get")],
+        ignore_unset: Annotated[bool, typer.Option(help="ignore unsetl")] = False):
+    """
+    Retrieve detail of a config.
+    """
+
+    all_configs = get_all_configs()
+    used_config = None
+    remaining = ""
+    if tag[0] == ".":
+        used_config = get_active_config(all_configs)
+        remaining = tag
+    else:
+        # match config name to config element seperator: .
+        m = re.match(f"{CONFIG_NAME_RE.pattern}\\.", tag)
+        if len(m.groups()) < 1 or len(m.groups(0)) == 0:
+            console.log(f"Configuration name {tag} is invalid")
+            raise typer.Exit(code=2)
+        else:
+            name = m.group(1)
+            has_local = "local" in all_configs
+            if (has_local and not name in all_configs["local"]) or \
+                    not name in all_configs["global"]:
+                console.log(f"No Configuration {name}")
+                raise typer.Exit(code=2)
+            else:
+                used_config = all_configs["local"][name] \
+                    if has_local and name in all_configs["local"] \
+                    else all_configs["global"][name]
+                remaining = tag[len(name):]
+
+    if remaining[0] != ".":
+        console.log(
+            f"Cannot create configuration data to retrieve from {remaining}")
+        raise typer.Exit(code=2)
+    else:
+        # match config name to end of string
+        m = re.match(f"{CONFIG_NAME_RE.pattern}$", remaining[1:])
+        if len(m.groups()) < 1 or len(m.groups(0)) == 0:
+            console.log(f"Configuration item {remaining[1:]} is invalid")
+            raise typer.Exit(code=2)
+        else:
+            config_item = m.group(0)
+            print_ok = True
+
+            # check if attribut exists or is valid to print.
+            if not config_item in dir(used_config):
+                print_ok = False
+            else:
+                attrib = getattr(used_config, config_item)
+                # we allow only retreiving string, int or bool values from the
+                # Configuration.
+                allowed_types = [str, int, bool, type(None)]
+                allowed_commands = ["auth_mode"]
+                if config_item in allowed_commands:
+                    attrib = attrib()
+                elif not any([isinstance(attrib, allowed_type) for allowed_type in allowed_types]):
+                    print_ok = False
+
+            if print_ok:
+                if attrib is None and not ignore_unset:
+                    console.log(f"Configuration Item {config_item} is unset")
+                    raise typer.Exit(code=2)
+                else:
+                    print(attrib)
+            else:
+                console.log(f"No Configuration Item {config_item}")
+                raise typer.Exit(code=2)

@@ -49,6 +49,32 @@ logger = logging.getLogger(__name__)
 
 
 PROTOCOL_VERSION = 1
+MESSAGE_LENGTH_FORMAT = '@I'
+MESSAGE_LENGTH_SIZE = struct.calcsize(MESSAGE_LENGTH_FORMAT)
+
+# Protocol types
+PROTOCOL_TCP = 1
+PROTOCOL_SSL = 2
+
+DEFAULT_PORT = 55555
+# aperturedb's param ADB_MAX_CONNECTION_MESSAGE_SIZE_MB = 2048 by default
+DEFAULT_MAX_MESSAGE_SIZE_MB = 2048
+
+# Query retry constants
+DEFAULT_RETRY_INTERVAL_SECONDS = 1
+DEFAULT_RETRY_MAX_ATTEMPTS = 3
+DEFAULT_SESSION_EXPIRY_OFFSET_SEC = 10
+DEFAULT_QUERY_CONNECTION_ERROR_SUPPRESSION_DELTA_SEC = 30
+
+# Session renewal constants
+RENEW_SESSION_MAX_ATTEMPTS = 3
+RENEW_SESSION_RETRY_INTERVAL_SEC = 1
+
+# Status codes
+STATUS_OK = 0
+STATUS_ERROR_DEFAULT = -2
+
+SETUP_URL = "https://docs.aperturedata.dev/Setup/server/Local#run-aperturedb-along-with-webui-using-docker-compose"
 
 
 class UnauthorizedException(Exception):
@@ -73,7 +99,7 @@ class Session():
 
         # This triggers refresh if the session is about to expire.
         if session_age > self.session_token_ttl - \
-                int(os.getenv("SESSION_EXPIRY_OFFSET_SEC", 10)):
+                int(os.getenv("SESSION_EXPIRY_OFFSET_SEC", DEFAULT_SESSION_EXPIRY_OFFSET_SEC)):
             return False
 
         return True
@@ -104,16 +130,28 @@ class Connector(object):
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
         str (key): Apeture Key, configuration as a deflated compressed string
+
+    The Configuration class options:
+    host,port,user,password,token,use_ssl,use_keepalive,retry_interval_seconds,retrun_max_attempts
+    are all ignored in the initializer if a config or key is passed in.
+
+    If a key is passed in, it is chosen over a config.
+
+    shared_data and authenticate are not Configuration class based options, and
+    have no overrides.
+
     """
 
-    def __init__(self, host="localhost", port=55555,
+    def __init__(self, host="localhost", port=DEFAULT_PORT,
                  user="", password="", token="",
                  use_ssl=True,
+                 ca_cert=None,
                  shared_data=None,
                  authenticate=True,
                  use_keepalive=True,
-                 retry_interval_seconds=1,
-                 retry_max_attempts=3,
+                 verify_hostname=True,
+                 retry_interval_seconds=DEFAULT_RETRY_INTERVAL_SECONDS,
+                 retry_max_attempts=DEFAULT_RETRY_MAX_ATTEMPTS,
                  config: Optional[Configuration] = None,
                  key: Optional[str] = None):
         """
@@ -126,24 +164,23 @@ class Connector(object):
         self.last_query_timestamp = None
         # suppress connection warnings which occur more than this time
         # after the last query
-        self.query_connection_error_suppression_delta = timedelta(seconds=30)
+        self.query_connection_error_suppression_delta = timedelta(
+            seconds=DEFAULT_QUERY_CONNECTION_ERROR_SUPPRESSION_DELTA_SEC)
 
-        if key is not None:
-            self.config = Configuration.reinflate(key)
-            self.host = self.config.host
-            self.port = self.config.port
-            self.use_ssl = self.config.use_ssl
-            token = self.config.token
-        elif config is None:
-            self.host = host
-            self.port = port
-            self.use_ssl = use_ssl
-            self.use_keepalive = use_keepalive
+        # we either have a config ( as a key or as object ) or not.
+        if key is not None or config is not None:
+            if key is not None:
+                self.config = Configuration.reinflate(key)
+            else:
+                self.config = config
+        else:
             # Create a configuration object, to show better error messages
             self.config = Configuration(
-                host=self.host,
-                port=self.port,
-                use_ssl=self.use_ssl,
+                host=host,
+                port=port,
+                use_ssl=use_ssl,
+                ca_cert=ca_cert,
+                verify_hostname=verify_hostname,
                 username=user,
                 password=password,
                 name="runtime",
@@ -152,17 +189,14 @@ class Connector(object):
                 retry_interval_seconds=retry_interval_seconds,
                 retry_max_attempts=retry_max_attempts
             )
-        else:
-            self.config = config
-            self.host = config.host
-            self.port = config.port
-            self.use_ssl = config.use_ssl
-            self.use_keepalive = config.use_keepalive
-            token = config.token
 
+        # now we do.
+        self.host = self.config.host
+        self.port = self.config.port
+        self.use_ssl = self.config.use_ssl
+        self.use_keepalive = self.config.use_keepalive
+        self.token = self.config.token
         self.conn = None
-
-        self.token = token
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
@@ -196,20 +230,20 @@ class Connector(object):
             self.connected = False
 
     def _send_msg(self, data):
-        # aperturedb's param ADB_MAX_CONNECTION_MESSAGE_SIZE_MB = 256 by default
-        if len(data) > (256 * 2**20):
+        if len(data) > (DEFAULT_MAX_MESSAGE_SIZE_MB * 2**20):
             logger.warning(
                 "Message sent is larger than default for ApertureDB Server. Server may disconnect.")
 
-        sent_len = struct.pack('@I', len(data))  # send size first
+        sent_len = struct.pack(MESSAGE_LENGTH_FORMAT,
+                               len(data))  # send size first
         x = self.conn.send(sent_len + data)
-        return x == len(data) + 4
+        return x == len(data) + MESSAGE_LENGTH_SIZE
 
     def _recv_msg(self):
-        recv_len = self.conn.recv(4)  # get message size
+        recv_len = self.conn.recv(MESSAGE_LENGTH_SIZE)  # get message size
         if recv_len == b'':
             return None
-        recv_len = struct.unpack('@I', recv_len)[0]
+        recv_len = struct.unpack(MESSAGE_LENGTH_FORMAT, recv_len)[0]
         response = bytearray(recv_len)
         read = 0
         while read < recv_len:
@@ -250,7 +284,7 @@ class Connector(object):
                 "Unexpected response from server upon authenticate request: " +
                 str(response))
         session_info = response[0]["Authenticate"]
-        if session_info["status"] != 0:
+        if session_info["status"] != STATUS_OK:
             raise Exception(session_info["info"])
 
         self.shared_data.session = Session(
@@ -280,7 +314,7 @@ class Connector(object):
         logger.info(f"Refresh token response: \r\n{response}")
         if isinstance(response, list):
             session_info = response[0]["RefreshToken"]
-            if session_info["status"] != 0:
+            if session_info["status"] != STATUS_OK:
                 # Refresh token failed, we need to re-authenticate
                 # This is possible with a long lived connector, where
                 # the session token and the refresh token have expired.
@@ -302,6 +336,26 @@ class Connector(object):
         else:
             raise UnauthorizedException(response)
 
+    def _build_ssl_context(self):
+        """
+        Builds an SSL context for the connection.
+        There are 3 scenarios:
+        1. verify_hostname is False, we don't verify the hostname
+        2. verify_hostname is True and ca_cert is provided, we verify the hostname using the provided ca_cert
+        3. verify_hostname is True and ca_cert is not provided, we verify the hostname using the system's default CA certificates
+        """
+        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        if not self.config.verify_hostname:
+            self.context.check_hostname = False
+            self.context.verify_mode = ssl.CERT_NONE
+        elif self.config.ca_cert:
+            self.context.load_verify_locations(
+                cafile=self.config.ca_cert
+            )
+        else:
+            self.context.load_default_certs(ssl.Purpose.SERVER_AUTH)
+        return self.context
+
     def _connect(self):
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
@@ -320,7 +374,7 @@ class Connector(object):
 
             # Handshake with server to negotiate protocol
 
-            protocol = 2 if self.use_ssl else 1
+            protocol = PROTOCOL_SSL if self.use_ssl else PROTOCOL_TCP
 
             hello_msg = struct.pack('@II', PROTOCOL_VERSION, protocol)
 
@@ -343,14 +397,43 @@ class Connector(object):
 
             if self.use_ssl:
 
-                # Server is ok with SSL, we switch over SSL.
-                self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-                self.context.check_hostname = False
+                self.context = self._build_ssl_context()
+
                 # TODO, we need to add support for local certificates
                 # For now, we let the server send us the certificate
-                self.context.verify_mode = ssl.VerifyMode.CERT_NONE
-                self.conn = self.context.wrap_socket(self.conn)
+                try:
+                    if self.config.verify_hostname:
+                        self.conn = self.context.wrap_socket(
+                            self.conn, server_hostname=self.host)
+                    else:
+                        self.conn = self.context.wrap_socket(
+                            self.conn)
+                except ssl.SSLCertVerificationError as e:
+                    logger.exception(
+                        f"You can use the ca_cert parameter to specify a custom CA certificate")
+                    assert False, "Certificate verification failed" + os.linesep + \
+                        f"The host name must match the certificate: {self.host} " + os.linesep + \
+                        f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
+                        f"Refer to the documentation for more information: {SETUP_URL}" + os.linesep + \
+                        f"Alternatively, SSL can be disabled by setting verify_hostname=False or use_ssl=False (not recommended)" + \
+                        os.linesep
+                except ssl.SSLError as e:
+                    logger.exception(f"Error wrapping socket.")
+                    self.conn.close()
+                    self.connected = False
+                    raise
 
+        except FileNotFoundError as e:
+            logger.exception(
+                f"The certificate file does not exist: {self.config.ca_cert}")
+            logger.exception(
+                f"You can use the ca_cert parameter to specify a custom CA certificate")
+            assert False, "Certificate verification failed" + os.linesep + \
+                f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
+                f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
+                f"Refer to the documentation for more information: {SETUP_URL} " + os.linesep + \
+                f"Alternatively, SSL can be disabled by setting verify_hostname=False or use_ssl=False (not recommended)" + \
+                os.linesep
         except BaseException as e:
             self.conn.close()
             self.connected = False
@@ -513,16 +596,16 @@ class Connector(object):
 
     def _renew_session(self):
         count = 0
-        while count < 3:
+        while count < RENEW_SESSION_MAX_ATTEMPTS:
             try:
                 self._check_session_status()
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of 3] Failed to refresh token.",
+                    f"[Attempt {count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
                     exc_info=True,
                     stack_info=True)
-                time.sleep(1)
+                time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)
                 count += 1
 
     def clone(self) -> Connector:
@@ -583,7 +666,7 @@ class Connector(object):
             int: The value recieved from the server, or -2 if not found.
         """
         # Default status is -2, which is an error, but not a server error.
-        status = -2
+        status = STATUS_ERROR_DEFAULT
         if (isinstance(json_res, dict)):
             if ("status" not in json_res):
                 status = self.check_status(json_res[list(json_res.keys())[0]])

@@ -1,0 +1,28 @@
+{
+    "name": "devcontainer",
+    "dockerComposeFile": [
+        "docker-compose.yml"
+    ],
+    "service": "devcontainer",
+    "workspaceFolder": "/aperturedb-python",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.pylint",
+                "ms-toolsai.jupyter"
+            ]
+        }
+    },
+    "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/*.pyc": true
+        }
+    },
+    "initializeCommand": "./initcommand.sh",
+    "postCreateCommand": "./postinstall.sh"
+}

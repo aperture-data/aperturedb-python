@@ -15,7 +15,7 @@ services:
       openssl x509 -req  -CA /ca/ca.crt -CAkey /ca/ca.key -in /ca/http.csr -out /cert/http.crt -passin pass:1234"
     volumes:
       - ./aperturedb/certificate:/cert
-      - ./${RUNNER_NAME}_ca:/ca
+      - ./ca:/ca
 
   lenz:
     depends_on:
@@ -72,7 +72,17 @@ services:
         target: /etc/nginx/conf.d/default.conf
     volumes:
       - ./aperturedb/certificate:/etc/nginx/certificate
-
+  devcontainer:
+    build:
+      context: ../docker/devcontainer
+    environment:
+      DB_HOST: lenz
+      DB_PORT: 55551
+      CA_CERT: /ca/ca.crt
+    command: bash -c "while true; do sleep 1000; done"
+    volumes:
+      - ../:/aperturedb-python
+      - ./ca:/ca
 configs:
   nginx.conf:
     content: |

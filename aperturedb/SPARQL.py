@@ -105,8 +105,12 @@ class SPARQL:
                 uri = self._make_uri("c", c)
                 if uri not in self.connections:
                     self.connections[uri] = (set(), set())
-                self.connections[uri][0].add(d["src"])
-                self.connections[uri][1].add(d["dst"])
+                # Due to the change in response format, we need to handle both dict and list.
+                d_list = [d] if isinstance(d, dict) else d
+
+                for d in d_list:
+                    self.connections[uri][0].add(d["src"])
+                    self.connections[uri][1].add(d["dst"])
         if not self.connections:
             self.logger.warning("No connections found in schema")
 
@@ -421,7 +425,7 @@ class SPARQL:
                 types[k] = intersection
 
         from rdflib import RDF
-        from rdflib.plugins.sparql.sparql import QueryContext, SPARQLError
+        from rdflib.plugins.sparql.sparql import SPARQLError
         types = {}
         for s, p, o in triples:
             s_type = self._deduce_type(s)
