@@ -71,7 +71,8 @@ class CSVParser(Subscriptable):
                     f"CSVParser requires a RangeIndex. the supplied DataFrame has a {type(self.df.index)} index.")
         else:
             if df is not None:
-                raise ValueError("Dask mode requires a CSV filename; DataFrame inputs are not supported.")
+                raise ValueError(
+                    "Dask mode requires a CSV filename; DataFrame inputs are not supported.")
             # It'll impact the number of partitions, and memory usage.
             # TODO: tune this for the best performance.
             cores_used = int(CORES_USED_FOR_PARALLELIZATION * mp.cpu_count())
