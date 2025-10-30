@@ -116,7 +116,7 @@ class Configuration:
 
         if host.endswith(APERTUREDB_CLOUD):
             host = host[:-1 * len(APERTUREDB_CLOUD)]
-            m = re.match("(.*)\.farm(\d+)$", host)
+            m = re.match(r"(.*)\.farm(\d+)$", host)
             if m is not None:
                 host = "{}.{}".format(m.group(1), int(m.group(2)))
                 compressed = True
@@ -170,7 +170,7 @@ class Configuration:
         else:
             raise ValueError("Bad format for key list")
 
-        port_match = re.match(".*:(\d+)$", host)
+        port_match = re.match(r".*:(\d+)$", host)
         if port_match is not None:
             port = int(port_match.group(1))
             host = host[:-1 * (len(port_match.group(1)) + 1)]
