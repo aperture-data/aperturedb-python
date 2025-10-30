@@ -62,7 +62,17 @@ class CSVParser(Subscriptable):
                 self.df = pd.read_csv(filename)
             else:
                 self.df = df
+
+            # we expect the df index to have 'start', which means RangeIndex.
+            # most users don't supply their own df, so this is mostly a sanity check
+            # for when an advanced user has done filtering and have a IntervalIndex.
+            if not isinstance(self.df.index, pd.RangeIndex):
+                raise TypeError(
+                    f"CSVParser requires a RangeIndex. the supplied DataFrame has a {type(self.df.index)} index.")
         else:
+            if df is not None:
+                raise ValueError(
+                    "Dask mode requires a CSV filename; DataFrame inputs are not supported.")
             # It'll impact the number of partitions, and memory usage.
             # TODO: tune this for the best performance.
             cores_used = int(CORES_USED_FOR_PARALLELIZATION * mp.cpu_count())
