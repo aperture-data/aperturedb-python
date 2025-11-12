@@ -13,6 +13,8 @@ import logging
 from aperturedb.CommonLibrary import create_connector, execute_query
 from aperturedb.Utils import Utils
 
+SAFE_PREFIX = "adb_"
+
 
 class SPARQL:
     def __init__(self, client=None, debug=False, log_level=None):
@@ -93,6 +95,12 @@ class SPARQL:
     def _format_triples(self, triples):
         return " .\n".join([self._format_triple(triple) for triple in triples])
 
+    def _make_safe_prefix(self, suffix):
+        return f"{SAFE_PREFIX}{suffix[1:]}" if suffix.startswith("_") else suffix
+
+    def _make_command_name(self, t):
+        return "Find" + t[len(SAFE_PREFIX):] if t.startswith(f"{SAFE_PREFIX}") else "FindEntity"
+
     def _load_schema(self):
         self.schema = self._utils.get_schema()
         self.connections = {}
@@ -109,8 +117,10 @@ class SPARQL:
                 d_list = [d] if isinstance(d, dict) else d
 
                 for d in d_list:
-                    self.connections[uri][0].add(d["src"])
-                    self.connections[uri][1].add(d["dst"])
+                    self.connections[uri][0].add(
+                        self._make_safe_prefix(d["src"]))
+                    self.connections[uri][1].add(
+                        self._make_safe_prefix(d["dst"]))
         if not self.connections:
             self.logger.warning("No connections found in schema")
 
@@ -169,9 +179,9 @@ class SPARQL:
         def add_find(v, t):
             """Create new Find* command for variable v with type t"""
             from rdflib.term import Variable
-            command_name = "FindEntity" if t[0] != "_" else "Find" + t[1:]
             body = {}
-            if t[0] != "_":
+            command_name = self._make_command_name(t)
+            if command_name == "FindEntity":
                 body["with_class"] = t
             body["_ref"] = len(query) + 1
             body["uniqueids"] = True
@@ -448,7 +458,7 @@ class SPARQL:
                 add_types(s, [self._parse_uri_with_ns('t', o)])
             elif p in self.knn_properties:
                 if p == self.namespaces["knn"] + "similarTo":
-                    add_types(s, {"_Descriptor"})
+                    add_types(s, {self._make_safe_prefix("_Descriptor")})
             elif p == self.namespaces["c"] + "ANY":
                 pass
             else:
@@ -512,9 +522,10 @@ class SPARQL:
             assert type == self._deduce_type(
                 uri), f"Type {type} does not match deduced type {self._deduce_type(uri)}"
         assert type is not None, f"Cannot get blob for entity URI: {uri}"
-        assert type[0] == "_", f"Cannot get blob for entity URI: {uri} with type {type}"
+        assert type.startswith(
+            f"{SAFE_PREFIX}"), f"Cannot get blob for entity URI: {uri} with type {type}"
         uniqueid = self._deduce_uniqueid(uri)
-        command_name = "Find" + type[1:]
+        command_name = self._make_command_name(type)
         query = [
             {command_name: {
                 "constraints": {
@@ -542,9 +553,10 @@ class SPARQL:
                 t == type for t in types), f"Types do not match: {types}"
 
         assert type is not None, f"Cannot get blob for entity URI: {uri}"
-        assert type[0] == "_", f"Cannot get blob for entity URI: {uri} with type {type}"
+        assert type.startswith(
+            f"{SAFE_PREFIX}"), f"Cannot get blob for entity URI: {uri} with type {type}"
         uniqueids = [self._deduce_uniqueid(uri) for uri in uris]
-        command_name = "Find" + type[1:]
+        command_name = self._make_command_name(type)
         query = [
             {command_name: {
                 "results": {"list": ["_uniqueid"]},
@@ -571,7 +583,7 @@ class SPARQL:
         import numpy as np
         import cv2
 
-        blob = self.get_blob(uri, type="_Image")
+        blob = self.get_blob(uri, type=self._make_safe_prefix("_Image"))
         nparr = np.fromstring(blob, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -584,7 +596,7 @@ class SPARQL:
         import numpy as np
         import cv2
 
-        blobs = self.get_blobs(uris, type="_Image")
+        blobs = self.get_blobs(uris, type=self._make_safe_prefix("_Image"))
         images = []
         for blob in blobs:
             if blob is not None:
@@ -619,7 +631,7 @@ class SPARQL:
         Get the descriptor associated with a URI or QName
         """
         import numpy as np
-        blob = self.get_blob(uri, type="_Descriptor")
+        blob = self.get_blob(uri, type=self._make_safe_prefix("_Descriptor"))
         return np.frombuffer(blob, dtype=np.float32)
 
     def get_descriptors(self, uris: List[Union[str, "URIRef"]]) -> List["np.ndarray"]:
@@ -627,5 +639,6 @@ class SPARQL:
         Get the descriptors associated with a list of URI or QName
         """
         import numpy as np
-        blobs = self.get_blobs(uris, type="_Descriptor")
+        blobs = self.get_blobs(
+            uris, type=self._make_safe_prefix("_Descriptor"))
         return [np.frombuffer(blob, dtype=np.float32) for blob in blobs]
