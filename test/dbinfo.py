@@ -9,3 +9,4 @@ DB_REST_PORT = 443
 DB_USER      = "admin"
 DB_PASSWORD  = "admin"
 CA_CERT      = "/ca/ca.crt"
+VERIFY_HOSTNAME = False

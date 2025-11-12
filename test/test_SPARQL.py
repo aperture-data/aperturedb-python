@@ -110,7 +110,7 @@ SELECT ?i ?distance ?d ?caption WHERE {{
     c:ANY ?i . # Use fake connection because we can't say c:_DescriptorConnection
     ?i p:caption ?caption .
 }}
-""")])
+""")], ids=["Logical AND", "Logical OR", "Top 10 ingredients", "Descriptor search"])
 def test_sparql(load_cookbook, sparql, query, description):
     results = sparql.query(query)
     assert results, f"No results for {description}"
