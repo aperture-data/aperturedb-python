@@ -34,6 +34,7 @@ def pytest_generate_tests(metafunc):
                     password=dbinfo.DB_PASSWORD,
                     use_ssl=True,
                     ca_cert=dbinfo.CA_CERT,
+                    verify_hostname=dbinfo.VERIFY_HOSTNAME,
                     retry_max_attempts=3,
                     retry_interval_seconds=0)},
                 marks=pytest.mark.tcp),
@@ -44,6 +45,7 @@ def pytest_generate_tests(metafunc):
                     user=dbinfo.DB_USER,
                     password=dbinfo.DB_PASSWORD,
                     ca_cert=dbinfo.CA_CERT,
+                    verify_hostname=dbinfo.VERIFY_HOSTNAME,
                     use_ssl=True)},
                 marks=pytest.mark.http)
         ], indirect=True, ids=["TCP", "HTTP"])
