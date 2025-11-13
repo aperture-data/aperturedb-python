@@ -127,9 +127,7 @@ class SPARQL:
         self.properties = {}
         if "entities" in self.schema and self.schema["entities"] is not None and "classes" in self.schema["entities"]:
             for e, d in self.schema["entities"]["classes"].items():
-                if e.startswith("_"):
-                    # Make a safe namespace for some services like Wikidata.
-                    e = f"adb{e}"
+                e = self._make_safe_prefix(e)
                 for p in d["properties"]:
                     uri = self._make_uri("p", p)
                     if uri not in self.properties:
