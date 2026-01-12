@@ -169,6 +169,8 @@ def generate_add_query(
     cindex = index
     specific_params = {}
     specific_blobs = []
+    if obj is None:
+        return query, blobs, index
     if obj.id not in cached:
         for p in obj.__dict__.keys():
             if "_" == p[0]:
