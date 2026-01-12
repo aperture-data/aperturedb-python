@@ -26,6 +26,14 @@ elif google.protobuf.__version__.split(".")[0] == "5":
 
     def ParseFromString(msg, data):
         return msg.ParseFromString(data)
+elif google.protobuf.__version__.split(".")[0] == "6":
+    from . import queryMessage6_pb2
+
+    def queryMessage():
+        return queryMessage6_pb2.queryMessage()
+
+    def ParseFromString(msg, data):
+        return msg.ParseFromString(data)
 else:
     raise Exception(
         f"aperturedb not compatible with {google.protobuf.__version__}")

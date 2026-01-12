@@ -10,7 +10,7 @@ import faulthandler
 import signal
 import sys
 
-__version__ = "0.4.53"
+__version__ = "0.4.54"
 
 logger = logging.getLogger(__name__)
 
@@ -47,13 +47,30 @@ if "ADB_LOG_FILE" in os.environ:
         os.environ["ADB_LOG_FILE"]) == 0 else os.environ["ADB_LOG_FILE"]
 
 if error_file_name is not None:
+    # detachable file handler allows program to run from working directory
+    # without write access; adb is a use case for this.
+    class DetachableFileHandler(logging.FileHandler):
+        def __init__(self, file_path, delay=False):
+            super().__init__(file_path, delay=delay)
+
+        def emit(self, record):
+            try:
+                super().emit(record)
+            except PermissionError as pErr:
+                for h in logger.handlers[:]:
+                    if h == self:
+                        logger.removeHandler(h)
+                        break
+                logging.warning(
+                    f"Unable to write to {self.baseFilename}, removing file logging")
+
     error_file_tmpl = Template(error_file_name)
     template_items = {
         # python isodate has ':', not valid in files in windows.
         "now": str(datetime.datetime.now().isoformat()).replace(':', ''),
         "node": str(platform.node())
     }
-    error_file_handler = logging.FileHandler(error_file_tmpl.safe_substitute(
+    error_file_handler = DetachableFileHandler(error_file_tmpl.safe_substitute(
         **template_items), delay=True)
     error_file_handler.setFormatter(formatter)
     error_file_handler.setLevel(log_file_level)

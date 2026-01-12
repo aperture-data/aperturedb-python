@@ -4,7 +4,7 @@ dynamic = ["version"]
 description = "ApertureDB Python SDK"
 
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 keywords = ["aperturedb", "graph", "database",
  "image", "video", "metadata", "search", "indexing"]
@@ -16,7 +16,7 @@ authors = [
 dependencies = [
     # Pin to the bridge version.
     # https://github.com/tensorflow/tensorflow/issues/60320
-    'protobuf >=3.20.3,<6.0.0',
+    'protobuf >=3.20.3,<7.0.0',
     #Folllowing is needed parallel loaders, and basic things for
     # making the notebooks.
     'requests', 'boto3',

@@ -87,8 +87,8 @@ def get_specific(obj: BaseModel) -> dict:
         start, stop  = obj.start, obj.stop
         if obj.range_type == RangeType.TIME:
             start, stop = int(start), int(stop)
-            start = f"{start//60}:{start%60}"
-            stop = f"{stop//60}:{stop%60}"
+            start = f"{start//3600:0>2}:{start//60:0>2}:{start%60:0>2}"
+            stop = f"{stop//3600:0>2}:{stop//60:0>2}:{stop%60:0>2}"
         elif obj.range_type == RangeType.FRAME:
             start = int(obj.start)
             stop = int(obj.stop)
@@ -169,6 +169,8 @@ def generate_add_query(
     cindex = index
     specific_params = {}
     specific_blobs = []
+    if obj is None:
+        return query, blobs, index
     if obj.id not in cached:
         for p in obj.__dict__.keys():
             if "_" == p[0]:
