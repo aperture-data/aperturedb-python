@@ -9,8 +9,7 @@ jobs:
   build-test:
 
     runs-on:
-    - self-hosted
-    - deployer
+    - benchmark
 
     steps:
 
@@ -43,8 +42,7 @@ jobs:
     - build-test
 
     runs-on:
-    - self-hosted
-    - deployer
+    - benchmark
 
     steps:
 
