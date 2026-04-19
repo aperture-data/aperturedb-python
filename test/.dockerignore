@@ -4,3 +4,4 @@ notebooks/
 kaggleds/
 __pycache__/
 .pytest_cache/
+*_ca/
