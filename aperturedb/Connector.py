@@ -236,8 +236,8 @@ class Connector(object):
 
         sent_len = struct.pack(MESSAGE_LENGTH_FORMAT,
                                len(data))  # send size first
-        x = self.conn.send(sent_len + data)
-        return x == len(data) + MESSAGE_LENGTH_SIZE
+        self.conn.sendall(sent_len + data)
+        return True
 
     def _recv_msg(self):
         recv_len = self.conn.recv(MESSAGE_LENGTH_SIZE)  # get message size
@@ -451,7 +451,8 @@ class Connector(object):
                 self._connect()
             except socket.error as e:
                 logger.error(
-                    f"Error connecting to server: {self.config} \r\n{details}. {e=}",
+                    f"Error connecting to server: {
+                        self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
 
@@ -476,6 +477,9 @@ class Connector(object):
 
         # Serialize with protobuf and send
         data = query_msg.SerializeToString()
+
+        if self.conn is None:
+            self.connect()
 
         # this is for session refresh attempts
         tries = 0
@@ -602,7 +606,8 @@ class Connector(object):
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
+                    f"[Attempt {
+                        count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
                     exc_info=True,
                     stack_info=True)
                 time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)
