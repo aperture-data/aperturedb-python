@@ -236,10 +236,7 @@ class Connector(object):
 
         sent_len = struct.pack(MESSAGE_LENGTH_FORMAT,
                                len(data))  # send size first
-        if self.conn:
-            self.conn.sendall(sent_len + data)
-        else:
-            raise socket.error("Connection is None when sending")
+        self.conn.sendall(sent_len + data)
         return True
 
     def _recv_msg(self):
@@ -480,6 +477,9 @@ class Connector(object):
 
         # Serialize with protobuf and send
         data = query_msg.SerializeToString()
+
+        if self.conn is None:
+            self.connect()
 
         # this is for session refresh attempts
         tries = 0
