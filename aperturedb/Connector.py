@@ -451,8 +451,8 @@ class Connector(object):
                 self._connect()
             except socket.error as e:
                 logger.error(
-                    f"Error connecting to server: {
-                        self.config} \r\n{details}. {e =}",
+                    f"Error connecting to server: "
+                    f"{self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
 
@@ -606,8 +606,9 @@ class Connector(object):
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {
-                        count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
+                    f"[Attempt {count + 1} of "
+                    f"{RENEW_SESSION_MAX_ATTEMPTS}] "
+                    "Failed to refresh token.",
                     exc_info=True,
                     stack_info=True)
                 time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)
