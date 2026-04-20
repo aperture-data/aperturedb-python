@@ -481,7 +481,6 @@ class Connector(object):
         # Serialize with protobuf and send
         data = query_msg.SerializeToString()
 
-
         # this is for session refresh attempts
         tries = 0
         while tries < self.config.retry_max_attempts:
