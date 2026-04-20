@@ -124,7 +124,7 @@ class TestSession():
             nonlocal send_attempts
             send_attempts += 1
             raise socket.error("Connection broke when send")
-        monkeypatch.setattr(socket.socket, "send", mock_send)
+        monkeypatch.setattr(socket.socket, "sendall", mock_send)
 
         # Create new db connection.
         new_db = Connector(
