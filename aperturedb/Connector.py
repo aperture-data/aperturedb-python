@@ -541,7 +541,7 @@ class Connector(object):
             # For example aperturedb server is restarted, or network is lost.
             # While this is useful bit of code, when executed in a refresh token
             # path, this can cause a deadlock. Hence the try_resume flag.
-            if try_resume:
+            if try_resume and self.connected:
                 self._renew_session()
         if tries == self.config.retry_max_attempts:
             # We have tried enough times, and failed. Log some state info.

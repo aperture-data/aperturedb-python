@@ -94,7 +94,7 @@ class TestSession():
         def mock_connect(host, port):
             nonlocal connect_attempts
             connect_attempts += 1
-            raise socket.error("Connection Refused")
+            raise ConnectionRefusedError("Connection Refused")
         monkeypatch.setattr(socket.socket, "connect",
                             lambda h, p: mock_connect(h, p))
 
