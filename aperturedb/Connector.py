@@ -490,8 +490,8 @@ class Connector(object):
                     querRes = queryMessage.queryMessage()
                     queryMessage.ParseFromString(querRes, response)
                     response_blob_array = [b for b in querRes.blobs]
-                        self.last_response = json.loads(querRes.json)
-                        break
+                    self.last_response = json.loads(querRes.json)
+                    break
             except ssl.SSLEOFError as ssle:
                 # this can happen when working in a notebook.
                 # we log if this isn't the first try, or if
