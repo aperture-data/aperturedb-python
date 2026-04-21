@@ -150,7 +150,7 @@ adb-python/*
 
 .aperturedb
 test/data/
-test/aperturedb/certificate/
+test/aperturedb/certificate*/
 .devcontainer/aperturedb/
 .devcontainer/ca/
 test/*_ca/
