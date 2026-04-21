@@ -237,7 +237,6 @@ class Connector(object):
         sent_len = struct.pack(MESSAGE_LENGTH_FORMAT,
                                len(data))  # send size first
         self.conn.sendall(sent_len + data)
-        return True
 
     def _recv_msg(self):
         recv_len = self.conn.recv(MESSAGE_LENGTH_SIZE)  # get message size
@@ -479,18 +478,18 @@ class Connector(object):
         data = query_msg.SerializeToString()
 
         if self.conn is None:
-            self.connect()
+            self.connect(details="Initial connect from _query")
 
         # this is for session refresh attempts
         tries = 0
         while tries < self.config.retry_max_attempts:
             try:
-                if self._send_msg(data):
-                    response = self._recv_msg()
-                    if response is not None:
-                        querRes = queryMessage.queryMessage()
-                        queryMessage.ParseFromString(querRes, response)
-                        response_blob_array = [b for b in querRes.blobs]
+                self._send_msg(data)
+                response = self._recv_msg()
+                if response is not None:
+                    querRes = queryMessage.queryMessage()
+                    queryMessage.ParseFromString(querRes, response)
+                    response_blob_array = [b for b in querRes.blobs]
                         self.last_response = json.loads(querRes.json)
                         break
             except ssl.SSLEOFError as ssle:
@@ -554,7 +553,6 @@ class Connector(object):
         return (self.last_response, response_blob_array)
 
     def query(self, q, blobs=[]):
-        self._renew_session()
         """
         Query the database with a query string or a json object.
         First it checks if the session is valid, if not, it refreshes the token.
@@ -570,6 +568,7 @@ class Connector(object):
         Returns:
             _type_: _description_
         """
+        self._renew_session()
         if self.should_authenticate:
             self.authenticate(
                 shared_data=self.shared_data,

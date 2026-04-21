@@ -14,7 +14,7 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db*" || true
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db*"
       continue-on-error: true
 
     - uses: actions/checkout@v3

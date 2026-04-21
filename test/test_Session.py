@@ -114,7 +114,7 @@ class TestSession():
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
 
-        assert connect_attempts >= 3
+        assert connect_attempts == 4
 
     def test_socket_send_error_initial(self, monkeypatch):
         send_attempts = 0
@@ -140,8 +140,8 @@ class TestSession():
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
 
-        # Should be at least 3 attempts
-        assert send_attempts >= 3
+        # Should be exactly 7 attempts (1 initial + 3 retries, each doing query send + reconnect send)
+        assert send_attempts == 7
 
     def test_socket_recv_error_initial(self, monkeypatch):
         connect_attempts = 0
@@ -169,7 +169,7 @@ class TestSession():
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
 
-        assert connect_attempts >= 3
+        assert connect_attempts == 4
 
     def test_con_close_on_send_query(self, db: Connector, monkeypatch):
         if not isinstance(db, ConnectorRest):
@@ -199,7 +199,7 @@ class TestSession():
             }]
             response, blobs = db.query(query)
             assert(response[0]["FindImage"]["status"] == 0)
-            assert count >= 3
+            assert count == 2
 
     def test_con_close_on_recv_query(self, db: Connector, monkeypatch):
         if not isinstance(db, ConnectorRest):
@@ -229,7 +229,7 @@ class TestSession():
             }]
             response, blobs = db.query(query)
             assert(response[0]["FindImage"]["status"] == 0)
-            assert count >= 3
+            assert count == 2
 
     def test_invalid_session_recovery(self, db: Connector, monkeypatch):
         # simulate session invalidation
