@@ -173,6 +173,8 @@ class TestSession():
 
     def test_con_close_on_send_query(self, db: Connector, monkeypatch):
         if not isinstance(db, ConnectorRest):
+            if db.conn is None:
+                db.connect()
             original_send_msg = db._send_msg
             count = 0
 
@@ -203,6 +205,8 @@ class TestSession():
 
     def test_con_close_on_recv_query(self, db: Connector, monkeypatch):
         if not isinstance(db, ConnectorRest):
+            if db.conn is None:
+                db.connect()
             original_recv_msg = db._recv_msg
             count = 0
 
