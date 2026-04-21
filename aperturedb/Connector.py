@@ -419,8 +419,6 @@ class Connector(object):
                         os.linesep
                 except ssl.SSLError as e:
                     logger.exception(f"Error wrapping socket.")
-                    self.conn.close()
-                    self.connected = False
                     raise
 
         except FileNotFoundError as e:
