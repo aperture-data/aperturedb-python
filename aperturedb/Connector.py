@@ -554,6 +554,7 @@ class Connector(object):
         return (self.last_response, response_blob_array)
 
     def query(self, q, blobs=[]):
+        self._check_session_status()
         """
         Query the database with a query string or a json object.
         First it checks if the session is valid, if not, it refreshes the token.
