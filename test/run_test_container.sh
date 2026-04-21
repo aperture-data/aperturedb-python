@@ -1,6 +1,5 @@
 #!/bin/bash
 
-set -u
 set -e
 
 function check_containers_networks(){
