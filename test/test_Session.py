@@ -39,9 +39,6 @@ class TestSession():
             }
         }]
         responses, blobs = db.query(query)
-        logger.debug(f"DEBUG responses: {responses}")
-        logger.debug(f"DEBUG connected: {db.connected}")
-        logger.debug(f"DEBUG session token: {db.shared_data.session.session_token}")
         logger.debug(responses)
         logger.debug("Valid : {0}".format(
             db.shared_data.session.valid()))
@@ -88,9 +85,6 @@ class TestSession():
             }
         }]
         responses, blobs = db.query(query)
-        logger.debug(f"DEBUG responses: {responses}")
-        logger.debug(f"DEBUG connected: {db.connected}")
-        logger.debug(f"DEBUG session token: {db.shared_data.session.session_token}")
         logging.debug(responses)
         assert db.shared_data.session.valid() == True
 
