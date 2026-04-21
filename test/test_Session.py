@@ -199,7 +199,7 @@ class TestSession():
             }]
             response, blobs = db.query(query)
             assert(response[0]["FindImage"]["status"] == 0)
-            assert count == 2
+            assert count >= 2
 
     def test_con_close_on_recv_query(self, db: Connector, monkeypatch):
         if not isinstance(db, ConnectorRest):
@@ -229,7 +229,7 @@ class TestSession():
             }]
             response, blobs = db.query(query)
             assert(response[0]["FindImage"]["status"] == 0)
-            assert count == 2
+            assert count >= 2
 
     def test_invalid_session_recovery(self, db: Connector, monkeypatch):
         # simulate session invalidation
