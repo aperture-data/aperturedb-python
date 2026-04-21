@@ -13,6 +13,10 @@ jobs:
 
     steps:
 
+    - name: Cleanup previous run
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs" || true
+      continue-on-error: true
+
     - uses: actions/checkout@v3
 
     - name: Login to DockerHub
@@ -45,6 +49,10 @@ jobs:
     - benchmark
 
     steps:
+
+    - name: Cleanup previous run
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs" || true
+      continue-on-error: true
 
     - uses: actions/checkout@v3
 
@@ -87,6 +95,10 @@ jobs:
     needs:
       - build_notebooks_and_publish_pypi
     steps:
+    - name: Cleanup previous run
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs" || true
+      continue-on-error: true
+
     - uses: actions/checkout@v3
     - name: repository dispatch
       run: |
@@ -103,6 +115,10 @@ jobs:
     needs:
       - build_notebooks_and_publish_pypi
     steps:
+    - name: Cleanup previous run
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs" || true
+      continue-on-error: true
+
     - uses: actions/checkout@v3
     - name: repository dispatch
       run: |
