@@ -236,8 +236,7 @@ class Connector(object):
 
         sent_len = struct.pack(MESSAGE_LENGTH_FORMAT,
                                len(data))  # send size first
-        x = self.conn.send(sent_len + data)
-        return x == len(data) + MESSAGE_LENGTH_SIZE
+        self.conn.sendall(sent_len + data)
 
     def _recv_msg(self):
         recv_len = self.conn.recv(MESSAGE_LENGTH_SIZE)  # get message size
@@ -437,6 +436,7 @@ class Connector(object):
         except BaseException as e:
             self.conn.close()
             self.connected = False
+            self.authenticated = False
             raise
 
         self.connected = True
@@ -451,7 +451,8 @@ class Connector(object):
                 self._connect()
             except socket.error as e:
                 logger.error(
-                    f"Error connecting to server: {self.config} \r\n{details}. {e=}",
+                    f"Error connecting to server: "
+                    f"{self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
 
@@ -477,18 +478,21 @@ class Connector(object):
         # Serialize with protobuf and send
         data = query_msg.SerializeToString()
 
+        if self.conn is None:
+            self.connect(details="Initial connect from _query")
+
         # this is for session refresh attempts
         tries = 0
         while tries < self.config.retry_max_attempts:
             try:
-                if self._send_msg(data):
-                    response = self._recv_msg()
-                    if response is not None:
-                        querRes = queryMessage.queryMessage()
-                        queryMessage.ParseFromString(querRes, response)
-                        response_blob_array = [b for b in querRes.blobs]
-                        self.last_response = json.loads(querRes.json)
-                        break
+                self._send_msg(data)
+                response = self._recv_msg()
+                if response is not None:
+                    querRes = queryMessage.queryMessage()
+                    queryMessage.ParseFromString(querRes, response)
+                    response_blob_array = [b for b in querRes.blobs]
+                    self.last_response = json.loads(querRes.json)
+                    break
             except ssl.SSLEOFError as ssle:
                 # this can happen when working in a notebook.
                 # we log if this isn't the first try, or if
@@ -527,6 +531,8 @@ class Connector(object):
                 self.conn.close()
                 self.connected = False
 
+            self.authenticated = False
+
             self.connect(
                 details=f"Will retry in {self.config.retry_interval_seconds} seconds")
             if not self._ever_connected:
@@ -537,7 +543,7 @@ class Connector(object):
             # For example aperturedb server is restarted, or network is lost.
             # While this is useful bit of code, when executed in a refresh token
             # path, this can cause a deadlock. Hence the try_resume flag.
-            if try_resume:
+            if try_resume and self.connected:
                 self._renew_session()
         if tries == self.config.retry_max_attempts:
             # We have tried enough times, and failed. Log some state info.
@@ -565,6 +571,7 @@ class Connector(object):
         Returns:
             _type_: _description_
         """
+        self._renew_session()
         if self.should_authenticate:
             self.authenticate(
                 shared_data=self.shared_data,
@@ -602,7 +609,9 @@ class Connector(object):
                 break
             except UnauthorizedException as e:
                 logger.warning(
-                    f"[Attempt {count + 1} of {RENEW_SESSION_MAX_ATTEMPTS}] Failed to refresh token.",
+                    f"[Attempt {count + 1} of "
+                    f"{RENEW_SESSION_MAX_ATTEMPTS}] "
+                    "Failed to refresh token.",
                     exc_info=True,
                     stack_info=True)
                 time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)

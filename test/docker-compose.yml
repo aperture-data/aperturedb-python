@@ -14,7 +14,7 @@ services:
       openssl req -new -key /cert/tls.key -out /ca/http.csr -days 3650 -subj \"/C=US/ST=NY/L=NYC/O=instance/OU=instanceDB/CN=${DB_HTTP_CN:-localhost}\"
       openssl x509 -req  -CA /ca/ca.crt -CAkey /ca/ca.key -in /ca/http.csr -out /cert/http.crt -passin pass:1234"
     volumes:
-      - ./aperturedb/certificate:/cert
+      - ./aperturedb/certificate_${RUNNER_NAME}:/cert
       - ./${RUNNER_NAME}_ca:/ca
 
   lenz:
@@ -38,7 +38,7 @@ services:
       LNZ_CERTIFICATE_PATH: /etc/lenz/certificate/tcp.crt
       LNZ_PRIVATE_KEY_PATH: /etc/lenz/certificate/tls.key
     volumes:
-      - ./aperturedb/certificate:/etc/lenz/certificate
+      - ./aperturedb/certificate_${RUNNER_NAME}:/etc/lenz/certificate
 
   aperturedb:
     image: $ADB_REPO:$ADB_TAG
@@ -71,7 +71,7 @@ services:
       - source: nginx.conf
         target: /etc/nginx/conf.d/default.conf
     volumes:
-      - ./aperturedb/certificate:/etc/nginx/certificate
+      - ./aperturedb/certificate_${RUNNER_NAME}:/etc/nginx/certificate
 
 configs:
   nginx.conf:
