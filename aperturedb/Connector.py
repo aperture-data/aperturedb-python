@@ -436,6 +436,7 @@ class Connector(object):
         except BaseException as e:
             self.conn.close()
             self.connected = False
+            self.authenticated = False
             raise
 
         self.connected = True
@@ -529,6 +530,8 @@ class Connector(object):
             if self.connected:
                 self.conn.close()
                 self.connected = False
+
+            self.authenticated = False
 
             self.connect(
                 details=f"Will retry in {self.config.retry_interval_seconds} seconds")
