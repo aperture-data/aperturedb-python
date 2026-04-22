@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Fix workspace permissions
+      run: sudo chown -R $USER:$USER ${{ github.workspace }} || true
+
     - uses: actions/checkout@v3
 
     - uses: actions/setup-python@v3

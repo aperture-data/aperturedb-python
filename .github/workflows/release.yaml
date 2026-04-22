@@ -18,6 +18,9 @@ jobs:
       run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs"
       continue-on-error: true
 
+    - name: Fix workspace permissions
+      run: sudo chown -R $USER:$USER ${{ github.workspace }} || true
+
     - uses: actions/checkout@v3
 
     - name: Login to DockerHub
@@ -53,6 +56,9 @@ jobs:
     - name: Cleanup previous run
       run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs"
       continue-on-error: true
+
+    - name: Fix workspace permissions
+      run: sudo chown -R $USER:$USER ${{ github.workspace }} || true
 
     - uses: actions/checkout@v3
 

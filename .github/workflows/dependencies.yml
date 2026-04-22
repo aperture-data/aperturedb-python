@@ -13,6 +13,9 @@ jobs:
 
     steps:
 
+    - name: Fix workspace permissions
+      run: sudo chown -R $USER:$USER ${{ github.workspace }} || true
+
     - uses: actions/checkout@v3
 
     - name: Login to DockerHub
