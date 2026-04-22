@@ -417,7 +417,7 @@ class Connector(object):
                         f"Refer to the documentation for more information: {SETUP_URL}" + os.linesep + \
                         f"Alternatively, SSL can be disabled by setting verify_hostname=False or use_ssl=False (not recommended)" + \
                         os.linesep
-                except ssl.SSLError as e:
+                except ssl.SSLError:
                     logger.exception(f"Error wrapping socket.")
                     raise
 
