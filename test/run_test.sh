@@ -43,7 +43,7 @@ if [[ $RESULT != 0 ]]; then
 		ARCHIVE_NAME=logs.tar.gz
 		DESTINATION="s3://${BUCKET}/aperturedb-${NOW}-${FILTER// /_}.tgz"
 		tar czf ${ARCHIVE_NAME} ${APERTUREDB_LOG_PATH}/..
-		aws s3 cp ${ARCHIVE_NAME} $DESTINATION
+		docker run --rm -v $(pwd):/workspace -w /workspace -e AWS_ACCESS_KEY_ID -e AWS_DEFAULT_REGION -e AWS_SECRET_ACCESS_KEY amazon/aws-cli s3 cp ${ARCHIVE_NAME} $DESTINATION
 		echo "Log output to $DESTINATION"
 	else
 		echo "Unable to output log, APERTUREDB_LOG_PATH not set."

@@ -30,8 +30,16 @@ function run_aperturedb_instance(){
 
 IP_REGEX='[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
 
-GATEWAY_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_http" | grep $IP_REGEX )
-GATEWAY_NON_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_non_http" | grep $IP_REGEX )
+# Check if TEST_PROTOCOL is set, otherwise default to both
+TEST_PROTOCOL=${TEST_PROTOCOL:-"both"}
+
+if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    GATEWAY_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_http" | grep $IP_REGEX )
+fi
+
+if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    GATEWAY_NON_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_non_http" | grep $IP_REGEX )
+fi
 
 # The LOG_PATH and RUNNER_INFO_PATH are set to the current working directory
 LOG_PATH="$(pwd)/aperturedb/logs"
@@ -48,42 +56,57 @@ fi
 
 sleep 20 # wait for the containers to be up and running
 
-echo "running tests on docker image $REPOSITORY with $GATEWAY_HTTP and $GATEWAY_NON_HTTP"
-docker run \
-    -v $(pwd)/output:/aperturedata/test/output \
-    -v $(pwd)/${RUNNER_NAME}_http_ca:/ca \
-    --network=${RUNNER_NAME}_http_default \
-    -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
-    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-    -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
-    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-    -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
-    -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
-    -e GATEWAY="nginx" \
-    -e FILTER="http" \
-    $REPOSITORY &
+pid1=0
+pid2=0
 
-pid1=$!
-docker run \
-    -v $(pwd)/output:/aperturedata/test/output \
-    -v $(pwd)/${RUNNER_NAME}_non_http_ca:/ca \
-    --network=${RUNNER_NAME}_non_http_default \
-    -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
-    -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-    -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
-    -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-    -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
-    -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
-    -e GATEWAY="lenz" \
-    -e FILTER="not http" \
-    $REPOSITORY &
+if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    echo "running tests on docker image $REPOSITORY with $GATEWAY_HTTP"
+    docker run \
+        -v $(pwd)/output:/aperturedata/test/output \
+        -v $(pwd)/${RUNNER_NAME}_http_ca:/ca \
+        --network=${RUNNER_NAME}_http_default \
+        -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
+        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+        -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+        -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
+        -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
+        -e GATEWAY="nginx" \
+        -e FILTER="http" \
+        $REPOSITORY &
+    pid1=$!
+fi
 
-pid2=$!
+if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    echo "running tests on docker image $REPOSITORY with $GATEWAY_NON_HTTP"
+    docker run \
+        -v $(pwd)/output:/aperturedata/test/output \
+        -v $(pwd)/${RUNNER_NAME}_non_http_ca:/ca \
+        --network=${RUNNER_NAME}_non_http_default \
+        -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
+        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+        -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+        -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
+        -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
+        -e GATEWAY="lenz" \
+        -e FILTER="not http" \
+        $REPOSITORY &
+    pid2=$!
+fi
 
-wait $pid1
-exit_code1=$?
-wait $pid2
-exit_code2=$?
+exit_code1=0
+exit_code2=0
+
+if [ "$pid1" != "0" ]; then
+    wait $pid1
+    exit_code1=$?
+fi
+
+if [ "$pid2" != "0" ]; then
+    wait $pid2
+    exit_code2=$?
+fi
 
 if [ $exit_code1 -ne 0 ]; then
     echo "Tests failed for HTTP"
@@ -93,7 +116,6 @@ if [ $exit_code2 -ne 0 ]; then
     echo "Tests failed for NON_HTTP"
     exit $exit_code2
 fi
-
 
 echo "Tests completed"
 echo " --- Runner name: ${RUNNER_NAME} ---"

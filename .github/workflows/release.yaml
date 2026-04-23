@@ -7,6 +7,10 @@ on:
 
 jobs:
   build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        protocol: [http, non_http]
 
     runs-on:
     - self-hosted
@@ -35,10 +39,12 @@ jobs:
 
     - name: Build and Run Tests
       env:
+        TEST_PROTOCOL: ${{ matrix.protocol }}
         AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        RUNNER_NAME: ${{ runner.name }}_${{ matrix.protocol }}
       run: RUN_TESTS=true NO_PUSH=true UPDATE_BRANCH=true ./ci.sh
       shell: bash
 

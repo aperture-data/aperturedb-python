@@ -186,9 +186,9 @@ push_aws_ecr(){
     PREFIX="aperturedata/"
     docker tag ${SRC_IMAGE} \
         684446431133.dkr.ecr.${REGION}.amazonaws.com/${DST_IMAGE}
-    aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin 684446431133.dkr.ecr.${REGION}.amazonaws.com
+    docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_DEFAULT_REGION -e AWS_SECRET_ACCESS_KEY amazon/aws-cli ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin 684446431133.dkr.ecr.${REGION}.amazonaws.com
 
-    aws ecr create-repository --repository-name ${ECR_REPO_NAME} --region us-west-2  || true
+    docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_DEFAULT_REGION -e AWS_SECRET_ACCESS_KEY amazon/aws-cli ecr create-repository --repository-name ${ECR_REPO_NAME} --region us-west-2  || true
 
     docker push 684446431133.dkr.ecr.${REGION}.amazonaws.com/${DST_IMAGE}
 }
