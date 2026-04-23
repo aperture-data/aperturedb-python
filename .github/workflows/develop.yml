@@ -7,6 +7,10 @@ on:
 
 jobs:
   build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        protocol: [http, non_http]
 
     runs-on:
     - benchmark
@@ -30,6 +34,7 @@ jobs:
 
     - name: Build and Run Tests
       env:
+        TEST_PROTOCOL: ${{ matrix.protocol }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -66,4 +71,3 @@ jobs:
         LENZ_TAG: dev
       run: BUILD_COMPLETE=true ./ci.sh
       shell: bash
-
