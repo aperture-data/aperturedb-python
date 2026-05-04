@@ -2,9 +2,7 @@ import unittest
 import threading
 from aperturedb.ConnectionPool import ConnectionPool
 
-
 from test_Command import TestCommand
-
 
 class TestConnectionPool(TestCommand):
     def test_pool_initialization(self):
@@ -38,8 +36,11 @@ class TestConnectionPool(TestCommand):
         results = []
 
         def worker():
-            res, _ = pool.query([{"GetStatus": {}}])
-            results.append(res)
+            try:
+                res, _ = pool.query([{"GetStatus": {}}])
+                results.append(res)
+            except Exception as e:
+                print("Error in worker thread", e)
 
         threads = [threading.Thread(target=worker) for _ in range(10)]
         for t in threads:
