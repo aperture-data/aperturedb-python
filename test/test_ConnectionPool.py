@@ -3,14 +3,15 @@ import threading
 from aperturedb.ConnectionPool import ConnectionPool
 
 
-class TestConnectionPool(unittest.TestCase):
+from test_Command import TestCommand
+class TestConnectionPool(TestCommand):
     def test_pool_initialization(self):
-        pool = ConnectionPool(pool_size=3)
+        pool = ConnectionPool(pool_size=3, connection_factory=lambda: self.create_connection())
         self.assertEqual(pool.total(), 3)
         self.assertEqual(pool.available(), 3)
 
     def test_pool_borrow_return(self):
-        pool = ConnectionPool(pool_size=2)
+        pool = ConnectionPool(pool_size=2, connection_factory=lambda: self.create_connection())
         with pool.get_connection() as conn:
             self.assertEqual(pool.available(), 1)
             # Test a simple query to ensure the connection is real
@@ -21,13 +22,13 @@ class TestConnectionPool(unittest.TestCase):
         self.assertEqual(pool.available(), 2)
 
     def test_pool_convenience_query(self):
-        pool = ConnectionPool(pool_size=1)
+        pool = ConnectionPool(pool_size=1, connection_factory=lambda: self.create_connection())
         response, blobs = pool.query([{"GetStatus": {}}])
         self.assertTrue(isinstance(response, list))
         self.assertTrue(isinstance(blobs, list))
 
     def test_pool_concurrency(self):
-        pool = ConnectionPool(pool_size=5)
+        pool = ConnectionPool(pool_size=5, connection_factory=lambda: self.create_connection())
         results = []
 
         def worker():
