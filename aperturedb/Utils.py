@@ -66,7 +66,27 @@ class Utils(object):
             rc, r, b = execute_query(self.client,
                                      query, blobs, success_statuses=success_statuses)
         except BaseException as e:
-            logger.error(self.client.get_last_response_str())
+            last_response = self.client.get_last_response_str()
+            # To prevent leaking sensitive token information, filter out token data
+            try:
+                import json
+                parsed_response = json.loads(last_response)
+                
+                # Censor authenticate response if present
+                if isinstance(parsed_response, list):
+                    for item in parsed_response:
+                        if "Authenticate" in item:
+                            auth_resp = item["Authenticate"]
+                            for key in ["refresh_token", "session_token"]:
+                                if key in auth_resp:
+                                    auth_resp[key] = "***CENSORED***"
+                            
+                last_response = json.dumps(parsed_response, indent=4, sort_keys=False)
+            except Exception:
+                # If we fail to parse, just log a censored generic message
+                last_response = "***CENSORED***"
+                
+            logger.error(last_response)
             raise e
 
         if rc != 0:
@@ -119,7 +139,27 @@ class Utils(object):
         try:
             schema = res[0]["GetSchema"]
         except BaseException as e:
-            logger.error(self.client.get_last_response_str())
+            last_response = self.client.get_last_response_str()
+            # To prevent leaking sensitive token information, filter out token data
+            try:
+                import json
+                parsed_response = json.loads(last_response)
+                
+                # Censor authenticate response if present
+                if isinstance(parsed_response, list):
+                    for item in parsed_response:
+                        if "Authenticate" in item:
+                            auth_resp = item["Authenticate"]
+                            for key in ["refresh_token", "session_token"]:
+                                if key in auth_resp:
+                                    auth_resp[key] = "***CENSORED***"
+                            
+                last_response = json.dumps(parsed_response, indent=4, sort_keys=False)
+            except Exception:
+                # If we fail to parse, just log a censored generic message
+                last_response = "***CENSORED***"
+                
+            logger.error(last_response)
             raise e
 
         return schema
