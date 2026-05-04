@@ -336,7 +336,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             i_tp = self.total_actions / self.total_actions_time
             print(
-                f"Overall insertion throughput ({self.type}/s): {i_tp if self.error_counter == 0 else 'NaN'}")
+                f"Overall insertion throughput ({self.type}/s): {i_tp}")
 
             if self.error_counter > 0:
                 err_perc = 100 * self.error_counter / total_queries_exec
