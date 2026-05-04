@@ -209,11 +209,11 @@ class Utils(object):
         dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={
                       'shape': 'none'}, graph_attr={'rankdir': 'LR'}, edge_attr={'color': colors['edge']})
 
+        # autopep8: off
         # Add entities as nodes and connections as edges
         entities = r['entities']['classes']
         connections = r['connections']['classes']
 
-        # autopep8: off
         for entity, data in entities.items():
             matched = data["matched"]
             # dictionary from name to (matched, indexed, type)
