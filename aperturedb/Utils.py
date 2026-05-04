@@ -210,6 +210,7 @@ class Utils(object):
                       'shape': 'none'}, graph_attr={'rankdir': 'LR'}, edge_attr={'color': colors['edge']})
 
         # autopep8: off
+        # autopep8: off
         # Add entities as nodes and connections as edges
         entities = r['entities']['classes']
         connections = r['connections']['classes']
@@ -264,7 +265,6 @@ class Utils(object):
 
             table += '</TABLE>>'
             dot.node(entity, label=table)
-        # autopep8: on
 
         if isinstance(connections, dict):
             for connection, data in connections.items():
@@ -273,6 +273,7 @@ class Utils(object):
                     dot.edge(f'{data["src"]}:{connection}',
                              f'{data["dst"]}')
 
+        # autopep8: on
         # Render the diagram inline
         s = Source(dot.source, filename="schema_diagram.gv", format="png")
 
