@@ -1,0 +1,112 @@
+--- aperturedb/Utils.py
++++ aperturedb/Utils.py
+@@ -28,6 +28,18 @@
+ DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
+ DEFAULT_METADATA_BATCH_SIZE = 100_000
+ 
++def censor_tokens(response):
++    import copy
++    if isinstance(response, list):
++        censored = copy.deepcopy(response)
++        for item in censored:
++            if isinstance(item, dict) and "Authenticate" in item:
++                auth = item["Authenticate"]
++                for k in ["refresh_token", "session_token"]:
++                    if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
++                        auth[k] = auth[k][:4] + "..." + auth[k][-4:]
++        return censored
++    return response
+ 
+ class Utils(object):
+     """
+@@ -62,17 +74,9 @@
+             rc, r, b = execute_query(self.client,
+                                      query, blobs, success_statuses=success_statuses)
+         except BaseException as e:
+-            import json
+             try:
+                 response_obj = json.loads(self.client.get_last_response_str())
+-                if isinstance(response_obj, list):
+-                    for item in response_obj:
+-                        if isinstance(item, dict) and "Authenticate" in item:
+-                            auth = item["Authenticate"]
+-                            for k in ["refresh_token", "session_token"]:
+-                                if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
+-                                    auth[k] = auth[k][:4] + \
+-                                        "..." + auth[k][-4:]
+-                logger.error(json.dumps(response_obj, indent=4))
++                logger.error(json.dumps(censor_tokens(response_obj), indent=4))
+             except:
+                 logger.error(self.client.get_last_response_str())
+             raise e
+@@ -131,17 +135,9 @@
+         try:
+             schema = res[0]["GetSchema"]
+         except BaseException as e:
+-            import json
+             try:
+                 response_obj = json.loads(self.client.get_last_response_str())
+-                if isinstance(response_obj, list):
+-                    for item in response_obj:
+-                        if isinstance(item, dict) and "Authenticate" in item:
+-                            auth = item["Authenticate"]
+-                            for k in ["refresh_token", "session_token"]:
+-                                if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
+-                                    auth[k] = auth[k][:4] + \
+-                                        "..." + auth[k][-4:]
+-                logger.error(json.dumps(response_obj, indent=4))
++                logger.error(json.dumps(censor_tokens(response_obj), indent=4))
+             except:
+                 logger.error(self.client.get_last_response_str())
+             raise e
+--- aperturedb/CommonLibrary.py
++++ aperturedb/CommonLibrary.py
+@@ -298,20 +298,8 @@
+     result = 0
+     logger.debug(f"Query={query}")
+     r, b = client.query(query, blobs)
+ 
+-    # Censor token information in the response for logging
+-    def censor_tokens(response):
+-        import copy
+-        if isinstance(response, list):
+-            censored = copy.deepcopy(response)
+-            for item in censored:
+-                if isinstance(item, dict) and "Authenticate" in item:
+-                    auth = item["Authenticate"]
+-                    for k in ["refresh_token", "session_token"]:
+-                        if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
+-                            auth[k] = auth[k][:4] + "..." + auth[k][-4:]
+-            return censored
+-        return response
+-
++    from aperturedb.Utils import censor_tokens
+     censored_r = censor_tokens(r)
+     logger.debug(f"Response={censored_r}")
+ 
+--- aperturedb/Connector.py
++++ aperturedb/Connector.py
+@@ -598,23 +598,8 @@
+                             exc_info=True, stack_info=True)
+ 
+-            # Censor token information in the response for logging
+-            def censor_tokens(response):
+-                import copy
+-                if isinstance(response, list):
+-                    censored = copy.deepcopy(response)
+-                    for item in censored:
+-                        if isinstance(item, dict) and "Authenticate" in item:
+-                            auth = item["Authenticate"]
+-                            for k in ["refresh_token", "session_token"]:
+-                                if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
+-                                    auth[k] = auth[k][:4] + \
+-                                        "..." + auth[k][-4:]
+-                    return censored
+-                return response
+-
++            from aperturedb.Utils import censor_tokens
+             if hasattr(self, 'last_response') and self.last_response:
+                 censored_response = censor_tokens(self.last_response)
+                 logger.error(censored_response)
+ 
+             raise
