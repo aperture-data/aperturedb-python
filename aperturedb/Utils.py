@@ -173,6 +173,7 @@ class Utils(object):
         entities = r['entities']['classes']
         connections = r['connections']['classes']
 
+        # autopep8: off
         for entity, data in entities.items():
             matched = data["matched"]
             # dictionary from name to (matched, indexed, type)
@@ -223,6 +224,7 @@ class Utils(object):
 
             table += '</TABLE>>'
             dot.node(entity, label=table)
+        # autopep8: on
 
         if isinstance(connections, dict):
             for connection, data in connections.items():
