@@ -3,6 +3,7 @@ import threading
 from aperturedb.ConnectionPool import ConnectionPool
 from aperturedb.CommonLibrary import create_connector
 
+
 class TestConnectionPool(unittest.TestCase):
     def test_pool_initialization(self):
         pool = ConnectionPool(
@@ -48,6 +49,7 @@ class TestConnectionPool(unittest.TestCase):
             t.join()
 
         self.assertEqual(len(results), 10)
+
 
 if __name__ == '__main__':
     unittest.main()
