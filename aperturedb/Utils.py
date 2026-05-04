@@ -174,6 +174,7 @@ class Utils(object):
         # Add entities as nodes and connections as edges
         entities = r['entities']['classes']
         connections = r['connections']['classes']
+        # autopep8: off
 
         for entity, data in entities.items():
             matched = data["matched"]
