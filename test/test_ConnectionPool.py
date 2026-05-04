@@ -4,6 +4,7 @@ from aperturedb.ConnectionPool import ConnectionPool
 
 from test_Command import TestCommand
 
+
 class TestConnectionPool(TestCommand):
     def test_pool_initialization(self):
         pool = ConnectionPool(
