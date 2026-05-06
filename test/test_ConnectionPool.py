@@ -7,7 +7,7 @@ from aperturedb.CommonLibrary import create_connector
 class TestConnectionPool(unittest.TestCase):
     def setUp(self):
         import time
-        time.sleep(1) # Give server time to breathe between tests
+        time.sleep(1)  # Give server time to breathe between tests
 
     def test_pool_initialization(self):
         pool = ConnectionPool(
