@@ -65,10 +65,16 @@ class Sources():
         import numpy as np
 
         retries = 0
+        tried_anonymous = False
         while True:
             try:
                 bucket_name = s3_url.split("/")[2]
                 object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
+
+                if self.s3 is None:
+                    import boto3
+                    self.s3 = boto3.client('s3')
+
                 s3_response_object = self.s3.get_object(
                     Bucket=bucket_name, Key=object_name)
                 img = s3_response_object['Body'].read()
@@ -79,6 +85,15 @@ class Sources():
 
                 return True, img
             except Exception as e:
+                if not tried_anonymous and ("NoCredentialsError" in str(type(e)) or "403" in str(e) or "401" in str(e) or "'NoneType' object has no attribute 'get_object'" in str(e)):
+                    import boto3
+                    from botocore import UNSIGNED
+                    from botocore.config import Config
+                    self.s3 = boto3.client(
+                        's3', config=Config(signature_version=UNSIGNED))
+                    tried_anonymous = True
+                    continue
+
                 if retries >= self.n_download_retries:
                     break
                 logger.warning(f"Retrying object: {s3_url}", exc_info=True)
@@ -93,9 +108,13 @@ class Sources():
         from google.cloud import storage
 
         retries = 0
-        client = storage.Client()
+        tried_anonymous = False
+        client = None
         while True:
             try:
+                if client is None:
+                    client = storage.Client()
+
                 bucket_name = gs_url.split("/")[2]
                 object_name = gs_url.split("gs://" + bucket_name + "/")[-1]
 
@@ -106,10 +125,15 @@ class Sources():
                     logger.warning(f"VALIDATION ERROR: {gs_url}")
                     return False, None
                 return True, blob
-            except:
+            except Exception as e:
+                if not tried_anonymous and ("DefaultCredentialsError" in str(type(e)) or "403" in str(e) or "401" in str(e)):
+                    client = storage.Client.create_anonymous_client()
+                    tried_anonymous = True
+                    continue
+
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("Retrying object: {gs_url}", exc_info=True)
+                logger.warning(f"Retrying object: {gs_url}", exc_info=True)
                 retries += 1
                 time.sleep(2)
 
