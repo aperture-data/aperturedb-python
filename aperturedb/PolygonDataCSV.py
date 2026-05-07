@@ -78,7 +78,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx
+        idx = self.df.index.start + idx if hasattr(self.df.index, 'start') else idx
 
         q = []
 

@@ -203,7 +203,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         self.command = "AddImage"
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx
+        idx = self.df.index.start + idx if hasattr(self.df.index, 'start') else idx
 
         image_path = os.path.join(
             self.relative_path_prefix, self.df.loc[idx, self.source_type])
