@@ -66,7 +66,20 @@ class Utils(object):
             rc, r, b = execute_query(self.client,
                                      query, blobs, success_statuses=success_statuses)
         except BaseException as e:
-            logger.error(self.client.get_last_response_str())
+            import json
+            try:
+                response_obj = json.loads(self.client.get_last_response_str())
+                if isinstance(response_obj, list):
+                    for item in response_obj:
+                        if isinstance(item, dict) and "Authenticate" in item:
+                            auth = item["Authenticate"]
+                            for k in ["refresh_token", "session_token"]:
+                                if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
+                                    auth[k] = auth[k][:4] + \
+                                        "..." + auth[k][-4:]
+                logger.error(json.dumps(response_obj, indent=4))
+            except:
+                logger.error(self.client.get_last_response_str())
             raise e
 
         if rc != 0:
@@ -119,7 +132,20 @@ class Utils(object):
         try:
             schema = res[0]["GetSchema"]
         except BaseException as e:
-            logger.error(self.client.get_last_response_str())
+            import json
+            try:
+                response_obj = json.loads(self.client.get_last_response_str())
+                if isinstance(response_obj, list):
+                    for item in response_obj:
+                        if isinstance(item, dict) and "Authenticate" in item:
+                            auth = item["Authenticate"]
+                            for k in ["refresh_token", "session_token"]:
+                                if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
+                                    auth[k] = auth[k][:4] + \
+                                        "..." + auth[k][-4:]
+                logger.error(json.dumps(response_obj, indent=4))
+            except:
+                logger.error(self.client.get_last_response_str())
             raise e
 
         return schema
