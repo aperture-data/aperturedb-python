@@ -35,8 +35,10 @@ class SparseAddingDataCSV(CSVParser.CSVParser):
                                      if x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
 
     def getitem(self, idx):
-        idx = self.df.index.start + \
-            idx if hasattr(self.df.index, 'start') else idx
+        try:
+            idx = self.df.index.start + idx
+        except AttributeError:
+            pass
         query_set = []
 
         hold_props_keys = self.props_keys

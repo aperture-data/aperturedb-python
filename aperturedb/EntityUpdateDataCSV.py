@@ -98,8 +98,10 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
                                 if x.startswith(SingleEntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX)]
 
     def getitem(self, idx):
-        idx = self.df.index.start + \
-            idx if hasattr(self.df.index, 'start') else idx
+        try:
+            idx = self.df.index.start + idx
+        except AttributeError:
+            pass
         query_set = []
 
         self.constraint_keyword = "if_not_found"

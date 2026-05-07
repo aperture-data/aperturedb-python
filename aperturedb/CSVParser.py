@@ -121,7 +121,15 @@ class CSVParser(Subscriptable):
         if len(self.props_keys) > 0:
             for key in self.props_keys:
                 prop, value = self._parse_prop(key, self.df.loc[idx, key])
-                if value == value:  # skips nan valies
+                import pandas as pd
+                # Handle Pandas/Dask specific value comparisons cleanly
+                try:
+                    is_nan = pd.isna(value)
+                    if hasattr(is_nan, 'any'):
+                        is_nan = is_nan.all()
+                except Exception:
+                    is_nan = value != value
+                if not is_nan:
                     properties[prop] = value
         return properties
 

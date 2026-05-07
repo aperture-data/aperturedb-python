@@ -58,8 +58,10 @@ class EntityDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        idx = self.df.index.start + \
-            idx if hasattr(self.df.index, 'start') else idx
+        try:
+            idx = self.df.index.start + idx
+        except AttributeError:
+            pass
         eclass = self.df.loc[idx, ENTITY_CLASS]
         q = []
         ae = self._basic_command(idx,
@@ -125,8 +127,10 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
             self.constraint_keys = [x for x in self.header[0:]]
 
     def getitem(self, idx):
-        idx = self.df.index.start + \
-            idx if hasattr(self.df.index, 'start') else idx
+        try:
+            idx = self.df.index.start + idx
+        except AttributeError:
+            pass
         q = []
         entity_delete = self._basic_command(idx)
 

@@ -88,8 +88,10 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        idx = self.df.index.start + \
-            idx if hasattr(self.df.index, 'start') else idx
+        try:
+            idx = self.df.index.start + idx
+        except AttributeError:
+            pass
         filename = os.path.join(self.relative_path_prefix,
                                 self.df.loc[idx, HEADER_PATH])
         index = self.df.loc[idx, HEADER_INDEX]
