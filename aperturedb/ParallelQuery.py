@@ -267,7 +267,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
 
-        use_dask = self.use_dask if hasattr(self, 'use_dask') else (hasattr(generator, "use_dask") and generator.use_dask)
+        use_dask = self.use_dask if hasattr(self, 'use_dask') else (
+            hasattr(generator, "use_dask") and generator.use_dask)
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
