@@ -96,7 +96,13 @@ class VideoDownloader(Parallelizer.Parallelizer):
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
 
-        videodata = requests.get(url)
+        try:
+            videodata = requests.get(url, timeout=10)
+        except requests.exceptions.RequestException as e:
+            print("Error with GET:", e)
+            self.error_counter += 1
+            return
+
         if videodata.ok:
             fd = open(filename, "wb")
             fd.write(videodata.content)

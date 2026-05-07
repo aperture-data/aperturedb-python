@@ -107,9 +107,9 @@ class ImageDownloader(Parallelizer.Parallelizer):
         downloaded = False
         while True:
             try:
-                imgdata = requests.get(url)
+                imgdata = requests.get(url, timeout=10)
                 downloaded = True
-            except requests.exceptions.ConnectionError as e:
+            except requests.exceptions.RequestException as e:
                 logger.warning("Error with GET.")
                 logger.exception(e)
 
