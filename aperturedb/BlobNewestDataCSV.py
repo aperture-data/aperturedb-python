@@ -212,7 +212,8 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
         return properties
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx if hasattr(self.df.index, 'start') else idx
+        idx = self.df.index.start + \
+            idx if hasattr(self.df.index, 'start') else idx
         query_set = []
 
         # process is; add if not existing ( # Pt 1 )
