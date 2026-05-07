@@ -51,6 +51,8 @@ class CSVParser(Subscriptable):
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
             "blobs_relative_to_csv"]
+        # Keep use_dask for backwards compatibility but log a warning if used?
+        # The issue implies we shouldn't fail if passed, but it's decoupled.
         self.use_dask = "use_dask" in kwargs and kwargs["use_dask"]
         df = kwargs["df"] if "df" in kwargs else None
 
