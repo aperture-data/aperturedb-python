@@ -9,7 +9,6 @@ class TestConnectionPool(unittest.TestCase):
         import time
         time.sleep(2)  # Give server time to breathe between tests
 
-
     def test_pool_initialization(self):
         pool = ConnectionPool(
             pool_size=3, connection_factory=lambda: create_connector())
