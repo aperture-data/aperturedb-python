@@ -193,7 +193,8 @@ def create(
     def check_for_overwrite(name):
         if name in configs and not overwrite:
             console.log(
-                f"Configuration named '{name}' already exists. Use --overwrite to overwrite.",
+                f"Configuration named '{
+                    name}' already exists. Use --overwrite to overwrite.",
                 style="bold yellow")
             raise typer.Exit(code=2)
 

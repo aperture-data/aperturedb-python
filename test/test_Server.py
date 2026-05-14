@@ -63,7 +63,8 @@ class TestBadResponses():
         input_data = pd.read_csv("./input/images.adb.csv")
         data, loader = insert_data_from_csv(
             in_csv_file = "./input/images.adb.csv", expected_error_count = len(input_data))
-        assert loader.error_counter == 0, f"Error counter: {loader.error_counter=}"
+        assert loader.error_counter == 0, f"Error counter: {
+            loader.error_counter=}"
         assert loader.get_succeeded_queries(
         ) == 0, f"Queries: {loader.get_succeeded_queries()=}"
         assert loader.get_succeeded_commands(

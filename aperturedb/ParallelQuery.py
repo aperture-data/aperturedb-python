@@ -308,7 +308,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                         f"Could not determine query structure from:\n{generator[0]}")
                     logger.error(type(generator[0]))
             logger.info(
-                f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}"
+                f"Commands per query = {self.commands_per_query}, Blobs per query = {
+                    self.blobs_per_query}"
             )
             self.batched_run(generator, batchsize, numthreads, stats)
 

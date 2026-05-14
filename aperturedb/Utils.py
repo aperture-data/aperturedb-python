@@ -182,7 +182,8 @@ class Utils(object):
             <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity}</B> ({matched:,})</FONT></TD></TR>
             '''
             for prop, (matched, indexed, typ) in properties.items():
-                table += f'<TR><TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
+                table += f'<TR><TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{
+                    colors["property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
             for connection, data in connections.items():
                 data_list = [data] if isinstance(data, dict) else data
                 for data in data_list:
@@ -190,10 +191,12 @@ class Utils(object):
                         matched = data["matched"]
                         # dictionary from name to (matched, indexed, type)
                         properties = data["properties"]
-                        table += f'<TR><TD BGCOLOR="{colors["connection_background"]}" COLSPAN="3" PORT="{connection}"><FONT COLOR="{colors["connection_foreground"]}"><B>{connection}</B> ({matched:,})</FONT></TD></TR>'
+                        table += f'<TR><TD BGCOLOR="{colors["connection_background"]}" COLSPAN="3" PORT="{connection}"><FONT COLOR="{
+                            colors["connection_foreground"]}"><B>{connection}</B> ({matched:,})</FONT></TD></TR>'
                         if properties:
                             for prop, (matched, indexed, typ) in properties.items():
-                                table += f'<TR><TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
+                                table += f'<TR><TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{
+                                    colors["connection_property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
 
             table += '</TABLE>>'
             dot.node(entity, label=table)
@@ -243,7 +246,7 @@ class Utils(object):
             w = "!" if "id" in k and not p[k][1] else w
             print(f"{i} {w} {p[k][2].ljust(8)} |"
                   f" {k.ljust(max)} | {str(p[k][0]).rjust(9)} "
-                  f"({int(p[k][0]/total_elements*100.0)}%)")
+                  f"({int(p[k][0] / total_elements * 100.0)}%)")
 
         return total_elements
 
