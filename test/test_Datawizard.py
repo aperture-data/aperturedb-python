@@ -123,7 +123,7 @@ def make_people(count: int = 1) -> List[object]:
 
     people = []
     for i in range(10):
-        person = Person(name=f"adam{i+1}")
+        person = Person(name=f"adam{i + 1}")
         left_hand = make_hand(Side.LEFT)
         right_hand = make_hand(Side.RIGHT)
         person.hands.extend([left_hand, right_hand])
