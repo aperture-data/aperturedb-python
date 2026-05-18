@@ -83,9 +83,15 @@ def _create_configuration_from_json(config: Union[Dict, str],
     clean_config = {k: v for k, v in config.items() if k != "password"}
 
     # These fields are required.
-    assert "host" in config, f"host is required in the configuration: {clean_config}"
-    assert "username" in config, f"username is required in the configuration: {clean_config}"
-    assert "password" in config, f"password is required in the configuration: {clean_config}"
+    assert "host" in config, (
+        f"host is required in the configuration: {clean_config}"
+    )
+    assert "username" in config, (
+        f"username is required in the configuration: {clean_config}"
+    )
+    assert "password" in config, (
+        f"password is required in the configuration: {clean_config}"
+    )
 
     # These fields have no default in the Configuration class.
     if 'port' not in config:
@@ -95,7 +101,9 @@ def _create_configuration_from_json(config: Union[Dict, str],
         config["name"] = name  # will overwrite the name in the config
 
     if name_required:
-        assert "name" in config, f"name is required in the configuration: {clean_config}"
+        assert "name" in config, (
+            f"name is required in the configuration: {clean_config}"
+        )
     elif 'name' not in config:
         config["name"] = "from_json"
 
