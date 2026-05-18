@@ -30,8 +30,9 @@ def convert_entity_data(input, entity_class: str, unique_key: Optional[str] = No
     df = pd.DataFrame(input)
     df.insert(0, 'EntityClass', entity_class)
     if unique_key:
-        assert unique_key in df.columns, f"unique_key {
-            unique_key} not found in the input data"
+        assert unique_key in df.columns, (
+            f"unique_key {unique_key} not found in the input data"
+        )
         df[f"constraint_{unique_key}"] = df[unique_key]
     return df
 
@@ -67,8 +68,9 @@ def convert_image_data(input, source_column: str, source_type: Optional[str] = N
     """
     df = pd.DataFrame(input)
 
-    assert source_column in df.columns, f"source_column {
-        source_column} not found in the input data"
+    assert source_column in df.columns, (
+        f"source_column {source_column} not found in the input data"
+    )
 
     if source_type is None:
         source_type = source_column
@@ -84,8 +86,9 @@ def convert_image_data(input, source_column: str, source_type: Optional[str] = N
         df.insert(0, source_type, df[source_column])
 
     if unique_key is not None:
-        assert unique_key in df.columns, f"unique_key {
-            unique_key} not found in the input data"
+        assert unique_key in df.columns, (
+            f"unique_key {unique_key} not found in the input data"
+        )
         df[f"constraint_{unique_key}"] = df[unique_key]
 
     if format is not None:
@@ -143,13 +146,15 @@ def convert_connection_data(input,
 
     if source_column is None:
         source_column = source_property
-    assert source_column in df.columns, f"source_column {
-        source_column} not found in the input data"
+    assert source_column in df.columns, (
+        f"source_column {source_column} not found in the input data"
+    )
 
     if destination_column is None:
         destination_column = destination_property
-    assert destination_column in df.columns, f"destination_column {
-        destination_column} not found in the input data"
+    assert destination_column in df.columns, (
+        f"destination_column {destination_column} not found in the input data"
+    )
 
     df.insert(0, 'ConnectionClass', connection_class)
     df.insert(1, f"{source_class}@{source_property}", df[source_column])
@@ -157,8 +162,9 @@ def convert_connection_data(input,
               df[destination_column])
 
     if unique_key:
-        assert unique_key in df.columns, f"unique_key {
-            unique_key} not found in the input data"
+        assert unique_key in df.columns, (
+            f"unique_key {unique_key} not found in the input data"
+        )
         df[f"constraint_{unique_key}"] = df[unique_key]
 
     return df
