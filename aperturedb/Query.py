@@ -87,8 +87,10 @@ def get_specific(obj: BaseModel) -> dict:
         start, stop  = obj.start, obj.stop
         if obj.range_type == RangeType.TIME:
             start, stop = int(start), int(stop)
-            start = f"{start // 3600:0>2}:{(start // 60) % 60:0>2}:{start % 60:0>2}"
-            stop = f"{stop // 3600:0>2}:{(stop // 60) % 60:0>2}:{stop % 60:0>2}"
+            start = "{:0>2}:{:0>2}:{:0>2}".format(
+                start // 3600, (start // 60) % 60, start % 60)
+            stop = "{:0>2}:{:0>2}:{:0>2}".format(
+                stop // 3600, (stop // 60) % 60, stop % 60)
         elif obj.range_type == RangeType.FRAME:
             start = int(obj.start)
             stop = int(obj.stop)
