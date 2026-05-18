@@ -182,8 +182,17 @@ class Utils(object):
             <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity}</B> ({matched:,})</FONT></TD></TR>
             '''
             for prop, (matched, indexed, typ) in properties.items():
-                table += f'<TR><TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{
-                    colors["property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
+                bg = colors["property_background"]
+                fg = colors["property_foreground"]
+                idx_str = "Indexed" if indexed else "Unindexed"
+                table += (
+                    f'<TR><TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                    f'<B>{prop.strip()}</B></FONT></TD> '
+                    f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                    f'{matched:,}</FONT></TD> '
+                    f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                    f'{idx_str}, {typ}</FONT></TD></TR>'
+                )
             for connection, data in connections.items():
                 data_list = [data] if isinstance(data, dict) else data
                 for data in data_list:
@@ -191,12 +200,26 @@ class Utils(object):
                         matched = data["matched"]
                         # dictionary from name to (matched, indexed, type)
                         properties = data["properties"]
-                        table += f'<TR><TD BGCOLOR="{colors["connection_background"]}" COLSPAN="3" PORT="{connection}"><FONT COLOR="{
-                            colors["connection_foreground"]}"><B>{connection}</B> ({matched:,})</FONT></TD></TR>'
+                        c_bg = colors["connection_background"]
+                        c_fg = colors["connection_foreground"]
+                        table += (
+                            '<TR><TD BGCOLOR="{}" COLSPAN="3" '
+                            'PORT="{}"><FONT COLOR="{}">'
+                            '<B>{}</B> ({:,})</FONT></TD></TR>'
+                        ).format(c_bg, connection, c_fg, connection, matched)
                         if properties:
                             for prop, (matched, indexed, typ) in properties.items():
-                                table += f'<TR><TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{
-                                    colors["connection_property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
+                                cp_bg = colors["connection_property_background"]
+                                cp_fg = colors["connection_property_foreground"]
+                                idx_str = "Indexed" if indexed else "Unindexed"
+                                table += (
+                                    '<TR><TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                    '<B>{}</B></FONT></TD> '
+                                    '<TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                    '{}</FONT></TD> '
+                                    '<TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                    '{}, {}</FONT></TD></TR>'
+                                ).format(cp_bg, cp_fg, prop.strip(), cp_bg, cp_fg, f"{matched:,}", cp_bg, cp_fg, idx_str, typ)
 
             table += '</TABLE>>'
             dot.node(entity, label=table)
