@@ -152,11 +152,13 @@ def gen_execute_batch_sets(base_executor):
             blobs_this_set = len(blob_filter(blob_set, [], i))
             expected_blobs = blobs_per_query[i] * batch_size
             logger.info(
-                f"Set {i}: Commands per query = {commands_per_query[i]}, Blobs per query = {blobs_per_query[i]}"
+                f"Set {i}: Commands per query = {commands_per_query[i]}, "
+                f"Blobs per query = {blobs_per_query[i]}"
             )
             if blobs_this_set != expected_blobs:
                 logger.error(
-                    f"Set {i}: Expected {expected_blobs} blobs, but filter is returning {blobs_this_set}"
+                    f"Set {i}: Expected {expected_blobs} blobs, "
+                    f"but filter is returning {blobs_this_set}"
                 )
 
             # now we determine if the executing set has a constraint

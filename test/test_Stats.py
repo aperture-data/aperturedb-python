@@ -31,8 +31,10 @@ class TestStats():
                     first, second = line.split(":")
                     print(first, second)
                     if first in assertions:
-                        assert assertions[first.strip()](second.strip()) == True, \
-                            f"Assertion failed for '{first}' with value {second}"
+                        assert assertions[first.strip()](second.strip()) is True, (
+                            f"Assertion failed for '{first}' "
+                            f"with value {second}"
+                        )
 
     def test_stats_all_errors_non_equal_last_batch(self, db, utils):
         utils.remove_all_objects()
