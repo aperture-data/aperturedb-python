@@ -1,7 +1,6 @@
-import pytest
 import numpy as np
 from aperturedb.Images import Images, resolve, rotate
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 
 def test_rotate():
@@ -9,6 +8,7 @@ def test_rotate():
     rotated = rotate(points, 90, c_x=10, c_y=10)
     assert len(rotated) == 2
     assert rotated[0][0] == 10 and rotated[0][1] == 10
+    assert rotated[1][0] == 0 and rotated[1][1] == 20
 
 
 def test_resolve_resize():
@@ -28,6 +28,8 @@ def test_resolve_rotate():
     operations = [{"type": "rotate", "angle": 90}]
     resolved = resolve(points, meta, operations)
     assert len(resolved) == 1
+    # Note: 9 instead of 10 due to float truncation in .astype(int)
+    assert resolved[0][0] == 90 and resolved[0][1] == 9
 
 
 class MockClient:
@@ -35,9 +37,11 @@ class MockClient:
         self.responses = []
         self.queries = []
 
-    def query(self, q, blobs=[]):
+    def query(self, q, blobs=None):
+        if blobs is None:
+            blobs = []
         self.queries.append(q)
-        return self.responses.pop(0) if self.responses else ([{}], []), []
+        return self.responses.pop(0) if self.responses else ([{}], [])
 
     def last_query_ok(self):
         return True
