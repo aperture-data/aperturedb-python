@@ -25,7 +25,7 @@ services:
         condition: service_started
     image: $LENZ_REPO:$LENZ_TAG
     ports:
-      - $GATEWAY:55556:55551
+      - "$GATEWAY:0:55551"
     restart: always
     environment:
       LNZ_HEALTH_PORT: 58085
@@ -65,8 +65,8 @@ services:
     image: nginx
     restart: always
     ports:
-      - $GATEWAY:8087:80
-      - $GATEWAY:8443:443
+      - "$GATEWAY:0:80"
+      - "$GATEWAY:0:443"
     configs:
       - source: nginx.conf
         target: /etc/nginx/conf.d/default.conf
