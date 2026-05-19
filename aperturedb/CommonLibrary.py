@@ -301,8 +301,7 @@ def execute_query(client: Connector, query: Commands,
     r, b = client.query(query, blobs)
 
     from aperturedb.Utils import censor_tokens
-    censored_r = censor_tokens(r)
-    logger.debug(f"Response={censored_r}")
+    logger.debug(f"Response={censor_tokens(r)}")
 
     if client.last_query_ok():
         if response_handler is not None:
@@ -316,7 +315,8 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {query} with response = {r}")
+        from aperturedb.Utils import censor_tokens
+        logger.error(f"Failed query = {query} with response = {censor_tokens(r)}")
         result = 1
 
     statuses = {}
@@ -339,8 +339,9 @@ def execute_query(client: Connector, query: Commands,
                 for wr in results:
                     warn_list.append(wr)
         if len(warn_list) != 0:
+            from aperturedb.Utils import censor_tokens
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(warn_list, default=str)}")
+                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(censor_tokens(warn_list), default=str)}")
             result = 2
 
     return result, r, b
