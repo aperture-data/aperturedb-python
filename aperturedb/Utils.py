@@ -317,8 +317,8 @@ class Utils(object):
         total_edges = 0
         for c in connections_classes:
             connections = r["connections"]["classes"][c]
-            
-            # ApertureDB can return connections as a dict where the keys are connection names 
+
+            # ApertureDB can return connections as a dict where the keys are connection names
             # and values are the dicts we actually want, or as a single dict with "matched", etc,
             # or as a list. We normalize it to a list of dicts.
             if isinstance(connections, dict):
