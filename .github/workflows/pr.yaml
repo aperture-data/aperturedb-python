@@ -17,6 +17,10 @@ jobs:
 
     steps:
 
+    - name: Free up disk space
+      run: docker system prune -af --volumes
+      continue-on-error: true
+
     - name: Cleanup previous run
       run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs*"
       continue-on-error: true
