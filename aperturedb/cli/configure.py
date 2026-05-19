@@ -299,7 +299,11 @@ def activate(
     Set the default configuration.
     """
     global_config_path = _config_file_path(True)
-    gc, ga = get_configurations(global_config_path)
+    gc, ga = {}, None
+    try:
+        gc, ga = get_configurations(global_config_path)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
 
     config_path = _config_file_path(as_global)
     configs = {}
@@ -312,9 +316,11 @@ def activate(
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
+        raise typer.Exit(code=2)
     except json.JSONDecodeError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
+        raise typer.Exit(code=2)
 
     _write_config(config_path, configs)
 
@@ -416,9 +422,11 @@ def get_key(name: Annotated[str, typer.Argument(
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
+        raise typer.Exit(code=2)
     except json.JSONDecodeError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
+        raise typer.Exit(code=2)
 
     print(f"{user_key}")
 
