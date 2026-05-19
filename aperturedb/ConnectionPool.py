@@ -1,8 +1,11 @@
 import threading
 import queue
+import logging
 from contextlib import contextmanager
 
 from aperturedb.CommonLibrary import create_connector
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionPool:
@@ -33,16 +36,18 @@ class ConnectionPool:
         self._lock = threading.Lock()
 
         # Pre-populate the pool with connections
+        created_count = 0
         for _ in range(pool_size):
             try:
                 connection = self._connection_factory()
                 if not connection:
                     raise ConnectionError("Failed to create a connection.")
                 self._pool.put(connection)
+                created_count += 1
             except Exception as e:
-                print(f"Failed to create a connection for the pool: {e}")
-                # Depending on requirements, you might want to raise an error
-                # if the pool cannot be fully populated.
+                logger.error(f"Failed to create a connection for the pool: {e}")
+
+        self._pool_size = created_count
 
         if self.available() == 0:
             raise ConnectionError(
@@ -74,12 +79,25 @@ class ConnectionPool:
         try:
             # Yield the connection for the user to use
             yield connection
+            return_to_pool = True
+        except Exception:
+            return_to_pool = False
+            raise
         finally:
             # This block is guaranteed to execute, ensuring the connection
-            # is always returned to the pool.
-            self._pool.put(connection)
+            # is always returned to the pool unless an exception occurred.
+            if return_to_pool:
+                self._pool.put(connection)
+            else:
+                try:
+                    new_connection = self._connection_factory()
+                    self._pool.put(new_connection)
+                except Exception as e:
+                    logger.error(f"Failed to recreate connection for pool: {e}")
+                    # Reduce total pool size since connection could not be recreated
+                    self._pool_size -= 1
 
-    def query(self, query, blobs: list = None, **kwargs):
+    def query(self, query, blobs: list = None):
         """
         A convenience method to execute a query directly from the pool.
 
@@ -89,7 +107,6 @@ class ConnectionPool:
         Args:
             query: The query string or list to execute.
             blobs (list): A list of blobs to include with the query.
-            **kwargs: Other arguments for the Connector's query method.
 
         Returns:
             Response from the executed query.
@@ -98,4 +115,4 @@ class ConnectionPool:
         if blobs is None:
             blobs = []
         with self.get_connection() as connection:
-            return connection.query(query, blobs, **kwargs)
+            return connection.query(query, blobs)

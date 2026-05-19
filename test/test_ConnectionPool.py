@@ -8,7 +8,7 @@ except ImportError:
     import dbinfo
 
 
-def test_make_connector():
+def _make_connector():
     return Connector(
         host=dbinfo.DB_TCP_HOST,
         port=dbinfo.DB_TCP_PORT,
@@ -24,18 +24,17 @@ def test_make_connector():
 
 class TestConnectionPool(unittest.TestCase):
     def setUp(self):
-        import time
-        time.sleep(5)  # Give server time to breathe between tests
+        pass
 
     def test_pool_initialization(self):
         pool = ConnectionPool(
-            pool_size=3, connection_factory=test_make_connector)
+            pool_size=3, connection_factory=_make_connector)
         self.assertEqual(pool.total(), 3)
         self.assertEqual(pool.available(), 3)
 
     def test_pool_borrow_return(self):
         pool = ConnectionPool(
-            pool_size=2, connection_factory=test_make_connector)
+            pool_size=2, connection_factory=_make_connector)
         with pool.get_connection() as conn:
             self.assertEqual(pool.available(), 1)
             # Test a simple query to ensure the connection is real
@@ -47,14 +46,14 @@ class TestConnectionPool(unittest.TestCase):
 
     def test_pool_convenience_query(self):
         pool = ConnectionPool(
-            pool_size=1, connection_factory=test_make_connector)
+            pool_size=1, connection_factory=_make_connector)
         response, blobs = pool.query([{"GetStatus": {}}])
         self.assertTrue(isinstance(response, list))
         self.assertTrue(isinstance(blobs, list))
 
     def test_pool_concurrency(self):
         pool = ConnectionPool(
-            pool_size=5, connection_factory=test_make_connector)
+            pool_size=5, connection_factory=_make_connector)
         results = []
 
         def worker():
