@@ -90,7 +90,7 @@ def _create_pipeline(transformers: List[str]):
     return pipeline
 
 
-def _process_data(data, sample_count, module_name, batchsize, num_workers, stats, debug):
+def _process_data(data, sample_count, module_name, batchsize, num_workers, stats, debug, use_dask=False):
     if debug:
         _debug_samples(data, sample_count, module_name)
     else:
@@ -98,7 +98,7 @@ def _process_data(data, sample_count, module_name, batchsize, num_workers, stats
         from aperturedb.CommonLibrary import create_connector
 
         client = create_connector()
-        loader = ParallelLoader(client)
+        loader = ParallelLoader(client, use_dask=use_dask)
         loader.ingest(
             data,
             stats=stats,
@@ -215,7 +215,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         IngestType.VIDEO: VideoDataCSV
     }
 
-    data = ingest_types[ingest_type](filepath, use_dask=use_dask,
+    data = ingest_types[ingest_type](filepath, 
                                      blobs_relative_to_csv=blobs_relative_to_csv)
     data.sample_count = len(data) if sample_count == -1 else sample_count
     if transformer or user_transformer:
@@ -232,7 +232,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         batchsize=batchsize,
         num_workers=num_workers,
         stats=stats,
-        debug=debug
+        debug=debug,
+        use_dask=use_dask
     )
 
 

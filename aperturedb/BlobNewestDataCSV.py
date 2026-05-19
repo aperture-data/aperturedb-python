@@ -282,7 +282,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
     def validate(self):
         self._setupkeys()
         valid = True
-        if not self.use_dask:
+        if True:
             if len(self.constraints_keys) < 1:
                 logger.error("Cannot add/update " +
                              self.entity + "; no constraint keys")

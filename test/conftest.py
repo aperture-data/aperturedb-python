@@ -123,7 +123,7 @@ def insert_data_from_csv(db, request):
         use_dask = False
         if hasattr(request, "param"):
             use_dask = request.param
-        data = file_data_pair[in_csv_file](in_csv_file, use_dask=use_dask,
+        data = file_data_pair[in_csv_file](in_csv_file,
                                            blobs_relative_to_csv=True)
 
         setattr(data, "response_handler", check_response_regressions)
@@ -132,7 +132,7 @@ def insert_data_from_csv(db, request):
         if rec_count != -1:
             data = data[:rec_count]
 
-        loader = ParallelLoader(db)
+        loader = ParallelLoader(db, use_dask=use_dask)
         loader.ingest(data, batchsize=503,
                       numthreads=4,
                       stats=True,
@@ -200,11 +200,11 @@ def modify_data_from_csv(db, request):
         if hasattr(request, "param"):
             use_dask = request.param
         data = file_data_pair[in_csv_file](
-            in_csv_file, use_dask=use_dask, blobs_relative_to_csv=True)
+            in_csv_file, blobs_relative_to_csv=True)
         if rec_count != -1:
             data = data[:rec_count]
 
-        loader = ParallelQuerySet(db)
+        loader = ParallelQuerySet(db, use_dask=use_dask)
         loader.query(data, batchsize=99,
                      numthreads=1,
                      stats=True,

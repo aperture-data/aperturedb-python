@@ -26,8 +26,8 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     into batches, and passing the batches to multiple workers.
     """
 
-    def __init__(self, client: Connector, dry_run: bool = False):
-        super().__init__(client, dry_run=dry_run)
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = False):
+        super().__init__(client, dry_run=dry_run, use_dask=use_dask)
         self.utils = Utils(self.client)
         self.type = "element"
 

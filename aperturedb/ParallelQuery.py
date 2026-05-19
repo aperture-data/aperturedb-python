@@ -37,8 +37,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    def __init__(self, client: Connector, dry_run: bool = False):
-        super().__init__()
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = False):
+        super().__init__(use_dask=use_dask)
         test_string = f"Connection test successful with {client.config}"
         try:
             _, _ = client.query([{"GetSchema": {}}], [])
@@ -267,15 +267,28 @@ class ParallelQuery(Parallelizer.Parallelizer):
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
 
-        use_dask = hasattr(generator, "use_dask") and generator.use_dask
-        if use_dask:
+        if self.use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
+
+            import multiprocessing as mp
+            import os
+            from dask import dataframe
+            if hasattr(generator, "filename") and generator.filename:
+                cores_used = int(0.9 * mp.cpu_count())
+                blocksize = os.path.getsize(generator.filename) // (cores_used * 10)
+                if blocksize == 0:
+                    cpus = mp.cpu_count()
+                    raise Exception(f"CSV file too small to be read in parallel. Use normal mode. cpus: {cpus}")
+                generator.df = dataframe.read_csv(generator.filename, blocksize=blocksize)
+            else:
+                if not isinstance(generator.df, dataframe.DataFrame):
+                    generator.df = dataframe.from_pandas(generator.df, npartitions=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
 
-        if use_dask:
+        if self.use_dask:
             results, self.total_actions_time = self.daskmanager.run(
                 self.__class__, self.client, generator, batchsize, stats=stats)
             self.actual_stats = []

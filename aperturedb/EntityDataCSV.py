@@ -116,11 +116,11 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, entity_class, filename, df=None, use_dask=False):
-        super().__init__(filename, df=df, use_dask=use_dask)
+    def __init__(self, entity_class, filename, df=None, ):
+        super().__init__(filename, df=df, )
         self.command = "Delete" + entity_class
         self.constraint_keyword = "constraints"
-        if not use_dask:
+        if True:
             self.constraint_keys = [x for x in self.header[0:]]
 
     def getitem(self, idx):
@@ -143,5 +143,5 @@ class ImageDeleteDataCSV(EntityDeleteDataCSV):
     Usage details in EntityDeleteDataCSV
     """
 
-    def __init__(self, filename, df=None, use_dask=False):
-        super().__init__("Image", filename, df=df, use_dask=use_dask)
+    def __init__(self, filename, df=None, ):
+        super().__init__("Image", filename, df=df, )

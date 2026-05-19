@@ -352,9 +352,9 @@ class ParallelQuerySet(ParallelQuery):
         dry_run (bool, optional): If True, no queries are executed. Defaults to False.
     """
 
-    def __init__(self, client: Connector, dry_run: bool = False):
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = False):
 
-        super().__init__(client, dry_run)
+        super().__init__(client, dry_run, use_dask=use_dask)
 
         self.base_batch_command = self.batch_command
 
