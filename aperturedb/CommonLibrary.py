@@ -348,7 +348,8 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
     # We could potentially always call this handler function
     # and let the user deal with the error cases.
     blobs_returned = 0
-    for i in range(math.ceil(len(query) / commands_per_query)):
+    limit = len(response) if issubclass(type(response), list) else len(query)
+    for i in range(math.ceil(limit / commands_per_query)):
         start = i * commands_per_query
         end = start + commands_per_query
         blobs_start = i * blobs_per_query
