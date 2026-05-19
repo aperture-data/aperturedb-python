@@ -56,12 +56,17 @@ class TestConnectionPool(unittest.TestCase):
             pool_size=5, connection_factory=_make_connector)
         results = []
 
+    def test_pool_concurrency(self):
+        pool = ConnectionPool(
+            pool_size=5, connection_factory=_make_connector)
+        results = []
+
         def worker():
             try:
                 res, _ = pool.query([{"GetStatus": {}}])
                 results.append(res)
             except Exception as e:
-                print("Error in worker thread", e)
+                results.append(e)
 
         threads = [threading.Thread(target=worker) for _ in range(10)]
         for t in threads:
@@ -70,7 +75,15 @@ class TestConnectionPool(unittest.TestCase):
             t.join()
 
         self.assertEqual(len(results), 10)
+        for r in results:
+            self.assertTrue(isinstance(r, list), f"Worker failed with exception: {r}")
 
+    def test_pool_timeout(self):
+        pool = ConnectionPool(pool_size=1, connection_factory=_make_connector)
+        with pool.get_connection():
+            with self.assertRaises(TimeoutError):
+                with pool.get_connection(timeout=0.1):
+                    pass
 
 if __name__ == '__main__':
     unittest.main()

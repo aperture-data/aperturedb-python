@@ -33,26 +33,23 @@ class ConnectionPool:
         self._pool = queue.Queue(maxsize=pool_size)
 
         # Pre-populate the pool with connections
-        created_count = 0
+        last_error = None
         for _ in range(pool_size):
             try:
                 connection = self._connection_factory()
                 if not connection:
                     raise ConnectionError("Failed to create a connection.")
                 self._pool.put(connection)
-                created_count += 1
             except Exception as e:
                 logger.error(
                     f"Failed to create a connection for the pool: {e}")
+                last_error = e
+                break
 
-        self._pool_size = created_count
-
-        if self.available() == 0:
+        if self._pool.qsize() < pool_size:
             raise ConnectionError(
-                "Failed to initialize any connections for the pool. "
-                "Please check connection parameters and network."
-            )
-
+                f"Failed to initialize pool: expected {pool_size} connections, got {self._pool.qsize()}."
+            ) from last_error
     def available(self) -> int:
         """Returns the number of available connections in the pool."""
         return self._pool.qsize()
@@ -62,40 +59,31 @@ class ConnectionPool:
         return self._pool_size
 
     @contextmanager
-    def get_connection(self):
+    def get_connection(self, timeout=None):
         """
         A context manager to get a connection from the pool.
         This is the recommended way to use a connection.
         It automatically gets a connection and releases it back to the pool.
 
+        Args:
+            timeout (float, optional): How long to wait for a connection to become available before raising TimeoutError.
+
         Usage:
             with pool.get_connection() as conn:
                 conn.query(...)
         """
-        # The get() call will block until a connection is available.
-        connection = self._pool.get()
+        try:
+            connection = self._pool.get(timeout=timeout)
+        except queue.Empty:
+            raise TimeoutError(f"No connection available in the pool within the specified timeout ({timeout}s).")
+            
         try:
             # Yield the connection for the user to use
             yield connection
-            return_to_pool = True
-        except Exception:
-            return_to_pool = False
-            raise
         finally:
             # This block is guaranteed to execute, ensuring the connection
             # is always returned to the pool unless an exception occurred.
-            if return_to_pool:
-                self._pool.put(connection)
-            else:
-                try:
-                    new_connection = self._connection_factory()
-                    self._pool.put(new_connection)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to recreate connection for pool: {e}")
-                    # Reduce total pool size since connection could not be recreated
-                    self._pool_size -= 1
-
+            self._pool.put(connection)
     def query(self, query, blobs: list = None):
         """
         A convenience method to execute a query directly from the pool.
@@ -115,3 +103,13 @@ class ConnectionPool:
             blobs = []
         with self.get_connection() as connection:
             return connection.query(query, blobs)
+
+    def close(self):
+        """
+        Closes all connections in the pool.
+        """
+        while not self._pool.empty():
+            try:
+                self._pool.get_nowait()
+            except queue.Empty:
+                break
