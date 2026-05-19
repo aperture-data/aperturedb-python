@@ -598,10 +598,8 @@ class Connector(object):
             logger.critical("Failed to query",
                             exc_info=True, stack_info=True)
 
-            from aperturedb.Utils import censor_tokens
-            if hasattr(self, 'last_response') and self.last_response:
-                censored_response = censor_tokens(self.last_response)
-                logger.error(censored_response)
+            from aperturedb.Utils import print_censored_last_response
+            print_censored_last_response(self, logger.error)
 
             raise
 
