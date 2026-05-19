@@ -204,7 +204,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             print(f"Query time std: {std}")
             print(f"Avg Query Throughput (q/s): {tp}")
 
-            i_tp = succeeded_queries / self.total_actions_time
+            i_tp = succeeded_queries / self.total_actions_time if self.total_actions_time > 0 else 0
             print(
                 f"Overall insertion throughput ({self.type}/s): {i_tp}")
 
