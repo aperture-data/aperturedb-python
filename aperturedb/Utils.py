@@ -30,35 +30,6 @@ DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
 DEFAULT_METADATA_BATCH_SIZE = 100_000
 
 
-def censor_tokens(response):
-    import copy
-    if isinstance(response, list):
-        censored = copy.deepcopy(response)
-        for item in censored:
-            if isinstance(item, dict):
-                # We want to censor Authenticate and RefreshToken (in case token is printed)
-                for cmd in ["Authenticate", "RefreshToken"]:
-                    if cmd in item:
-                        auth = item[cmd]
-                        for k in ["refresh_token", "session_token"]:
-                            if k in auth and isinstance(auth[k], str):
-                                token_str = auth[k]
-                                parts = token_str.split("_", 1)
-                                if len(parts) == 2:
-                                    prefix = parts[0] + "_"
-                                    token = parts[1]
-                                else:
-                                    prefix = ""
-                                    token = token_str
-                                
-                                if len(token) > 8:
-                                    auth[k] = prefix + token[:4] + "..." + token[-4:]
-                                elif len(token_str) > 0:
-                                    auth[k] = prefix + "..."
-        return censored
-    return response
-
-
 class Utils(object):
     """
     **Helper methods to get information from aperturedb, or affect it's state.**

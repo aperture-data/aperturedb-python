@@ -266,6 +266,40 @@ def create_connector(
     return __create_connector(config)
 
 
+def censor_tokens(data):
+    """
+    Recursively redact sensitive token fields in a dictionary or list.
+    """
+    import copy
+    
+    def _censor(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(k, str) and k.lower() in ["refresh_token", "session_token", "token", "access_token"]:
+                    if isinstance(v, str):
+                        parts = v.split("_", 1)
+                        if len(parts) == 2:
+                            prefix = parts[0] + "_"
+                            token = parts[1]
+                        else:
+                            prefix = ""
+                            token = v
+                        
+                        if len(token) > 8:
+                            obj[k] = prefix + token[:4] + "..." + token[-4:]
+                        elif len(v) > 0:
+                            obj[k] = prefix + "..."
+                else:
+                    _censor(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                _censor(item)
+    
+    censored = copy.deepcopy(data)
+    _censor(censored)
+    return censored
+
+
 def execute_query(client: Connector, query: Commands,
                   blobs: Blobs = [],
                   success_statuses: list[int] = [0],
@@ -300,8 +334,8 @@ def execute_query(client: Connector, query: Commands,
     logger.debug(f"Query={query}")
     r, b = client.query(query, blobs)
 
-    from aperturedb.Utils import censor_tokens
-    logger.debug(f"Response={censor_tokens(r)}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"Response={censor_tokens(r)}")
 
     if client.last_query_ok():
         if response_handler is not None:
@@ -315,7 +349,6 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        from aperturedb.Utils import censor_tokens
         logger.error(f"Failed query = {query} with response = {censor_tokens(r)}")
         result = 1
 

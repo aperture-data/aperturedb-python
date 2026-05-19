@@ -453,7 +453,9 @@ class Connector(object):
                     exc_info=True,
                     stack_info=True)
 
-    def _query(self, query, blob_array=[], try_resume=True):
+    def _query(self, query, blob_array=None, try_resume=True):
+        if blob_array is None:
+            blob_array = []
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
@@ -635,7 +637,7 @@ class Connector(object):
         return self.clone()
 
     def get_last_response_str(self):
-        from aperturedb.Utils import censor_tokens
+        from aperturedb.CommonLibrary import censor_tokens
         return json.dumps(censor_tokens(self.last_response), indent=4, sort_keys=False)
 
     def print_last_response(self):
