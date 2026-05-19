@@ -639,8 +639,24 @@ class Connector(object):
         return self.clone()
 
     def get_last_response_str(self):
+        import copy
+        if not self.last_response:
+            return "[]"
 
-        return json.dumps(self.last_response, indent=4, sort_keys=False)
+        try:
+            safe_response = copy.deepcopy(self.last_response)
+            if isinstance(safe_response, list):
+                for item in safe_response:
+                    if isinstance(item, dict) and "Authenticate" in item:
+                        auth_dict = item["Authenticate"]
+                        if isinstance(auth_dict, dict):
+                            if "session_token" in auth_dict:
+                                auth_dict["session_token"] = "***"
+                            if "refresh_token" in auth_dict:
+                                auth_dict["refresh_token"] = "***"
+            return json.dumps(safe_response, indent=4, sort_keys=False)
+        except Exception:
+            return json.dumps(self.last_response, indent=4, sort_keys=False)
 
     def print_last_response(self):
 

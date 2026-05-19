@@ -313,7 +313,25 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {query} with response = {r}")
+        import copy
+        safe_query = copy.deepcopy(query)
+        safe_r = copy.deepcopy(r)
+        for obj in (safe_query, safe_r):
+            if isinstance(obj, list):
+                for item in obj:
+                    if isinstance(item, dict) and "Authenticate" in item:
+                        auth_dict = item["Authenticate"]
+                        if isinstance(auth_dict, dict):
+                            if "password" in auth_dict:
+                                auth_dict["password"] = "***"
+                            if "token" in auth_dict:
+                                auth_dict["token"] = "***"
+                            if "session_token" in auth_dict:
+                                auth_dict["session_token"] = "***"
+                            if "refresh_token" in auth_dict:
+                                auth_dict["refresh_token"] = "***"
+
+        logger.error(f"Failed query = {safe_query} with response = {safe_r}")
         result = 1
 
     statuses = {}
