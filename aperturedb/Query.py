@@ -84,7 +84,7 @@ def get_specific(obj: BaseModel) -> dict:
             RangeType.FRAME: "frame_number_range",
             RangeType.FRACTION: "time_fraction_range"
         }
-        start, stop = obj.start, obj.stop
+        start, stop  = obj.start, obj.stop
         if obj.range_type == RangeType.TIME:
             start, stop = int(start), int(stop)
             start = "{:0>2}:{:0>2}:{:0>2}".format(
@@ -94,7 +94,7 @@ def get_specific(obj: BaseModel) -> dict:
         elif obj.range_type == RangeType.FRAME:
             start = int(obj.start)
             stop = int(obj.stop)
-        return {
+        return{
             range_types[obj.range_type]: {
                 "start": start,
                 "stop": stop,
@@ -377,10 +377,10 @@ class Query():
             operations=operations,
             with_class=with_class,
             limit=limit,
-            sort=sort,
-            list=list,
+            sort = sort,
+            list = list,
             blobs=blobs,
-            group_by_src=group_by_src,
+            group_by_src = group_by_src,
             set=set,
             vector=vector,
             k_neighbors=k_neighbors
