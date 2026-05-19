@@ -500,24 +500,20 @@ class Connector(object):
                 if tries != 0 or (self.last_query_timestamp is not None and
                                   (now - self.last_query_timestamp) <
                                   self.query_connection_error_suppression_delta):
-                    logger.exception(ssle)
                     logger.warning(
-                        f"SSL connection error on process {os.getpid()}")
+                        f"SSL connection error on process {os.getpid()}", exc_info=True)
             except ssl.SSLError as ssle:
                 # This can happen in a scenario where multiple
                 # processes might be accessing a single connection.
                 # The copy does not make usable connections.
-                logger.exception(ssle)
-                logger.warning(f"SSL error on process {os.getpid()}")
+                logger.warning(f"SSL error on process {os.getpid()}", exc_info=True)
             except OSError as ose:
-                logger.exception(ose)
-                logger.warning(f"OS error on process {os.getpid()}")
+                logger.warning(f"OS error on process {os.getpid()}", exc_info=True)
             except AttributeError as ae:
                 if self.connected:
                     # Only log if we got this while connected.
                     # else it is expected after unification of query/connect
-                    logger.exception(ae)
-                    logger.warning(f"Attribute error on process {os.getpid()}")
+                    logger.warning(f"Attribute error on process {os.getpid()}", exc_info=True)
 
             tries += 1
             # Do not log when trying for the first time.
