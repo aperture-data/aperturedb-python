@@ -24,6 +24,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     Args:
         client (Connector): The database connector.
         dry_run (bool, optional): Whether to run in dry run mode. Defaults to False.
+        use_dask (bool, optional): Whether to use Dask for parallel ingestion. If None, falls back to generator settings. Defaults to None.
     """
 
     # 0 is success, 2 is object exists
@@ -37,7 +38,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = False):
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = None):
         super().__init__(use_dask=use_dask)
         test_string = f"Connection test successful with {client.config}"
         try:
@@ -267,7 +268,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
 
-        use_dask = self.use_dask if hasattr(self, 'use_dask') else (
+        use_dask = self.use_dask if self.use_dask is not None else (
             hasattr(generator, "use_dask") and generator.use_dask)
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)

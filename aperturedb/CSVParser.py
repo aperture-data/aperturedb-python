@@ -51,9 +51,10 @@ class CSVParser(Subscriptable):
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
             "blobs_relative_to_csv"]
-        # Keep use_dask for backwards compatibility but log a warning if used?
-        # The issue implies we shouldn't fail if passed, but it's decoupled.
-        self.use_dask = "use_dask" in kwargs and kwargs["use_dask"]
+        # Keep use_dask for backwards compatibility but log a warning if used
+        if "use_dask" in kwargs:
+            logger.warning("The 'use_dask' parameter in CSVParser is deprecated and will be ignored in future versions. Pass 'use_dask' directly to the Parallelizer.")
+        self.use_dask = kwargs.get("use_dask", False)
         df = kwargs["df"] if "df" in kwargs else None
 
         self.relative_path_prefix = os.path.dirname(self.filename) if self.blobs_relative_to_csv \
