@@ -506,14 +506,17 @@ class Connector(object):
                 # This can happen in a scenario where multiple
                 # processes might be accessing a single connection.
                 # The copy does not make usable connections.
-                logger.warning(f"SSL error on process {os.getpid()}", exc_info=True)
+                logger.warning(
+                    f"SSL error on process {os.getpid()}", exc_info=True)
             except OSError as ose:
-                logger.warning(f"OS error on process {os.getpid()}", exc_info=True)
+                logger.warning(
+                    f"OS error on process {os.getpid()}", exc_info=True)
             except AttributeError as ae:
                 if self.connected:
                     # Only log if we got this while connected.
                     # else it is expected after unification of query/connect
-                    logger.warning(f"Attribute error on process {os.getpid()}", exc_info=True)
+                    logger.warning(
+                        f"Attribute error on process {os.getpid()}", exc_info=True)
 
             tries += 1
             # Do not log when trying for the first time.
