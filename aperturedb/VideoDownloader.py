@@ -101,6 +101,7 @@ class VideoDownloader(Parallelizer.Parallelizer):
         except requests.exceptions.RequestException as e:
             print("Error with GET:", e)
             self.error_counter += 1
+            self.times_arr.append(time.time() - start)
             return
 
         if videodata.ok:

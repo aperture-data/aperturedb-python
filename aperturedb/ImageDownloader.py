@@ -105,6 +105,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
 
         retries = 0
         downloaded = False
+        imgdata = None
         while True:
             try:
                 imgdata = requests.get(url, timeout=10)
@@ -122,7 +123,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 retries += 1
                 time.sleep(2)
 
-        if imgdata.ok:
+        if imgdata and imgdata.ok:
             fd = open(filename, "wb")
             fd.write(imgdata.content)
             fd.close()
