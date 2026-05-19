@@ -266,7 +266,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     self.do_batch(client, batch_start, current_batch)
                 except Exception as e:
                     logger.exception(e)
-                    logger.warning(f"Worker {thid} failed to execute dynamic batch remainder starting at {batch_start}")
+                    logger.warning(f"Worker {
+                                   thid} failed to execute dynamic batch remainder starting at {batch_start}")
                     self.error_counter += 1
 
                 if self.stats:
