@@ -44,18 +44,6 @@ def censor_tokens(response):
     return response
 
 
-def print_censored_last_response(client, log_func):
-    import json
-    try:
-        response_str = client.get_last_response_str()
-        if not response_str or response_str == '""':
-            return
-        response_obj = json.loads(response_str)
-        log_func(json.dumps(censor_tokens(response_obj), indent=4))
-    except:
-        log_func(client.get_last_response_str())
-
-
 class Utils(object):
     """
     **Helper methods to get information from aperturedb, or affect it's state.**
@@ -92,7 +80,7 @@ class Utils(object):
             rc, r, b = execute_query(self.client,
                                      query, blobs, success_statuses=success_statuses)
         except BaseException as e:
-            print_censored_last_response(self.client, logger.error)
+            logger.error(self.client.get_last_response_str())
             raise e
 
         if rc != 0:
@@ -145,7 +133,7 @@ class Utils(object):
         try:
             schema = res[0]["GetSchema"]
         except BaseException as e:
-            print_censored_last_response(self.client, logger.error)
+            logger.error(self.client.get_last_response_str())
             raise e
 
         return schema
