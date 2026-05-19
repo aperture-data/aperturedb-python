@@ -221,7 +221,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
         max_bytes = getattr(self, "max_bytes_per_batch", None)
 
         if max_bytes is not None and max_bytes > 0:
-            logger.info(f"Worker {thid} executing dynamically sized batches (max {max_bytes} bytes), {self.stats=}")
+            logger.info(f"Worker {thid} executing dynamically sized batches (max {
+                        max_bytes} bytes), {self.stats=}")
             current_batch = []
             current_bytes = 0
             batch_start = start
