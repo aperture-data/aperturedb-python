@@ -418,7 +418,7 @@ class ParallelQuerySet(ParallelQuery):
             print(f"Query time std: {std}")
             print(f"Avg Query Throughput (q/s): {tp}")
 
-            i_tp = self.total_actions / self.total_actions_time
+            i_tp = self.get_succeeded_queries() / self.total_actions_time
             print(
                 f"Overall insertion throughput ({self.type}/s): {i_tp}")
 
