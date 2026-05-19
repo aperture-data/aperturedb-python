@@ -30,9 +30,9 @@ set +e
 CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${FILTER}"
 CLIENT_PATH=${CLIENT_PATH// /_}
 mkdir -p ${CLIENT_PATH}
-PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb --cov-report=html:output -m "$FILTER" test_*.py -v -n auto | tee ${CLIENT_PATH}/test.log
+PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb --cov-report=html:output -m "$FILTER" test_*.py -v | tee ${CLIENT_PATH}/test.log
 RESULT=$?
-cp error*.log -v ${CLIENT_PATH}
+cp error*.log -v ${CLIENT_PATH} || true
 
 if [[ $RESULT != 0 ]]; then
 	echo "Test failed; outputting db log:"
