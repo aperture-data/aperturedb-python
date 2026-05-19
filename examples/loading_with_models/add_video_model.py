@@ -54,7 +54,7 @@ client = create_connector()
 
 # Create a descriptor set
 # DS is a search space for descriptors added to it (some times called collections)
-# https://docs.aperturedata.io/HowToGuides/Advanced/similarity_search#descriptorsets-and-descriptors
+# https://docs.aperturedata.io/HowToGuides/Applications/similarity_search#descriptorsets-and-descriptors
 collection = DescriptorSetDataModel(
     name="marengo26", dimensions=len(clips[0]['embedding']))
 q, blobs, c = generate_add_query(collection)
