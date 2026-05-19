@@ -49,7 +49,7 @@ class Sources():
                     imgdata = self.http_client.get(url, timeout=10)
                 except TypeError:
                     imgdata = self.http_client.get(url)
-                    
+
                 success = imgdata.ok and ("Content-Length" not in imgdata.headers or int(
                     imgdata.headers["Content-Length"]) == imgdata.raw._fp_bytes_read)
             except requests.exceptions.RequestException as e:
