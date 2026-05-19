@@ -71,7 +71,7 @@ class Utils(object):
             try:
                 import json
                 parsed_response = json.loads(last_response)
-                
+
                 # Censor authenticate response if present
                 if isinstance(parsed_response, list):
                     for item in parsed_response:
@@ -80,12 +80,13 @@ class Utils(object):
                             for key in ["refresh_token", "session_token"]:
                                 if key in auth_resp:
                                     auth_resp[key] = "***CENSORED***"
-                            
-                last_response = json.dumps(parsed_response, indent=4, sort_keys=False)
+
+                last_response = json.dumps(
+                    parsed_response, indent=4, sort_keys=False)
             except Exception:
                 # If we fail to parse, just log a censored generic message
                 last_response = "***CENSORED***"
-                
+
             logger.error(last_response)
             raise e
 
@@ -144,7 +145,7 @@ class Utils(object):
             try:
                 import json
                 parsed_response = json.loads(last_response)
-                
+
                 # Censor authenticate response if present
                 if isinstance(parsed_response, list):
                     for item in parsed_response:
@@ -153,12 +154,13 @@ class Utils(object):
                             for key in ["refresh_token", "session_token"]:
                                 if key in auth_resp:
                                     auth_resp[key] = "***CENSORED***"
-                            
-                last_response = json.dumps(parsed_response, indent=4, sort_keys=False)
+
+                last_response = json.dumps(
+                    parsed_response, indent=4, sort_keys=False)
             except Exception:
                 # If we fail to parse, just log a censored generic message
                 last_response = "***CENSORED***"
-                
+
             logger.error(last_response)
             raise e
 
