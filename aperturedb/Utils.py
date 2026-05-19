@@ -74,6 +74,16 @@ class Utils(object):
 
         return r, b
 
+    @staticmethod
+    def _normalize_class_data(data):
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            if "matched" in data:
+                return [data]
+            return list(data.values())
+        return [data]
+
     def status(self):
         """
         Executes a `GetStatus` query.
@@ -174,8 +184,7 @@ class Utils(object):
         connections = r['connections']['classes']
 
         for entity_key, entity_data in entities.items():
-            entity_data_list = [entity_data] if isinstance(
-                entity_data, dict) else entity_data
+            entity_data_list = self._normalize_class_data(entity_data)
             for data in entity_data_list:
                 matched = data["matched"]
                 # dictionary from name to (matched, indexed, type)
@@ -197,8 +206,7 @@ class Utils(object):
                         f'{idx_str}, {typ}</FONT></TD></TR>'
                     )
                 for connection, conn_data_obj in connections.items():
-                    conn_data_list = [conn_data_obj] if isinstance(
-                        conn_data_obj, dict) else conn_data_obj
+                    conn_data_list = self._normalize_class_data(conn_data_obj)
                     for conn_data in conn_data_list:
                         if conn_data['src'] == entity_key:
                             matched_conn = conn_data["matched"]
@@ -229,7 +237,7 @@ class Utils(object):
                 dot.node(entity_key, label=table)
         if isinstance(connections, dict):
             for connection, data in connections.items():
-                data_list = [data] if isinstance(data, dict) else data
+                data_list = self._normalize_class_data(data)
                 for data in data_list:
                     dot.edge(f'{data["src"]}:{connection}',
                              f'{data["dst"]}')
@@ -311,15 +319,16 @@ class Utils(object):
         print(f"Total entities types:    {total_entities}")
         total_nodes = 0
         for c in entities_classes:
-            total_nodes += self._object_summary(c, r["entities"]["classes"][c])
+            entity_data_list = self._normalize_class_data(r["entities"]["classes"][c])
+            for entity_data in entity_data_list:
+                total_nodes += self._object_summary(c, entity_data)
 
         print(f"---------------- Connections ----------------")
         print(f"Total connections types: {total_connections}")
         total_edges = 0
         for c in connections_classes:
             connections = r["connections"]["classes"][c]
-            connections_list = [connections] if isinstance(
-                connections, dict) else connections
+            connections_list = self._normalize_class_data(connections)
 
             for connection in connections_list:
                 total_edges += self._object_summary(c, connection)
