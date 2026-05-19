@@ -421,7 +421,7 @@ class TestResponseHandler():
                     "FindImage": {
                         "blobs": False,
                         "constraints": {
-                            "image_id": [ "==", id ],
+                            "image_id": ["==", id],
                             self.field: ["!=", label]
                         },
                         "results": {
@@ -429,16 +429,16 @@ class TestResponseHandler():
                             "list": ["image_id"]
                         }
                     }
-                 }, {
-                     "UpdateImage": {
-                         "properties": {
-                             self.field: label
-                         }
-                     }
-                 }]
+                }, {
+                    "UpdateImage": {
+                        "properties": {
+                            self.field: label
+                        }
+                    }
+                }]
                 return q, []
-            
-            def response_handler(self, q, b ,r, r_b ):
+
+            def response_handler(self, q, b, r, r_b):
                 try:
                     count  = r[0]["FindImage"].get("count", 0)
                     if count == 1:
@@ -469,7 +469,8 @@ class TestResponseHandler():
 
         monkeypatch.setattr(Connector, "query", mock_query)
 
-        generator = UpdateAndCheckImageLabel(imgids, field, new_labels, changed_ids)
+        generator = UpdateAndCheckImageLabel(
+            imgids, field, new_labels, changed_ids)
         querier = ParallelQuery(db)
         querier.query(generator, numthreads=1, batchsize=2, stats=False)
 
