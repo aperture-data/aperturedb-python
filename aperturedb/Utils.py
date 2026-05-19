@@ -210,18 +210,19 @@ class Utils(object):
             if isinstance(connections, dict):
                 for connection, conn_data_obj in connections.items():
                     conn_data_list = self._normalize_class_data(conn_data_obj)
-                    for conn_data in conn_data_list:
+                    for i, conn_data in enumerate(conn_data_list):
                         if conn_data['src'] == entity_key:
                             matched_conn = conn_data["matched"]
                             # dictionary from name to (matched, indexed, type)
                             conn_properties = conn_data["properties"]
                             c_bg = colors["connection_background"]
                             c_fg = colors["connection_foreground"]
+                            port_name = f"{connection}_{i}" if len(conn_data_list) > 1 else connection
                             table += (
                                 '<TR><TD BGCOLOR="{}" COLSPAN="3" '
                                 'PORT="{}"><FONT COLOR="{}">'
                                 '<B>{}</B> ({:,})</FONT></TD></TR>'
-                            ).format(c_bg, connection, c_fg, connection, matched_conn)
+                            ).format(c_bg, port_name, c_fg, connection, matched_conn)
                             if conn_properties:
                                 for prop, (matched_prop, indexed, typ) in conn_properties.items():
                                     cp_bg = colors["connection_property_background"]
@@ -241,8 +242,9 @@ class Utils(object):
         if isinstance(connections, dict):
             for connection, data in connections.items():
                 data_list = self._normalize_class_data(data)
-                for data in data_list:
-                    dot.edge(f'{data["src"]}:{connection}',
+                for i, data in enumerate(data_list):
+                    port_name = f"{connection}_{i}" if len(data_list) > 1 else connection
+                    dot.edge(f'{data["src"]}:{port_name}',
                              f'{data["dst"]}')
 
         # Render the diagram inline
