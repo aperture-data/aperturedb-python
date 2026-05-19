@@ -153,7 +153,8 @@ class Connector(object):
                  retry_interval_seconds=DEFAULT_RETRY_INTERVAL_SECONDS,
                  retry_max_attempts=DEFAULT_RETRY_MAX_ATTEMPTS,
                  config: Optional[Configuration] = None,
-                 key: Optional[str] = None):
+                 key: Optional[str] = None,
+                 connect: bool = False):
         """
         Constructor for the Connector class.
         """
@@ -209,6 +210,9 @@ class Connector(object):
         # One time flag to indicate if we ever connected,
         # to prevent logging of connection errors on first connect.
         self._ever_connected = False
+
+        if connect:
+            self.connect()
 
     def authenticate(self, shared_data, user, password, token):
         """
