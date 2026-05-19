@@ -310,7 +310,8 @@ class Connector(object):
 
         response, _ = self._query(query, [], try_resume=False)
 
-        logger.info(f"Refresh token response: \r\n{response}")
+        from aperturedb.CommonLibrary import censor_tokens
+        logger.info(f"Refresh token response: \r\n{censor_tokens(response)}")
         if isinstance(response, list):
             session_info = response[0]["RefreshToken"]
             if session_info["status"] != STATUS_OK:

@@ -12,7 +12,7 @@ class TestUtils():
         assert utils.get_descriptorset_list() == []
 
     def test_censor_tokens(self):
-        from aperturedb.Utils import censor_tokens
+        from aperturedb.CommonLibrary import censor_tokens
 
         # Normal response (no auth)
         response = [{"FindImage": {"status": 0}}]
