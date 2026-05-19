@@ -140,8 +140,9 @@ class Sources():
             except Exception as e:
                 from google.auth.exceptions import DefaultCredentialsError
                 from google.api_core.exceptions import Forbidden, Unauthorized
-                
-                is_auth_error = isinstance(e, (DefaultCredentialsError, Forbidden, Unauthorized))
+
+                is_auth_error = isinstance(
+                    e, (DefaultCredentialsError, Forbidden, Unauthorized))
 
                 if not tried_anonymous and is_auth_error:
                     client = storage.Client.create_anonymous_client()
