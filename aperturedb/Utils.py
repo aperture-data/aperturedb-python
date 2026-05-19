@@ -30,6 +30,20 @@ DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
 DEFAULT_METADATA_BATCH_SIZE = 100_000
 
 
+def censor_tokens(response):
+    import copy
+    if isinstance(response, list):
+        censored = copy.deepcopy(response)
+        for item in censored:
+            if isinstance(item, dict) and "Authenticate" in item:
+                auth = item["Authenticate"]
+                for k in ["refresh_token", "session_token"]:
+                    if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
+                        auth[k] = auth[k][:4] + "..." + auth[k][-4:]
+        return censored
+    return response
+
+
 class Utils(object):
     """
     **Helper methods to get information from aperturedb, or affect it's state.**
@@ -69,15 +83,7 @@ class Utils(object):
             import json
             try:
                 response_obj = json.loads(self.client.get_last_response_str())
-                if isinstance(response_obj, list):
-                    for item in response_obj:
-                        if isinstance(item, dict) and "Authenticate" in item:
-                            auth = item["Authenticate"]
-                            for k in ["refresh_token", "session_token"]:
-                                if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
-                                    auth[k] = auth[k][:4] + \
-                                        "..." + auth[k][-4:]
-                logger.error(json.dumps(response_obj, indent=4))
+                logger.error(json.dumps(censor_tokens(response_obj), indent=4))
             except:
                 logger.error(self.client.get_last_response_str())
             raise e
@@ -135,15 +141,7 @@ class Utils(object):
             import json
             try:
                 response_obj = json.loads(self.client.get_last_response_str())
-                if isinstance(response_obj, list):
-                    for item in response_obj:
-                        if isinstance(item, dict) and "Authenticate" in item:
-                            auth = item["Authenticate"]
-                            for k in ["refresh_token", "session_token"]:
-                                if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
-                                    auth[k] = auth[k][:4] + \
-                                        "..." + auth[k][-4:]
-                logger.error(json.dumps(response_obj, indent=4))
+                logger.error(json.dumps(censor_tokens(response_obj), indent=4))
             except:
                 logger.error(self.client.get_last_response_str())
             raise e
