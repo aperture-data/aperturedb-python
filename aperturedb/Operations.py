@@ -15,13 +15,17 @@ class Operations(object):
     def get_operations_arr(self):
         return self.operations_arr
 
-    def resize(self, width: int, height: int) -> Operations:
+    def resize(self, width: int = None, height: int = None, scale: float = None) -> Operations:
 
         op = {
-            "type": "resize",
-            "width":  width,
-            "height": height,
+            "type": "resize"
         }
+        if width is not None:
+            op["width"] = width
+        if height is not None:
+            op["height"] = height
+        if scale is not None:
+            op["scale"] = scale
 
         self.operations_arr.append(op)
         return self
@@ -68,6 +72,33 @@ class Operations(object):
             "stop": stop,
             "step": step
         }
+
+        self.operations_arr.append(op)
+        return self
+
+    def threshold(self, value: int) -> Operations:
+
+        op = {
+            "type": "threshold",
+            "value": value,
+        }
+
+        self.operations_arr.append(op)
+        return self
+
+    def preview(self, max_frame_count: int = None, max_time_fraction: float = None, max_time_offset: str = None, max_size_mb: float = None) -> Operations:
+
+        op = {
+            "type": "preview"
+        }
+        if max_frame_count is not None:
+            op["max_frame_count"] = max_frame_count
+        if max_time_fraction is not None:
+            op["max_time_fraction"] = max_time_fraction
+        if max_time_offset is not None:
+            op["max_time_offset"] = max_time_offset
+        if max_size_mb is not None:
+            op["max_size_mb"] = max_size_mb
 
         self.operations_arr.append(op)
         return self
