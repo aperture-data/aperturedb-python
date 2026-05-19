@@ -15,7 +15,7 @@ class CelebADataKaggle(KaggleData):
 
     def __init__(self, **kwargs) -> None:
         self.records_count = -1
-        super().__init__(dataset_ref = "jessicali9530/celeba-dataset",
+        super().__init__(dataset_ref="jessicali9530/celeba-dataset",
                          records_count=self.records_count)
 
     def generate_index(self, root: str, records_count=-1) -> pd.DataFrame:
