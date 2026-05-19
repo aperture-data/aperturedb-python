@@ -104,7 +104,7 @@ build_tests(){
     mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
 
-    
+
     echo "Building image ${TESTS_IMAGE}"
     docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${TESTS_IMAGE} -f docker/tests/Dockerfile .
 }
