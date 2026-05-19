@@ -76,7 +76,8 @@ class TestConnectionPool(unittest.TestCase):
 
         self.assertEqual(len(results), 10)
         for r in results:
-            self.assertTrue(isinstance(r, list), f"Worker failed with exception: {r}")
+            self.assertTrue(isinstance(r, list),
+                            f"Worker failed with exception: {r}")
 
     def test_pool_timeout(self):
         pool = ConnectionPool(pool_size=1, connection_factory=_make_connector)
@@ -84,6 +85,7 @@ class TestConnectionPool(unittest.TestCase):
             with self.assertRaises(TimeoutError):
                 with pool.get_connection(timeout=0.1):
                     pass
+
 
 if __name__ == '__main__':
     unittest.main()

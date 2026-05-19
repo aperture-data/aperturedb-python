@@ -48,8 +48,10 @@ class ConnectionPool:
 
         if self._pool.qsize() < pool_size:
             raise ConnectionError(
-                f"Failed to initialize pool: expected {pool_size} connections, got {self._pool.qsize()}."
+                f"Failed to initialize pool: expected {
+                    pool_size} connections, got {self._pool.qsize()}."
             ) from last_error
+
     def available(self) -> int:
         """Returns the number of available connections in the pool."""
         return self._pool.qsize()
@@ -75,8 +77,9 @@ class ConnectionPool:
         try:
             connection = self._pool.get(timeout=timeout)
         except queue.Empty:
-            raise TimeoutError(f"No connection available in the pool within the specified timeout ({timeout}s).")
-            
+            raise TimeoutError(
+                f"No connection available in the pool within the specified timeout ({timeout}s).")
+
         try:
             # Yield the connection for the user to use
             yield connection
@@ -84,6 +87,7 @@ class ConnectionPool:
             # This block is guaranteed to execute, ensuring the connection
             # is always returned to the pool unless an exception occurred.
             self._pool.put(connection)
+
     def query(self, query, blobs: list = None):
         """
         A convenience method to execute a query directly from the pool.
