@@ -35,7 +35,7 @@ def load_cookbook(utils: Utils, db):
 
     try:
         # Download the script file
-        response = requests.get(file_url)
+        response = requests.get(file_url, timeout=10)
         file_path.write_text(response.text)
 
         runpy.run_path(str(file_path), run_name="__main__")
