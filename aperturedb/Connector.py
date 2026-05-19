@@ -598,21 +598,7 @@ class Connector(object):
             logger.critical("Failed to query",
                             exc_info=True, stack_info=True)
 
-            # Censor token information in the response for logging
-            def censor_tokens(response):
-                import copy
-                if isinstance(response, list):
-                    censored = copy.deepcopy(response)
-                    for item in censored:
-                        if isinstance(item, dict) and "Authenticate" in item:
-                            auth = item["Authenticate"]
-                            for k in ["refresh_token", "session_token"]:
-                                if k in auth and isinstance(auth[k], str) and len(auth[k]) > 8:
-                                    auth[k] = auth[k][:4] + \
-                                        "..." + auth[k][-4:]
-                    return censored
-                return response
-
+            from aperturedb.Utils import censor_tokens
             if hasattr(self, 'last_response') and self.last_response:
                 censored_response = censor_tokens(self.last_response)
                 logger.error(censored_response)
