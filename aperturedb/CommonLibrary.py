@@ -351,7 +351,12 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
     limit = len(response) if issubclass(type(response), list) else len(query)
     for i in range(math.ceil(limit / commands_per_query)):
         start = i * commands_per_query
-        end = start + commands_per_query
+        end = min(start + commands_per_query, limit)
+        if end < start + commands_per_query:
+            logger.warning(
+                f"Response length {limit} is not a multiple of commands_per_query {commands_per_query}. "
+                f"Truncating the last batch."
+            )
         blobs_start = i * blobs_per_query
         blobs_end = blobs_start + blobs_per_query
 
