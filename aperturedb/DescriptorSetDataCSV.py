@@ -67,10 +67,7 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
         # Metrics/Engine can be of the form:
         #       "IP", or
         #       ["IP" ...]
-        try:
-            idx = self.df.index.start + idx
-        except AttributeError:
-            pass
+        idx = self._get_row_label(idx)
         metrics = self.df.loc[idx, HEADER_METRIC]
         metrics = metrics if "[" not in metrics else ast.literal_eval(metrics)
         engines = self.df.loc[idx, HEADER_ENGINE]

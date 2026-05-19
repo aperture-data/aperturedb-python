@@ -88,10 +88,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         }
 
     def getitem(self, idx):
-        try:
-            idx = self.df.index.start + idx
-        except AttributeError:
-            pass
+        idx = self._get_row_label(idx)
         filename = os.path.join(self.relative_path_prefix,
                                 self.df.loc[idx, HEADER_PATH])
         index = self.df.loc[idx, HEADER_INDEX]

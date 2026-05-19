@@ -107,6 +107,12 @@ class CSVParser(Subscriptable):
     def get_indices(self):
         raise NotImplementedError
 
+    def _get_row_label(self, idx):
+        try:
+            return self.df.index.start + idx
+        except AttributeError:
+            return idx
+
     def _parse_prop(self, key, val=None):
         if key.startswith(CONSTRAINTS_PREFIX):
             key = key[len(CONSTRAINTS_PREFIX):]
@@ -121,7 +127,6 @@ class CSVParser(Subscriptable):
         if len(self.props_keys) > 0:
             for key in self.props_keys:
                 prop, value = self._parse_prop(key, self.df.loc[idx, key])
-                import pandas as pd
                 # Handle Pandas/Dask specific value comparisons cleanly
                 try:
                     is_nan = pd.isna(value)
