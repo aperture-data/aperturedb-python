@@ -174,7 +174,8 @@ class Utils(object):
         connections = r['connections']['classes']
 
         for entity_key, entity_data in entities.items():
-            entity_data_list = [entity_data] if isinstance(entity_data, dict) else entity_data
+            entity_data_list = [entity_data] if isinstance(
+                entity_data, dict) else entity_data
             for data in entity_data_list:
                 matched = data["matched"]
                 # dictionary from name to (matched, indexed, type)
@@ -196,7 +197,8 @@ class Utils(object):
                         f'{idx_str}, {typ}</FONT></TD></TR>'
                     )
                 for connection, conn_data_obj in connections.items():
-                    conn_data_list = [conn_data_obj] if isinstance(conn_data_obj, dict) else conn_data_obj
+                    conn_data_list = [conn_data_obj] if isinstance(
+                        conn_data_obj, dict) else conn_data_obj
                     for conn_data in conn_data_list:
                         if conn_data['src'] == entity_key:
                             matched_conn = conn_data["matched"]
