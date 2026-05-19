@@ -240,11 +240,13 @@ def create(
             if interactive:
                 name = typer.prompt("Enter configuration name", default="")
                 if not name:
-                    console.log("Configuration name must be specified", style="bold yellow")
+                    console.log(
+                        "Configuration name must be specified", style="bold yellow")
                     raise typer.Exit(code=2)
                 check_for_overwrite(name)
             else:
-                console.log("Configuration name must be specified", style="bold yellow")
+                console.log("Configuration name must be specified",
+                            style="bold yellow")
                 raise typer.Exit(code=2)
 
         if not CONFIG_NAME_RE.match(name):
