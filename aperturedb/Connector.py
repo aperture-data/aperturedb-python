@@ -44,6 +44,7 @@ from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
 from aperturedb.types import CommandResponses
+from aperturedb.LoggingUtils import censor_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -314,7 +315,6 @@ class Connector(object):
 
         response, _ = self._query(query, [], try_resume=False)
 
-        from aperturedb.CommonLibrary import censor_tokens
         logger.info(f"Refresh token response: \r\n{censor_tokens(response)}")
         if isinstance(response, list):
             session_info = response[0]["RefreshToken"]
@@ -642,7 +642,6 @@ class Connector(object):
         return self.clone()
 
     def get_last_response_str(self):
-        from aperturedb.CommonLibrary import censor_tokens
         return json.dumps(censor_tokens(self.last_response), indent=4, sort_keys=False)
 
     def print_last_response(self):
