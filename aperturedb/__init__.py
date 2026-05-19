@@ -3,7 +3,6 @@ import logging
 import datetime
 import os
 import json
-import requests
 from string import Template
 import platform
 import faulthandler
@@ -81,13 +80,4 @@ error_console_handler.setLevel(log_console_level)
 error_console_handler.setFormatter(formatter)
 logger.addHandler(error_console_handler)
 
-try:
-    latest_version = json.loads(requests.get(
-        "https://pypi.org/pypi/aperturedb/json", timeout=1).text)["info"]["version"]
-except Exception as e:
-    logger.warning(
-        f"Failed to get latest version: {e}. You are using version {__version__}")
-    latest_version = None
-if __version__ != latest_version:
-    logger.warning(
-        f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
+
