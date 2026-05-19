@@ -319,7 +319,8 @@ class Utils(object):
         print(f"Total entities types:    {total_entities}")
         total_nodes = 0
         for c in entities_classes:
-            entity_data_list = self._normalize_class_data(r["entities"]["classes"][c])
+            entity_data_list = self._normalize_class_data(
+                r["entities"]["classes"][c])
             for entity_data in entity_data_list:
                 total_nodes += self._object_summary(c, entity_data)
 
