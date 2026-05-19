@@ -79,5 +79,3 @@ error_console_handler = logging.StreamHandler()
 error_console_handler.setLevel(log_console_level)
 error_console_handler.setFormatter(formatter)
 logger.addHandler(error_console_handler)
-
-
