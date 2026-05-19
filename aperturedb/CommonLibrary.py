@@ -372,7 +372,6 @@ def execute_query(client: Connector, query: Commands,
                 for wr in results:
                     warn_list.append(wr)
         if len(warn_list) != 0:
-            from aperturedb.Utils import censor_tokens
             logger.warning(
                 f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(censor_tokens(warn_list), default=str)}")
             result = 2
