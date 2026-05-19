@@ -397,3 +397,80 @@ class TestResponseHandler():
                       numthreads=31,
                       stats=True)
         assert querier.error_counter != 0
+
+    def test_issue_181_example(self, db, monkeypatch):
+        from aperturedb.QueryGenerator import QueryGenerator
+        from aperturedb.ParallelQuery import ParallelQuery
+        from aperturedb.Connector import Connector
+
+        class UpdateAndCheckImageLabel(QueryGenerator):
+            def __init__(self, imgids, field, new_labels, changed_ids):
+                self.field = field
+                self.imgids = imgids
+                self.new_labels = new_labels
+                self.changed_ids = changed_ids
+
+            def __len__(self):
+                return len(self.imgids)
+
+            def getitem(self, idx):
+                id = self.imgids[idx]
+                label = self.new_labels[idx]
+
+                q = [{
+                    "FindImage": {
+                        "blobs": False,
+                        "constraints": {
+                            "image_id": [ "==", id ],
+                            self.field: ["!=", label]
+                        },
+                        "results": {
+                            "count": True,
+                            "list": ["image_id"]
+                        }
+                    }
+                 }, {
+                     "UpdateImage": {
+                         "properties": {
+                             self.field: label
+                         }
+                     }
+                 }]
+                return q, []
+            
+            def response_handler(self, q, b ,r, r_b ):
+                try:
+                    count  = r[0]["FindImage"].get("count", 0)
+                    if count == 1:
+                        img_id = r[0]["FindImage"]["entities"][0]["image_id"]
+                        self.changed_ids.append(img_id)
+                except Exception as e:
+                    print(f"Response Handler Error: {r}")
+                    print(f"Exception: {e}")
+                    raise e
+
+        changed_ids = []
+        imgids = [1, 2, 3]
+        field = "image_type"
+        new_labels = ["Silo", "Silo", "Silo"]
+
+        def mock_query(self, request, blobs):
+            responses = []
+            for c in request:
+                if "FindImage" in c:
+                    responses.append({
+                        "FindImage": {
+                            "status": 0,
+                            "count": 1,
+                            "entities": [{"image_id": "img1"}]
+                        }
+                    })
+            return responses, []
+
+        monkeypatch.setattr(Connector, "query", mock_query)
+
+        generator = UpdateAndCheckImageLabel(imgids, field, new_labels, changed_ids)
+        querier = ParallelQuery(db)
+        querier.query(generator, numthreads=1, batchsize=2, stats=False)
+
+        assert len(changed_ids) == 3
