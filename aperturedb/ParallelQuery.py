@@ -209,6 +209,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["succeeded_queries"] = sq
         else:
             query_time = 1
+            worker_stats["succeeded_commands"] = len(q)
+            worker_stats["succeeded_queries"] = len(data)
+            worker_stats["objects_existed"] = 0
 
         # append is thread-safe
         self.times_arr.append(query_time)
