@@ -597,10 +597,6 @@ class Connector(object):
         except BaseException as e:
             logger.critical("Failed to query",
                             exc_info=True, stack_info=True)
-
-            from aperturedb.Utils import print_censored_last_response
-            print_censored_last_response(self, logger.error)
-
             raise
 
     def _renew_session(self):
@@ -640,8 +636,8 @@ class Connector(object):
         return self.clone()
 
     def get_last_response_str(self):
-
-        return json.dumps(self.last_response, indent=4, sort_keys=False)
+        from aperturedb.Utils import censor_tokens
+        return json.dumps(censor_tokens(self.last_response), indent=4, sort_keys=False)
 
     def print_last_response(self):
 
