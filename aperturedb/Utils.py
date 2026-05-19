@@ -173,57 +173,58 @@ class Utils(object):
         entities = r['entities']['classes']
         connections = r['connections']['classes']
 
-        for entity, data in entities.items():
-            matched = data["matched"]
-            # dictionary from name to (matched, indexed, type)
-            properties = data["properties"]
-            table = f'''<
-            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-            <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity}</B> ({matched:,})</FONT></TD></TR>
-            '''
-            for prop, (matched, indexed, typ) in properties.items():
-                bg = colors["property_background"]
-                fg = colors["property_foreground"]
-                idx_str = "Indexed" if indexed else "Unindexed"
-                table += (
-                    f'<TR><TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
-                    f'<B>{prop.strip()}</B></FONT></TD> '
-                    f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
-                    f'{matched:,}</FONT></TD> '
-                    f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
-                    f'{idx_str}, {typ}</FONT></TD></TR>'
-                )
-            for connection, data in connections.items():
-                data_list = [data] if isinstance(data, dict) else data
-                for data in data_list:
-                    if data['src'] == entity:
-                        matched = data["matched"]
-                        # dictionary from name to (matched, indexed, type)
-                        properties = data["properties"]
-                        c_bg = colors["connection_background"]
-                        c_fg = colors["connection_foreground"]
-                        table += (
-                            '<TR><TD BGCOLOR="{}" COLSPAN="3" '
-                            'PORT="{}"><FONT COLOR="{}">'
-                            '<B>{}</B> ({:,})</FONT></TD></TR>'
-                        ).format(c_bg, connection, c_fg, connection, matched)
-                        if properties:
-                            for prop, (matched, indexed, typ) in properties.items():
-                                cp_bg = colors["connection_property_background"]
-                                cp_fg = colors["connection_property_foreground"]
-                                idx_str = "Indexed" if indexed else "Unindexed"
-                                table += (
-                                    '<TR><TD BGCOLOR="{}"><FONT COLOR="{}">'
-                                    '<B>{}</B></FONT></TD> '
-                                    '<TD BGCOLOR="{}"><FONT COLOR="{}">'
-                                    '{}</FONT></TD> '
-                                    '<TD BGCOLOR="{}"><FONT COLOR="{}">'
-                                    '{}, {}</FONT></TD></TR>'
-                                ).format(cp_bg, cp_fg, prop.strip(), cp_bg, cp_fg, f"{matched:,}", cp_bg, cp_fg, idx_str, typ)
+        for entity_key, entity_data in entities.items():
+            entity_data_list = [entity_data] if isinstance(entity_data, dict) else entity_data
+            for data in entity_data_list:
+                matched = data["matched"]
+                # dictionary from name to (matched, indexed, type)
+                properties = data["properties"]
+                table = f'''<
+                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+                <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity_key}</B> ({matched:,})</FONT></TD></TR>
+                '''
+                for prop, (matched_prop, indexed, typ) in properties.items():
+                    bg = colors["property_background"]
+                    fg = colors["property_foreground"]
+                    idx_str = "Indexed" if indexed else "Unindexed"
+                    table += (
+                        f'<TR><TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                        f'<B>{prop.strip()}</B></FONT></TD> '
+                        f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                        f'{matched_prop:,}</FONT></TD> '
+                        f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                        f'{idx_str}, {typ}</FONT></TD></TR>'
+                    )
+                for connection, conn_data_obj in connections.items():
+                    conn_data_list = [conn_data_obj] if isinstance(conn_data_obj, dict) else conn_data_obj
+                    for conn_data in conn_data_list:
+                        if conn_data['src'] == entity_key:
+                            matched_conn = conn_data["matched"]
+                            # dictionary from name to (matched, indexed, type)
+                            conn_properties = conn_data["properties"]
+                            c_bg = colors["connection_background"]
+                            c_fg = colors["connection_foreground"]
+                            table += (
+                                '<TR><TD BGCOLOR="{}" COLSPAN="3" '
+                                'PORT="{}"><FONT COLOR="{}">'
+                                '<B>{}</B> ({:,})</FONT></TD></TR>'
+                            ).format(c_bg, connection, c_fg, connection, matched_conn)
+                            if conn_properties:
+                                for prop, (matched_prop, indexed, typ) in conn_properties.items():
+                                    cp_bg = colors["connection_property_background"]
+                                    cp_fg = colors["connection_property_foreground"]
+                                    idx_str = "Indexed" if indexed else "Unindexed"
+                                    table += (
+                                        '<TR><TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                        '<B>{}</B></FONT></TD> '
+                                        '<TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                        '{}</FONT></TD> '
+                                        '<TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                        '{}, {}</FONT></TD></TR>'
+                                    ).format(cp_bg, cp_fg, prop.strip(), cp_bg, cp_fg, f"{matched_prop:,}", cp_bg, cp_fg, idx_str, typ)
 
-            table += '</TABLE>>'
-            dot.node(entity, label=table)
-
+                table += '</TABLE>>'
+                dot.node(entity_key, label=table)
         if isinstance(connections, dict):
             for connection, data in connections.items():
                 data_list = [data] if isinstance(data, dict) else data
