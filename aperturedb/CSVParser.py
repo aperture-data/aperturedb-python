@@ -53,7 +53,8 @@ class CSVParser(Subscriptable):
             "blobs_relative_to_csv"]
         # Keep use_dask for backwards compatibility but log a warning if used
         if "use_dask" in kwargs:
-            logger.warning("The 'use_dask' parameter in CSVParser is deprecated and will be ignored in future versions. Pass 'use_dask' directly to the Parallelizer.")
+            logger.warning(
+                "The 'use_dask' parameter in CSVParser is deprecated and will be ignored in future versions. Pass 'use_dask' directly to the Parallelizer.")
         self.use_dask = kwargs.get("use_dask", False)
         df = kwargs["df"] if "df" in kwargs else None
 
