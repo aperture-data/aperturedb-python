@@ -45,7 +45,8 @@ class ConnectionPool:
                 self._pool.put(connection)
                 created_count += 1
             except Exception as e:
-                logger.error(f"Failed to create a connection for the pool: {e}")
+                logger.error(
+                    f"Failed to create a connection for the pool: {e}")
 
         self._pool_size = created_count
 
@@ -93,7 +94,8 @@ class ConnectionPool:
                     new_connection = self._connection_factory()
                     self._pool.put(new_connection)
                 except Exception as e:
-                    logger.error(f"Failed to recreate connection for pool: {e}")
+                    logger.error(
+                        f"Failed to recreate connection for pool: {e}")
                     # Reduce total pool size since connection could not be recreated
                     self._pool_size -= 1
 
