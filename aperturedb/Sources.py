@@ -63,19 +63,22 @@ class Sources():
 
     def load_from_s3_url(self, s3_url, validator):
         import numpy as np
+        import boto3
+        import botocore.exceptions
 
         retries = 0
         tried_anonymous = False
+        active_s3_client = self.s3
+
         while True:
             try:
                 bucket_name = s3_url.split("/")[2]
                 object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
 
-                if self.s3 is None:
-                    import boto3
-                    self.s3 = boto3.client('s3')
+                if active_s3_client is None:
+                    active_s3_client = boto3.client('s3')
 
-                s3_response_object = self.s3.get_object(
+                s3_response_object = active_s3_client.get_object(
                     Bucket=bucket_name, Key=object_name)
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
@@ -85,11 +88,20 @@ class Sources():
 
                 return True, img
             except Exception as e:
-                if not tried_anonymous and ("NoCredentialsError" in str(type(e)) or "403" in str(e) or "401" in str(e) or "'NoneType' object has no attribute 'get_object'" in str(e)):
-                    import boto3
+                is_auth_error = False
+                if isinstance(e, botocore.exceptions.NoCredentialsError):
+                    is_auth_error = True
+                elif isinstance(e, botocore.exceptions.ClientError):
+                    error_code = e.response.get('Error', {}).get('Code', '')
+                    if error_code in ['401', '403', 'AccessDenied']:
+                        is_auth_error = True
+                elif "'NoneType' object has no attribute 'get_object'" in str(e):
+                    is_auth_error = True
+
+                if not tried_anonymous and is_auth_error:
                     from botocore import UNSIGNED
                     from botocore.config import Config
-                    self.s3 = boto3.client(
+                    active_s3_client = boto3.client(
                         's3', config=Config(signature_version=UNSIGNED))
                     tried_anonymous = True
                     continue
@@ -126,7 +138,12 @@ class Sources():
                     return False, None
                 return True, blob
             except Exception as e:
-                if not tried_anonymous and ("DefaultCredentialsError" in str(type(e)) or "403" in str(e) or "401" in str(e)):
+                from google.auth.exceptions import DefaultCredentialsError
+                from google.api_core.exceptions import Forbidden, Unauthorized
+                
+                is_auth_error = isinstance(e, (DefaultCredentialsError, Forbidden, Unauthorized))
+
+                if not tried_anonymous and is_auth_error:
                     client = storage.Client.create_anonymous_client()
                     tried_anonymous = True
                     continue
