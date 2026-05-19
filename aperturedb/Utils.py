@@ -185,26 +185,29 @@ class Utils(object):
 
         for entity_key, entity_data in entities.items():
             entity_data_list = self._normalize_class_data(entity_data)
+            table = f'''<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">'''
             for data in entity_data_list:
                 matched = data["matched"]
                 # dictionary from name to (matched, indexed, type)
                 properties = data["properties"]
-                table = f'''<
-                <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+                table += f'''
                 <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity_key}</B> ({matched:,})</FONT></TD></TR>
                 '''
-                for prop, (matched_prop, indexed, typ) in properties.items():
-                    bg = colors["property_background"]
-                    fg = colors["property_foreground"]
-                    idx_str = "Indexed" if indexed else "Unindexed"
-                    table += (
-                        f'<TR><TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
-                        f'<B>{prop.strip()}</B></FONT></TD> '
-                        f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
-                        f'{matched_prop:,}</FONT></TD> '
-                        f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
-                        f'{idx_str}, {typ}</FONT></TD></TR>'
-                    )
+                if properties:
+                    for prop, (matched_prop, indexed, typ) in properties.items():
+                        bg = colors["property_background"]
+                        fg = colors["property_foreground"]
+                        idx_str = "Indexed" if indexed else "Unindexed"
+                        table += (
+                            f'<TR><TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                            f'<B>{prop.strip()}</B></FONT></TD> '
+                            f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                            f'{matched_prop:,}</FONT></TD> '
+                            f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                            f'{idx_str}, {typ}</FONT></TD></TR>'
+                        )
+            if isinstance(connections, dict):
                 for connection, conn_data_obj in connections.items():
                     conn_data_list = self._normalize_class_data(conn_data_obj)
                     for conn_data in conn_data_list:
@@ -233,8 +236,8 @@ class Utils(object):
                                         '{}, {}</FONT></TD></TR>'
                                     ).format(cp_bg, cp_fg, prop.strip(), cp_bg, cp_fg, f"{matched_prop:,}", cp_bg, cp_fg, idx_str, typ)
 
-                table += '</TABLE>>'
-                dot.node(entity_key, label=table)
+            table += '</TABLE>>'
+            dot.node(entity_key, label=table)
         if isinstance(connections, dict):
             for connection, data in connections.items():
                 data_list = self._normalize_class_data(data)
