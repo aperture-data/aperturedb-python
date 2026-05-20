@@ -237,7 +237,8 @@ def gen_execute_batch_sets(base_executor):
                                     f"prev_query = {single_line[result_number]}")
 
                             try:
-                                prev_query_cmd = QueryBuilder.get_query_cmd(prev_query)
+                                prev_query_cmd = QueryBuilder.get_query_cmd(
+                                    prev_query)
                             except Exception:
                                 raise Exception(
                                     f"Contraints only implemented with with single queries; query {result_number} not single item.")
