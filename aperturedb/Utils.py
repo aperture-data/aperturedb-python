@@ -217,7 +217,8 @@ class Utils(object):
                             conn_properties = conn_data["properties"]
                             c_bg = colors["connection_background"]
                             c_fg = colors["connection_foreground"]
-                            port_name = f"{connection}_{i}" if len(conn_data_list) > 1 else connection
+                            port_name = f"{connection}_{i}" if len(
+                                conn_data_list) > 1 else connection
                             table += (
                                 '<TR><TD BGCOLOR="{}" COLSPAN="3" '
                                 'PORT="{}"><FONT COLOR="{}">'
@@ -243,7 +244,8 @@ class Utils(object):
             for connection, data in connections.items():
                 data_list = self._normalize_class_data(data)
                 for i, data in enumerate(data_list):
-                    port_name = f"{connection}_{i}" if len(data_list) > 1 else connection
+                    port_name = f"{connection}_{i}" if len(
+                        data_list) > 1 else connection
                     dot.edge(f'{data["src"]}:{port_name}',
                              f'{data["dst"]}')
 
