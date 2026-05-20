@@ -118,13 +118,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
         except BaseException as e:
             logger.exception(e)
 
-    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> dict:
+    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> dict | None:
         """
         Executes batch of queries and blobs in the database.
 
         Args:
             client (Connector): The database connector.
             data (list[tuple[Commands, Blobs]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
+
+        Returns:
+            dict | None: The per-batch worker stats (e.g., succeeded_commands, succeeded_queries).
+                         Overrides of this method should return these stats when progress reporting is enabled.
 
         It also provides a way for invoking a user defined function to handle the
         responses of each of the queries executed. This function can be used to process
@@ -187,7 +191,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["objects_existed"] = sum(
                     [v['status'] == 2 for i in r for k, v in i.items()])
             elif result == 1:
-                self.error_counter += 1
+                with self._error_lock:
+                    self.error_counter += 1
                 worker_stats["succeeded_queries"] = 0
                 worker_stats["succeeded_commands"] = 0
                 worker_stats["objects_existed"] = 0
@@ -245,14 +250,18 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 logger.exception(e)
                 logger.warning(
                     f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
-                self.error_counter += 1
+                with self._error_lock:
+                    self.error_counter += 1
 
             if self.stats:
                 self.pb.update(batch_end - batch_start)
 
+            with self._error_lock:
+                current_errors = self.error_counter
+
             if getattr(self, "log_progress", False):
                 logger.info(f"Worker {thid} completed batch {
-                            i + 1}/{total_batches}. Worker stats: {worker_stats}, Errors so far: {self.error_counter}")
+                            i + 1}/{total_batches}. Worker stats: {worker_stats}, Errors so far: {current_errors}")
 
             if hasattr(self, "progress_callback") and callable(self.progress_callback):
                 try:
@@ -263,7 +272,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                         batch_start=batch_start,
                         batch_end=batch_end,
                         worker_stats=worker_stats,
-                        errors=self.error_counter
+                        errors=current_errors
                     )
                 except Exception as cb_e:
                     logger.warning(f"progress_callback failed: {cb_e}")

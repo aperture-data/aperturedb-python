@@ -41,6 +41,7 @@ class Parallelizer:
         self.times_arr = []
         self.total_actions_time = 0
         self.error_counter = 0
+        self._error_lock = threading.Lock()
         self.actual_stats = []
 
     def get_times(self):
