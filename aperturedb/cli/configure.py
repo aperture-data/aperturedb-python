@@ -302,7 +302,11 @@ def activate(
     gc, ga = {}, None
     try:
         gc, ga = get_configurations(global_config_path)
-    except (FileNotFoundError, json.JSONDecodeError):
+    except FileNotFoundError:
+        pass
+    except json.JSONDecodeError:
+        console.log(
+            f"Failed to decode json '{global_config_path.as_posix()}'")
         pass
 
     config_path = _config_file_path(as_global)
@@ -318,6 +322,7 @@ def activate(
             check_configured(as_global=True, show_error=True)
         raise typer.Exit(code=2)
     except json.JSONDecodeError:
+        console.log(f"Failed to decode json '{config_path.as_posix()}'")
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
         raise typer.Exit(code=2)
@@ -424,6 +429,7 @@ def get_key(name: Annotated[str, typer.Argument(
             check_configured(as_global=True, show_error=True)
         raise typer.Exit(code=2)
     except json.JSONDecodeError:
+        console.log(f"Failed to decode json '{config_path.as_posix()}'")
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
         raise typer.Exit(code=2)

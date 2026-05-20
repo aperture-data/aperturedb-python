@@ -358,3 +358,33 @@ class TestConfigure():
                         result = runner.invoke(app, ["activate", "blah"])
                         assert result.exit_code == 2
                         assert "Configuration blah not found" in result.stdout
+class TestActivateMalformedConfig:
+    def test_activate_malformed_config_global(self):
+        tmp = "/tmp/malformed_global"
+        if os.path.exists(tmp):
+            shutil.rmtree(tmp)
+        os.makedirs(tmp)
+        fake_file = os.path.join(tmp, "adb.json")
+        with open(fake_file, "w") as f:
+            f.write("malformed json")
+        with patch("typer.get_app_dir", return_value=tmp):
+            runner = CliRunner()
+            result = runner.invoke(app, ["activate", "test"])
+            assert result.exit_code == 2
+            with open(fake_file, "r") as f:
+                assert f.read() == "malformed json"
+
+    def test_get_key_malformed_config_global(self):
+        tmp = "/tmp/malformed_global"
+        if os.path.exists(tmp):
+            shutil.rmtree(tmp)
+        os.makedirs(tmp)
+        fake_file = os.path.join(tmp, "adb.json")
+        with open(fake_file, "w") as f:
+            f.write("malformed json")
+        with patch("typer.get_app_dir", return_value=tmp):
+            runner = CliRunner()
+            result = runner.invoke(app, ["get-key", "host", "--name", "test"])
+            assert result.exit_code == 2
+            with open(fake_file, "r") as f:
+                assert f.read() == "malformed json"
