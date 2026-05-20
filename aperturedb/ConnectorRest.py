@@ -169,7 +169,10 @@ class ConnectorRest(Connector):
                                                   verify  = self.config.use_ssl and self.config.verify_hostname)
                 if response.status_code == 200:
                     # Parse response:
-                    json_response       = response.json()
+                    if hasattr(response, "json"):
+                        json_response = response.json()
+                    else:
+                        json_response = json.loads(response.text)
                     response_blob_array = [base64.b64decode(
                         b) for b in json_response['blobs']]
                     self.last_response  = json_response["json"]
