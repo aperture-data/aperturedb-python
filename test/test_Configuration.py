@@ -1,5 +1,6 @@
 from aperturedb.Configuration import Configuration
 
+
 def test_configuration_repr():
     c = Configuration(
         host="localhost",
