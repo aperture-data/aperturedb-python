@@ -60,6 +60,7 @@ def test_connection_pool_init_failure():
 
 def test_connection_pool_partial_init_failure():
     attempts = [0]
+
     def partial_failing_factory():
         attempts[0] += 1
         if attempts[0] == 3:

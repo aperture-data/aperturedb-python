@@ -37,7 +37,8 @@ class ConnectionPool:
                     raise ConnectionError("Failed to create a connection.")
                 self._pool.put(connection)
             except Exception as e:
-                raise ConnectionError(f"Failed to create a connection for the pool: {e}") from e
+                raise ConnectionError(
+                    f"Failed to create a connection for the pool: {e}") from e
 
     def available(self) -> int:
         """Returns the number of available connections in the pool."""
@@ -85,6 +86,6 @@ class ConnectionPool:
         """
         if blobs is None:
             blobs = []
-            
+
         with self.get_connection() as connection:
             return connection.query(query, blobs=blobs)
