@@ -105,11 +105,12 @@ class ImageDownloader(Parallelizer.Parallelizer):
 
         retries = 0
         downloaded = False
+        imgdata = None
         while True:
             try:
-                imgdata = requests.get(url)
+                imgdata = requests.get(url, timeout=10)
                 downloaded = True
-            except requests.exceptions.ConnectionError as e:
+            except requests.exceptions.RequestException as e:
                 logger.warning("Error with GET.")
                 logger.exception(e)
 
@@ -122,7 +123,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 retries += 1
                 time.sleep(2)
 
-        if imgdata.ok:
+        if imgdata and imgdata.ok:
             fd = open(filename, "wb")
             fd.write(imgdata.content)
             fd.close()
