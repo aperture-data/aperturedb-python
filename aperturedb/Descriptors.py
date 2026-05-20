@@ -31,13 +31,13 @@ class Descriptors(Entities):
             set (str): Descriptor set name.
             vector (list): Input descriptor vector.
             k_neighbors (int): Number of neighbors to return.
-            constraints (dict, optional): Constraints for the search. Defaults to None.
+            constraints (aperturedb.Constraints.Constraints, optional): Constraints for the search. Defaults to None.
             distances (bool, optional): Return similarity metric values. Defaults to False.
             blobs (bool, optional): Return vectors of the neighbors. Defaults to False.
             results (dict, optional): Dictionary with the results format. Defaults to {"all_properties": True}.
 
         Returns:
-            list: Parsed JSON response from the database or None on error.
+            None: Populates self.response with the parsed JSON response from the database.
         """
 
         command = {
