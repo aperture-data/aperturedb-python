@@ -59,7 +59,36 @@ then
      REPOSITORY="$1"
 fi
 
-sleep 20 # wait for the containers to be up and running
+# Wait for the stack(s) to be ready instead of blindly sleeping. Each lenz
+# instance exposes a health port (58085) that becomes reachable once the
+# service is up; nginx is ready as soon as port 80 accepts connections.
+wait_for_stack() {
+    local tag=$1
+    local network=${tag}_default
+    local timeout=60
+    local elapsed=0
+    echo "Waiting for stack ${tag} to become ready (timeout ${timeout}s)..."
+    while [ $elapsed -lt $timeout ]; do
+        if docker run --rm --network=${network} curlimages/curl:latest \
+                -sS -o /dev/null -m 2 http://lenz:58085/ >/dev/null 2>&1 \
+           || docker run --rm --network=${network} curlimages/curl:latest \
+                -sS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
+            echo "Stack ${tag} is ready after ${elapsed}s"
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    echo "WARNING: stack ${tag} did not report ready within ${timeout}s; proceeding anyway"
+    return 0
+}
+
+if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    wait_for_stack "${RUNNER_NAME}_http"
+fi
+if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    wait_for_stack "${RUNNER_NAME}_non_http"
+fi
 
 pid1=0
 pid2=0
