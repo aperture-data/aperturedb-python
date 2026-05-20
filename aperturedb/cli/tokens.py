@@ -7,7 +7,7 @@ from aperturedb.cli.console import console
 from aperturedb.CommonLibrary import create_connector, execute_query
 from aperturedb.Utils import Utils
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 
 
 @app.command(help="List User Authentication Tokens")

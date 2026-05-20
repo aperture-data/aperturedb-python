@@ -5,7 +5,7 @@ import typer
 
 from aperturedb.cli.console import console
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 
 import aperturedb.cli.keys as keys
 import aperturedb.cli.tokens as tokens
