@@ -32,6 +32,7 @@ from aperturedb.EntityDataCSV import EntityDataCSV
 from aperturedb.ImageDataCSV import ImageDataCSV
 from aperturedb.ConnectionDataCSV import ConnectionDataCSV
 
+
 def create_sample_csvs():
     # 1. Create a sample CSV for Entities (Persons)
     df_persons = pd.DataFrame({
@@ -44,7 +45,7 @@ def create_sample_csvs():
     # Note: the paths should point to real images in a real scenario
     with open("dummy_image.jpg", "wb") as f:
         f.write(b"dummy_image_data")
-        
+
     df_images = pd.DataFrame({
         "url": ["dummy_image.jpg", "dummy_image.jpg"],
         "source": ["camera1", "camera2"]
@@ -59,11 +60,12 @@ def create_sample_csvs():
     })
     df_connections.to_csv("connections.csv", index=False)
 
+
 def main():
     create_sample_csvs()
 
     # Connect to ApertureDB (Make sure your ApertureDB instance is running)
-    db = Connector() 
+    db = Connector()
 
     # Initialize the ParallelLoader
     # The ParallelLoader handles the actual ingestion of queries produced by the Data Loader objects
@@ -72,7 +74,8 @@ def main():
     # 1. Load Entities
     print("Loading Entities...")
     # By providing the kwargs like `name`, `age`, we map the columns to properties.
-    person_loader = EntityDataCSV("persons.csv", entity_class="Person", name="name", age="age")
+    person_loader = EntityDataCSV(
+        "persons.csv", entity_class="Person", name="name", age="age")
     loader.ingest(person_loader)
 
     # 2. Load Images
@@ -101,6 +104,7 @@ def main():
     os.remove("images.csv")
     os.remove("connections.csv")
     os.remove("dummy_image.jpg")
+
 
 if __name__ == "__main__":
     main()
