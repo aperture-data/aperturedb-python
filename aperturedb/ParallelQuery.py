@@ -37,8 +37,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    def __init__(self, client: Connector, dry_run: bool = False):
-        super().__init__()
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = False):
+        super().__init__(use_dask=use_dask)
         test_string = f"Connection test successful with {client.config}"
         try:
             _, _ = client.query([{"GetSchema": {}}], [])
@@ -270,7 +270,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
 
-        use_dask = hasattr(generator, "use_dask") and generator.use_dask
+        use_dask = hasattr(self, "use_dask") and self.use_dask
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)

@@ -35,8 +35,10 @@ class ImageDataProcessor():
         self.check_image = check_image
         self.n_download_retries = n_download_retries
 
-    def set_processor(self, use_dask: bool, source_type):
+    def set_processor(self, source_type):
         self.source_type = source_type
+        import dask.dataframe as dd
+        use_dask = isinstance(self.df, dd.DataFrame)
         if use_dask == False and self.source_type == HEADER_S3_URL:
             # The connections by boto3 cause ResourceWarning. Known
             # issue: https://github.com/boto/boto3/issues/454
@@ -180,7 +182,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         CSVParser.CSVParser.__init__(self, filename, **kwargs)
 
         source_type = self.header[0]
-        self.set_processor(self.use_dask, source_type)
+        self.set_processor(source_type)
 
         self.format_given = IMG_FORMAT in self.header
         self.props_keys = [x for x in self.header[1:]
@@ -264,7 +266,7 @@ class ImageUpdateDataCSV(SingleEntityUpdateDataCSV, ImageDataProcessor):
             self, "Image", filename, **kwargs)
 
         source_type = self.header[0]
-        self.set_processor(self.use_dask, source_type)
+        self.set_processor(source_type)
 
         # this class loads a blob, so must set the first query to have a blob.
         self.blobs_per_query = [1, 0]
@@ -317,7 +319,7 @@ class ImageForceNewestDataCSV(BlobNewestDataCSV, ImageDataProcessor):
             self, "Image", filename, **kwargs)
 
         source_type = self.header[0]
-        self.set_processor(self.use_dask, source_type)
+        self.set_processor(source_type)
 
         self.format_given = IMG_FORMAT in self.header
         self.props_keys = list(filter(lambda prop: prop not in [
@@ -372,7 +374,7 @@ class ImageSparseAddDataCSV(SparseAddingDataCSV, ImageDataProcessor):
             self, check_image, n_download_retries)
         SparseAddingDataCSV.__init__(self, "Image", filename, **kwargs)
         source_type = self.header[0]
-        self.set_processor(self.use_dask, source_type)
+        self.set_processor(source_type)
 
         self.format_given = IMG_FORMAT in self.header
         self.props_keys = list(filter(lambda prop: prop not in [

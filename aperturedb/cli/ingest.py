@@ -90,7 +90,7 @@ def _create_pipeline(transformers: List[str]):
     return pipeline
 
 
-def _process_data(data, sample_count, module_name, batchsize, num_workers, stats, debug):
+def _process_data(data, sample_count, module_name, batchsize, num_workers, stats, debug, use_dask=False):
     if debug:
         _debug_samples(data, sample_count, module_name)
     else:
@@ -98,7 +98,7 @@ def _process_data(data, sample_count, module_name, batchsize, num_workers, stats
         from aperturedb.CommonLibrary import create_connector
 
         client = create_connector()
-        loader = ParallelLoader(client)
+        loader = ParallelLoader(client, use_dask=use_dask)
         loader.ingest(
             data,
             stats=stats,
@@ -157,7 +157,8 @@ def from_generator(filepath: Annotated[str, typer.Argument(
         batchsize=batchsize,
         num_workers=num_workers,
         stats=stats,
-        debug=debug
+        debug=debug,
+        use_dask=False
     )
 
     while hasattr(data, "ncalls"):
@@ -215,8 +216,22 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         IngestType.VIDEO: VideoDataCSV
     }
 
-    data = ingest_types[ingest_type](filepath, use_dask=use_dask,
-                                     blobs_relative_to_csv=blobs_relative_to_csv)
+    import os
+    import multiprocessing as mp
+    if use_dask:
+        import dask.dataframe as dd
+        CORES_USED_FOR_PARALLELIZATION = 0.9
+        PARTITIONS_PER_CORE = 10
+        cores_used = int(CORES_USED_FOR_PARALLELIZATION * mp.cpu_count())
+        blocksize = os.path.getsize(filepath) // (cores_used * PARTITIONS_PER_CORE)
+        if blocksize == 0:
+            cpus = mp.cpu_count()
+            raise Exception(f"CSV file too small to be read in parallel. Use normal mode. cpus: {cpus}")
+        df = dd.read_csv(filepath, blocksize=blocksize)
+        data = ingest_types[ingest_type](filepath, df=df, blobs_relative_to_csv=blobs_relative_to_csv)
+    else:
+        data = ingest_types[ingest_type](filepath, blobs_relative_to_csv=blobs_relative_to_csv)
+    
     data.sample_count = len(data) if sample_count == -1 else sample_count
     if transformer or user_transformer:
         transformer = transformer or []
@@ -228,11 +243,12 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     _process_data(
         data,
         sample_count=sample_count,
-        module_name=os.path.basename(filepath),
+        module_name=os.path.basename(filepath)[:-4],
         batchsize=batchsize,
         num_workers=num_workers,
         stats=stats,
-        debug=debug
+        debug=debug,
+        use_dask=use_dask
     )
 
 

@@ -130,7 +130,9 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
     def validate(self):
         self._setupkeys()
         valid = True
-        if not self.use_dask:
+        import dask.dataframe as dd
+        use_dask = hasattr(self, "df") and isinstance(self.df, dd.DataFrame)
+        if not use_dask:
             if len(self.constraints_keys) < 1:
                 logger.error("Cannot add/update " +
                              self.entity + "; no constraint keys")
@@ -143,8 +145,8 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
 
 
 class EntityUpdatDataCSV(SingleEntityUpdateDataCSV):
-    def __init__(self, entity_type, filename, df=None, use_dask=False):
-        super().__init__("Entity", filename, df, use_dask)
+    def __init__(self, entity_type, filename, df=None):
+        super().__init__("Entity", filename, df)
         self.entity_type = entity_type
         # Add had blob and update has blob.
         self.blobs_per_query = [0, 0]

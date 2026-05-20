@@ -51,43 +51,19 @@ class CSVParser(Subscriptable):
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
             "blobs_relative_to_csv"]
-        self.use_dask = "use_dask" in kwargs and kwargs["use_dask"]
         df = kwargs["df"] if "df" in kwargs else None
 
         self.relative_path_prefix = os.path.dirname(self.filename) if self.blobs_relative_to_csv \
             else ""
 
-        if not self.use_dask:
-            if df is None:
-                self.df = pd.read_csv(filename)
-            else:
-                self.df = df
-
-            # we expect the df index to have 'start', which means RangeIndex.
-            # most users don't supply their own df, so this is mostly a sanity check
-            # for when an advanced user has done filtering and have a IntervalIndex.
-            if not isinstance(self.df.index, pd.RangeIndex):
-                raise TypeError(
-                    f"CSVParser requires a RangeIndex. the supplied DataFrame has a {type(self.df.index)} index.")
+        if df is None:
+            self.df = pd.read_csv(filename)
         else:
-            if df is not None:
-                raise ValueError(
-                    "Dask mode requires a CSV filename; DataFrame inputs are not supported.")
-            # It'll impact the number of partitions, and memory usage.
-            # TODO: tune this for the best performance.
-            cores_used = int(CORES_USED_FOR_PARALLELIZATION * mp.cpu_count())
-            blocksize = os.path.getsize(
-                self.filename) // (cores_used * PARTITIONS_PER_CORE)
-            if blocksize == 0:
-                cpus = mp.cpu_count()
-                raise Exception(
-                    f"CSV file too small to be read in parallel. Use normal mode. cpus: {cpus}")
-            self.df = dataframe.read_csv(
-                self.filename,
-                blocksize=blocksize)
+            self.df = df
 
+        import dask.dataframe as dd
         # len for dask dataframe needs a client.
-        if not self.use_dask and len(self.df) == 0:
+        if not isinstance(self.df, dd.DataFrame) and len(self.df) == 0:
             logger.error("Dataframe empty. Is the CSV file ok?")
 
         self.df = self.df.astype('object')
