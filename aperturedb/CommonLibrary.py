@@ -77,18 +77,22 @@ def _create_configuration_from_json(config: Union[Dict, str],
             # Cannot print the JSON string because it may contain a password.
             raise ValueError(f"problem decoding JSON config string: {e}")
     if not isinstance(config, dict):
-        raise ValueError(f"config must be a dict or a JSON object string: {type(config)}")
+        raise ValueError(
+            f"config must be a dict or a JSON object string: {type(config)}")
 
     # Remove the password from the configuration before logging.
     clean_config = {k: v for k, v in config.items() if k != "password"}
 
     # These fields are required.
     if "host" not in config:
-        raise ValueError(f"host is required in the configuration: {clean_config}")
+        raise ValueError(
+            f"host is required in the configuration: {clean_config}")
     if "username" not in config:
-        raise ValueError(f"username is required in the configuration: {clean_config}")
+        raise ValueError(
+            f"username is required in the configuration: {clean_config}")
     if "password" not in config:
-        raise ValueError(f"password is required in the configuration: {clean_config}")
+        raise ValueError(
+            f"password is required in the configuration: {clean_config}")
 
     # These fields have no default in the Configuration class.
     if 'port' not in config:
@@ -99,7 +103,8 @@ def _create_configuration_from_json(config: Union[Dict, str],
 
     if name_required:
         if "name" not in config:
-            raise ValueError(f"name is required in the configuration: {clean_config}")
+            raise ValueError(
+                f"name is required in the configuration: {clean_config}")
     elif 'name' not in config:
         config["name"] = "from_json"
 
