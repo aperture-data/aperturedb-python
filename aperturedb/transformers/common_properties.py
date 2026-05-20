@@ -31,7 +31,8 @@ class CommonProperties(Transformer):
         try:
             # Apply properties to AddImage commands
             for ic in self._add_image_index:
-                src_properties = x[0][ic]["AddImage"].setdefault("properties", {})
+                src_properties = x[0][ic]["AddImage"].setdefault(
+                    "properties", {})
                 # Set the static properties, if explicitly set
                 if self.adb_data_source:
                     src_properties["adb_data_source"] = self.adb_data_source
@@ -42,7 +43,8 @@ class CommonProperties(Transformer):
 
             # Apply properties to AddVideo commands
             for ic in getattr(self, "_add_video_index", []):
-                src_properties = x[0][ic]["AddVideo"].setdefault("properties", {})
+                src_properties = x[0][ic]["AddVideo"].setdefault(
+                    "properties", {})
                 # Set the static properties, if explicitly set
                 if self.adb_data_source:
                     src_properties["adb_data_source"] = self.adb_data_source
@@ -53,7 +55,8 @@ class CommonProperties(Transformer):
 
             # Apply properties to AddBoundingBox commands
             for ic in getattr(self, "_add_bounding_box_index", []):
-                src_properties = x[0][ic]["AddBoundingBox"].setdefault("properties", {})
+                src_properties = x[0][ic]["AddBoundingBox"].setdefault(
+                    "properties", {})
                 # Set the static properties, if explicitly set
                 if self.adb_data_source:
                     src_properties["adb_data_source"] = self.adb_data_source
@@ -64,7 +67,8 @@ class CommonProperties(Transformer):
 
             # Apply properties to AddPolygon commands
             for ic in getattr(self, "_add_polygon_index", []):
-                src_properties = x[0][ic]["AddPolygon"].setdefault("properties", {})
+                src_properties = x[0][ic]["AddPolygon"].setdefault(
+                    "properties", {})
                 # Set the static properties, if explicitly set
                 if self.adb_data_source:
                     src_properties["adb_data_source"] = self.adb_data_source

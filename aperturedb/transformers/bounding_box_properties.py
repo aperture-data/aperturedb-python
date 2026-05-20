@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class BoundingBoxProperties(Transformer):
     """
     This computes some bounding box properties and adds them to the metadata.
@@ -18,14 +19,16 @@ class BoundingBoxProperties(Transformer):
         x = self.data[subscript]
         try:
             for ic in getattr(self, "_add_bounding_box_index", []):
-                src_properties = x[0][ic]["AddBoundingBox"].setdefault("properties", {})
+                src_properties = x[0][ic]["AddBoundingBox"].setdefault(
+                    "properties", {})
                 if self.annotation_source:
                     src_properties["annotation_source"] = self.annotation_source
                 if self.annotation_mode:
                     src_properties["annotation_mode"] = self.annotation_mode
-                    
+
             for ic in getattr(self, "_add_polygon_index", []):
-                src_properties = x[0][ic]["AddPolygon"].setdefault("properties", {})
+                src_properties = x[0][ic]["AddPolygon"].setdefault(
+                    "properties", {})
                 if self.annotation_source:
                     src_properties["annotation_source"] = self.annotation_source
                 if self.annotation_mode:

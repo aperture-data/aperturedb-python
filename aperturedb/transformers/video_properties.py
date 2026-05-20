@@ -26,7 +26,8 @@ class VideoProperties(Transformer):
             # x is a transaction that has an add_video command and a blob
             for ic in getattr(self, "_add_video_index", []):
                 blob_index = self._blob_index.index(ic)
-                src_properties = x[0][ic]["AddVideo"].setdefault("properties", {})
+                src_properties = x[0][ic]["AddVideo"].setdefault(
+                    "properties", {})
                 # Compute the dynamic properties and apply them to metadata
                 src_properties["adb_video_size"] = len(x[1][blob_index])
                 src_properties["adb_video_sha256"] = hashlib.sha256(
