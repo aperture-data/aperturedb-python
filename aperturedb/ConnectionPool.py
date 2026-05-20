@@ -47,9 +47,16 @@ class ConnectionPool:
                 break
 
         if self._pool.qsize() < pool_size:
+            # Drain any successfully created connections to prevent leaks
+            while not self._pool.empty():
+                try:
+                    conn = self._pool.get_nowait()
+                    if hasattr(conn, 'close'):
+                        conn.close()
+                except queue.Empty:
+                    break
             raise ConnectionError(
-                f"Failed to initialize pool: expected {
-                    pool_size} connections, got {self._pool.qsize()}."
+                f"Failed to initialize pool: expected {pool_size} connections, got {self._pool.qsize()}."
             ) from last_error
 
     def available(self) -> int:
@@ -69,6 +76,10 @@ class ConnectionPool:
 
         Args:
             timeout (float, optional): How long to wait for a connection to become available before raising TimeoutError.
+
+        Note:
+            Callers are responsible for the connection's health. If an exception occurs
+            within the context manager, the connection is still returned to the pool.
 
         Usage:
             with pool.get_connection() as conn:
@@ -114,6 +125,8 @@ class ConnectionPool:
         """
         while not self._pool.empty():
             try:
-                self._pool.get_nowait()
+                conn = self._pool.get_nowait()
+                if hasattr(conn, 'close'):
+                    conn.close()
             except queue.Empty:
                 break

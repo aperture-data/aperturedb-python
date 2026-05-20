@@ -56,11 +56,6 @@ class TestConnectionPool(unittest.TestCase):
             pool_size=5, connection_factory=_make_connector)
         results = []
 
-    def test_pool_concurrency(self):
-        pool = ConnectionPool(
-            pool_size=5, connection_factory=_make_connector)
-        results = []
-
         def worker():
             try:
                 res, _ = pool.query([{"GetStatus": {}}])
