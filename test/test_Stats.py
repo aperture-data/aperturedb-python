@@ -44,6 +44,6 @@ class TestStats():
         out = self.ingest_with_capture(data, db)
         assertions = {
             "Total inserted elements": lambda x: float(x) == 0,
-            "Overall insertion throughput (element/s)": lambda x: x == "NaN",
+            "Overall insertion throughput (element/s)": lambda x: float(x) == 0,
         }
         self.validate_stats(out, assertions)
