@@ -8,6 +8,8 @@ import numpy as np
 from aperturedb.ParallelQuery import ParallelQuery
 from aperturedb.Connector import Connector
 
+from aperturedb.Query import QueryBuilder
+
 from aperturedb.types import Commands, Blobs
 
 logger = logging.getLogger(__name__)
@@ -234,15 +236,9 @@ def gen_execute_batch_sets(base_executor):
                                 logger.debug(
                                     f"prev_query = {single_line[result_number]}")
 
-                            if isinstance(prev_query, dict):
-                                prev_query_cmd = [
-                                    cmd for cmd in prev_query.keys()][0]
-                            elif isinstance(prev_query, list) and isinstance(prev_query[0], dict) \
-                                    and all(map(lambda k: k in known_constraint_keywords, prev_query[0].keys()))  \
-                                    and isinstance(prev_query[1], dict):
-                                prev_query_cmd = [
-                                    cmd for cmd in prev_query[1].keys()][0]
-                            else:
+                            try:
+                                prev_query_cmd = QueryBuilder.get_query_cmd(prev_query)
+                            except Exception:
                                 raise Exception(
                                     f"Contraints only implemented with with single queries; query {result_number} not single item.")
 

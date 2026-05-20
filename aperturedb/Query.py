@@ -272,6 +272,18 @@ def generate_add_query(
 
 class QueryBuilder():
     @classmethod
+    def get_query_cmd(cls, query: Union[dict, list]) -> str:
+        known_constraint_keywords = ['results', 'apply']
+        if isinstance(query, dict):
+            return list(query.keys())[0]
+        elif isinstance(query, list) and isinstance(query[0], dict) \
+                and all(map(lambda k: k in known_constraint_keywords, query[0].keys()))  \
+                and isinstance(query[1], dict):
+            return list(query[1].keys())[0]
+        else:
+            raise Exception("Cannot extract command from query structure")
+
+    @classmethod
     def find_command(self, oclass: Union[str, ObjectType], params: dict) -> dict:
         return self.build_command(oclass, params, "Find")
 
