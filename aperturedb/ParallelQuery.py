@@ -221,8 +221,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
         max_bytes = getattr(self, "max_bytes_per_batch", None)
 
         if max_bytes is not None and max_bytes > 0:
-            logger.info(f"Worker {thid} executing dynamically sized batches (max {
-                        max_bytes} bytes), {self.stats=}")
+            logger.info(
+                f"Worker {thid} executing dynamically sized batches (max {max_bytes} bytes), {self.stats=}")
             current_batch = []
             current_bytes = 0
             batch_start = start
@@ -266,8 +266,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     self.do_batch(client, batch_start, current_batch)
                 except Exception as e:
                     logger.exception(e)
-                    logger.warning(f"Worker {
-                                   thid} failed to execute dynamic batch remainder starting at {batch_start}")
+                    logger.warning(
+                        f"Worker {thid} failed to execute dynamic batch remainder starting at {batch_start}")
                     self.error_counter += 1
 
                 if self.stats:
