@@ -180,7 +180,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                         logger.warning(
                             f"Failed to create index for {connection_class}.{property_name}")
 
-    def ingest(self, generator: Subscriptable, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
+    def ingest(self, generator: Subscriptable, batchsize: int = 1, numthreads: int = 4, stats: bool = False, transformers: list = None) -> None:
         """
         **Method to ingest data into the database**
 
@@ -189,9 +189,15 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             batchsize (int, optional): The size of batch to be used. Defaults to 1.
             numthreads (int, optional): Number of workers to create. Defaults to 4.
             stats (bool, optional): If stats need to be presented, realtime. Defaults to False.
+            transformers (list, optional): A list of Transformer classes to apply to the data. Defaults to None.
         """
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
+
+        if transformers:
+            for transformer in transformers:
+                generator = transformer(generator)
+
         self.query(generator, batchsize, numthreads, stats)
 
     def print_stats(self) -> None:
