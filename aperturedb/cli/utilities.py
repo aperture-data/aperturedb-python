@@ -97,3 +97,43 @@ def visualize_schema(
     s = utils.visualize_schema()
     result = s.render(filename, format=format)
     print(result)
+
+
+import aperturedb.cli.generate_images as generate_images
+
+
+@app.command(name="generate-images", help="Generate placeholder images")
+def generate_images(
+    count: int = typer.Option(
+        1, "--count", "-c", help="Number of images to generate"),
+    size: str = typer.Option("256x256", "--size", "-s",
+                             help="Size of images (widthxheight)"),
+    output: str = typer.Option(
+        "/tmp/generated_image%%", "--output", "-o", help="Output file path pattern"),
+    zerofill: int = typer.Option(
+        0, "--zerofill", "-z", help="Number of zeros to pad the index with"),
+    imagetype: str = typer.Option(
+        "png", "--imagetype", "-t", help="Type of image to generate (png, jpg)"),
+    manifest: str = typer.Option(
+        None, "--manifest", "-m", help="Manifest file to write generated image paths to"),
+    append_text: str = typer.Option(
+        "", "--append-text", "-a", help="Text to append to the image")
+):
+    size_tuple = (256, 256)
+    try:
+        parsed_size = generate_images.ImageSize.parse(size)
+        size_tuple = (parsed_size.width, parsed_size.height)
+    except Exception as e:
+        typer.echo(f"Invalid size: {e}")
+        raise typer.Abort()
+
+    generator = generate_images.ImageGenerator(
+        count=count,
+        size=size_tuple,
+        output=output,
+        zerofill=zerofill,
+        image_type=imagetype,
+        manifest=manifest,
+        append_text=append_text
+    )
+    generator.run()
