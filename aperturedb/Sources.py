@@ -93,10 +93,9 @@ class Sources():
                     is_auth_error = True
                 elif isinstance(e, botocore.exceptions.ClientError):
                     error_code = e.response.get('Error', {}).get('Code', '')
-                    if error_code in ['401', '403', 'AccessDenied']:
+                    status_code = e.response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+                    if error_code in ['AccessDenied', 'InvalidAccessKeyId'] or status_code in [401, 403]:
                         is_auth_error = True
-                elif "'NoneType' object has no attribute 'get_object'" in str(e):
-                    is_auth_error = True
 
                 if not tried_anonymous and is_auth_error:
                     from botocore import UNSIGNED
