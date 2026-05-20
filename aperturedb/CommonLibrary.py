@@ -266,14 +266,12 @@ def create_connector(
     return __create_connector(config)
 
 
-
-
 def censor_tokens(data):
     """
     Recursively redact sensitive token fields in a dictionary or list.
     """
     import copy
-    
+
     def censor_string(v):
         if not isinstance(v, str):
             return v
@@ -284,7 +282,7 @@ def censor_tokens(data):
         else:
             prefix = ""
             token = v
-        
+
         if len(token) > 8:
             return prefix + token[:4] + "..." + token[-4:]
         elif len(v) > 0:
@@ -310,10 +308,11 @@ def censor_tokens(data):
         elif isinstance(obj, list):
             for item in obj:
                 _censor(item)
-    
+
     censored = copy.deepcopy(data)
     _censor(censored)
     return censored
+
 
 def execute_query(client: Connector, query: Commands,
                   blobs: Blobs = [],
@@ -364,7 +363,8 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {censor_tokens(query)} with response = {censor_tokens(r)}")
+        logger.error(f"Failed query = {censor_tokens(
+            query)} with response = {censor_tokens(r)}")
         result = 1
 
     statuses = {}
