@@ -41,6 +41,12 @@ class ImageProperties(Transformer):
                 src_properties["adb_image_id"] = str(
                     src_properties["id"] if "id" in src_properties else uuid.uuid4().hex)
 
+                # Remove duplicate width/height if present to avoid confusion
+                if "width" in src_properties:
+                    del src_properties["width"]
+                if "height" in src_properties:
+                    del src_properties["height"]
+
         except Exception as e:
             # Importantly, do not raise an exception here, since it will kill ingestion.
             # Create a log message instead, for post-mortem analysis.
