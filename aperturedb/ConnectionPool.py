@@ -56,7 +56,8 @@ class ConnectionPool:
                 except queue.Empty:
                     break
             raise ConnectionError(
-                f"Failed to initialize pool: expected {pool_size} connections, got {self._pool.qsize()}."
+                f"Failed to initialize pool: expected {
+                    pool_size} connections, got {self._pool.qsize()}."
             ) from last_error
 
     def available(self) -> int:
