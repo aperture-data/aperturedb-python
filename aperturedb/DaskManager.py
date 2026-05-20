@@ -41,8 +41,8 @@ class DaskManager:
         self._client.close()
         self._cluster.close()
 
-    def run(self, QueryClass: type[ParallelQuery], client: Connector, generator, batchsize, stats):
-        def process(df, host, port, use_ssl, ca_cert, verify_hostname, session, connnector_type):
+    def run(self, QueryClass: type[ParallelQuery], client: Connector, generator, batchsize, stats, **kwargs):
+        def process(df, host, port, use_ssl, ca_cert, verify_hostname, session, connector_type, kwargs_dict):
             metrics = Stats()
             # Dask reads data in partitions, and the first partition is of 2 rows, with all
             # values as 'foo'. This is for sampling the column names and types. Should not process
@@ -55,7 +55,7 @@ class DaskManager:
                 shared_data = SimpleNamespace()
                 shared_data.session = session
                 shared_data.lock = Lock()
-                client = connnector_type(
+                client = connector_type(
                     host=host, port=port,
                     use_ssl=use_ssl,
                     ca_cert=ca_cert,

@@ -241,7 +241,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     else:
                         item_bytes += 100
 
-                if len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes):
+                if len(current_batch) == 0 and item_bytes > max_bytes:
+                    logger.warning(
+                        f"Worker {thid} executing batch starting at {batch_start} that exceeds max_bytes_per_batch: {item_bytes} > {max_bytes}")
+                elif len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes):
                     try:
                         self.do_batch(client, batch_start, current_batch)
                     except Exception as e:
@@ -324,6 +327,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
+            max_bytes_per_batch (int, optional): The maximum number of bytes allowed per batch. Overrides batchsize if the blob sizes exceed this limit. Default is None.
         """
         self.max_bytes_per_batch = max_bytes_per_batch
 
@@ -337,7 +341,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
-                self.__class__, self.client, generator, batchsize, stats=stats)
+                self.__class__, self.client, generator, batchsize, stats=stats, max_bytes_per_batch=self.max_bytes_per_batch)
             self.actual_stats = []
             for result in results:
                 if result is not None:
