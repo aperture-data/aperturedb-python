@@ -1,7 +1,7 @@
 """
 **Module providing the Blobs entity wrapper.**
 
-This module contains the `Blobs` class which acts as an object mapper representation of blobs in ApertureDB, 
+This module contains the `Blobs` class which acts as an object mapper representation of blobs in ApertureDB,
 inheriting from `Entities`.
 """
 from __future__ import annotations
