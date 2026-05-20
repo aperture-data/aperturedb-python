@@ -193,20 +193,24 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["objects_existed"] = 0
             elif result == 2:
                 # with result 2, some queries might have failed.
-                def filter_per_group(group):
-                    return group.items() if isinstance(group, dict) else {}
-                worker_stats["succeeded_commands"] = sum(
-                    [v['status'] == 0 for i in r for k, v in filter_per_group(i)])
-                worker_stats["objects_existed"] = sum(
-                    [v['status'] == 2 for i in r for k, v in filter_per_group(i)])
-                sq = 0
-                for i in range(0, len(r), self.commands_per_query):
-                    # Some errors stop the whole query from being executed
-                    # https://docs.aperturedata.io/query_language/Overview/Responses#return-status
-                    if issubclass(type(r), list):
+                if isinstance(r, list):
+                    def filter_per_group(group):
+                        return group.items() if isinstance(group, dict) else {}
+                    worker_stats["succeeded_commands"] = sum(
+                        [v['status'] == 0 for i in r for k, v in filter_per_group(i)])
+                    worker_stats["objects_existed"] = sum(
+                        [v['status'] == 2 for i in r for k, v in filter_per_group(i)])
+                    sq = 0
+                    for i in range(0, len(r), self.commands_per_query):
+                        # Some errors stop the whole query from being executed
+                        # https://docs.aperturedata.io/query_language/Overview/Responses#return-status
                         if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
                             sq += 1
-                worker_stats["succeeded_queries"] = sq
+                    worker_stats["succeeded_queries"] = sq
+                else:
+                    worker_stats["succeeded_commands"] = 0
+                    worker_stats["objects_existed"] = 0
+                    worker_stats["succeeded_queries"] = 0
         else:
             query_time = 1
             worker_stats["succeeded_commands"] = len(q)
@@ -296,7 +300,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.print_stats()
         else:
             # allow subclass to do verification
-            if issubclass(type(self), ParallelQuery) and hasattr(self, 'verify_generator') and callable(self.verify_generator):
+            if isinstance(self, ParallelQuery) and hasattr(self, 'verify_generator') and callable(self.verify_generator):
                 self.verify_generator(generator)
             elif len(generator) > 0:
                 if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):
