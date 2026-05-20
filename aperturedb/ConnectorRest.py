@@ -33,6 +33,11 @@ import logging
 
 from types import SimpleNamespace
 from typing import Optional
+try:
+    import pybase64 as base64
+except ImportError:
+    import base64
+
 from aperturedb.Connector import Connector
 from aperturedb.Configuration import Configuration
 from requests.adapters import HTTPAdapter
@@ -164,8 +169,7 @@ class ConnectorRest(Connector):
                                                   verify  = self.config.use_ssl and self.config.verify_hostname)
                 if response.status_code == 200:
                     # Parse response:
-                    json_response       = json.loads(response.text)
-                    import base64
+                    json_response       = response.json()
                     response_blob_array = [base64.b64decode(
                         b) for b in json_response['blobs']]
                     self.last_response  = json_response["json"]
