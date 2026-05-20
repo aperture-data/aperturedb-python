@@ -99,6 +99,11 @@ class GeneratorWithLargeBlobs(Subscriptable):
 
 
 class MockClient:
+    def __init__(self):
+        from types import SimpleNamespace
+        self.config = SimpleNamespace(host="localhost", port=55555, use_ssl=False,
+                                      verify_hostname=False, username="admin", password="password")
+
     def clone(self):
         return self
 
@@ -108,6 +113,9 @@ class MockClient:
 
     def last_query_ok(self):
         return True
+
+    def get_last_query_time(self):
+        return 0
 
 
 def test_dynamic_batching():
