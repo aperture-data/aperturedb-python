@@ -3,7 +3,6 @@ from unittest.mock import patch, MagicMock
 from aperturedb.Sources import Sources
 import botocore.exceptions
 import botocore
-import boto3
 from google.auth.exceptions import DefaultCredentialsError
 from google.api_core.exceptions import Forbidden, Unauthorized
 
