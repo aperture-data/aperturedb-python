@@ -358,6 +358,8 @@ class TestConfigure():
                         result = runner.invoke(app, ["activate", "blah"])
                         assert result.exit_code == 2
                         assert "Configuration blah not found" in result.stdout
+
+
 class TestActivateMalformedConfig:
     def test_activate_malformed_config_global(self):
         tmp = "/tmp/malformed_global"
