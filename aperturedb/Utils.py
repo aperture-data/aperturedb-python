@@ -920,11 +920,9 @@ class Utils(object):
             if schema["status"] != 0:
                 logger.error(f"status is non-zero: {censor_tokens(response)}")
             elif schema["connections"] is not None:
-                logger.error(f"connections is not None: {
-                             censor_tokens(response)}")
+                logger.error(f"connections is not None: {censor_tokens(response)}")
             elif schema["entities"] is not None:
-                logger.error(f"entities is not None: {
-                             censor_tokens(response)}")
+                logger.error(f"entities is not None: {censor_tokens(response)}")
             else:
                 return True
         except BaseException as e:
