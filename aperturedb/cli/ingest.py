@@ -48,24 +48,24 @@ def _debug_samples(data, sample_count, module_name):
                 f.write(blob)
 
 
-def _apply_pipeline(data, transformers: List[str], **kwargs):
-    pipeline = _create_pipeline(transformers)
+def _apply_pipeline(data, enrichments: List[str], **kwargs):
+    pipeline = _create_pipeline(enrichments)
     console.log("Applying Pipeline: \r\n" +
                 "\r\n=>".join([f"{stage.__name__}[{kwargs}]" for stage in pipeline]))
-    for transformer in pipeline:
-        data = transformer(data, **kwargs)
+    for enrichment in pipeline:
+        data = enrichment(data, **kwargs)
         data.sample_count = data.data.sample_count
     return data
 
 
-def _create_pipeline(transformers: List[str]):
+def _create_pipeline(enrichments: List[str]):
     from aperturedb.transformers.common_properties import CommonProperties
     from aperturedb.transformers.image_properties import ImageProperties
     from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
     from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
     from aperturedb.CommonLibrary import import_module_by_path
 
-    # Actual collection of transformers, packaged with aperturedb.
+    # Actual collection of enrichment steps, packaged with aperturedb.
     built_in_enrichments = {
         "common_properties": CommonProperties,
         "image_properties": ImageProperties,
@@ -73,20 +73,20 @@ def _create_pipeline(transformers: List[str]):
         "facenet_pytorch_embeddings": FacenetPyTorchEmbeddings
     }
     pipeline = []
-    for transformer_name in transformers:
-        transformer = None
-        if transformer_name in built_in_enrichments:
-            transformer = built_in_enrichments[transformer_name]
+    for enrichment_name in enrichments:
+        enrichment = None
+        if enrichment_name in built_in_enrichments:
+            enrichment = built_in_enrichments[enrichment_name]
         else:
             try:
-                transformer_module = import_module_by_path(transformer_name)
-                transformer = getattr(transformer_module,
-                                      transformer_module.__name__)
+                enrichment_module = import_module_by_path(enrichment_name)
+                enrichment = getattr(enrichment_module,
+                                      enrichment_module.__name__)
             except Exception as e:
                 console.log(
-                    f"Could not load enrichment step {transformer_name}: {e}")
+                    f"Could not load enrichment step {enrichment_name}: {e}")
                 exit(1)
-        pipeline.append(transformer)
+        pipeline.append(enrichment)
     return pipeline
 
 
@@ -157,8 +157,8 @@ def generate(filepath: Annotated[str, typer.Argument(
     if enrich or user_enrich:
         enrich = enrich or []
         user_enrich = user_enrich or []
-        all_transformers = enrich + user_enrich
-        data = _apply_pipeline(data, all_transformers,
+        all_enrichments = enrich + user_enrich
+        data = _apply_pipeline(data, all_enrichments,
                                adb_data_source=f"{module_name}.{mclass.__name__}")
 
     _process_data(
@@ -243,8 +243,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     if enrich or user_enrich:
         enrich = enrich or []
         user_enrich = user_enrich or []
-        all_transformers = enrich + user_enrich
-        data = _apply_pipeline(data, all_transformers,
+        all_enrichments = enrich + user_enrich
+        data = _apply_pipeline(data, all_enrichments,
                                adb_data_source=f"{ingest_type}.{os.path.basename(filepath)}")
 
     _process_data(
@@ -361,15 +361,15 @@ def generate_embedding_csv_from_image_csv(
         console.log("Warning: --user-transformer is deprecated, use --user-enrich instead.", style="yellow")
         user_enrich = user_enrich + user_transformer
 
-    all_transformers = enrich + user_enrich
-    if len(all_transformers) == 0:
+    all_enrichments = enrich + user_enrich
+    if len(all_enrichments) == 0:
         console.log(
             "No enrichment step specified. Generating embeddings from raw images requires an enrichment step.")
         raise typer.Abort()
-    all_transformers.insert(0, "image_properties")
-    data = _apply_pipeline(data, all_transformers,
+    all_enrichments.insert(0, "image_properties")
+    data = _apply_pipeline(data, all_enrichments,
                            adb_data_source=f"{os.path.basename(input_file)}")
-    filename = f"{os.path.basename(input_file)}_{all_transformers[-1]}"
+    filename = f"{os.path.basename(input_file)}_{all_enrichments[-1]}"
     metadata = []
     connection = []
     embeddings = []
