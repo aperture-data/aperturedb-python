@@ -23,7 +23,7 @@ def import_module_by_path(filepath: str) -> Any:
     """
     This function imports a module given a path to a python file.
     """
-    module_name = os.path.basename(filepath)[:-3]
+    module_name = os.path.splitext(os.path.basename(filepath))[0]
     spec = importlib.util.spec_from_file_location(module_name, filepath)
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
