@@ -74,7 +74,7 @@ class DaskManager:
                     blobs_relative_to_csv=generator.blobs_relative_to_csv)
 
                 loader.query(generator=data, batchsize=len(
-                    slice), numthreads=1, stats=False)
+                    slice), numthreads=1, stats=False, **kwargs_dict)
                 count += 1
                 metrics.times_arr.extend(loader.times_arr)
                 metrics.error_counter += loader.error_counter
