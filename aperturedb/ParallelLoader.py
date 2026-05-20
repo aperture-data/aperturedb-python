@@ -194,11 +194,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
 
-        if transformers:
-            for transformer in transformers:
-                generator = transformer(generator)
-
-        self.query(generator, batchsize, numthreads, stats)
+        self.query(generator, batchsize, numthreads, stats, transformers=transformers)
 
     def print_stats(self) -> None:
 
