@@ -105,6 +105,7 @@ build_tests(){
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
 
     echo "Building image ${TESTS_IMAGE}"
+    docker pull ${TESTS_IMAGE} || true
     docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${TESTS_IMAGE} --cache-from ${TESTS_IMAGE} -f docker/tests/Dockerfile .
 }
 
@@ -114,6 +115,7 @@ build_complete(){
     cp -r aperturedb pyproject.toml README.md LICENSE docker/complete/aperturedata
 
     echo "Building image ${COMPLETE_IMAGE}"
+    docker pull ${COMPLETE_IMAGE} || true
     docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${COMPLETE_IMAGE} --cache-from ${COMPLETE_IMAGE} -f docker/complete/Dockerfile .
 }
 
@@ -155,8 +157,13 @@ build_notebook_image(){
     LATEST_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
     CPU_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook:cpu
     echo "Building image ${NOTEBOOK_IMAGE}"
-    docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
-    docker build -t ${CPU_IMAGE} -f docker/notebook/Dockerfile.cpu .
+    
+    docker pull ${LATEST_IMAGE} || true
+    docker build --cache-from ${LATEST_IMAGE} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
+    
+    docker pull ${CPU_IMAGE} || true
+    docker build --cache-from ${CPU_IMAGE} -t ${CPU_IMAGE} -f docker/notebook/Dockerfile.cpu .
+    
     if [ "${NO_PUSH}" != "true" ]
     then
         docker push --all-tags ${DOCKER_REPOSITORY}/aperturedb-notebook
