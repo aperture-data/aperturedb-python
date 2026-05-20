@@ -81,3 +81,24 @@ class TestParallel():
             print(e)
             print("Failed to renew Session")
             assert False
+
+def test_dask_dry_run(db: Connector):
+    from aperturedb.ParallelLoader import ParallelLoader
+    from aperturedb.EntityDataCSV import EntityDataCSV
+    from aperturedb.Utils import Utils
+    utils = Utils(db)
+    
+    # Ensure starting clean
+    utils.remove_class("Person")
+    
+    # Create generator with Dask
+    generator = EntityDataCSV("./test/input/persons.adb.csv", use_dask=True, blobs_relative_to_csv=True)
+    
+    # Run ParallelLoader with dry_run=True
+    loader = ParallelLoader(db, dry_run=True)
+    loader.ingest(generator, batchsize=503, numthreads=4, stats=True)
+    
+    # Verify no objects were created
+    res, _ = db.query([{"FindEntity": {"with_class": "Person", "results": {"count": True}}}])
+    assert db.last_query_ok(), res
+    assert res[0]["FindEntity"]["count"] == 0

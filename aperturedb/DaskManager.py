@@ -63,8 +63,15 @@ class DaskManager:
                     shared_data=shared_data)
             except Exception as e:
                 logger.exception(e)
+                raise
             #from aperturedb.ParallelLoader import ParallelLoader
-            loader = QueryClass(client, dry_run=dry_run)
+            import inspect
+            sig = inspect.signature(QueryClass.__init__)
+            if "dry_run" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                loader = QueryClass(client, dry_run=dry_run)
+            else:
+                loader = QueryClass(client)
+                loader.dry_run = dry_run
             for i in range(0, len(df), batchsize):
                 end = min(i + batchsize, len(df))
                 slice = df[i:end]
