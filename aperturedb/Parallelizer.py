@@ -28,7 +28,7 @@ class Parallelizer:
     ```
     """
 
-    def __init__(self, use_dask=False):
+    def __init__(self, use_dask=None):
         self.use_dask = use_dask
         self._reset()
 
