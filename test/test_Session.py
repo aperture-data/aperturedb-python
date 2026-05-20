@@ -265,3 +265,32 @@ class TestSession():
         resp, blobs = db.query([{'GetSchema': {}}], [])
         print(f"{resp=}")
         assert enable_mock == False, "Authentication query was not invoked"
+
+    def test_connect_at_construction(self, monkeypatch):
+        # We want to test that connect() is called when connect=True.
+        # mock connect so it doesn't fail on missing server
+        def mock_connect(self):
+            self.connected = True
+
+            class MockConn:
+                def close(self): pass
+            self.conn = MockConn()
+        monkeypatch.setattr(Connector, "connect", mock_connect)
+
+        new_db = Connector(
+            dbinfo.DB_TCP_HOST,
+            dbinfo.DB_TCP_PORT,
+            dbinfo.DB_USER,
+            dbinfo.DB_PASSWORD,
+            ca_cert=dbinfo.CA_CERT,
+            connect=True)
+        assert getattr(new_db, "connected", False) == True
+
+        # also test default behavior
+        new_db_lazy = Connector(
+            dbinfo.DB_TCP_HOST,
+            dbinfo.DB_TCP_PORT,
+            dbinfo.DB_USER,
+            dbinfo.DB_PASSWORD,
+            ca_cert=dbinfo.CA_CERT)
+        assert getattr(new_db_lazy, "connected", False) == False
