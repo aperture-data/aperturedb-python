@@ -1,8 +1,8 @@
 """
 Data Loader Hierarchy and Examples
 
-ApertureDB python SDK uses `ParallelLoader` as the main mechanism to efficiently batch and load data in parallel. 
-The `ParallelLoader` relies on the `Subscriptable` interface. 
+ApertureDB python SDK uses `ParallelLoader` as the main mechanism to efficiently batch and load data in parallel.
+The `ParallelLoader` relies on the `Subscriptable` interface.
 Classes that inherit from `Subscriptable` can be passed to `ParallelLoader.ingest()`.
 
 The main data loaders provided by ApertureDB handle parsing CSVs and generating the appropriate ApertureDB queries.
