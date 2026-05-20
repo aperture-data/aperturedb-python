@@ -479,6 +479,8 @@ class TestResponseHandler():
             return responses, []
 
         monkeypatch.setattr(Connector, "query", mock_query)
+        monkeypatch.setattr(Connector, "last_query_ok", lambda self: True)
+        monkeypatch.setattr(Connector, "clone", lambda self: self)
 
         generator = UpdateAndCheckImageLabel(
             imgids, field, new_labels, changed_ids)
