@@ -20,10 +20,12 @@ class Operations(object):
 
         if scale is not None:
             if width is not None or height is not None:
-                raise ValueError("Provide either 'scale' or both 'width' and 'height', but not a mix.")
+                raise ValueError(
+                    "Provide either 'scale' or both 'width' and 'height', but not a mix.")
         else:
             if width is None or height is None:
-                raise ValueError("Provide either 'scale' or both 'width' and 'height'.")
+                raise ValueError(
+                    "Provide either 'scale' or both 'width' and 'height'.")
 
         op = {
             "type": "resize"
