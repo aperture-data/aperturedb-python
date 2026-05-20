@@ -81,3 +81,58 @@ class TestParallel():
             print(e)
             print("Failed to renew Session")
             assert False
+
+    def test_progress_callback_and_log(self, caplog):
+        """
+        Verifies that progress_callback is called and log_progress logs appropriately.
+        """
+        from unittest.mock import MagicMock
+        db = MagicMock()
+        db.query.return_value = ([{"GetSchema": {}}], [])
+        db.clone.return_value = db
+        try:
+            elements = 10
+            batchsize = 2
+            numthreads = 2
+
+            generator = GeneratorWithErrors(elements=elements, error_pct=0)
+            querier = ParallelQuery(db, dry_run=True)
+            
+            callback_calls = []
+            
+            def my_callback(worker_id, batch_index, total_batches, batch_start, batch_end, worker_stats, errors):
+                callback_calls.append({
+                    "worker_id": worker_id,
+                    "batch_index": batch_index,
+                    "total_batches": total_batches,
+                    "batch_start": batch_start,
+                    "batch_end": batch_end,
+                    "worker_stats": worker_stats,
+                    "errors": errors
+                })
+
+            import logging
+            with caplog.at_level(logging.INFO):
+                querier.query(generator, batchsize=batchsize,
+                              numthreads=numthreads,
+                              stats=True,
+                              progress_callback=my_callback,
+                              log_progress=True)
+                
+            assert len(callback_calls) > 0
+            
+            for call in callback_calls:
+                assert "worker_id" in call
+                assert "total_batches" in call
+                assert "batch_start" in call
+                assert "batch_end" in call
+                assert "worker_stats" in call
+                assert "errors" in call
+            
+            log_messages = [record.message for record in caplog.records]
+            completed_logs = [msg for msg in log_messages if "completed batch" in msg]
+            assert len(completed_logs) > 0
+            
+        except Exception as e:
+            print(e)
+            assert False

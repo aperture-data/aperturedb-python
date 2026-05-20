@@ -260,8 +260,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 current_errors = self.error_counter
 
             if getattr(self, "log_progress", False):
-                logger.info(f"Worker {thid} completed batch {
-                            i + 1}/{total_batches}. Worker stats: {worker_stats}, Errors so far: {current_errors}")
+                logger.info(f"Worker {thid} completed batch {i + 1}/{total_batches}. Worker stats: {dict(worker_stats)}, Errors so far: {current_errors}")
 
             if hasattr(self, "progress_callback") and callable(self.progress_callback):
                 try:
@@ -271,7 +270,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                         total_batches=total_batches,
                         batch_start=batch_start,
                         batch_end=batch_end,
-                        worker_stats=worker_stats,
+                        worker_stats=dict(worker_stats),
                         errors=current_errors
                     )
                 except Exception as cb_e:

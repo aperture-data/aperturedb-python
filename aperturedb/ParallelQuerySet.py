@@ -379,7 +379,7 @@ class ParallelQuerySet(ParallelQuery):
 
         Args:
             client (Connector): The ApertureDB Connector
-            data (List[Tuple[Query, Blobs]]): A list of tuples, each containing a list of commands and a list of blobs
+            data (List[Tuple[Commands, Blobs]]): A list of tuples, each containing a list of commands and a list of blobs
 
         Returns:
             dict | None: The per-batch worker stats (e.g., succeeded_commands, succeeded_queries).
