@@ -120,9 +120,9 @@ def generate(filepath: Annotated[str, typer.Argument(
     num_workers: Annotated[int, typer.Option(
         help="Number of workers for ingestion")] = 1,
     enrich: Annotated[Optional[List[EnrichType]], typer.Option(
-        help="Apply enrich to the pipeline [Can be specified multiple times]")] = None,
+        help="Apply enrichment step(s) to the pipeline [Can be specified multiple times]")] = None,
     user_enrich: Annotated[Optional[List[str]], typer.Option(
-        help="Apply user enrich to the pipeline as path to file [Can be specified multiple times]")] = None,
+        help="Apply user enrichment step(s) to the pipeline as path to file [Can be specified multiple times]")] = None,
 ):
     """
     Ingest data from a Data generator [BETA].
@@ -182,9 +182,9 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     blobs_relative_to_csv: Annotated[bool, typer.Option(
         help="If true, the blob path is relative to the CSV file")] = True,
     enrich: Annotated[Optional[List[EnrichType]], typer.Option(
-        help="Apply enrich to the pipeline [Can be specified multiple times]")] = None,
+        help="Apply enrichment step(s) to the pipeline [Can be specified multiple times]")] = None,
     user_enrich: Annotated[Optional[List[str]], typer.Option(
-        help="Apply user enrich to the pipeline as path to file [Can be specified multiple times.]")] = None,
+        help="Apply user enrichment step(s) to the pipeline as path to file [Can be specified multiple times.]")] = None,
     sample_count: Annotated[int, typer.Option(
         help="Number of samples to ingest (-1 for all)")] = -1,
     debug: Annotated[bool, typer.Option(
@@ -306,18 +306,18 @@ def generate_embedding_csv_from_image_csv(
     set_name: Annotated[str, typer.Argument(
         help="Descriptor set name to be associated with the embeddings")],
     enrich: Annotated[Optional[List[EnrichType]], typer.Option(
-        help="Apply enrich to the pipeline [Can be specified multiple times]")] = None,
+        help="Apply enrichment step(s) to the pipeline [Can be specified multiple times]")] = None,
     user_enrich: Annotated[Optional[List[str]], typer.Option(
-        help="Apply user enrich to the pipeline as path to file [Can be specified multiple times.]")] = None,
+        help="Apply user enrichment step(s) to the pipeline as path to file [Can be specified multiple times.]")] = None,
     sample_count: Annotated[int, typer.Option(
         help="Number of samples to ingest (-1 for all)")] = -1,
 ):
     """
-    Create a DescriptorDataCSV from an ImageDataCSV, using the specified enrich.
+    Create a DescriptorDataCSV from an ImageDataCSV, using the specified enrichment step(s).
     Also save embeddings in a separate file, and generate the ConnectionDataCSV
     for linking the images to the descriptors.
     The ingestion of the embeddings and the connection data is not done here.
-    image_properties enrich must be used at actual ingestion.
+    image_properties enrichment step must be used at actual ingestion.
     It is also applied by default for CSV generation.
     """
     import pandas as pd
@@ -326,17 +326,16 @@ def generate_embedding_csv_from_image_csv(
 
     data = ImageDataCSV(input_file)
     data.sample_count = len(data) if sample_count == -1 else sample_count
-    if enrich or user_enrich:
-        enrich = enrich or []
-        user_enrich = user_enrich or []
-        all_transformers = enrich + user_enrich
-        if len(all_transformers) == 0:
-            console.log(
-                "No enrich specified . Generating embeddings from raw images requires an enrich step.")
-            typer.Abort()
-        all_transformers.insert(0, "image_properties")
-        data = _apply_pipeline(data, all_transformers,
-                               adb_data_source=f"{os.path.basename(input_file)}")
+    enrich = enrich or []
+    user_enrich = user_enrich or []
+    all_transformers = enrich + user_enrich
+    if len(all_transformers) == 0:
+        console.log(
+            "No enrichment step specified. Generating embeddings from raw images requires an enrichment step.")
+        raise typer.Abort()
+    all_transformers.insert(0, "image_properties")
+    data = _apply_pipeline(data, all_transformers,
+                           adb_data_source=f"{os.path.basename(input_file)}")
     filename = f"{os.path.basename(input_file)}_{all_transformers[-1]}"
     metadata = []
     connection = []
