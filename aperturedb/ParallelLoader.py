@@ -27,7 +27,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
     **Hierarchy of Data Loaders:**
 
-    It takes as input an object instantiated from one of the following classes:
+    It accepts any `Subscriptable` that yields `(commands, blobs)` (e.g., standard data loaders), and the dataset is passed to `ingest()` rather than the constructor. Examples of supported loaders include:
 
     * `aperturedb.BBoxDataCSV.BBoxDataCSV`
     * `aperturedb.BlobDataCSV.BlobDataCSV`
