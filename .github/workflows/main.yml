@@ -5,13 +5,14 @@ on:
     branches:
       - main
 
+# Main only publishes the latest commit; cancel any in-flight run when a newer
+# push lands so we don't waste an hour racing against ourselves.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_and_test:
-    strategy:
-      fail-fast: false
-      matrix:
-        protocol: [http, non_http]
-
     runs-on:
     - benchmark
 
@@ -34,11 +35,21 @@ jobs:
 
     - name: Build and Run Tests
       env:
-        TEST_PROTOCOL: ${{ matrix.protocol }}
+        # Single job runs both protocols in parallel via run_test_container.sh
+        # rather than spinning up two matrix runners that each rebuild every
+        # docker image.
+        TEST_PROTOCOL: both
         AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        RUNNER_NAME: ${{ runner.name }}_main
+        DOCKER_BUILDKIT: 1
+        COMPOSE_DOCKER_CLI_BUILD: 1
+        ADB_REPO: aperturedata/aperturedb
+        ADB_TAG: dev
+        LENZ_REPO: aperturedata/lenz
+        LENZ_TAG: dev
       run: RUN_TESTS=true ./ci.sh
       shell: bash
 
@@ -65,6 +76,8 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         RUNNER_NAME: ${{ runner.name }}
+        DOCKER_BUILDKIT: 1
+        COMPOSE_DOCKER_CLI_BUILD: 1
         ADB_REPO: aperturedata/aperturedb
         ADB_TAG: dev
         LENZ_REPO: aperturedata/lenz
