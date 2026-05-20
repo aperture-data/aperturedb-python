@@ -24,17 +24,23 @@ class TestStats():
         return out
 
     def validate_stats(self, out, assertions):
+        seen = set()
         for line in out.splitlines():
             if ":" in line:
                 stats = line.split(":")
                 if len(stats) == 2:
                     first, second = line.split(":")
+                    first_stripped = first.strip()
                     print(first, second)
-                    if first in assertions:
-                        assert assertions[first.strip()](second.strip()) is True, (
+                    if first_stripped in assertions:
+                        assert assertions[first_stripped](second.strip()) is True, (
                             f"Assertion failed for '{first}' "
                             f"with value {second}"
                         )
+                        seen.add(first_stripped)
+        
+        missing = set(assertions.keys()) - seen
+        assert not missing, f"Missing stats output for keys: {missing}"
 
     def test_stats_all_errors_non_equal_last_batch(self, db, utils):
         utils.remove_all_objects()

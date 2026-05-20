@@ -129,8 +129,8 @@ class Connector(object):
             and it means that disconnections are detected sooner.
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
-        str (key): Apeture Key, configuration as a deflated compressed string
-        bool (connect): Eagerly establish the connection upon construction. Default is False. 
+        str (key): Aperture Key, configuration as a deflated compressed string
+        bool (connect): Eagerly establish the connection upon construction. Default is False.
             If True, connects immediately instead of waiting for the first query, but does not authenticate until the first query or explicitly requested.
 
     The Configuration class options:

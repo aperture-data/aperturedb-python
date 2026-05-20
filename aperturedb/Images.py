@@ -69,7 +69,7 @@ def rotate(points, angle, c_x=0, c_y=0):
         points: The rotated points as a NumPy array of shape (n,2) and type int
     """
     ANGLE = np.deg2rad(angle)
-    return np.array(
+    return np.rint(
         [
             [
                 c_x + np.cos(ANGLE) * (px - c_x) - np.sin(ANGLE) * (py - c_y),
