@@ -30,7 +30,7 @@ set +e
 CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${FILTER}"
 CLIENT_PATH=${CLIENT_PATH// /_}
 mkdir -p ${CLIENT_PATH}
-PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$FILTER" test_*.py -v | tee ${CLIENT_PATH}/test.log
+PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -k "not test_S3ImageLoader and not test_GSImageLoader and not test_S3VideoLoader and not test_GSVideoLoader" -m "$FILTER and not remote_credentials and not external_network" test_*.py -v | tee ${CLIENT_PATH}/test.log
 RESULT=$?
 cp error*.log -v ${CLIENT_PATH} || true
 
