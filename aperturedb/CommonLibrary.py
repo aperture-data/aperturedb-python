@@ -7,7 +7,7 @@ import importlib
 import math
 import os
 import sys
-import copy
+
 from typing import Any, Callable, Optional, Tuple, Dict, Union
 import logging
 import json
@@ -299,7 +299,8 @@ def execute_query(client: Connector, query: Commands,
         Blobs: The blobs.
     """
     result = 0
-    logger.debug(f"Query={query}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"Query={censor_tokens(query)}")
     r, b = client.query(query, blobs)
 
     if logger.isEnabledFor(logging.DEBUG):
@@ -318,7 +319,7 @@ def execute_query(client: Connector, query: Commands,
     else:
         # Transaction failed entirely.
         logger.error(
-            f"Failed query = {query} with response = {censor_tokens(r)}")
+            f"Failed query = {censor_tokens(query)} with response = {censor_tokens(r)}")
         result = 1
 
     statuses = {}
@@ -342,7 +343,7 @@ def execute_query(client: Connector, query: Commands,
                     warn_list.append(wr)
         if len(warn_list) != 0:
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(censor_tokens(warn_list), default=str)}")
+                f"Partial errors:\r\n{json.dumps(censor_tokens(query), default=str)}\r\n{json.dumps(censor_tokens(warn_list), default=str)}")
             result = 2
 
     return result, r, b
