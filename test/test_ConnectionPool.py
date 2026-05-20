@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 from aperturedb.ConnectionPool import ConnectionPool
 
 def test_connection_pool_init():
@@ -44,5 +44,6 @@ def test_connection_pool_args():
     mock_connector = MagicMock()
     mock_factory = MagicMock(return_value=mock_connector)
     
-    pool = ConnectionPool(pool_size=2, connection_factory=mock_factory, arg1="value1", arg2="value2")
-    mock_factory.assert_called_with(arg1="value1", arg2="value2")
+    pool = ConnectionPool(2, "arg1_val", "arg2_val", connection_factory=mock_factory, kwarg1="value1")
+    assert mock_factory.call_count == 2
+    mock_factory.assert_has_calls([call("arg1_val", "arg2_val", kwarg1="value1")] * 2)

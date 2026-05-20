@@ -17,7 +17,7 @@ class ConnectionPool:
     threads to safely execute queries by borrowing and returning connections.
     """
 
-    def __init__(self, pool_size: int = 10, connection_factory: Callable[..., Any] = create_connector, *args, **kwargs):
+    def __init__(self, pool_size: int = 10, *args, connection_factory: Callable[..., Any] = create_connector, **kwargs):
         """
         Initializes the connection pool.
 
@@ -35,9 +35,6 @@ class ConnectionPool:
         # A thread-safe queue to hold the available connections
         self._pool = queue.Queue(maxsize=pool_size)
 
-        # A lock to ensure the initial population is thread-safe, just in case.
-        self._lock = threading.Lock()
-
         # Pre-populate the pool with connections
         for _ in range(pool_size):
             try:
@@ -45,19 +42,15 @@ class ConnectionPool:
                 if not connection:
                     raise ConnectionError("Failed to create a connection.")
                 self._pool.put(connection)
-            except Exception as e:
-                logger.error(f"Failed to create a connection for the pool: {e}")
-                # Depending on requirements, you might want to raise an error
-                # if the pool cannot be fully populated.
-
-        if self.available() == 0:
-            raise ConnectionError(
-                "Failed to initialize any connections for the pool. "
-                "Please check connection parameters and network."
-            )
+            except Exception:
+                logger.exception("Failed to create a connection for the pool")
+                raise
 
     def available(self) -> int:
-        """Returns the number of available connections in the pool."""
+        """Returns the number of available connections in the pool.
+        
+        (Note: This is an approximate value and primarily for monitoring.)
+        """
         return self._pool.qsize()
 
     def total(self) -> int:
