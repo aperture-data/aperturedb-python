@@ -414,14 +414,14 @@ class TestResponseHandler():
                 return len(self.imgids)
 
             def getitem(self, idx):
-                id = self.imgids[idx]
+                image_id = self.imgids[idx]
                 label = self.new_labels[idx]
 
                 q = [{
                     "FindImage": {
                         "blobs": False,
                         "constraints": {
-                            "image_id": ["==", id],
+                            "image_id": ["==", image_id],
                             self.field: ["!=", label]
                         },
                         "results": {
@@ -447,7 +447,7 @@ class TestResponseHandler():
                 except Exception as e:
                     print(f"Response Handler Error: {r}")
                     print(f"Exception: {e}")
-                    raise e
+                    raise
 
         changed_ids = []
         imgids = [1, 2, 3]
@@ -456,7 +456,10 @@ class TestResponseHandler():
 
         def mock_query(self, request, blobs):
             responses = []
-            for c in request:
+            for i, c in enumerate(request):
+                # simulate aborting after 2 commands (1 pair out of a batch)
+                if i >= 2:
+                    break
                 if "FindImage" in c:
                     responses.append({
                         "FindImage": {
@@ -465,6 +468,14 @@ class TestResponseHandler():
                             "entities": [{"image_id": "img1"}]
                         }
                     })
+                elif "UpdateImage" in c:
+                    responses.append({
+                        "UpdateImage": {
+                            "status": 0
+                        }
+                    })
+            self.response = responses
+            self.blobs = []
             return responses, []
 
         monkeypatch.setattr(Connector, "query", mock_query)
@@ -474,4 +485,4 @@ class TestResponseHandler():
         querier = ParallelQuery(db)
         querier.query(generator, numthreads=1, batchsize=2, stats=False)
 
-        assert len(changed_ids) == 3
+        assert len(changed_ids) == 2
