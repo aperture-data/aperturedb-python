@@ -98,11 +98,21 @@ class GeneratorWithLargeBlobs(Subscriptable):
         return query, blobs
 
 
+class MockClient:
+    def clone(self):
+        return self
+
+    def query(self, q, b):
+        self.queries.append(q)
+        return ([{"FindBlob": {"status": 0}} for _ in range(len(q))], [])
+
+    def last_query_ok(self):
+        return True
+
+
 def test_dynamic_batching():
-    db = Connector()
-    db.query = lambda q, b: ([{"FindBlob": {"status": 0}}
-                             for _ in range(len(q))], [])
-    db.last_query_ok = lambda: True
+    db = MockClient()
+    db.queries = []
 
     # 10 elements, 100 bytes each
     generator = GeneratorWithLargeBlobs(10, 100)
@@ -114,13 +124,14 @@ def test_dynamic_batching():
 
     # It should have succeeded in processing all queries
     assert querier.get_succeeded_queries() == 10
+    assert len(db.queries) == 10
+    for q in db.queries:
+        assert len(q) == 1
 
 
 def test_dynamic_batching_oversized_item():
-    db = Connector()
-    db.query = lambda q, b: ([{"FindBlob": {"status": 0}}
-                             for _ in range(len(q))], [])
-    db.last_query_ok = lambda: True
+    db = MockClient()
+    db.queries = []
 
     # 10 elements, 100 bytes each
     generator = GeneratorWithLargeBlobs(10, 100)
@@ -131,3 +142,6 @@ def test_dynamic_batching_oversized_item():
 
     # It should have succeeded in processing all queries
     assert querier.get_succeeded_queries() == 10
+    assert len(db.queries) == 10
+    for q in db.queries:
+        assert len(q) == 1
