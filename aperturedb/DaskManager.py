@@ -94,7 +94,8 @@ class DaskManager:
             client.config.ca_cert,
             client.config.verify_hostname,
             client.shared_data.session,
-            type(client))
+            type(client),
+            kwargs)
         computation = computation.persist()
         if stats:
             progress(computation)

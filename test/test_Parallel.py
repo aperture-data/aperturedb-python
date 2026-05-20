@@ -125,6 +125,7 @@ def test_dynamic_batching():
     # 10 elements, 100 bytes each
     generator = GeneratorWithLargeBlobs(10, 100)
     querier = ParallelQuery(db)
+    db.queries = []
 
     # limit to 150 bytes -> should process 1 element per batch despite batchsize=5
     querier.query(generator, batchsize=5, numthreads=1,
@@ -144,6 +145,7 @@ def test_dynamic_batching_oversized_item():
     # 10 elements, 100 bytes each
     generator = GeneratorWithLargeBlobs(10, 100)
     querier = ParallelQuery(db)
+    db.queries = []
 
     # limit to 50 bytes -> item size (100) > max_bytes (50). Should log warning and process 1 per batch.
     querier.query(generator, batchsize=5, numthreads=1, max_bytes_per_batch=50)
