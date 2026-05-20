@@ -113,7 +113,7 @@ class Connector(object):
     It manages the TCP connection to the database.
 
     :::note
-    - The connection is established only when a query is run.
+    - The connection is established lazily when a query is run, unless `connect=True` is provided.
     - A new connection is established for each instance that runs a query, and gets closed only at destruction.
     :::
 
@@ -130,6 +130,8 @@ class Connector(object):
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
         str (key): Apeture Key, configuration as a deflated compressed string
+        bool (connect): Eagerly establish the connection upon construction. Default is False. 
+            If True, connects immediately instead of waiting for the first query, but does not authenticate until the first query or explicitly requested.
 
     The Configuration class options:
     host,port,user,password,token,use_ssl,use_keepalive,retry_interval_seconds,retrun_max_attempts

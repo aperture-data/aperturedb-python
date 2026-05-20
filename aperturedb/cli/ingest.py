@@ -19,7 +19,7 @@ app = typer.Typer()
 
 IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
 
-# This list needs to be updated when new transformers are added
+# This list needs to be updated when new enrichments are added
 # This enables CLI params.
 
 
@@ -66,7 +66,7 @@ def _create_pipeline(transformers: List[str]):
     from aperturedb.CommonLibrary import import_module_by_path
 
     # Actual collection of transformers, packaged with aperturedb.
-    built_in_transformers = {
+    built_in_enrichments = {
         "common_properties": CommonProperties,
         "image_properties": ImageProperties,
         "clip_pytorch_embeddings": CLIPPyTorchEmbeddings,
@@ -75,8 +75,8 @@ def _create_pipeline(transformers: List[str]):
     pipeline = []
     for transformer_name in transformers:
         transformer = None
-        if transformer_name in built_in_transformers:
-            transformer = built_in_transformers[transformer_name]
+        if transformer_name in built_in_enrichments:
+            transformer = built_in_enrichments[transformer_name]
         else:
             try:
                 transformer_module = import_module_by_path(transformer_name)
@@ -84,7 +84,7 @@ def _create_pipeline(transformers: List[str]):
                                       transformer_module.__name__)
             except Exception as e:
                 console.log(
-                    f"Could not load transformer {transformer_name}: {e}")
+                    f"Could not load enrichment step {transformer_name}: {e}")
                 exit(1)
         pipeline.append(transformer)
     return pipeline
@@ -123,6 +123,10 @@ def generate(filepath: Annotated[str, typer.Argument(
         help="Apply enrichment step(s) to the pipeline [Can be specified multiple times]")] = None,
     user_enrich: Annotated[Optional[List[str]], typer.Option(
         help="Apply user enrichment step(s) to the pipeline as path to file [Can be specified multiple times]")] = None,
+    transformer: Annotated[Optional[List[EnrichType]], typer.Option(
+        hidden=True)] = None,
+    user_transformer: Annotated[Optional[List[str]], typer.Option(
+        hidden=True)] = None,
 ):
     """
     Ingest data from a Data generator [BETA].
@@ -142,6 +146,13 @@ def generate(filepath: Annotated[str, typer.Argument(
     data = mclass()
     data.sample_count = len(data) if sample_count == -1 else sample_count
     console.log(f"Data generator loaded in {time.time() - start} seconds")
+
+    if transformer:
+        console.log("Warning: --transformer is deprecated, use --enrich instead.", style="yellow")
+        enrich = (enrich or []) + transformer
+    if user_transformer:
+        console.log("Warning: --user-transformer is deprecated, use --user-enrich instead.", style="yellow")
+        user_enrich = (user_enrich or []) + user_transformer
 
     if enrich or user_enrich:
         enrich = enrich or []
@@ -185,6 +196,10 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         help="Apply enrichment step(s) to the pipeline [Can be specified multiple times]")] = None,
     user_enrich: Annotated[Optional[List[str]], typer.Option(
         help="Apply user enrichment step(s) to the pipeline as path to file [Can be specified multiple times.]")] = None,
+    transformer: Annotated[Optional[List[EnrichType]], typer.Option(
+        hidden=True)] = None,
+    user_transformer: Annotated[Optional[List[str]], typer.Option(
+        hidden=True)] = None,
     sample_count: Annotated[int, typer.Option(
         help="Number of samples to ingest (-1 for all)")] = -1,
     debug: Annotated[bool, typer.Option(
@@ -218,6 +233,13 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     data = ingest_types[ingest_type](filepath, use_dask=use_dask,
                                      blobs_relative_to_csv=blobs_relative_to_csv)
     data.sample_count = len(data) if sample_count == -1 else sample_count
+    if transformer:
+        console.log("Warning: --transformer is deprecated, use --enrich instead.", style="yellow")
+        enrich = (enrich or []) + transformer
+    if user_transformer:
+        console.log("Warning: --user-transformer is deprecated, use --user-enrich instead.", style="yellow")
+        user_enrich = (user_enrich or []) + user_transformer
+
     if enrich or user_enrich:
         enrich = enrich or []
         user_enrich = user_enrich or []
@@ -309,6 +331,10 @@ def generate_embedding_csv_from_image_csv(
         help="Apply enrichment step(s) to the pipeline [Can be specified multiple times]")] = None,
     user_enrich: Annotated[Optional[List[str]], typer.Option(
         help="Apply user enrichment step(s) to the pipeline as path to file [Can be specified multiple times.]")] = None,
+    transformer: Annotated[Optional[List[EnrichType]], typer.Option(
+        hidden=True)] = None,
+    user_transformer: Annotated[Optional[List[str]], typer.Option(
+        hidden=True)] = None,
     sample_count: Annotated[int, typer.Option(
         help="Number of samples to ingest (-1 for all)")] = -1,
 ):
@@ -328,6 +354,13 @@ def generate_embedding_csv_from_image_csv(
     data.sample_count = len(data) if sample_count == -1 else sample_count
     enrich = enrich or []
     user_enrich = user_enrich or []
+    if transformer:
+        console.log("Warning: --transformer is deprecated, use --enrich instead.", style="yellow")
+        enrich = enrich + transformer
+    if user_transformer:
+        console.log("Warning: --user-transformer is deprecated, use --user-enrich instead.", style="yellow")
+        user_enrich = user_enrich + user_transformer
+
     all_transformers = enrich + user_enrich
     if len(all_transformers) == 0:
         console.log(
@@ -372,3 +405,30 @@ def generate_embedding_csv_from_image_csv(
     if(len(errored) > 0):
         pd.json_normalize(errored).to_csv(
             f"{filename}_errored.csv", index=False)
+
+
+@app.command("from-generator", hidden=True)
+def from_generator_deprecated(
+    filepath: Annotated[str, typer.Argument(help="Path to python module for ingestion [BETA]")],
+    sample_count: Annotated[int, typer.Option(help="Number of samples to ingest (-1 for all)")] = -1,
+    debug: Annotated[bool, typer.Option(help="Debug mode")] = False,
+    stats: Annotated[bool, typer.Option(help="Show realtime statistics with summary")] = True,
+    batchsize: Annotated[int, typer.Option(help="Size of the batch")] = 1,
+    num_workers: Annotated[int, typer.Option(help="Number of workers for ingestion")] = 1,
+    transformer: Annotated[Optional[List[EnrichType]], typer.Option(hidden=True)] = None,
+    user_transformer: Annotated[Optional[List[str]], typer.Option(hidden=True)] = None,
+):
+    """
+    Deprecated: use `generate` instead.
+    """
+    console.log("Warning: Command 'from-generator' is deprecated, use 'generate' instead.", style="yellow")
+    generate(
+        filepath=filepath,
+        sample_count=sample_count,
+        debug=debug,
+        stats=stats,
+        batchsize=batchsize,
+        num_workers=num_workers,
+        enrich=transformer,
+        user_enrich=user_transformer,
+    )
