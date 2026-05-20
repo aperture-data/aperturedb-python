@@ -194,7 +194,8 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
 
-        self.query(generator, batchsize, numthreads, stats, transformers=transformers)
+        self.query(generator, batchsize, numthreads,
+                   stats, transformers=transformers)
 
     def print_stats(self) -> None:
 

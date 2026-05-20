@@ -9,6 +9,7 @@ from aperturedb.transformers.transformer import Transformer
 
 logger = logging.getLogger(__name__)
 
+
 class DummyTransformer(Transformer):
     def __init__(self, generator, client=None):
         super().__init__(generator, client=client)
@@ -99,20 +100,22 @@ class TestParallel():
         """
         elements = 10
         generator = GeneratorWithErrors(elements=elements, error_pct=0)
-        
+
         loader = ParallelLoader(db)
-        loader.ingest(generator, batchsize=2, numthreads=2, stats=False, transformers=[DummyTransformer])
-        
+        loader.ingest(generator, batchsize=2, numthreads=2,
+                      stats=False, transformers=[DummyTransformer])
+
         assert loader.get_succeeded_queries() > 0
 
     def test_transformers_rejects_dask(self, db: Connector):
         elements = 10
         generator = GeneratorWithErrors(elements=elements, error_pct=0)
         generator.use_dask = True
-        
+
         loader = ParallelLoader(db)
         try:
-            loader.ingest(generator, batchsize=2, numthreads=2, stats=False, transformers=[DummyTransformer])
+            loader.ingest(generator, batchsize=2, numthreads=2,
+                          stats=False, transformers=[DummyTransformer])
             assert False, "Should have raised ValueError"
         except ValueError as e:
             assert "Transformers cannot be used with Dask" in str(e)
