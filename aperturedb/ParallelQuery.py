@@ -238,7 +238,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             worker_stats = {}
             try:
                 result_stats = self.do_batch(client, batch_start,
-                              generator[batch_start:batch_end])
+                                             generator[batch_start:batch_end])
                 if result_stats is not None:
                     worker_stats = result_stats
             except Exception as e:
@@ -251,7 +251,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.pb.update(batch_end - batch_start)
 
             if getattr(self, "log_progress", False):
-                logger.info(f"Worker {thid} completed batch {i+1}/{total_batches}. Worker stats: {worker_stats}, Errors so far: {self.error_counter}")
+                logger.info(f"Worker {thid} completed batch {
+                            i + 1}/{total_batches}. Worker stats: {worker_stats}, Errors so far: {self.error_counter}")
 
             if hasattr(self, "progress_callback") and callable(self.progress_callback):
                 try:
