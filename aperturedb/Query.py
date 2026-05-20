@@ -275,13 +275,19 @@ class QueryBuilder():
     def get_query_cmd(cls, query: Union[dict, list]) -> str:
         known_constraint_keywords = ['results', 'apply']
         if isinstance(query, dict):
+            if not query:
+                raise ValueError("Cannot extract command from empty dict")
             return list(query.keys())[0]
-        elif isinstance(query, list) and isinstance(query[0], dict) \
+        elif isinstance(query, list) and len(query) >= 2 and isinstance(query[0], dict) \
                 and all(map(lambda k: k in known_constraint_keywords, query[0].keys()))  \
                 and isinstance(query[1], dict):
+            if not query[1]:
+                raise ValueError(
+                    "Cannot extract command from empty dict in query list")
             return list(query[1].keys())[0]
         else:
-            raise Exception("Cannot extract command from query structure")
+            raise ValueError(
+                f"Cannot extract command from query structure: {query}")
 
     @classmethod
     def find_command(self, oclass: Union[str, ObjectType], params: dict) -> dict:
