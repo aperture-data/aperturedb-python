@@ -271,6 +271,20 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
 
         use_dask = hasattr(self, "use_dask") and self.use_dask
+
+        has_dask_df = hasattr(
+            generator, "df") and "dask.dataframe.core.DataFrame" in str(type(generator.df))
+        if use_dask and not has_dask_df:
+            logger.error(
+                "ParallelLoader configured with use_dask=True, but generator does not have a dask DataFrame.")
+            raise Exception(
+                "ParallelLoader configured with use_dask=True, but generator does not have a dask DataFrame.")
+        elif not use_dask and has_dask_df:
+            logger.error(
+                "Generator has a dask DataFrame, but ParallelLoader is not configured with use_dask=True.")
+            raise Exception(
+                "Generator has a dask DataFrame, but ParallelLoader is not configured with use_dask=True.")
+
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
