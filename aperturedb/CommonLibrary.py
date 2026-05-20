@@ -355,7 +355,7 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
         blobs_end = blobs_start + blobs_per_query
 
         b_count = 0
-        if issubclass(type(response), list):
+        if isinstance(response, list):
             for req, resp in zip(query[start:end], response[start:end]):
                 for k in req:
                     blob_returning_commands = ["FindImage", "FindBlob", "FindVideo",
@@ -369,8 +369,8 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
         handler(
             query[start:end],
             query_blobs[blobs_start:blobs_end],
-            response[start:end] if issubclass(
-                type(response), list) else response,
+            response[start:end] if isinstance(
+                response, list) else response,
             response_blobs[blobs_returned:blobs_returned + b_count] if
             len(response_blobs) >= blobs_returned + b_count else None,
             None if cmd_index_offset is None else cmd_index_offset + i)
