@@ -352,14 +352,16 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
     # We could potentially always call this handler function
     # and let the user deal with the error cases.
     blobs_returned = 0
-    for i in range(math.ceil(len(query) / commands_per_query)):
+    is_list = isinstance(response, list)
+    limit = len(response) if is_list else len(query)
+    for i in range(math.ceil(limit / commands_per_query)):
         start = i * commands_per_query
-        end = start + commands_per_query
+        end = min(start + commands_per_query, limit)
         blobs_start = i * blobs_per_query
         blobs_end = blobs_start + blobs_per_query
 
         b_count = 0
-        if issubclass(type(response), list):
+        if is_list:
             for req, resp in zip(query[start:end], response[start:end]):
                 for k in req:
                     blob_returning_commands = ["FindImage", "FindBlob", "FindVideo",
@@ -373,8 +375,8 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
         handler(
             query[start:end],
             query_blobs[blobs_start:blobs_end],
-            response[start:end] if issubclass(
-                type(response), list) else response,
+            response[start:end] if isinstance(
+                response, list) else response,
             response_blobs[blobs_returned:blobs_returned + b_count] if
             len(response_blobs) >= blobs_returned + b_count else None,
             None if cmd_index_offset is None else cmd_index_offset + i)
