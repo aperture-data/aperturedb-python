@@ -100,6 +100,7 @@ if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         -v $(pwd)/${RUNNER_NAME}_http_ca:/ca \
         --network=${RUNNER_NAME}_http_default \
         -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
+        -v $(pwd)/run_test.sh:/aperturedata/test/run_test.sh \
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
         -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
@@ -118,6 +119,7 @@ if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         -v $(pwd)/${RUNNER_NAME}_non_http_ca:/ca \
         --network=${RUNNER_NAME}_non_http_default \
         -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
+        -v $(pwd)/run_test.sh:/aperturedata/test/run_test.sh \
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
         -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
