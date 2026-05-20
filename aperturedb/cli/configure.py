@@ -88,7 +88,7 @@ def get_configurations(file: str):
                 verify_hostname=config.get("verify_hostname", True))
             if "user_keys" in config:
                 configs[c].set_user_keys(config["user_keys"])
-    active = configurations["active"]
+    active = configurations.get("active")
     return configs, active
 
 
@@ -236,16 +236,25 @@ def create(
         name = name if name is not None else gen_config.name
 
     else:
+        if name is None:
+            if interactive:
+                name = typer.prompt("Enter configuration name", default="")
+                if not name:
+                    console.log(
+                        "Configuration name must be specified", style="bold yellow")
+                    raise typer.Exit(code=2)
+                check_for_overwrite(name)
+            else:
+                console.log("Configuration name must be specified",
+                            style="bold yellow")
+                raise typer.Exit(code=2)
+
         if not CONFIG_NAME_RE.match(name):
             console.log(
                 f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
             raise typer.Exit(code=2)
+
         if interactive:
-            if name is None:
-                name = typer.prompt(
-                    "Enter configuration name", default=name)
-                assert name is not None, "Configuration name must be specified"
-                check_for_overwrite(name)
             db_host = typer.prompt(
                 f"Enter {APP_NAME} host name", default=db_host)
             db_port = typer.prompt(
@@ -312,9 +321,11 @@ def activate(
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
+        raise typer.Exit(code=2)
     except json.JSONDecodeError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
+        raise typer.Exit(code=2)
 
     _write_config(config_path, configs)
 
