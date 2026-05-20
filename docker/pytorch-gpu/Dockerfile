@@ -1,4 +1,4 @@
-FROM gcr.io/deeplearning-platform-release/pytorch-gpu.py310
+FROM gcr.io/deeplearning-platform-release/pytorch-gpu.py310:m130
 
 RUN mkdir /aperturedata
 ADD docker/pytorch-gpu/aperturedata /aperturedata
