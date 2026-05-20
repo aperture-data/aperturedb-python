@@ -100,12 +100,16 @@ def resolve(points: np.array, image_meta, operations) -> np.array:
         image_meta_height = image_meta["adb_image_height"]
         for operation in operations:
             if operation["type"] == "resize":
-                x_ratio = operation["width"] / image_meta_width
-                y_ratio = operation["height"] / image_meta_height
+                if "scale" in operation:
+                    x_ratio = operation["scale"]
+                    y_ratio = operation["scale"]
+                else:
+                    x_ratio = operation["width"] / image_meta_width
+                    y_ratio = operation["height"] / image_meta_height
                 np.multiply(resolved, [x_ratio, y_ratio],
                             out=resolved, casting="unsafe")
-                image_meta_width = operation["width"]
-                image_meta_height = operation["height"]
+                image_meta_width *= x_ratio
+                image_meta_height *= y_ratio
             if operation["type"] == "rotate":
                 angle = operation["angle"]
                 resolved = rotate(
