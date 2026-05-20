@@ -97,9 +97,9 @@ class TestParallel():
 
             generator = GeneratorWithErrors(elements=elements, error_pct=0)
             querier = ParallelQuery(db, dry_run=True)
-            
+
             callback_calls = []
-            
+
             def my_callback(worker_id, batch_index, total_batches, batch_start, batch_end, worker_stats, errors):
                 callback_calls.append({
                     "worker_id": worker_id,
@@ -118,9 +118,9 @@ class TestParallel():
                               stats=True,
                               progress_callback=my_callback,
                               log_progress=True)
-                
+
             assert len(callback_calls) > 0
-            
+
             for call in callback_calls:
                 assert "worker_id" in call
                 assert "total_batches" in call
@@ -128,11 +128,12 @@ class TestParallel():
                 assert "batch_end" in call
                 assert "worker_stats" in call
                 assert "errors" in call
-            
+
             log_messages = [record.message for record in caplog.records]
-            completed_logs = [msg for msg in log_messages if "completed batch" in msg]
+            completed_logs = [
+                msg for msg in log_messages if "completed batch" in msg]
             assert len(completed_logs) > 0
-            
+
         except Exception as e:
             print(e)
             assert False
