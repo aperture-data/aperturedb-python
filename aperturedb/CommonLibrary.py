@@ -75,23 +75,20 @@ def _create_configuration_from_json(config: Union[Dict, str],
             config = json.loads(config)
         except json.JSONDecodeError as e:
             # Cannot print the JSON string because it may contain a password.
-            assert False, f"problem decoding JSON config string: {e}"
-    assert isinstance(
-        config, dict), f"config must be a dict or a JSON object string: {type(config)}"
+            raise ValueError(f"problem decoding JSON config string: {e}")
+    if not isinstance(config, dict):
+        raise ValueError(f"config must be a dict or a JSON object string: {type(config)}")
 
     # Remove the password from the configuration before logging.
     clean_config = {k: v for k, v in config.items() if k != "password"}
 
     # These fields are required.
-    assert "host" in config, (
-        f"host is required in the configuration: {clean_config}"
-    )
-    assert "username" in config, (
-        f"username is required in the configuration: {clean_config}"
-    )
-    assert "password" in config, (
-        f"password is required in the configuration: {clean_config}"
-    )
+    if "host" not in config:
+        raise ValueError(f"host is required in the configuration: {clean_config}")
+    if "username" not in config:
+        raise ValueError(f"username is required in the configuration: {clean_config}")
+    if "password" not in config:
+        raise ValueError(f"password is required in the configuration: {clean_config}")
 
     # These fields have no default in the Configuration class.
     if 'port' not in config:
@@ -101,9 +98,8 @@ def _create_configuration_from_json(config: Union[Dict, str],
         config["name"] = name  # will overwrite the name in the config
 
     if name_required:
-        assert "name" in config, (
-            f"name is required in the configuration: {clean_config}"
-        )
+        if "name" not in config:
+            raise ValueError(f"name is required in the configuration: {clean_config}")
     elif 'name' not in config:
         config["name"] = "from_json"
 
