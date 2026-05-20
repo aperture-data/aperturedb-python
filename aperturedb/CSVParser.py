@@ -51,10 +51,10 @@ class CSVParser(Subscriptable):
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
             "blobs_relative_to_csv"]
-        # Keep use_dask for backwards compatibility but log a warning if used
-        if "use_dask" in kwargs:
+        # Keep use_dask for backwards compatibility but log a warning if used with True
+        if kwargs.get("use_dask"):
             logger.warning(
-                "The 'use_dask' parameter in CSVParser is deprecated and will be ignored in future versions. Pass 'use_dask' directly to the Parallelizer.")
+                "The 'use_dask' parameter in CSVParser is deprecated. To enable dask, both the parser and the Parallelizer currently need use_dask=True; in the future this will be consolidated.")
         self.use_dask = kwargs.get("use_dask", False)
         df = kwargs["df"] if "df" in kwargs else None
 

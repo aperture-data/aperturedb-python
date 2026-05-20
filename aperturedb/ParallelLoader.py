@@ -1,3 +1,4 @@
+from typing import Optional
 from aperturedb import ParallelQuery
 from aperturedb.Connector import Connector
 from aperturedb.Utils import Utils
@@ -42,7 +43,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     * A class derived from `aperturedb.KaggleData.KaggleData`
     """
 
-    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = None):
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: Optional[bool] = None):
         super().__init__(client, dry_run=dry_run, use_dask=use_dask)
         self.utils = Utils(self.client)
         self.type = "element"

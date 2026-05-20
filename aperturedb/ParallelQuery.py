@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from aperturedb import Parallelizer
 import numpy as np
 import logging
@@ -38,7 +38,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = None):
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: Optional[bool] = None):
         super().__init__(use_dask=use_dask)
         test_string = f"Connection test successful with {client.config}"
         try:
@@ -273,7 +273,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         use_dask = self.use_dask if self.use_dask is not None else (
             hasattr(generator, "use_dask") and generator.use_dask)
+        
         if use_dask:
+            if hasattr(generator, "df") and not hasattr(generator.df, "map_partitions"):
+                raise ValueError("To run with use_dask=True, the generator's dataframe must be a Dask DataFrame. Ensure the CSVParser is also initialized with use_dask=True.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 

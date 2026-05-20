@@ -353,7 +353,7 @@ class ParallelQuerySet(ParallelQuery):
         use_dask (bool, optional): Whether to use Dask for parallel ingestion. If None, falls back to generator settings. Defaults to None.
     """
 
-    def __init__(self, client: Connector, dry_run: bool = False, use_dask: bool = None):
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: Optional[bool] = None):
 
         super().__init__(client, dry_run=dry_run, use_dask=use_dask)
 

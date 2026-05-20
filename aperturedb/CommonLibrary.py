@@ -214,7 +214,7 @@ def create_connector(
             return configs["global"][name]
         if "local" in configs and name in configs["local"]:
             return configs["local"][name]
-        assert False, f"Configuration '{name}' not found ({source})."
+        raise ValueError(f"Configuration '{name}' not found ({source}).")
 
     if key is not None:
         if name is not None:
@@ -262,7 +262,7 @@ def create_connector(
         config = lookup_config_by_name(name, "active")
         logger.info(f"Using active configuration '{name}'")
     else:
-        assert False, "No configuration found."
+        raise ValueError("No configuration found.")
     logger.info(f"Configuration: {config}")
     return __create_connector(config)
 
