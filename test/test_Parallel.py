@@ -81,3 +81,53 @@ class TestParallel():
             print(e)
             print("Failed to renew Session")
             assert False
+
+
+class GeneratorWithLargeBlobs(Subscriptable):
+    def __init__(self, elements=10, blob_size=100) -> None:
+        super().__init__()
+        self.elements = elements
+        self.blob_size = blob_size
+
+    def __len__(self):
+        return self.elements
+
+    def getitem(self, subscript):
+        query = [{"FindBlob": {}}]
+        blobs = [b"0" * self.blob_size]
+        return query, blobs
+
+
+def test_dynamic_batching():
+    db = Connector()
+    db.query = lambda q, b: ([{"FindBlob": {"status": 0}}
+                             for _ in range(len(q))], [])
+    db.last_query_ok = lambda: True
+
+    # 10 elements, 100 bytes each
+    generator = GeneratorWithLargeBlobs(10, 100)
+    querier = ParallelQuery(db)
+
+    # limit to 150 bytes -> should process 1 element per batch despite batchsize=5
+    querier.query(generator, batchsize=5, numthreads=1,
+                  max_bytes_per_batch=150)
+
+    # It should have succeeded in processing all queries
+    assert querier.get_succeeded_queries() == 10
+
+
+def test_dynamic_batching_oversized_item():
+    db = Connector()
+    db.query = lambda q, b: ([{"FindBlob": {"status": 0}}
+                             for _ in range(len(q))], [])
+    db.last_query_ok = lambda: True
+
+    # 10 elements, 100 bytes each
+    generator = GeneratorWithLargeBlobs(10, 100)
+    querier = ParallelQuery(db)
+
+    # limit to 50 bytes -> item size (100) > max_bytes (50). Should log warning and process 1 per batch.
+    querier.query(generator, batchsize=5, numthreads=1, max_bytes_per_batch=50)
+
+    # It should have succeeded in processing all queries
+    assert querier.get_succeeded_queries() == 10
