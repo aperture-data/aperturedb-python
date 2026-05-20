@@ -232,6 +232,8 @@ class ADFS(Fuse):
         logger.info(f"path = {path}, size = {size}, offset = {offset}")
         filename = os.path.basename(path)
         logger.info(f"Filename = {filename}")
+        img = b''
+        slen = 0
         if filename == meta_info:
             try:
                 img = self.meta_data
@@ -243,13 +245,12 @@ class ADFS(Fuse):
                 image_id = filename[:-4]
                 idx = self._images.images_ids.index(image_id)
                 logger.info(f"Image id = {image_id}, index = {idx}")
-                self.iolock.acquire()
-                img = self._images.get_image_by_index(idx)
-                self.iolock.release()
+                with self.iolock:
+                    img = self._images.get_image_by_index(idx)
                 slen = len(img)
                 logger.debug(f"Type = {type(img)}, len = {slen}")
             except Exception as e:
-                logger.exception("Error occured")
+                logger.exception("Error occurred")
 
         if offset < slen:
             if offset + size > slen:

@@ -24,15 +24,11 @@ class Sources():
         Load data from a file.
         """
         try:
-            fd = open(filename, "rb")
-            buff = fd.read()
-            fd.close()
-            return True, buff
+            with open(filename, "rb") as fd:
+                buff = fd.read()
+                return True, buff
         except Exception as e:
             logger.exception(f"VALIDATION ERROR: {filename}")
-        finally:
-            if not fd.closed:
-                fd.close()
         return False, None
 
     def load_from_http_url(self, url, validator):
