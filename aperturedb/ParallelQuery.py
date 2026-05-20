@@ -327,7 +327,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
-            max_bytes_per_batch (int, optional): The maximum number of bytes allowed per batch. Overrides batchsize if the blob sizes exceed this limit. Default is None.
+            max_bytes_per_batch (int, optional): The maximum number of bytes allowed per batch. Overrides batchsize if the blob sizes exceed this limit. If None or <= 0, dynamic batching is disabled and batchsize is strictly used. Default is None.
         """
         self.max_bytes_per_batch = max_bytes_per_batch
 
