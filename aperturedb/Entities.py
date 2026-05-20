@@ -71,7 +71,8 @@ class Entities(Subscriptable):
         cls.client = client
 
         query = spec.query()
-        logger.debug(f"query={query}")
+        from aperturedb.CommonLibrary import censor_tokens
+        logger.debug(f"query={censor_tokens(query)}")
         res, r, b = execute_query(client, query, [])
         if res > 0:
             logger.warning(f"resp={r}")
