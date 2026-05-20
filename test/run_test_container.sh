@@ -51,6 +51,9 @@ LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
 RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
+mkdir -p "$RUNNER_INFO_PATH"
+mkdir -p "$LOG_PATH"
+
 check_containers_networks | tee "$RUNNER_INFO_PATH"/runner_state.log
 
 REPOSITORY="aperturedata/aperturedb-python-tests"
