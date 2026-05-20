@@ -169,7 +169,6 @@ class Utils(object):
         dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={
                       'shape': 'none'}, graph_attr={'rankdir': 'LR'}, edge_attr={'color': colors['edge']})
 
-        # autopep8: off
         # Add entities as nodes and connections as edges
         entities = r['entities']['classes']
         connections = r['connections']['classes']
@@ -195,7 +194,7 @@ class Utils(object):
                     f'{idx_str}, {typ}</FONT></TD></TR>'
                 )
             for connection, data in connections.items():
-                data_list = [data] if isinstance(data, dict) else data
+                data_list = self._normalize_class_data(data)
                 for data in data_list:
                     if data['src'] == entity:
                         matched = data["matched"]
@@ -227,12 +226,11 @@ class Utils(object):
 
         if isinstance(connections, dict):
             for connection, data in connections.items():
-                data_list = [data] if isinstance(data, dict) else data
+                data_list = self._normalize_class_data(data)
                 for data in data_list:
                     dot.edge(f'{data["src"]}:{connection}',
                              f'{data["dst"]}')
 
-        # autopep8: on
         # Render the diagram inline
         s = Source(dot.source, filename="schema_diagram.gv", format="png")
 
@@ -274,6 +272,21 @@ class Utils(object):
                   f"({int(p[k][0] / total_elements * 100.0)}%)")
 
         return total_elements
+
+    @staticmethod
+    def _normalize_class_data(data):
+        """
+        Normalize class data returned from GetSchema.
+        ApertureDB can return connections as a dict where the keys are connection names
+        and values are the dicts we actually want, or as a single dict with "matched", etc,
+        or as a list. We normalize it to a list of dicts.
+        """
+        if isinstance(data, dict):
+            if "matched" in data:
+                return [data]
+            else:
+                return list(data.values())
+        return data if isinstance(data, list) else [data]
 
     def summary(self):
         """
@@ -318,16 +331,7 @@ class Utils(object):
         for c in connections_classes:
             connections = r["connections"]["classes"][c]
 
-            # ApertureDB can return connections as a dict where the keys are connection names
-            # and values are the dicts we actually want, or as a single dict with "matched", etc,
-            # or as a list. We normalize it to a list of dicts.
-            if isinstance(connections, dict):
-                if "matched" in connections:
-                    connections_list = [connections]
-                else:
-                    connections_list = list(connections.values())
-            else:
-                connections_list = connections
+            connections_list = self._normalize_class_data(connections)
 
             for connection in connections_list:
                 total_edges += self._object_summary(c, connection)
