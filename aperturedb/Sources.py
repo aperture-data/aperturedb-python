@@ -29,8 +29,7 @@ class Sources():
             fd.close()
             return True, buff
         except Exception as e:
-            logger.error(f"VALIDATION ERROR: {filename}")
-            logger.exception(e)
+            logger.exception(f"VALIDATION ERROR: {filename}")
         finally:
             if not fd.closed:
                 fd.close()

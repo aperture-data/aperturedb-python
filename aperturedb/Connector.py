@@ -453,7 +453,7 @@ class Connector(object):
             except socket.error as e:
                 logger.error(
                     f"Error connecting to server: "
-                    f"{self.config} \r\n{details}. {e=}",
+                    f"{self.config} \r\n{details}.",
                     exc_info=True,
                     stack_info=True)
 

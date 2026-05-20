@@ -84,8 +84,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 logger.warning(f"Image present but error reading it: {url}")
                 return False
         except Exception as e:
-            logger.error(f"Image present but error decoding: {url}")
-            logger.exception(e)
+            logger.exception(f"Image present but error decoding: {url}")
             return False
 
         return True
@@ -110,8 +109,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 imgdata = requests.get(url)
                 downloaded = True
             except requests.exceptions.ConnectionError as e:
-                logger.warning("Error with GET.")
-                logger.exception(e)
+                logger.exception("Error with GET.")
 
             if downloaded and imgdata.ok:
                 break
@@ -134,8 +132,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
                     os.remove(filename)
                     self.error_counter += 1
             except Exception as e:
-                logger.error(f"Downloaded image cannot be decoded: {url}")
-                logger.exception(e)
+                logger.exception(f"Downloaded image cannot be decoded: {url}")
                 os.remove(filename)
                 self.error_counter += 1
         else:
