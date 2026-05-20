@@ -129,11 +129,11 @@ class Connector(object):
             and it means that disconnections are detected sooner.
             Turn this off to reduce traffic on high-cost network connections.
         Configuration (config): Configuration object to use for connection.
-        str (key): Apeture Key, configuration as a deflated compressed string
+        str (key): Aperture Key, configuration as a deflated compressed string
         bool (connect): Establish connection during initialization. Defaults to False.
 
     The Configuration class options:
-    host,port,user,password,token,use_ssl,use_keepalive,retry_interval_seconds,retrun_max_attempts
+    host,port,user,password,token,use_ssl,use_keepalive,retry_interval_seconds,retry_max_attempts
     are all ignored in the initializer if a config or key is passed in.
 
     If a key is passed in, it is chosen over a config.
