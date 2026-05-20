@@ -167,6 +167,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                                     f"expected 6 > args > 3, got {parameter_count}")
                 if parameter_count == 4:
                     indexless_handler = response_handler
+
                     def response_handler(query, qblobs, resp, rblobs, qindex): return indexless_handler(
                         query, qblobs, resp, rblobs)
 

@@ -96,14 +96,15 @@ class TestParallel():
             db.config = "mock_config"
             db.query.return_value = ([{"GetSchema": {"status": 0}}], [])
             querier = ParallelQuery(db, dry_run=False)
-            
+
             # Now set the mock for the actual queries
-            db.query.return_value = ({"status": 3, "error_msg": "mock error"}, [])
+            db.query.return_value = (
+                {"status": 3, "error_msg": "mock error"}, [])
             db.last_query_ok.return_value = True
             db.get_last_query_time.return_value = 1.0
-            
+
             querier.query(generator, batchsize=2, numthreads=1, stats=True)
-            
+
             # Since all queries got status 3, no commands or queries succeeded.
             assert querier.get_succeeded_commands() == 0
             assert querier.get_succeeded_queries() == 0
