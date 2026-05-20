@@ -47,6 +47,7 @@ class ConnectionPool:
                 break
 
         if self._pool.qsize() < pool_size:
+            created = self._pool.qsize()
             # Drain any successfully created connections to prevent leaks
             while not self._pool.empty():
                 try:
@@ -55,10 +56,11 @@ class ConnectionPool:
                         conn.close()
                 except queue.Empty:
                     break
-            raise ConnectionError(
-                f"Failed to initialize pool: expected {
-                    pool_size} connections, got {self._pool.qsize()}."
-            ) from last_error
+            msg = (
+                f"Failed to initialize pool: expected {pool_size} "
+                f"connections, got {created}."
+            )
+            raise ConnectionError(msg) from last_error
 
     def available(self) -> int:
         """Returns the number of available connections in the pool."""
