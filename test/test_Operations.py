@@ -1,4 +1,3 @@
-import pytest
 from aperturedb.Operations import Operations
 
 

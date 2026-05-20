@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Optional
 
 
 class Operations(object):
@@ -15,7 +16,7 @@ class Operations(object):
     def get_operations_arr(self):
         return self.operations_arr
 
-    def resize(self, width: int = None, height: int = None, scale: float = None) -> Operations:
+    def resize(self, width: Optional[int] = None, height: Optional[int] = None, scale: Optional[float] = None) -> Operations:
 
         op = {
             "type": "resize"
@@ -86,7 +87,7 @@ class Operations(object):
         self.operations_arr.append(op)
         return self
 
-    def preview(self, max_frame_count: int = None, max_time_fraction: float = None, max_time_offset: str = None, max_size_mb: float = None) -> Operations:
+    def preview(self, max_frame_count: Optional[int] = None, max_time_fraction: Optional[float] = None, max_time_offset: Optional[str] = None, max_size_mb: Optional[float] = None) -> Operations:
 
         op = {
             "type": "preview"
