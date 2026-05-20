@@ -96,4 +96,5 @@ class Transformer(Subscriptable):
                 return getattr(self.data, name)
             except AttributeError:
                 pass
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{name}'")
