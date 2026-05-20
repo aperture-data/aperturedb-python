@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from aperturedb import Parallelizer
 import numpy as np
 import logging
@@ -221,8 +221,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         max_bytes = getattr(self, "max_bytes_per_batch", None)
 
         if max_bytes is not None and max_bytes > 0:
-            logger.info(f"Worker {thid} executing dynamically sized batches (max {
-                        max_bytes} bytes), {self.stats=}")
+            logger.info(f"Worker {thid} executing dynamically sized batches (max {max_bytes} bytes), {self.stats=}")
             current_batch = []
             current_bytes = 0
             batch_start = start
@@ -236,10 +235,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 # Estimate item size (mostly blobs + some json overhead)
                 item_bytes = 0
                 for blob in item[1]:
-                    if isinstance(blob, bytes):
+                    if isinstance(blob, (bytes, bytearray, memoryview)):
                         item_bytes += len(blob)
                     else:
-                        item_bytes += len(str(blob))
+                        item_bytes += 100
 
                 if len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes):
                     try:
@@ -266,8 +265,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     self.do_batch(client, batch_start, current_batch)
                 except Exception as e:
                     logger.exception(e)
-                    logger.warning(f"Worker {
-                                   thid} failed to execute dynamic batch remainder starting at {batch_start}")
+                    logger.warning(f"Worker {thid} failed to execute dynamic batch remainder starting at {batch_start}")
                     self.error_counter += 1
 
                 if self.stats:
@@ -315,8 +313,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         return sum([stat["succeeded_commands"]
                     for stat in self.actual_stats])
 
-    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, max_bytes_per_batch: int = None) -> None:
-        self.max_bytes_per_batch = max_bytes_per_batch
+    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, max_bytes_per_batch: Optional[int] = None) -> None:
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)
@@ -326,6 +323,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
+        self.max_bytes_per_batch = max_bytes_per_batch
 
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:
