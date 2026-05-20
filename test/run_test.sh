@@ -4,6 +4,10 @@ set -u
 set -e
 set -o pipefail
 
+: "${GCP_SERVICE_ACCOUNT_KEY:=""}"
+: "${APERTUREDB_LOG_PATH:=""}"
+: "${FILTER:=""}"
+
 mkdir -p output
 rm -rf output/*
 mkdir -p input/blobs
@@ -22,12 +26,18 @@ python3 generateInput.py
 echo "Done generating input files."
 
 echo "Running tests..."
-CREDENTIALS_FILE='/tmp/key.json'
-echo $GCP_SERVICE_ACCOUNT_KEY > $CREDENTIALS_FILE
-export GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE
+if [ -n "$GCP_SERVICE_ACCOUNT_KEY" ]; then
+	CREDENTIALS_FILE='/tmp/key.json'
+	echo "$GCP_SERVICE_ACCOUNT_KEY" > "$CREDENTIALS_FILE"
+	export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
+fi
 # capture errors
 set +e
-CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${FILTER}"
+if [ -n "$APERTUREDB_LOG_PATH" ]; then
+	CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${FILTER}"
+else
+	CLIENT_PATH="output/client/${FILTER}"
+fi
 CLIENT_PATH=${CLIENT_PATH// /_}
 mkdir -p ${CLIENT_PATH}
 PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$FILTER" test_*.py -v | tee ${CLIENT_PATH}/test.log
