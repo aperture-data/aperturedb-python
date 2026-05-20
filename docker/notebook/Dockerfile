@@ -8,7 +8,7 @@ RUN mkdir /aperturedata
 # Install CLIP (for running transformers)
 RUN PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} pip install git+https://github.com/openai/CLIP.git
 
-RUN apt update && apt install -y curl && apt clean
+RUN apt update && apt install -y curl && apt clean && rm -rf /var/lib/apt/lists/*
 
 # Install useful JupyterLab extensions
 RUN pip install jupyter-resource-usage
