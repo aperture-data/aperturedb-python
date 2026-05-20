@@ -223,15 +223,19 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         CORES_USED_FOR_PARALLELIZATION = 0.9
         PARTITIONS_PER_CORE = 10
         cores_used = int(CORES_USED_FOR_PARALLELIZATION * mp.cpu_count())
-        blocksize = os.path.getsize(filepath) // (cores_used * PARTITIONS_PER_CORE)
+        blocksize = os.path.getsize(
+            filepath) // (cores_used * PARTITIONS_PER_CORE)
         if blocksize == 0:
             cpus = mp.cpu_count()
-            raise Exception(f"CSV file too small to be read in parallel. Use normal mode. cpus: {cpus}")
+            raise Exception(
+                f"CSV file too small to be read in parallel. Use normal mode. cpus: {cpus}")
         df = dd.read_csv(filepath, blocksize=blocksize)
-        data = ingest_types[ingest_type](filepath, df=df, blobs_relative_to_csv=blobs_relative_to_csv)
+        data = ingest_types[ingest_type](
+            filepath, df=df, blobs_relative_to_csv=blobs_relative_to_csv)
     else:
-        data = ingest_types[ingest_type](filepath, blobs_relative_to_csv=blobs_relative_to_csv)
-    
+        data = ingest_types[ingest_type](
+            filepath, blobs_relative_to_csv=blobs_relative_to_csv)
+
     data.sample_count = len(data) if sample_count == -1 else sample_count
     if transformer or user_transformer:
         transformer = transformer or []
