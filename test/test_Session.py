@@ -271,6 +271,11 @@ class TestSession():
         # mock connect so it doesn't fail on missing server
         def mock_connect(self):
             self.connected = True
+
+            class MockConn:
+                def close(self): pass
+            self.conn = MockConn()
+
         monkeypatch.setattr(Connector, "connect", mock_connect)
 
         new_db = Connector(

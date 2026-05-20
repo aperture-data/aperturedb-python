@@ -64,6 +64,7 @@ dev = [
     "autopep8",
     "pre-commit",
     "pytest",
+    "pytest-cov",
     "build",
     "fuse-python ; platform_system == 'Linux'",
     "rdflib",
