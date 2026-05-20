@@ -29,9 +29,6 @@ class ConnectionPool:
         # A thread-safe queue to hold the available connections
         self._pool = queue.Queue(maxsize=pool_size)
 
-        # A lock to ensure the initial population is thread-safe, just in case.
-        self._lock = threading.Lock()
-
         # Pre-populate the pool with connections
         for _ in range(pool_size):
             try:
@@ -40,15 +37,7 @@ class ConnectionPool:
                     raise ConnectionError("Failed to create a connection.")
                 self._pool.put(connection)
             except Exception as e:
-                print(f"Failed to create a connection for the pool: {e}")
-                # Depending on requirements, you might want to raise an error
-                # if the pool cannot be fully populated.
-
-        if self.available() == 0:
-            raise ConnectionError(
-                "Failed to initialize any connections for the pool. "
-                "Please check connection parameters and network."
-            )
+                raise ConnectionError(f"Failed to create a connection for the pool: {e}") from e
 
     def available(self) -> int:
         """Returns the number of available connections in the pool."""
@@ -79,7 +68,7 @@ class ConnectionPool:
             # is always returned to the pool.
             self._pool.put(connection)
 
-    def query(self, query: str, blobs: list = [], **kwargs):
+    def query(self, query, blobs=None):
         """
         A convenience method to execute a query directly from the pool.
 
@@ -87,13 +76,15 @@ class ConnectionPool:
         and returning the connection to the pool.
 
         Args:
-            query (str): The query string to execute.
+            query: The query to execute (string or JSON object).
             blobs (list): A list of blobs to include with the query.
-            **kwargs: Other arguments for the Connector's query method.
 
         Returns:
             Response from the executed query.
             Blobs
         """
+        if blobs is None:
+            blobs = []
+            
         with self.get_connection() as connection:
-            return connection.query(query, blobs, **kwargs)
+            return connection.query(query, blobs=blobs)

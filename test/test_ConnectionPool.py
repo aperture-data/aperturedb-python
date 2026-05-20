@@ -6,8 +6,10 @@ class MockConnector:
     def __init__(self):
         self.queries = []
 
-    def query(self, query: str, blobs: list = [], **kwargs):
-        self.queries.append((query, blobs, kwargs))
+    def query(self, query, blobs=None):
+        if blobs is None:
+            blobs = []
+        self.queries.append((query, blobs))
         return "Success", blobs
 
 
@@ -54,3 +56,15 @@ def test_connection_pool_init_failure():
 
     with pytest.raises(ConnectionError):
         ConnectionPool(pool_size=1, connection_factory=failing_factory)
+
+
+def test_connection_pool_partial_init_failure():
+    attempts = [0]
+    def partial_failing_factory():
+        attempts[0] += 1
+        if attempts[0] == 3:
+            raise Exception("Failed on third attempt")
+        return MockConnector()
+
+    with pytest.raises(ConnectionError, match="Failed on third attempt"):
+        ConnectionPool(pool_size=5, connection_factory=partial_failing_factory)
