@@ -48,7 +48,7 @@ class ConnectionPool:
 
     def available(self) -> int:
         """Returns the number of available connections in the pool.
-        
+
         (Note: This is an approximate value and primarily for monitoring.)
         """
         return self._pool.qsize()
@@ -96,6 +96,6 @@ class ConnectionPool:
         """
         if blobs is None:
             blobs = []
-            
+
         with self.get_connection() as connection:
             return connection.query(query, blobs, **kwargs)
