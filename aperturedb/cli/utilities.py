@@ -99,7 +99,7 @@ def visualize_schema(
     print(result)
 
 
-import aperturedb.cli.generate_images as generate_images
+import aperturedb.cli.generate_images as generate_images_mod
 
 
 @app.command(name="generate-images", help="Generate placeholder images")
@@ -121,13 +121,13 @@ def generate_images(
 ):
     size_tuple = (256, 256)
     try:
-        parsed_size = generate_images.ImageSize.parse(size)
+        parsed_size = generate_images_mod.ImageSize.parse(size)
         size_tuple = (parsed_size.width, parsed_size.height)
     except Exception as e:
         typer.echo(f"Invalid size: {e}")
         raise typer.Abort()
 
-    generator = generate_images.ImageGenerator(
+    generator = generate_images_mod.ImageGenerator(
         count=count,
         size=size_tuple,
         output=output,
