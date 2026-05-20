@@ -93,7 +93,8 @@ class Sources():
                     is_auth_error = True
                 elif isinstance(e, botocore.exceptions.ClientError):
                     error_code = e.response.get('Error', {}).get('Code', '')
-                    status_code = e.response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+                    status_code = e.response.get(
+                        'ResponseMetadata', {}).get('HTTPStatusCode')
                     if error_code in ['AccessDenied', 'InvalidAccessKeyId'] or status_code in [401, 403]:
                         is_auth_error = True
 
