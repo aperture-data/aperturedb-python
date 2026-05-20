@@ -25,19 +25,19 @@ class Descriptors(Entities):
         results={"all_properties": True},
     ):
         """
-        Find similar descriptor sets to the input descriptor set.
+        Find similar descriptors to the input descriptor.
 
         Args:
             set (str): Descriptor set name.
-            vector (list): Input descriptor set vector.
+            vector (list): Input descriptor vector.
             k_neighbors (int): Number of neighbors to return.
-            distances (bool): Return similarity metric values.
-            blobs (bool): Return vectors of the neighbors.
-            results (dict): Dictionary with the results format.
-                Defaults to all properties.
+            constraints (aperturedb.Constraints.Constraints, optional): Constraints for the search. Defaults to None.
+            distances (bool, optional): Return similarity metric values. Defaults to False.
+            blobs (bool, optional): Return vectors of the neighbors. Defaults to False.
+            results (dict, optional): Dictionary with the results format. Defaults to {"all_properties": True}.
 
         Returns:
-            results: Response from the server.
+            None: Populates self.response with the parsed JSON response from the database.
         """
 
         command = {
@@ -100,7 +100,7 @@ class Descriptors(Entities):
         Args:
 
             set (str): Descriptor set name.
-            vector (list): Input descriptor set vector.
+            vector (list): Input descriptor vector.
             k_neighbors (int): Number of results to return.
             fetch_k (int): Number of neighbors to fetch from the database.
             lambda_mult (float): Lambda multiplier for the MMR algorithm.

@@ -5,13 +5,12 @@ on:
     branches:
     - develop
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   run_test:
-    strategy:
-      fail-fast: false
-      matrix:
-        protocol: [http, non_http]
-
     runs-on:
     - gcp
 
@@ -38,14 +37,28 @@ jobs:
 
     - name: Build and Run Tests
       env:
-        TEST_PROTOCOL: ${{ matrix.protocol }}
+        # Run both protocols inside a single job. run_test_container.sh starts
+        # the http and non_http stacks in parallel and runs both test
+        # containers concurrently, so wall-clock time is roughly max(http,
+        # non_http) instead of the previous matrix approach which duplicated
+        # all docker image builds (notebook/tests/coverage/deps) per protocol.
+        TEST_PROTOCOL: both
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-        RUNNER_NAME: ${{ runner.name }}_${{ matrix.protocol }}
+        RUNNER_NAME: ${{ runner.name }}_pr
         RUN_TESTS: true
         NO_PUSH: true
+        # Skip building the notebook image and the coverage publishing image;
+        # neither is required to execute the test suite and on PRs they would
+        # be discarded (NO_PUSH=true). This removes a large chunk of the
+        # build time without dropping any test coverage.
+        BUILD_AUX_IMAGES: false
+        # Use BuildKit for faster builds and proper layer caching from the
+        # registry via --cache-from + BUILDKIT_INLINE_CACHE.
+        DOCKER_BUILDKIT: 1
+        COMPOSE_DOCKER_CLI_BUILD: 1
         BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         TARGET_BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
         ADB_REPO: aperturedata/aperturedb
