@@ -214,7 +214,8 @@ class Connector(object):
         self._ever_connected = False
 
         if connect:
-            self.connect()
+            if not self.connect():
+                raise ConnectionError(f"Failed to connect to ApertureDB: {self.config}")
 
     def authenticate(self, shared_data, user, password, token):
         """
@@ -444,7 +445,7 @@ class Connector(object):
 
         self.connected = True
 
-    def connect(self, details: str = None):
+    def connect(self, details: str = None) -> bool:
         self.connected = False
         if not self.connected:
             # Connection is not established, keep trying.
@@ -458,6 +459,7 @@ class Connector(object):
                     f"{self.config} \r\n{details}. {e=}",
                     exc_info=True,
                     stack_info=True)
+        return self.connected
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
