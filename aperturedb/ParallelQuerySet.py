@@ -418,9 +418,10 @@ class ParallelQuerySet(ParallelQuery):
             print(f"Query time std: {std}")
             print(f"Avg Query Throughput (q/s): {tp}")
 
-            i_tp = self.total_actions / self.total_actions_time
+            i_tp = self.get_succeeded_queries(
+            ) / self.total_actions_time if self.total_actions_time > 0 else 0
             print(
-                f"Overall insertion throughput ({self.type}/s): {i_tp if self.error_counter == 0 else 'NaN'}")
+                f"Overall insertion throughput ({self.type}/s): {i_tp}")
 
             if self.error_counter > 0:
                 err_perc = 100 * self.error_counter / total_queries_exec
