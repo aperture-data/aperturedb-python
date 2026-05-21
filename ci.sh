@@ -1,5 +1,13 @@
 set -e
 
+# Enable BuildKit for faster, parallel docker builds and proper --cache-from support
+export DOCKER_BUILDKIT=${DOCKER_BUILDKIT:-1}
+export COMPOSE_DOCKER_CLI_BUILD=${COMPOSE_DOCKER_CLI_BUILD:-1}
+
+# Common build arg used to embed cache metadata in pushed images so subsequent
+# builds (in this and other runs) can actually reuse layers via --cache-from.
+INLINE_CACHE_ARG="--build-arg BUILDKIT_INLINE_CACHE=1"
+
 source $(dirname "${0}")/version.sh
 
 # Check and updates version based on release branch name
@@ -106,7 +114,7 @@ build_tests(){
 
     echo "Building image ${TESTS_IMAGE}"
     docker pull ${TESTS_IMAGE} || true
-    docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${TESTS_IMAGE} --cache-from ${TESTS_IMAGE} -f docker/tests/Dockerfile .
+    docker build ${INLINE_CACHE_ARG} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${TESTS_IMAGE} --cache-from ${TESTS_IMAGE} -f docker/tests/Dockerfile .
 }
 
 build_complete(){
@@ -135,7 +143,7 @@ build_notebook_dependencies_image(){
     fi
 
     echo "Building image ${DEPS_IMAGE}"
-    docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${DEPS_IMAGE} ${cache_control} -f docker/dependencies/Dockerfile .
+    docker build ${INLINE_CACHE_ARG} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${DEPS_IMAGE} ${cache_control} -f docker/dependencies/Dockerfile .
     if [  "${PUSH_DEPENDENCIES}" != "true" ]
     then
         # Default
@@ -157,7 +165,7 @@ build_notebook_image(){
     CPU_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook:cpu
     docker pull ${LATEST_IMAGE} || true
     echo "Building image ${NOTEBOOK_IMAGE}"
-    docker build --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} --cache-from ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
+    docker build ${INLINE_CACHE_ARG} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} --cache-from ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
     docker build -t ${CPU_IMAGE} -f docker/notebook/Dockerfile.cpu .
     if [ "${NO_PUSH}" != "true" ]
     then
@@ -202,12 +210,26 @@ fi
 
 if [ "${RUN_TESTS}" == "true" ]
 then
-    build_notebook_image
+    # BUILD_AUX_IMAGES controls whether we also build the notebook image and the
+    # coverage publishing image during a test run. These images are NOT required
+    # to execute the test suite (tests run inside aperturedb-python-tests, and
+    # the coverage image is just an nginx wrapper around the generated HTML used
+    # only when publishing). PR pipelines set BUILD_AUX_IMAGES=false to cut a
+    # large amount of work that would otherwise be discarded.
+    BUILD_AUX_IMAGES=${BUILD_AUX_IMAGES:-true}
+
+    if [ "${BUILD_AUX_IMAGES}" == "true" ]
+    then
+        build_notebook_image
+    fi
     build_tests
 
     pushd "test"
     ./run_test_container.sh
-    build_coverage_image
+    if [ "${BUILD_AUX_IMAGES}" == "true" ]
+    then
+        build_coverage_image
+    fi
     rm -rf "./output/"
     popd
 fi
