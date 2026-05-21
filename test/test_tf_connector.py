@@ -8,6 +8,7 @@ from aperturedb.ConnectorRest import ConnectorRest
 
 logger = logging.getLogger(__name__)
 
+
 class TestTfDatasets():
     def validate_dataset(self, dataset: tf.data.Dataset, expected_length):
         start = time.time()
@@ -92,41 +93,43 @@ class TestTfDatasets():
         from unittest.mock import patch
         import numpy as np
         import cv2
-        
+
         class DummyClient:
             def clone(self):
                 return self
+
             def get_last_response_str(self):
                 return ""
-                
+
         query = [{"FindImage": {"results": {"list": ["prop"]}}}]
-        
+
         with patch('aperturedb.TensorFlowDataset.execute_query') as mock_exec:
             def side_effect_int(*args, **kwargs):
                 batch_dict = {"total_elements": 1}
-                entities = [{"prop": 42}] # int
+                entities = [{"prop": 42}]  # int
                 r = [{"FindImage": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
                 _, b_img = cv2.imencode('.jpg', img)
                 b = [b_img.tobytes()]
                 return None, r, b
-                
+
             mock_exec.side_effect = side_effect_int
-            dataset_wrapper = ApertureDBTensorFlowDataset(DummyClient(), query, label_prop="prop")
+            dataset_wrapper = ApertureDBTensorFlowDataset(
+                DummyClient(), query, label_prop="prop")
             dataset = dataset_wrapper.get_dataset()
             assert dataset.element_spec[1].dtype == tf.int32
-            
+
             def side_effect_float(*args, **kwargs):
                 batch_dict = {"total_elements": 1}
-                entities = [{"prop": 3.14}] # float
+                entities = [{"prop": 3.14}]  # float
                 r = [{"FindImage": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
                 _, b_img = cv2.imencode('.jpg', img)
                 b = [b_img.tobytes()]
                 return None, r, b
-                
+
             mock_exec.side_effect = side_effect_float
-            dataset_wrapper_f = ApertureDBTensorFlowDataset(DummyClient(), [{"FindImage": {"results": {"list": ["prop"]}}}], label_prop="prop")
+            dataset_wrapper_f = ApertureDBTensorFlowDataset(DummyClient(
+            ), [{"FindImage": {"results": {"list": ["prop"]}}}], label_prop="prop")
             dataset_f = dataset_wrapper_f.get_dataset()
             assert dataset_f.element_spec[1].dtype == tf.float32
-

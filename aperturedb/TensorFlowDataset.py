@@ -8,6 +8,7 @@ from aperturedb.Connector import Connector
 
 logger = logging.getLogger(__name__)
 
+
 class ApertureDBTensorFlowDataset:
     """
     This class implements a TensorFlow Dataset for ApertureDB.
