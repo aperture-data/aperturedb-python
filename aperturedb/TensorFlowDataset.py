@@ -30,15 +30,17 @@ class ApertureDBTensorFlowDataset:
         self.label_prop     = label_prop
         self.label_type     = None
 
+        find_image_count = 0
         for i in range(len(query)):
 
             name = list(query[i].keys())[0]
             if name == "FindImage":
                 self.find_image_idx = i
+                find_image_count += 1
 
-        if self.find_image_idx is None:
+        if find_image_count != 1:
             logger.error(
-                "Query error. The query must contain one FindImage command")
+                "Query error. The query must contain exactly one FindImage command")
             raise Exception('Query Error')
 
         if not "results" in self.query[self.find_image_idx]["FindImage"]:
@@ -52,7 +54,7 @@ class ApertureDBTensorFlowDataset:
                 results["list"].append(self.label_prop)
 
         self.query[self.find_image_idx]["FindImage"]["batch"] = {}
-        self.query[self.find_image_idx]["FindImage"]["blobs"] = True
+        self.query[self.find_image_idx]["FindImage"]["blobs"] = False
 
         try:
             _, r, b = execute_query(
@@ -63,6 +65,8 @@ class ApertureDBTensorFlowDataset:
             logger.error(
                 f"Query error: {self.query} {self.client.get_last_response_str()}")
             raise
+
+        self.query[self.find_image_idx]["FindImage"]["blobs"] = True
 
     def is_in_range(self, index):
 

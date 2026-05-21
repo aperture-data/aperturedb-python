@@ -86,7 +86,7 @@ class TestTfDatasets():
         start = time.time()
         count = 0
         for imgs, labels in batched_dataset:
-            count += imgs.shape[0]
+            count += tf.shape(imgs)[0].numpy()
         assert count == len_limit
 
         time_taken = time.time() - start
