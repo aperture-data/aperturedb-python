@@ -18,7 +18,7 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs*"
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb"
       continue-on-error: true
 
     - uses: actions/checkout@v3
@@ -64,7 +64,7 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs*"
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb"
       continue-on-error: true
 
     - uses: actions/checkout@v3
