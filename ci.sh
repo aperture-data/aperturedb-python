@@ -115,6 +115,12 @@ build_tests(){
     echo "Building image ${TESTS_IMAGE}"
     docker pull ${TESTS_IMAGE} || true
     docker build ${INLINE_CACHE_ARG} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${TESTS_IMAGE} --cache-from ${TESTS_IMAGE} -f docker/tests/Dockerfile .
+    # Push the tests image so --cache-from works across runners and cold starts.
+    # Skipped on PR runs (NO_PUSH=true) to avoid polluting the registry with PR images.
+    if [ "${NO_PUSH}" != "true" ]
+    then
+        docker push ${TESTS_IMAGE}
+    fi
 }
 
 build_complete(){
