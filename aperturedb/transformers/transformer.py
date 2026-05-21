@@ -92,9 +92,6 @@ class Transformer(Subscriptable):
     def __getattr__(self, name):
         # Delegate attribute access to the underlying data (generator)
         if "data" in self.__dict__:
-            try:
-                return getattr(self.data, name)
-            except AttributeError:
-                pass
+            return getattr(self.data, name)
         raise AttributeError(
             f"'{type(self).__name__}' object has no attribute '{name}'")
