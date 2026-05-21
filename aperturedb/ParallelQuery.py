@@ -227,31 +227,36 @@ class ParallelQuery(Parallelizer.Parallelizer):
         # A new connection will be created for each thread
         client = self.client.clone()
 
-        total_batches = (end - start) // self.batchsize
+        try:
+            total_batches = (end - start) // self.batchsize
 
-        if (end - start) % self.batchsize > 0:
-            total_batches += 1
+            if (end - start) % self.batchsize > 0:
+                total_batches += 1
 
-        logger.info(
-            f"Worker {thid} executing {total_batches} batches, {self.stats=}")
-        for i in range(total_batches):
-            if not run_event.is_set():
-                break
-            batch_start = start + i * self.batchsize
-            batch_end = min(batch_start + self.batchsize, end)
+            logger.info(
+                f"Worker {thid} executing {total_batches} batches, {self.stats=}")
+            for i in range(total_batches):
+                if not run_event.is_set():
+                    break
+                batch_start = start + i * self.batchsize
+                batch_end = min(batch_start + self.batchsize, end)
 
-            try:
-                self.do_batch(client, batch_start,
-                              generator[batch_start:batch_end])
-            except Exception as e:
-                logger.exception(e)
-                logger.warning(
-                    f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
-                self.error_counter += 1
+                try:
+                    self.do_batch(client, batch_start,
+                                  generator[batch_start:batch_end])
+                except Exception as e:
+                    logger.exception(e)
+                    logger.warning(
+                        f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
+                    self.error_counter += 1
 
-            if self.stats:
-                self.pb.update(batch_end - batch_start)
-        logger.info(f"Worker {thid} executed {total_batches} batches")
+                if self.stats:
+                    self.pb.update(batch_end - batch_start)
+            logger.info(f"Worker {thid} executed {total_batches} batches")
+        finally:
+            # Explicitly close the connection to avoid exhausting server connection limits
+            if client is not self.client and hasattr(client, 'close') and callable(client.close):
+                client.close()
 
     def get_objects_existed(self) -> int:
         return sum([stat["objects_existed"]
