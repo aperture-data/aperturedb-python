@@ -49,7 +49,8 @@ def gen_execute_batch_sets(base_executor):
     def execute_batch_sets(client, query_set, blob_set, success_statuses: list[int] = [0],
                            response_handler: Optional[Callable] = None, commands_per_query: list[int] = -1,
                            blobs_per_query: list[int] = -1,
-                           strict_response_validation: bool = False, cmd_index: int = None):
+                           strict_response_validation: bool = False, cmd_index: int = None,
+                           error_handler: Optional[Callable] = None):
 
         logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
             len(query_set), commands_per_query, blobs_per_query))
@@ -303,7 +304,8 @@ def gen_execute_batch_sets(base_executor):
                                                                   commands_per_query[i],
                                                                   blobs_per_query[i],
                                                                   strict_response_validation=strict_response_validation,
-                                                                  cmd_index=cmd_index)
+                                                                  cmd_index=cmd_index,
+                                                                  error_handler=error_handler)
                 if response_handler != None and client.last_query_ok():
                     def map_to_set(query, query_blobs, resp, resp_blobs):
                         response_handler(

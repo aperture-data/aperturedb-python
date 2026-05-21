@@ -270,7 +270,8 @@ def execute_query(client: Connector, query: Commands,
                   blobs: Blobs = [],
                   success_statuses: list[int] = [0],
                   response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
-                  strict_response_validation: bool = False, cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
+                  strict_response_validation: bool = False, cmd_index=None,
+                  error_handler: Optional[Callable] = None) -> Tuple[int, CommandResponses, Blobs]:
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -313,7 +314,7 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {query} with response = {r}")
+        logger.error(f"Transaction failed. Response: {r}")
         result = 1
 
     statuses = {}
@@ -337,8 +338,18 @@ def execute_query(client: Connector, query: Commands,
                     warn_list.append(wr)
         if len(warn_list) != 0:
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(warn_list, default=str)}")
+                f"Encountered {len(warn_list)} partial errors. "
+                "Use error_handler or inspect response for details."
+            )
             result = 2
+
+    if result != 0 and error_handler is not None:
+        try:
+            error_handler(query, r, b)
+        except BaseException as e:
+            logger.exception(e)
+            if strict_response_validation:
+                raise e
 
     return result, r, b
 

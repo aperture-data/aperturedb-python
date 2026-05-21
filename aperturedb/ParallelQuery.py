@@ -158,9 +158,12 @@ class ParallelQuery(Parallelizer.Parallelizer):
         worker_stats = {}
         if not self.dry_run:
             response_handler = None
+            error_handler = None
             strict_response_validation = False
             if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
                 response_handler = self.generator.response_handler
+            if hasattr(self.generator, "error_handler") and callable(self.generator.error_handler):
+                error_handler = self.generator.error_handler
             if hasattr(self.generator, "strict_response_validation") and isinstance(self.generator.strict_response_validation, bool):
                 strict_response_validation = self.generator.strict_response_validation
 
@@ -185,7 +188,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.commands_per_query,
                 self.blobs_per_query,
                 strict_response_validation=strict_response_validation,
-                cmd_index=batch_start)
+                cmd_index=batch_start,
+                error_handler=error_handler)
             if result == 0:
                 query_time = client.get_last_query_time()
                 worker_stats["succeeded_commands"] = len(q)
@@ -252,6 +256,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if self.stats:
                 self.pb.update(batch_end - batch_start)
         logger.info(f"Worker {thid} executed {total_batches} batches")
+        # Explicitly delete the client to ensure the connection is closed immediately
+        if client is not None:
+            del client
 
     def get_objects_existed(self) -> int:
         return sum([stat["objects_existed"]
