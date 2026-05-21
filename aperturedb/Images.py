@@ -69,7 +69,7 @@ def rotate(points, angle, c_x=0, c_y=0):
         points: The rotated points as a NumPy array of shape (n,2) and type int
     """
     ANGLE = np.deg2rad(angle)
-    return np.array(
+    return np.round(np.array(
         [
             [
                 c_x + np.cos(ANGLE) * (px - c_x) - np.sin(ANGLE) * (py - c_y),
@@ -77,7 +77,7 @@ def rotate(points, angle, c_x=0, c_y=0):
             ]
             for px, py in points
         ]
-    ).astype(int)
+    )).astype(int)
 
 
 def resolve(points: np.array, image_meta, operations) -> np.array:
@@ -108,8 +108,12 @@ def resolve(points: np.array, image_meta, operations) -> np.array:
                     y_ratio = operation["height"] / image_meta_height
                 np.multiply(resolved, [x_ratio, y_ratio],
                             out=resolved, casting="unsafe")
-                image_meta_width *= x_ratio
-                image_meta_height *= y_ratio
+                if "scale" in operation:
+                    image_meta_width *= x_ratio
+                    image_meta_height *= y_ratio
+                else:
+                    image_meta_width = operation["width"]
+                    image_meta_height = operation["height"]
             if operation["type"] == "rotate":
                 angle = operation["angle"]
                 resolved = rotate(

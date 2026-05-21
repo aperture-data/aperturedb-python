@@ -25,12 +25,7 @@ function run_aperturedb_instance(){
     docker network create ${TAG}_host_default
     GATEWAY=$(docker network inspect ${TAG}_host_default | jq -r .[0].IPAM.Config[0].Gateway)
     GATEWAY=$GATEWAY RUNNER_NAME=$TAG docker compose -f docker-compose.yml up -d
-    if [ "$TAG" == "${RUNNER_NAME}_http" ]; then
-        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port nginx 80 | cut -d: -f2)
-    else
-        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port lenz 55551 | cut -d: -f2)
-    fi
-    echo "$GATEWAY:$PORT"
+    echo "$GATEWAY"
 }
 
 IP_REGEX='[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
