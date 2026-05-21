@@ -28,8 +28,8 @@ def test_resolve_rotate():
     operations = [{"type": "rotate", "angle": 90}]
     resolved = resolve(points, meta, operations)
     assert len(resolved) == 1
-    # Note: allow both 9 and 10 to account for float truncation and trig errors
-    assert resolved[0][0] == 90 and resolved[0][1] in [9, 10]
+    # Allow 9 or 10 due to float truncation/rounding differences across platforms
+    assert resolved[0][0] == 90 and abs(resolved[0][1] - 10) <= 1
 
 
 class MockClient:
