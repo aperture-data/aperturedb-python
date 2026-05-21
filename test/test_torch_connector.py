@@ -62,15 +62,13 @@ class TestTorchDatasets():
         assert len(images) > 0
         query = [{
             "FindBlob": {
-                "results": {
-                    "limit": utils.count_images()
-                }
+                "results": {}
             }
         }]
 
         dataset = PyTorchDataset.ApertureDBDataset(
             db, query)
-        
+
         assert len(dataset) == utils.count_images()
         for img, label in dataset:
             # For FindBlob, the return is raw bytes and label should be 'none' when no label_prop is provided
