@@ -260,7 +260,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 current_errors = self.error_counter
 
             if getattr(self, "log_progress", False):
-                logger.info(f"Worker {thid} completed batch {i + 1}/{total_batches}. Worker stats: {dict(worker_stats)}, Errors so far: {current_errors}")
+                logger.info(
+                    f"Worker {thid} completed batch {i + 1}/{total_batches}. "
+                    f"Worker stats: {dict(worker_stats)}, "
+                    f"Errors so far: {current_errors}"
+                )
 
             if hasattr(self, "progress_callback") and callable(self.progress_callback):
                 try:
