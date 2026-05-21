@@ -27,7 +27,7 @@ class Sources():
             with open(filename, "rb") as fd:
                 buff = fd.read()
                 return True, buff
-        except Exception as e:
+        except Exception:
             logger.exception(f"VALIDATION ERROR: {filename}")
         return False, None
 
@@ -73,7 +73,7 @@ class Sources():
                     return False, None
 
                 return True, img
-            except Exception as e:
+            except Exception:
                 if retries >= self.n_download_retries:
                     break
                 logger.warning(f"Retrying object: {s3_url}", exc_info=True)

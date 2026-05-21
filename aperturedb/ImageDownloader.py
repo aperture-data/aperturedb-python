@@ -83,7 +83,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
             if a.size <= 0:
                 logger.warning(f"Image present but error reading it: {url}")
                 return False
-        except Exception as e:
+        except Exception:
             logger.exception(f"Image present but error decoding: {url}")
             return False
 
@@ -109,7 +109,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
             try:
                 imgdata = requests.get(url)
                 downloaded = True
-            except requests.exceptions.ConnectionError as e:
+            except requests.exceptions.ConnectionError:
                 logger.warning("Error with GET.", exc_info=True)
 
             if downloaded and imgdata.ok:
@@ -130,11 +130,17 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 a = cv2.imread(filename)
                 if a.size <= 0:
                     logger.error(f"Downloaded image size error: {url}")
-                    os.remove(filename)
+                    try:
+                        os.remove(filename)
+                    except OSError:
+                        pass
                     self.error_counter += 1
-            except Exception as e:
+            except Exception:
                 logger.exception(f"Downloaded image cannot be decoded: {url}")
-                os.remove(filename)
+                try:
+                    os.remove(filename)
+                except OSError:
+                    pass
                 self.error_counter += 1
         else:
             logger.error(f"URL not found: {url}")

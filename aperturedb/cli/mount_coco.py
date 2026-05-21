@@ -249,8 +249,8 @@ class ADFS(Fuse):
                     img = self._images.get_image_by_index(idx)
                 slen = len(img)
                 logger.debug(f"Type = {type(img)}, len = {slen}")
-            except Exception as e:
-                logger.exception("Error occurred")
+            except Exception:
+                logger.exception(f"Error occurred reading path: {path}")
 
         if offset < slen:
             if offset + size > slen:

@@ -451,9 +451,10 @@ class Connector(object):
             try:
                 self._connect()
             except socket.error as e:
+                details_str = f" \r\n{details}." if details else ""
                 logger.error(
                     f"Error connecting to server: "
-                    f"{self.config} \r\n{details}.",
+                    f"{self.config}{details_str}",
                     exc_info=True,
                     stack_info=True)
 

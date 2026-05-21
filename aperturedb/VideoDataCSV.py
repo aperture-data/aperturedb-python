@@ -132,7 +132,7 @@ class VideoDataCSV(CSVParser.CSVParser):
                 a = cv2.VideoCapture(filename)
                 if a.isOpened() == False:
                     logger.error(f"Video reading Error: {filename}")
-            except Exception as e:
+            except Exception:
                 logger.exception(f"Video Error: {filename}")
 
         try:
@@ -140,7 +140,7 @@ class VideoDataCSV(CSVParser.CSVParser):
             buff = fd.read()
             fd.close()
             return True, buff
-        except Exception as e:
+        except Exception:
             logger.exception(f"Video Error: {filename}")
 
         return False, None
