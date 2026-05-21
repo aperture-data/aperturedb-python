@@ -2,7 +2,7 @@
 **Module providing the DaskManager.**
 
 This module provides the `DaskManager` class responsible for setting up a
-local dask cluster and assigning parts of data to each worker to perform
+local Dask cluster and assigning parts of data to each worker to perform
 parallel distributed processing.
 """
 from __future__ import annotations
