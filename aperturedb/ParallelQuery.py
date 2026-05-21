@@ -319,7 +319,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             if self.progress_callback or self.log_progress:
-                logger.warning("progress_callback and log_progress are not supported when using Dask.")
+                logger.warning(
+                    "progress_callback and log_progress are not supported when using Dask.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 
