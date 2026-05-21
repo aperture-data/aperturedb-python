@@ -280,7 +280,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
-                self.__class__, self.client, generator, batchsize, stats=stats)
+                self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run)
             self.actual_stats = []
             for result in results:
                 if result is not None:

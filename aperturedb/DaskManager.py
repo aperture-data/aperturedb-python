@@ -41,8 +41,8 @@ class DaskManager:
         self._client.close()
         self._cluster.close()
 
-    def run(self, QueryClass: type[ParallelQuery], client: Connector, generator, batchsize, stats):
-        def process(df, host, port, use_ssl, ca_cert, verify_hostname, session, connnector_type):
+    def run(self, QueryClass: type[ParallelQuery], client: Connector, generator, batchsize, stats, dry_run=False):
+        def process(df, host, port, use_ssl, ca_cert, verify_hostname, session, connector_type, dry_run):
             metrics = Stats()
             # Dask reads data in partitions, and the first partition is of 2 rows, with all
             # values as 'foo'. This is for sampling the column names and types. Should not process
@@ -55,7 +55,7 @@ class DaskManager:
                 shared_data = SimpleNamespace()
                 shared_data.session = session
                 shared_data.lock = Lock()
-                client = connnector_type(
+                client = connector_type(
                     host=host, port=port,
                     use_ssl=use_ssl,
                     ca_cert=ca_cert,
@@ -63,8 +63,15 @@ class DaskManager:
                     shared_data=shared_data)
             except Exception as e:
                 logger.exception(e)
+                raise
             #from aperturedb.ParallelLoader import ParallelLoader
-            loader = QueryClass(client)
+            import inspect
+            sig = inspect.signature(QueryClass.__init__)
+            if "dry_run" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+                loader = QueryClass(client, dry_run=dry_run)
+            else:
+                loader = QueryClass(client)
+                loader.dry_run = dry_run
             for i in range(0, len(df), batchsize):
                 end = min(i + batchsize, len(df))
                 slice = df[i:end]
@@ -94,7 +101,8 @@ class DaskManager:
             client.config.ca_cert,
             client.config.verify_hostname,
             client.shared_data.session,
-            type(client))
+            type(client),
+            dry_run)
         computation = computation.persist()
         if stats:
             progress(computation)
