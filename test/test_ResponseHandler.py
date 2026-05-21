@@ -508,7 +508,7 @@ class TestResponseHandler():
                 self.error_handler_called = True
 
         def mock_query(self, request, blobs):
-            self.response = [{"status": -1}]
+            self.response = {"status": -1, "info": "Transaction failed"}
             self.blobs = []
             return self.response, []
 
@@ -542,7 +542,7 @@ class TestResponseHandler():
 
         def mock_query(self, request, blobs):
             self.response = [{"FindImage": {"status": 0}},
-                             {"AddImage": {"status": 2}}]
+                             {"AddImage": {"status": 1}}]
             self.blobs = []
             return self.response, []
 
