@@ -70,6 +70,7 @@ class DaskManager:
                     shared_data=shared_data)
             except Exception as e:
                 logger.exception(e)
+                return metrics
             #from aperturedb.ParallelLoader import ParallelLoader
             loader = QueryClass(client)
             for i in range(0, len(df), batchsize):
