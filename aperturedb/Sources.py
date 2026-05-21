@@ -27,7 +27,7 @@ class Sources():
             with open(filename, "rb") as fd:
                 buff = fd.read()
             return True, buff
-        except Exception as e:
+        except Exception:
             logger.exception(f"VALIDATION ERROR: {filename}")
         return False, None
 
