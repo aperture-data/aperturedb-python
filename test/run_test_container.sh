@@ -70,9 +70,7 @@ wait_for_stack() {
     echo "Waiting for stack ${tag} to become ready (timeout ${timeout}s)..."
     while [ $elapsed -lt $timeout ]; do
         if docker run --rm --network=${network} curlimages/curl:latest \
-                -sS -o /dev/null -m 2 http://lenz:58085/ >/dev/null 2>&1 \
-           || docker run --rm --network=${network} curlimages/curl:latest \
-                -sS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
+                -sS -o /dev/null -m 2 http://lenz:58085/ >/dev/null 2>&1; then
             echo "Stack ${tag} is ready after ${elapsed}s"
             return 0
         fi
