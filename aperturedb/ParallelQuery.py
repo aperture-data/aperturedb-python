@@ -163,7 +163,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 parameter_count = len(inspect.signature(
                     response_handler).parameters)
                 if parameter_count < 4 or parameter_count > 5:
-                    raise Exception(f"Bad Signature for response_handler : expected 6 > args > 3, got {parameter_count}")
+                    raise Exception("Bad Signature for response_handler : "
+                                    f"expected 6 > args > 3, got {parameter_count}")
                 if parameter_count == 4:
                     indexless_handler = response_handler
                     def response_handler(query, qblobs, resp, rblobs, qindex): return indexless_handler(
@@ -373,7 +374,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     logger.error(
                         f"Could not determine query structure from:\n{generator[0]}")
                     logger.error(type(generator[0]))
-            logger.info(f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}")
+            logger.info(f"Commands per query = {self.commands_per_query}, "
+                        f"Blobs per query = {self.blobs_per_query}")
             self.batched_run(generator, batchsize, numthreads, stats)
 
     def print_stats(self) -> None:
