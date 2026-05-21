@@ -164,7 +164,6 @@ class TestQueryBuilder():
 
     def test_get_query_cmd_dict(self):
         from aperturedb.Query import QueryBuilder
-        import pytest
         assert QueryBuilder.get_query_cmd(
             {"AddImage": {"properties": {"id": 1}}}) == "AddImage"
 
@@ -176,7 +175,7 @@ class TestQueryBuilder():
     def test_get_query_cmd_empty_dict(self):
         from aperturedb.Query import QueryBuilder
         import pytest
-        with pytest.raises(ValueError, match="empty dict"):
+        with pytest.raises(ValueError, match="Command dict must have exactly 1 key"):
             QueryBuilder.get_query_cmd({})
 
     def test_get_query_cmd_empty_list(self):
@@ -188,7 +187,7 @@ class TestQueryBuilder():
     def test_get_query_cmd_list_empty_second_dict(self):
         from aperturedb.Query import QueryBuilder
         import pytest
-        with pytest.raises(ValueError, match="empty dict in query list"):
+        with pytest.raises(ValueError, match="Command dict in query list must have exactly 1 key"):
             QueryBuilder.get_query_cmd(
                 [{"results": {1: {"AddImage": ["==", 0]}}}, {}])
 
