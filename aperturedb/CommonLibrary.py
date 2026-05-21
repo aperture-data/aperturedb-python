@@ -283,10 +283,8 @@ def censor_tokens(data):
             prefix = ""
             token = v
 
-        if len(token) > 8:
-            return prefix + token[:4] + "..." + token[-4:]
-        elif len(v) > 0:
-            return prefix + "..."
+        if len(token) > 0:
+            return prefix + "<redacted>"
         return v
 
     def _censor(obj):
@@ -363,8 +361,7 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {censor_tokens(
-            query)} with response = {censor_tokens(r)}")
+        logger.error(f"Failed query = {censor_tokens(query)} with response = {censor_tokens(r)}")
         result = 1
 
     statuses = {}

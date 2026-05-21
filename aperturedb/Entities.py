@@ -75,7 +75,7 @@ class Entities(Subscriptable):
             logger.debug(f"query={censor_tokens(query)}")
         res, r, b = execute_query(client, query, [])
         if res > 0:
-            logger.warning(f"resp={r}")
+            logger.warning(f"resp={censor_tokens(r)}")
         results = []
         for wc, req, blobs, resp in zip(
                 spec.command_properties(prop="with_class"),
