@@ -4,6 +4,7 @@ from aperturedb.transformers.bounding_box_properties import BoundingBoxPropertie
 from aperturedb.transformers.video_properties import VideoProperties
 import hashlib
 
+
 class DummyData:
     def __init__(self, data):
         self._data = data
@@ -19,7 +20,8 @@ def test_variable_annotation_counts():
     data = [
         ([{"AddImage": {}}, {"AddBoundingBox": {}}], []),
         ([{"AddImage": {}}], []),
-        ([{"AddImage": {}}, {"AddBoundingBox": {}}, {"AddBoundingBox": {}}, {"AddPolygon": {}}], []),
+        ([{"AddImage": {}}, {"AddBoundingBox": {}}, {
+         "AddBoundingBox": {}}, {"AddPolygon": {}}], []),
         ([{"AddImage": {}}, {"AddPolygon": {}}, {"AddPolygon": {}}], [])
     ]
     dummy_data = DummyData(data)
@@ -49,7 +51,7 @@ def test_variable_annotation_counts():
 def test_video_properties(mock_get_utils):
     mock_utils = mock_get_utils.return_value
     mock_utils.get_indexed_props.return_value = []
-    
+
     dummy_video_data = b"fake_video_blob_content"
     data = [
         ([
@@ -64,10 +66,10 @@ def test_video_properties(mock_get_utils):
             {"AddVideo": {}}
         ], [b"image_blob", dummy_video_data]),
     ]
-    
+
     dummy_data = DummyData(data)
     vp = VideoProperties(dummy_data)
-    
+
     for i in range(len(data)):
         res = vp[i]
         blob_index = 0
@@ -76,7 +78,8 @@ def test_video_properties(mock_get_utils):
             if cmd_name == "AddVideo":
                 props = cmd["AddVideo"]["properties"]
                 assert props["adb_video_size"] == len(dummy_video_data)
-                assert props["adb_video_sha256"] == hashlib.sha256(dummy_video_data).hexdigest()
+                assert props["adb_video_sha256"] == hashlib.sha256(
+                    dummy_video_data).hexdigest()
                 assert "adb_video_id" in props
             if cmd_name in ["AddImage", "AddVideo", "AddBlob", "AddDescriptor"]:
                 blob_index += 1
