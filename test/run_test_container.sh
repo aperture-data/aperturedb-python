@@ -54,7 +54,7 @@ TESTING_LOG_PATH="/aperturedb/test/server_logs"
 RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
 mkdir -p "$RUNNER_INFO_PATH"
-chmod -R 777 "$LOG_PATH"
+sudo chmod -R 777 "$LOG_PATH"
 
 # Check if TEST_PROTOCOL is set, otherwise default to both
 TEST_PROTOCOL=${TEST_PROTOCOL:-"both"}
