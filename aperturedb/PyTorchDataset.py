@@ -35,10 +35,12 @@ class ApertureDBDataset(data.Dataset):
 
         if self.command_idx is not None:
             if not (0 <= self.command_idx < len(query)):
-                raise ValueError(f"command_idx {self.command_idx} is out of range.")
+                raise ValueError(
+                    f"command_idx {self.command_idx} is out of range.")
             self.command_name = list(query[self.command_idx].keys())[0]
             if not self.command_name.startswith("Find"):
-                raise ValueError(f"Command at index {self.command_idx} is {self.command_name}, which is not a Find* command.")
+                raise ValueError(f"Command at index {self.command_idx} is {
+                                 self.command_name}, which is not a Find* command.")
         else:
             for i in range(len(query)):
                 name = list(query[i].keys())[0]
@@ -66,7 +68,8 @@ class ApertureDBDataset(data.Dataset):
                 client=self.client, query=self.query, blobs=[])
             resp = r[self.command_idx][self.command_name]
             if resp.get("status", 0) != 0:
-                raise Exception(f"Query Error: {resp.get('status')} {resp.get('info', '')}")
+                raise Exception(f"Query Error: {resp.get('status')} {
+                                resp.get('info', '')}")
             batch = resp["batch"]
             self.total_elements = batch["total_elements"]
         except:
