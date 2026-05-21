@@ -35,6 +35,25 @@ class TestSources(unittest.TestCase):
         self.assertEqual(kwargs['config'].signature_version, UNSIGNED)
 
     @patch('boto3.client')
+    def test_s3_fallback_partialcreds(self, mock_client_factory):
+        mock_client = MagicMock()
+        mock_client_factory.return_value = mock_client
+
+        mock_client.get_object.side_effect = [
+            botocore.exceptions.PartialCredentialsError(
+                provider='aws', cred_var='secret_key'),
+            {'Body': MagicMock(read=lambda: b'mock_data')}
+        ]
+
+        success, img = self.sources.load_from_s3_url(
+            "s3://bucket/image.jpg", self.validator)
+
+        self.assertTrue(success)
+        self.assertEqual(mock_client_factory.call_count, 2)
+        _, kwargs = mock_client_factory.call_args_list[1]
+        self.assertEqual(kwargs['config'].signature_version, UNSIGNED)
+
+    @patch('boto3.client')
     def test_s3_fallback_403(self, mock_client_factory):
         mock_client = MagicMock()
         mock_client_factory.return_value = mock_client
@@ -104,8 +123,9 @@ class TestSources(unittest.TestCase):
         self.assertTrue(success)
         mock_client_factory.create_anonymous_client.assert_called_once()
 
+    @patch('time.sleep', return_value=None)
     @patch('boto3.client')
-    def test_s3_non_auth_error_retries(self, mock_client_factory):
+    def test_s3_non_auth_error_retries(self, mock_client_factory, mock_sleep):
         mock_client = MagicMock()
         mock_client_factory.return_value = mock_client
 
@@ -124,8 +144,9 @@ class TestSources(unittest.TestCase):
         # Should NOT use anonymous fallback
         self.assertEqual(mock_client_factory.call_count, 1)
 
+    @patch('time.sleep', return_value=None)
     @patch('google.cloud.storage.Client')
-    def test_gs_non_auth_error_retries(self, mock_client_factory):
+    def test_gs_non_auth_error_retries(self, mock_client_factory, mock_sleep):
         mock_client = MagicMock()
         mock_client_factory.return_value = mock_client
 

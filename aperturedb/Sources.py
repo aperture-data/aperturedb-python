@@ -93,7 +93,7 @@ class Sources():
                 return True, img
             except Exception as e:
                 is_auth_error = False
-                if isinstance(e, botocore.exceptions.NoCredentialsError):
+                if isinstance(e, (botocore.exceptions.NoCredentialsError, botocore.exceptions.PartialCredentialsError)):
                     is_auth_error = True
                 elif isinstance(e, botocore.exceptions.ClientError):
                     error_code = e.response.get('Error', {}).get('Code', '')
