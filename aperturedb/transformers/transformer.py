@@ -58,6 +58,7 @@ class Transformer(Subscriptable):
         self._blobs = len(x[1])
         self._blob_index = []
         self._add_image_index = []
+        self._add_video_index = []
         self._client = client
 
         bc = 0
@@ -65,9 +66,12 @@ class Transformer(Subscriptable):
             command = list(c.keys())[0]
             if command in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
                 self._blob_index.append(i)
-                if command == "AddImage":
-                    self._add_image_index.append(i)
                 bc += 1
+            if command == "AddImage":
+                self._add_image_index.append(i)
+            elif command == "AddVideo":
+                self._add_video_index.append(i)
+
         logger.info(f"Found {bc} blobs in the data")
         logger.info(
             f"Found {len(self._add_image_index)} AddImage commands in the data")

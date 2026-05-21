@@ -29,17 +29,35 @@ class CommonProperties(Transformer):
     def getitem(self, subscript):
         x = self.data[subscript]
         try:
-            # x is a transaction that has an add_image command and a blob
-            for ic in self._add_image_index:
-                src_properties = x[0][ic]["AddImage"]["properties"]
-                # Set the static properties, if explicitly set
-                if self.adb_data_source:
-                    src_properties["adb_data_source"] = self.adb_data_source
-                if self.adb_timestamp:
-                    src_properties["adb_timestamp"] = self.adb_timestamp
-                if self.adb_main_object:
-                    src_properties["adb_main_object"] = self.adb_main_object
+            commands = [
+                ("AddImage", getattr(self, "_add_image_index", [])),
+                ("AddVideo", getattr(self, "_add_video_index", [])),
+            ]
+
+            for cmd_name, indices in commands:
+                for ic in indices:
+                    src_properties = x[0][ic][cmd_name].setdefault(
+                        "properties", {})
+                    if self.adb_data_source:
+                        src_properties["adb_data_source"] = self.adb_data_source
+                    if self.adb_timestamp:
+                        src_properties["adb_timestamp"] = self.adb_timestamp
+                    if self.adb_main_object:
+                        src_properties["adb_main_object"] = self.adb_main_object
+
+            for cmd_dict in x[0]:
+                cmd_name = list(cmd_dict.keys())[0]
+                if cmd_name in ["AddBoundingBox", "AddPolygon"]:
+                    src_properties = cmd_dict[cmd_name].setdefault(
+                        "properties", {})
+                    if self.adb_data_source:
+                        src_properties["adb_data_source"] = self.adb_data_source
+                    if self.adb_timestamp:
+                        src_properties["adb_timestamp"] = self.adb_timestamp
+                    if self.adb_main_object:
+                        src_properties["adb_main_object"] = self.adb_main_object
+
         except Exception as e:
-            logger.exception(e.with_traceback(), stack_info=True)
+            logger.exception(e.with_traceback(None), stack_info=True)
 
         return x
