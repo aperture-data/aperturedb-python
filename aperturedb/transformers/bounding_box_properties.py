@@ -18,21 +18,14 @@ class BoundingBoxProperties(Transformer):
     def getitem(self, subscript):
         x = self.data[subscript]
         try:
-            for ic in getattr(self, "_add_bounding_box_index", []):
-                src_properties = x[0][ic]["AddBoundingBox"].setdefault(
-                    "properties", {})
-                if self.annotation_source:
-                    src_properties["annotation_source"] = self.annotation_source
-                if self.annotation_mode:
-                    src_properties["annotation_mode"] = self.annotation_mode
-
-            for ic in getattr(self, "_add_polygon_index", []):
-                src_properties = x[0][ic]["AddPolygon"].setdefault(
-                    "properties", {})
-                if self.annotation_source:
-                    src_properties["annotation_source"] = self.annotation_source
-                if self.annotation_mode:
-                    src_properties["annotation_mode"] = self.annotation_mode
+            for cmd_dict in x[0]:
+                cmd_name = list(cmd_dict.keys())[0]
+                if cmd_name in ["AddBoundingBox", "AddPolygon"]:
+                    src_properties = cmd_dict[cmd_name].setdefault("properties", {})
+                    if self.annotation_source:
+                        src_properties["annotation_source"] = self.annotation_source
+                    if self.annotation_mode:
+                        src_properties["annotation_mode"] = self.annotation_mode
         except Exception as e:
             logger.exception(e.with_traceback(None), stack_info=True)
 

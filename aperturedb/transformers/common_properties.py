@@ -32,14 +32,23 @@ class CommonProperties(Transformer):
             commands = [
                 ("AddImage", getattr(self, "_add_image_index", [])),
                 ("AddVideo", getattr(self, "_add_video_index", [])),
-                ("AddBoundingBox", getattr(self, "_add_bounding_box_index", [])),
-                ("AddPolygon", getattr(self, "_add_polygon_index", [])),
             ]
 
             for cmd_name, indices in commands:
                 for ic in indices:
                     src_properties = x[0][ic][cmd_name].setdefault(
                         "properties", {})
+                    if self.adb_data_source:
+                        src_properties["adb_data_source"] = self.adb_data_source
+                    if self.adb_timestamp:
+                        src_properties["adb_timestamp"] = self.adb_timestamp
+                    if self.adb_main_object:
+                        src_properties["adb_main_object"] = self.adb_main_object
+
+            for cmd_dict in x[0]:
+                cmd_name = list(cmd_dict.keys())[0]
+                if cmd_name in ["AddBoundingBox", "AddPolygon"]:
+                    src_properties = cmd_dict[cmd_name].setdefault("properties", {})
                     if self.adb_data_source:
                         src_properties["adb_data_source"] = self.adb_data_source
                     if self.adb_timestamp:

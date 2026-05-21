@@ -59,8 +59,6 @@ class Transformer(Subscriptable):
         self._blob_index = []
         self._add_image_index = []
         self._add_video_index = []
-        self._add_bounding_box_index = []
-        self._add_polygon_index = []
         self._client = client
 
         bc = 0
@@ -73,10 +71,6 @@ class Transformer(Subscriptable):
                 self._add_image_index.append(i)
             elif command == "AddVideo":
                 self._add_video_index.append(i)
-            elif command == "AddBoundingBox":
-                self._add_bounding_box_index.append(i)
-            elif command == "AddPolygon":
-                self._add_polygon_index.append(i)
 
         logger.info(f"Found {bc} blobs in the data")
         logger.info(
