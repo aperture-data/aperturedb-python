@@ -275,9 +275,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
             hasattr(generator, "use_dask") and generator.use_dask)
 
         if use_dask:
-            if hasattr(generator, "df") and not hasattr(generator.df, "map_partitions"):
+            if not hasattr(generator, "df") or not hasattr(generator.df, "map_partitions"):
                 raise ValueError(
-                    "To run with use_dask=True, the generator's dataframe must be a Dask DataFrame. Ensure the CSVParser is also initialized with use_dask=True.")
+                    "To run with use_dask=True, the generator must have a Dask DataFrame 'df' with map_partitions. Ensure the CSVParser is also initialized with use_dask=True.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 

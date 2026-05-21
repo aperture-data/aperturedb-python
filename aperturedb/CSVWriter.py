@@ -153,14 +153,16 @@ def convert_connection_data(input,
     if source_column is None:
         source_column = source_property
     if source_column not in df.columns:
-        raise ValueError(f"source_column {
-                         source_column} not found in the input data")
+        raise ValueError(
+            f"source_column {source_column} not found in the input data"
+        )
 
     if destination_column is None:
         destination_column = destination_property
     if destination_column not in df.columns:
-        raise ValueError(f"destination_column {
-                         destination_column} not found in the input data")
+        raise ValueError(
+            f"destination_column {destination_column} not found in the input data"
+        )
 
     df.insert(0, 'ConnectionClass', connection_class)
     df.insert(1, f"{source_class}@{source_property}", df[source_column])
