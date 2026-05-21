@@ -227,18 +227,30 @@ class ParallelQuery(Parallelizer.Parallelizer):
         # A new connection will be created for each thread
         client = self.client.clone()
 
-        total_batches = (end - start) // self.batchsize
-
-        if (end - start) % self.batchsize > 0:
-            total_batches += 1
+        batch_start = start
+        batches_executed = 0
 
         logger.info(
-            f"Worker {thid} executing {total_batches} batches, {self.stats=}")
-        for i in range(total_batches):
-            if not run_event.is_set():
-                break
-            batch_start = start + i * self.batchsize
+            f"Worker {thid} executing elements [{start},{end}), {self.stats=}")
+        
+        import json
+        while batch_start < end and run_event.is_set():
             batch_end = min(batch_start + self.batchsize, end)
+
+            if getattr(self, "max_batchsize_bytes", -1) > 0:
+                current_bytes = 0
+                for i in range(batch_start, batch_end):
+                    item = generator[i]
+                    q_len = len(json.dumps(item[0]))
+                    blobs_len = sum(len(b) if isinstance(b, (bytes, bytearray)) else 0 for b in item[1])
+                    item_len = q_len + blobs_len
+                    if current_bytes + item_len > self.max_batchsize_bytes:
+                        if i == batch_start:
+                            batch_end = i + 1
+                        else:
+                            batch_end = i
+                        break
+                    current_bytes += item_len
 
             try:
                 self.do_batch(client, batch_start,
@@ -246,12 +258,16 @@ class ParallelQuery(Parallelizer.Parallelizer):
             except Exception as e:
                 logger.exception(e)
                 logger.warning(
-                    f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
+                    f"Worker {thid} failed to execute batch {batches_executed}: [{batch_start},{batch_end}]")
                 self.error_counter += 1
 
             if self.stats:
                 self.pb.update(batch_end - batch_start)
-        logger.info(f"Worker {thid} executed {total_batches} batches")
+            
+            batch_start = batch_end
+            batches_executed += 1
+            
+        logger.info(f"Worker {thid} executed {batches_executed} batches")
 
     def get_objects_existed(self) -> int:
         return sum([stat["objects_existed"]
@@ -265,7 +281,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         return sum([stat["succeeded_commands"]
                     for stat in self.actual_stats])
 
-    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
+    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, max_batchsize_bytes: int = -1) -> None:
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)
@@ -280,6 +296,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
+
+        self.max_batchsize_bytes = max_batchsize_bytes
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
