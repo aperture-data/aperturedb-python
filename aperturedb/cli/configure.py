@@ -121,7 +121,10 @@ def get_all_configs():
 
 
 def get_active_config(all_configs):
-    active = all_configs["active"]
+    active = all_configs.get("active")
+    if not active:
+        console.log("No active configuration found. Please run adb config activate <name>")
+        raise typer.Exit(code=2)
     if active.startswith("env:"):
         return all_configs["environment"][active[4:]]
     else:
@@ -421,20 +424,26 @@ def get_key(name: Annotated[str, typer.Argument(
             raise typer.Exit(code=2)
         configs["active"] = active
 
+        target_configs = configs
+        target_path = config_path
+        if name not in configs and name in gc:
+            target_configs = gc
+            target_path = global_config_path
+
         if user is None:
-            key_user = configs[name].username
+            key_user = target_configs[name].username
         else:
             key_user = user
 
-        if configs[name].has_user_keys():
-            user_key = configs[name].get_user_key(key_user)
+        if target_configs[name].has_user_keys():
+            user_key = target_configs[name].get_user_key(key_user)
 
         if user_key is None:
-            conn = __create_connector(configs[name])
+            conn = __create_connector(target_configs[name])
 
             user_key = keys.generate_user_key(conn, key_user)
-            configs[name].add_user_key(key_user, user_key)
-            _write_config(config_path, configs)
+            target_configs[name].add_user_key(key_user, user_key)
+            _write_config(target_path, target_configs)
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
