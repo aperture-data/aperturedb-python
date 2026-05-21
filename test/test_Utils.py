@@ -59,6 +59,7 @@ class TestUtils():
         censored = censor_tokens(response)
         assert censored[0]["RefreshToken"]["session_token"] == "adbs_long...test"
 
+
 class TestUtilsSummaryNormalization():
 
     def test_summary_normalization(self):
