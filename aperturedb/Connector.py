@@ -229,12 +229,21 @@ class Connector(object):
             self.authenticated = True
 
     def close(self):
-        if self.connected:
-            self.conn.close()
+        if getattr(self, "connected", False):
+            if getattr(self, "conn", None):
+                try:
+                    self.conn.close()
+                except Exception:
+                    pass
             self.connected = False
+            self.conn = None
+            self.authenticated = False
 
     def __del__(self):
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def _send_msg(self, data):
         if len(data) > (DEFAULT_MAX_MESSAGE_SIZE_MB * 2**20):

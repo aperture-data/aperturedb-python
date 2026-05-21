@@ -128,10 +128,18 @@ class ConnectorRest(Connector):
 
     def close(self):
         logger.info("Closing connector REST.")
-        self.http_session.close()
+        if getattr(self, "http_session", None):
+            try:
+                self.http_session.close()
+            except Exception:
+                pass
+        self.connected = False
 
     def __del__(self):
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []
