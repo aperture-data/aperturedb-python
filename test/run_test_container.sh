@@ -19,7 +19,7 @@ function run_aperturedb_instance(){
     # ensure latest db
     docker compose pull
 
-    rm -rf output
+    sudo rm -rf output
     mkdir -m 777 output
 
     docker network create ${TAG}_host_default
@@ -53,8 +53,8 @@ LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
 RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
-mkdir -p "$RUNNER_INFO_PATH"
-chmod -R 777 "$LOG_PATH" || true
+sudo mkdir -p "$RUNNER_INFO_PATH"
+sudo chmod -R 777 "$LOG_PATH" || true
 
 # Check if TEST_PROTOCOL is set, otherwise default to both
 TEST_PROTOCOL=${TEST_PROTOCOL:-"both"}
