@@ -488,6 +488,7 @@ class TestResponseHandler():
         querier.query(generator, numthreads=1, batchsize=2, stats=False)
 
         assert len(changed_ids) == 2
+
     def test_error_handler_total_failure(self, db, monkeypatch):
         from aperturedb.QueryGenerator import QueryGenerator
         from aperturedb.ParallelQuery import ParallelQuery
@@ -540,7 +541,8 @@ class TestResponseHandler():
                 self.error_handler_called = True
 
         def mock_query(self, request, blobs):
-            self.response = [{"FindImage": {"status": 0}}, {"AddImage": {"status": 2}}]
+            self.response = [{"FindImage": {"status": 0}},
+                             {"AddImage": {"status": 2}}]
             self.blobs = []
             return self.response, []
 
@@ -573,7 +575,8 @@ class TestResponseHandler():
                 self.error_handler_called = True
 
         def mock_query(self, request, blobs):
-            self.response = [{"FindImage": {"status": 0}}, {"AddImage": {"status": 0}}]
+            self.response = [{"FindImage": {"status": 0}},
+                             {"AddImage": {"status": 0}}]
             self.blobs = []
             return self.response, []
 
