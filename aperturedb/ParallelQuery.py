@@ -252,6 +252,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if self.stats:
                 self.pb.update(batch_end - batch_start)
         logger.info(f"Worker {thid} executed {total_batches} batches")
+        # Explicitly close the connection to avoid exhausting server connection limits
+        if hasattr(client, 'close') and callable(client.close):
+            client.close()
 
     def get_objects_existed(self) -> int:
         return sum([stat["objects_existed"]

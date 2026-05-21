@@ -126,9 +126,12 @@ class ConnectorRest(Connector):
         self.url = ('https' if self.use_ssl else 'http') + \
             '://' + self.host + ':' + str(self.port) + '/api/'
 
-    def __del__(self):
-        logger.info("Done with connector REST.")
+    def close(self):
+        logger.info("Closing connector REST.")
         self.http_session.close()
+
+    def __del__(self):
+        self.close()
 
     def _query(self, query, blob_array = [], try_resume=True):
         response_blob_array = []

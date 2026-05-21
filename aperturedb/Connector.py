@@ -228,10 +228,13 @@ class Connector(object):
                 self.shared_data = shared_data
             self.authenticated = True
 
-    def __del__(self):
+    def close(self):
         if self.connected:
             self.conn.close()
             self.connected = False
+
+    def __del__(self):
+        self.close()
 
     def _send_msg(self, data):
         if len(data) > (DEFAULT_MAX_MESSAGE_SIZE_MB * 2**20):
