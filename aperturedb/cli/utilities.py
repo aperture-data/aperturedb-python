@@ -99,9 +99,6 @@ def visualize_schema(
     print(result)
 
 
-import aperturedb.cli.generate_images as generate_images_mod
-
-
 @app.command(name="generate-images", help="Generate placeholder images")
 def generate_images(
     count: int = typer.Option(
@@ -119,6 +116,8 @@ def generate_images(
     append_text: str = typer.Option(
         "", "--append-text", "-a", help="Text to append to the image")
 ):
+    import aperturedb.cli.generate_images as generate_images_mod
+    
     size_tuple = (256, 256)
     try:
         parsed_size = generate_images_mod.ImageSize.parse(size)
