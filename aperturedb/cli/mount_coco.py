@@ -232,10 +232,10 @@ class ADFS(Fuse):
         logger.info(f"path = {path}, size = {size}, offset = {offset}")
         filename = os.path.basename(path)
         logger.info(f"Filename = {filename}")
-        
+
         img = b''
         slen = 0
-        
+
         if filename == meta_info:
             try:
                 img = self.meta_data
