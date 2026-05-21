@@ -103,15 +103,16 @@ class ImageDownloader(Parallelizer.Parallelizer):
             os.makedirs(folder, exist_ok=True)
 
         retries = 0
+        imgdata = None
         downloaded = False
         while True:
             try:
                 imgdata = requests.get(url)
                 downloaded = True
             except requests.exceptions.ConnectionError as e:
-                logger.exception("Error with GET.")
+                logger.warning("Error with GET.", exc_info=True)
 
-            if downloaded and imgdata.ok:
+            if downloaded and imgdata is not None and imgdata.ok:
                 break
             else:
                 if retries >= self.n_download_retries:
@@ -120,7 +121,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 retries += 1
                 time.sleep(2)
 
-        if imgdata.ok:
+        if imgdata is not None and imgdata.ok:
             fd = open(filename, "wb")
             fd.write(imgdata.content)
             fd.close()
