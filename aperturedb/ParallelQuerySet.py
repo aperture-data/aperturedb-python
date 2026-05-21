@@ -379,6 +379,7 @@ class ParallelQuerySet(ParallelQuery):
 
         Args:
             client (Connector): The ApertureDB Connector
+            batch_start (int): The starting index of the batch.
             data (List[Tuple[Commands, Blobs]]): A list of tuples, each containing a list of commands and a list of blobs
 
         Returns:

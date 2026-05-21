@@ -124,6 +124,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         Args:
             client (Connector): The database connector.
+            batch_start (int): The starting index of the batch.
             data (list[tuple[Commands, Blobs]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
 
         Returns:
@@ -317,6 +318,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 "progress_callback and log_progress are not supported when using Dask.")
 
         if use_dask:
+            if self.progress_callback or self.log_progress:
+                logger.warning("progress_callback and log_progress are not supported when using Dask.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 
