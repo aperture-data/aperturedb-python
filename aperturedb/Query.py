@@ -286,8 +286,11 @@ class QueryBuilder():
                     "Command dict in query list must have exactly 1 key")
             return list(query[1].keys())[0]
         else:
+            q_type = type(query).__name__
+            q_len = len(query) if hasattr(query, '__len__') else 'N/A'
+            q_keys = list(query.keys()) if isinstance(query, dict) else 'N/A'
             raise ValueError(
-                f"Cannot extract command from query structure: {query}")
+                f"Cannot extract command from query structure. Expected single-command dict or [constraints_dict, command_dict]. Received: type={q_type}, len={q_len}, keys={q_keys}")
 
     @classmethod
     def find_command(self, oclass: Union[str, ObjectType], params: dict) -> dict:
