@@ -40,7 +40,8 @@ def create_sample_csvs(base_dir):
     df_persons = pd.DataFrame({
         "EntityClass": ["Person", "Person"],
         "name": ["Alice", "Bob"],
-        "age": [25, 30]
+        "age": [25, 30],
+        "constraint_name": ["Alice", "Bob"]
     })
     persons_csv = os.path.join(base_dir, "persons.csv")
     df_persons.to_csv(persons_csv, index=False)
@@ -56,7 +57,8 @@ def create_sample_csvs(base_dir):
     df_images = pd.DataFrame({
         "filename": [dummy_image_path, dummy_image_path],
         "image_id": ["img1", "img2"],
-        "source": ["camera1", "camera2"]
+        "source": ["camera1", "camera2"],
+        "constraint_image_id": ["img1", "img2"]
     })
     images_csv = os.path.join(base_dir, "images.csv")
     df_images.to_csv(images_csv, index=False)
@@ -87,23 +89,18 @@ def main():
 
         # 1. Load Entities
         print("Loading Entities...")
-        # By providing the kwargs like `name`, `age`, we map the columns to properties.
-        person_loader = EntityDataCSV(
-            persons_csv, name="name", age="age")
+        # Properties are derived directly from the CSV header names.
+        person_loader = EntityDataCSV(persons_csv)
         loader.ingest(person_loader)
 
         # 2. Load Images
         print("Loading Images...")
-        image_loader = ImageDataCSV(
-            images_csv, image_id="image_id", source="source")
+        image_loader = ImageDataCSV(images_csv)
         loader.ingest(image_loader)
 
         # 3. Load Connections
         print("Loading Connections...")
-        connection_loader = ConnectionDataCSV(
-            connections_csv,
-            connection_property="connection_property"
-        )
+        connection_loader = ConnectionDataCSV(connections_csv)
         loader.ingest(connection_loader)
         print("Done loading data!")
 
