@@ -25,3 +25,7 @@ class TestConnector:
         # Test case 5: nested ok, nested negative
         res5 = [{"AddImage": {"status": 0}}, {"AddEntity": {"status": -3}}]
         assert connector.check_status(res5) == -3
+
+        # Test case 6: multiple keys in a single dict (tests values traversal)
+        res6 = {"FindImage": {"status": 0}, "FindEntity": {"status": -4}}
+        assert connector.check_status(res6) == -4

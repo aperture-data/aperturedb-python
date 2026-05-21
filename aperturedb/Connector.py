@@ -674,7 +674,7 @@ class Connector(object):
         """
         Returns the status of the first negative command response from the server,
         or the status of the first command if all are non-negative.
-        Can traverse a JSON recursively (descending into the first key of a dictionary) to find the statuses.
+        Can traverse a JSON recursively to find the statuses.
 
         Args:
             json_res (Any): The actual response from the server.
@@ -686,7 +686,12 @@ class Connector(object):
         status = STATUS_ERROR_DEFAULT
         if (isinstance(json_res, dict)):
             if ("status" not in json_res):
-                status = self.check_status(json_res[list(json_res.keys())[0]])
+                for i, val in enumerate(json_res.values()):
+                    st = self.check_status(val)
+                    if i == 0:
+                        status = st
+                    if st < 0:
+                        return st
             else:
                 status = json_res["status"]
         elif (isinstance(json_res, (tuple, list))):
