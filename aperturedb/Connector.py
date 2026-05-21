@@ -688,9 +688,14 @@ class Connector(object):
             else:
                 status = json_res["status"]
         elif (isinstance(json_res, (tuple, list))):
-            if ("status" not in json_res[0]):
-                status = self.check_status(json_res[0])
-            else:
-                status = json_res[0]["status"]
+            for res in json_res:
+                st = self.check_status(res)
+                if st < 0:
+                    return st
+            if len(json_res) > 0:
+                if ("status" not in json_res[0]):
+                    status = self.check_status(json_res[0])
+                else:
+                    status = json_res[0]["status"]
 
         return status
