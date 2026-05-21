@@ -208,6 +208,7 @@ def create(
     db_verify_hostname = verify_hostname
     config_path = _config_file_path(as_global)
     configs = {}
+    ac = None
     try:
         configs, ac = get_configurations(config_path.as_posix())
     except FileNotFoundError as e:
@@ -308,10 +309,14 @@ def activate(
     Set the default configuration.
     """
     global_config_path = _config_file_path(True)
-    gc, ga = get_configurations(global_config_path)
+    try:
+        gc, ga = get_configurations(global_config_path.as_posix())
+    except (FileNotFoundError, json.JSONDecodeError):
+        gc, ga = {}, None
 
     config_path = _config_file_path(as_global)
     configs = {}
+    ac = None
     try:
         configs, ac = get_configurations(config_path.as_posix())
         if name not in configs and name not in gc:
@@ -393,6 +398,12 @@ def get_key(name: Annotated[str, typer.Argument(
     """
     Makes a token from the configuration
     """
+
+    global_config_path = _config_file_path(True)
+    try:
+        gc, ga = get_configurations(global_config_path.as_posix())
+    except (FileNotFoundError, json.JSONDecodeError):
+        gc, ga = {}, None
 
     config_path = _config_file_path(as_global)
     configs = {}
