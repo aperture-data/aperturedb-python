@@ -161,3 +161,38 @@ class TestQueryBuilder():
             list(filter(lambda cmd: "AddImage" in cmd, total_commands))) == 20
         assert len(
             list(filter(lambda cmd: "FindImage" in cmd, total_commands))) == 10
+
+    def test_get_query_cmd_dict(self):
+        from aperturedb.Query import QueryBuilder
+        assert QueryBuilder.get_query_cmd(
+            {"AddImage": {"properties": {"id": 1}}}) == "AddImage"
+
+    def test_get_query_cmd_list_with_constraints(self):
+        from aperturedb.Query import QueryBuilder
+        assert QueryBuilder.get_query_cmd(
+            [{"apply": True}, {"FindImage": {}}]) == "FindImage"
+
+    def test_get_query_cmd_empty_dict(self):
+        from aperturedb.Query import QueryBuilder
+        import pytest
+        with pytest.raises(ValueError, match="Command dict must have exactly 1 key"):
+            QueryBuilder.get_query_cmd({})
+
+    def test_get_query_cmd_empty_list(self):
+        from aperturedb.Query import QueryBuilder
+        import pytest
+        with pytest.raises(ValueError, match="Cannot extract command"):
+            QueryBuilder.get_query_cmd([])
+
+    def test_get_query_cmd_list_empty_second_dict(self):
+        from aperturedb.Query import QueryBuilder
+        import pytest
+        with pytest.raises(ValueError, match="Command dict in query list must have exactly 1 key"):
+            QueryBuilder.get_query_cmd(
+                [{"results": {1: {"AddImage": ["==", 0]}}}, {}])
+
+    def test_get_query_cmd_invalid_structure(self):
+        from aperturedb.Query import QueryBuilder
+        import pytest
+        with pytest.raises(ValueError, match="Cannot extract command"):
+            QueryBuilder.get_query_cmd("invalid")

@@ -272,6 +272,27 @@ def generate_add_query(
 
 class QueryBuilder():
     @classmethod
+    def get_query_cmd(cls, query: Union[dict, list]) -> str:
+        known_constraint_keywords = ['results', 'apply']
+        if isinstance(query, dict):
+            if len(query) != 1:
+                raise ValueError("Command dict must have exactly 1 key")
+            return list(query.keys())[0]
+        elif isinstance(query, list) and len(query) >= 2 and isinstance(query[0], dict) \
+                and query[0] and all(k in known_constraint_keywords for k in query[0].keys()) \
+                and isinstance(query[1], dict):
+            if len(query[1]) != 1:
+                raise ValueError(
+                    "Command dict in query list must have exactly 1 key")
+            return list(query[1].keys())[0]
+        else:
+            q_type = type(query).__name__
+            q_len = len(query) if hasattr(query, '__len__') else 'N/A'
+            q_keys = list(query.keys()) if isinstance(query, dict) else 'N/A'
+            raise ValueError(
+                f"Cannot extract command from query structure. Expected single-command dict or [constraints_dict, command_dict]. Received: type={q_type}, len={q_len}, keys={q_keys}")
+
+    @classmethod
     def find_command(self, oclass: Union[str, ObjectType], params: dict) -> dict:
         return self.build_command(oclass, params, "Find")
 
