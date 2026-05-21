@@ -26,14 +26,14 @@ python3 generateInput.py
 echo "Done generating input files."
 
 echo "Running tests..."
-CREDENTIALS_FILE=$(mktemp)
-trap 'rm -f "$CREDENTIALS_FILE"' EXIT
 if [ -n "$GCP_SERVICE_ACCOUNT_KEY" ]; then
+	CREDENTIALS_FILE=$(mktemp "${TMPDIR:-/tmp}/key.XXXXXX")
+	trap 'rm -f "$CREDENTIALS_FILE"' EXIT
 	printf "%s\n" "$GCP_SERVICE_ACCOUNT_KEY" > "$CREDENTIALS_FILE"
+	export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
 else
-	echo "{}" > "$CREDENTIALS_FILE"
+	unset GOOGLE_APPLICATION_CREDENTIALS
 fi
-export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
 # capture errors
 set +e
 
