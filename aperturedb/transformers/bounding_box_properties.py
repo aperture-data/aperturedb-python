@@ -21,7 +21,8 @@ class BoundingBoxProperties(Transformer):
             for cmd_dict in x[0]:
                 cmd_name = list(cmd_dict.keys())[0]
                 if cmd_name in ["AddBoundingBox", "AddPolygon"]:
-                    src_properties = cmd_dict[cmd_name].setdefault("properties", {})
+                    src_properties = cmd_dict[cmd_name].setdefault(
+                        "properties", {})
                     if self.annotation_source:
                         src_properties["annotation_source"] = self.annotation_source
                     if self.annotation_mode:
