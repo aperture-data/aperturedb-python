@@ -15,6 +15,7 @@ from aperturedb.Configuration import Configuration
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.types import Blobs, CommandResponses, Commands
+from aperturedb.LoggingUtils import censor_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -83,9 +84,15 @@ def _create_configuration_from_json(config: Union[Dict, str],
     clean_config = {k: v for k, v in config.items() if k != "password"}
 
     # These fields are required.
-    assert "host" in config, f"host is required in the configuration: {clean_config}"
-    assert "username" in config, f"username is required in the configuration: {clean_config}"
-    assert "password" in config, f"password is required in the configuration: {clean_config}"
+    assert "host" in config, (
+        f"host is required in the configuration: {clean_config}"
+    )
+    assert "username" in config, (
+        f"username is required in the configuration: {clean_config}"
+    )
+    assert "password" in config, (
+        f"password is required in the configuration: {clean_config}"
+    )
 
     # These fields have no default in the Configuration class.
     if 'port' not in config:
@@ -95,7 +102,9 @@ def _create_configuration_from_json(config: Union[Dict, str],
         config["name"] = name  # will overwrite the name in the config
 
     if name_required:
-        assert "name" in config, f"name is required in the configuration: {clean_config}"
+        assert "name" in config, (
+            f"name is required in the configuration: {clean_config}"
+        )
     elif 'name' not in config:
         config["name"] = "from_json"
 
@@ -291,7 +300,9 @@ def execute_query(client: Connector, query: Commands,
     result = 0
     logger.debug(f"Query={query}")
     r, b = client.query(query, blobs)
-    logger.debug(f"Response={r}")
+
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"Response={censor_tokens(r)}")
 
     if client.last_query_ok():
         if response_handler is not None:
@@ -305,7 +316,8 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {query} with response = {r}")
+        logger.error(
+            f"Failed query = {query} with response = {censor_tokens(r)}")
         result = 1
 
     statuses = {}
@@ -329,7 +341,7 @@ def execute_query(client: Connector, query: Commands,
                     warn_list.append(wr)
         if len(warn_list) != 0:
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(warn_list, default=str)}")
+                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(censor_tokens(warn_list), default=str)}")
             result = 2
 
     return result, r, b
@@ -340,14 +352,16 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
     # We could potentially always call this handler function
     # and let the user deal with the error cases.
     blobs_returned = 0
-    for i in range(math.ceil(len(query) / commands_per_query)):
+    is_list = isinstance(response, list)
+    limit = len(response) if is_list else len(query)
+    for i in range(math.ceil(limit / commands_per_query)):
         start = i * commands_per_query
-        end = start + commands_per_query
+        end = min(start + commands_per_query, limit)
         blobs_start = i * blobs_per_query
         blobs_end = blobs_start + blobs_per_query
 
         b_count = 0
-        if issubclass(type(response), list):
+        if is_list:
             for req, resp in zip(query[start:end], response[start:end]):
                 for k in req:
                     blob_returning_commands = ["FindImage", "FindBlob", "FindVideo",
@@ -361,8 +375,8 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
         handler(
             query[start:end],
             query_blobs[blobs_start:blobs_end],
-            response[start:end] if issubclass(
-                type(response), list) else response,
+            response[start:end] if isinstance(
+                response, list) else response,
             response_blobs[blobs_returned:blobs_returned + b_count] if
             len(response_blobs) >= blobs_returned + b_count else None,
             None if cmd_index_offset is None else cmd_index_offset + i)

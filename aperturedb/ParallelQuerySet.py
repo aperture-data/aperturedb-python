@@ -152,11 +152,13 @@ def gen_execute_batch_sets(base_executor):
             blobs_this_set = len(blob_filter(blob_set, [], i))
             expected_blobs = blobs_per_query[i] * batch_size
             logger.info(
-                f"Set {i}: Commands per query = {commands_per_query[i]}, Blobs per query = {blobs_per_query[i]}"
+                f"Set {i}: Commands per query = {commands_per_query[i]}, "
+                f"Blobs per query = {blobs_per_query[i]}"
             )
             if blobs_this_set != expected_blobs:
                 logger.error(
-                    f"Set {i}: Expected {expected_blobs} blobs, but filter is returning {blobs_this_set}"
+                    f"Set {i}: Expected {expected_blobs} blobs, "
+                    f"but filter is returning {blobs_this_set}"
                 )
 
             # now we determine if the executing set has a constraint
@@ -416,9 +418,10 @@ class ParallelQuerySet(ParallelQuery):
             print(f"Query time std: {std}")
             print(f"Avg Query Throughput (q/s): {tp}")
 
-            i_tp = self.total_actions / self.total_actions_time
+            i_tp = self.get_succeeded_queries(
+            ) / self.total_actions_time if self.total_actions_time > 0 else 0
             print(
-                f"Overall insertion throughput ({self.type}/s): {i_tp if self.error_counter == 0 else 'NaN'}")
+                f"Overall insertion throughput ({self.type}/s): {i_tp}")
 
             if self.error_counter > 0:
                 err_perc = 100 * self.error_counter / total_queries_exec

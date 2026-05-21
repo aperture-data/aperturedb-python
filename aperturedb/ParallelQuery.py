@@ -19,7 +19,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
     **Parallel and Batch Querier for ApertureDB**
 
     This class provides the abstraction for partitioning data into batches,
-    so that they may be processed using different threads.
+    so that they may be processed using different threads. It is useful
+    when you need to perform many queries or large bulk inserts/updates
+    and want to speed up the process by executing them concurrently.
+
+    By using `ParallelQuery`, users can fully utilize their CPU cores and
+    network bandwidth to communicate with ApertureDB in parallel.
+    For information on JSON queries and batching, see the [ApertureDB JSON API documentation](/query_language/Overview/Transactions).
 
     Args:
         client (Connector): The database connector.
@@ -209,6 +215,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["succeeded_queries"] = sq
         else:
             query_time = 1
+            worker_stats["succeeded_commands"] = len(q)
+            worker_stats["succeeded_queries"] = len(data)
+            worker_stats["objects_existed"] = 0
 
         # append is thread-safe
         self.times_arr.append(query_time)
@@ -277,7 +286,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             results, self.total_actions_time = self.daskmanager.run(
-                self.__class__, self.client, generator, batchsize, stats=stats)
+                self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run)
             self.actual_stats = []
             for result in results:
                 if result is not None:
@@ -308,7 +317,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                         f"Could not determine query structure from:\n{generator[0]}")
                     logger.error(type(generator[0]))
             logger.info(
-                f"Commands per query = {self.commands_per_query}, Blobs per query = {self.blobs_per_query}"
+                f"Commands per query = {self.commands_per_query}, "
+                f"Blobs per query = {self.blobs_per_query}"
             )
             self.batched_run(generator, batchsize, numthreads, stats)
 
@@ -333,9 +343,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
             print(f"Query time std: {std}")
             print(f"Avg Query Throughput (q/s): {tp}")
 
-            i_tp = self.total_actions / self.total_actions_time
+            i_tp = self.get_succeeded_queries(
+            ) / self.total_actions_time if self.total_actions_time > 0 else 0
             print(
-                f"Overall insertion throughput ({self.type}/s): {i_tp if self.error_counter == 0 else 'NaN'}")
+                f"Overall insertion throughput ({self.type}/s): {i_tp}")
 
             if self.error_counter > 0:
                 err_perc = 100 * self.error_counter / total_queries_exec

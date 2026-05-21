@@ -59,7 +59,7 @@ embeddings, task_result = generate_embedding(video_url)
 
 print(f"Generated {len(embeddings)} embeddings for the video")
 for i, emb in enumerate(embeddings):
-    print(f"Embedding {i+1}:")
+    print(f"Embedding {i + 1}:")
     print(f"  Scope: {emb['embedding_scope']}")
     print(
         f"  Time range: {emb['start_offset_sec']} - {emb['end_offset_sec']} seconds")

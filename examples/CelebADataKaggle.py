@@ -15,7 +15,7 @@ class CelebADataKaggle(KaggleData):
 
     def __init__(self, **kwargs) -> None:
         self.records_count = -1
-        super().__init__(dataset_ref = "jessicali9530/celeba-dataset",
+        super().__init__(dataset_ref="jessicali9530/celeba-dataset",
                          records_count=self.records_count)
 
     def generate_index(self, root: str, records_count=-1) -> pd.DataFrame:
@@ -62,7 +62,13 @@ class CelebADataKaggle(KaggleData):
                 }
             }
         ]
-        q[0]["AddImage"]["properties"]["keypoints"] = f"10 {p['lefteye_x']} {p['lefteye_y']} {p['righteye_x']} {p['righteye_y']} {p['nose_x']} {p['nose_y']} {p['leftmouth_x']} {p['leftmouth_y']} {p['rightmouth_x']} {p['rightmouth_y']}"
+        q[0]["AddImage"]["properties"]["keypoints"] = (
+            f"10 {p['lefteye_x']} {p['lefteye_y']} "
+            f"{p['righteye_x']} {p['righteye_y']} "
+            f"{p['nose_x']} {p['nose_y']} "
+            f"{p['leftmouth_x']} {p['leftmouth_y']} "
+            f"{p['rightmouth_x']} {p['rightmouth_y']}"
+        )
 
         image_file_name = os.path.join(
             self.workdir,

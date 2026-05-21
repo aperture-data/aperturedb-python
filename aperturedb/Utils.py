@@ -9,6 +9,7 @@ from aperturedb.Connector import Connector
 import logging
 import json
 from typing import List, Optional, Dict
+from aperturedb.LoggingUtils import censor_tokens
 
 HAS_GRAPHVIZ = True
 try:
@@ -182,25 +183,51 @@ class Utils(object):
             <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity}</B> ({matched:,})</FONT></TD></TR>
             '''
             for prop, (matched, indexed, typ) in properties.items():
-                table += f'<TR><TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["property_background"]}"><FONT COLOR="{colors["property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
+                bg = colors["property_background"]
+                fg = colors["property_foreground"]
+                idx_str = "Indexed" if indexed else "Unindexed"
+                table += (
+                    f'<TR><TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                    f'<B>{prop.strip()}</B></FONT></TD> '
+                    f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                    f'{matched:,}</FONT></TD> '
+                    f'<TD BGCOLOR="{bg}"><FONT COLOR="{fg}">'
+                    f'{idx_str}, {typ}</FONT></TD></TR>'
+                )
             for connection, data in connections.items():
-                data_list = [data] if isinstance(data, dict) else data
+                data_list = self._normalize_class_data(data)
                 for data in data_list:
                     if data['src'] == entity:
                         matched = data["matched"]
                         # dictionary from name to (matched, indexed, type)
                         properties = data["properties"]
-                        table += f'<TR><TD BGCOLOR="{colors["connection_background"]}" COLSPAN="3" PORT="{connection}"><FONT COLOR="{colors["connection_foreground"]}"><B>{connection}</B> ({matched:,})</FONT></TD></TR>'
+                        c_bg = colors["connection_background"]
+                        c_fg = colors["connection_foreground"]
+                        table += (
+                            '<TR><TD BGCOLOR="{}" COLSPAN="3" '
+                            'PORT="{}"><FONT COLOR="{}">'
+                            '<B>{}</B> ({:,})</FONT></TD></TR>'
+                        ).format(c_bg, connection, c_fg, connection, matched)
                         if properties:
                             for prop, (matched, indexed, typ) in properties.items():
-                                table += f'<TR><TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}"><B>{prop.strip()}</B></FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{matched:,}</FONT></TD> <TD BGCOLOR="{colors["connection_property_background"]}"><FONT COLOR="{colors["connection_property_foreground"]}">{"Indexed" if indexed else "Unindexed"}, {typ}</FONT></TD></TR>'
+                                cp_bg = colors["connection_property_background"]
+                                cp_fg = colors["connection_property_foreground"]
+                                idx_str = "Indexed" if indexed else "Unindexed"
+                                table += (
+                                    '<TR><TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                    '<B>{}</B></FONT></TD> '
+                                    '<TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                    '{}</FONT></TD> '
+                                    '<TD BGCOLOR="{}"><FONT COLOR="{}">'
+                                    '{}, {}</FONT></TD></TR>'
+                                ).format(cp_bg, cp_fg, prop.strip(), cp_bg, cp_fg, f"{matched:,}", cp_bg, cp_fg, idx_str, typ)
 
             table += '</TABLE>>'
             dot.node(entity, label=table)
 
         if isinstance(connections, dict):
             for connection, data in connections.items():
-                data_list = [data] if isinstance(data, dict) else data
+                data_list = self._normalize_class_data(data)
                 for data in data_list:
                     dot.edge(f'{data["src"]}:{connection}',
                              f'{data["dst"]}')
@@ -243,9 +270,24 @@ class Utils(object):
             w = "!" if "id" in k and not p[k][1] else w
             print(f"{i} {w} {p[k][2].ljust(8)} |"
                   f" {k.ljust(max)} | {str(p[k][0]).rjust(9)} "
-                  f"({int(p[k][0]/total_elements*100.0)}%)")
+                  f"({int(p[k][0] / total_elements * 100.0)}%)")
 
         return total_elements
+
+    @staticmethod
+    def _normalize_class_data(data):
+        """
+        Normalize class data returned from GetSchema.
+        ApertureDB can return connections as a dict where the keys are connection names
+        and values are the dicts we actually want, or as a single dict with "matched", etc,
+        or as a list. We normalize it to a list of dicts.
+        """
+        if isinstance(data, dict):
+            if "matched" in data:
+                return [data]
+            else:
+                return list(data.values())
+        return data if isinstance(data, list) else [data]
 
     def summary(self):
         """
@@ -289,8 +331,8 @@ class Utils(object):
         total_edges = 0
         for c in connections_classes:
             connections = r["connections"]["classes"][c]
-            connections_list = [connections] if isinstance(
-                connections, dict) else connections
+
+            connections_list = self._normalize_class_data(connections)
 
             for connection in connections_list:
                 total_edges += self._object_summary(c, connection)
@@ -890,12 +932,14 @@ class Utils(object):
         try:
             response, _ = self.execute(transaction)
             schema = response[-1]["GetSchema"]
-            if schema["status"] != 0:
-                logger.error(f"status is non-zero: {response}")
-            elif schema["connections"] is not None:
-                logger.error(f"connections is not None: {response}")
-            elif schema["entities"] is not None:
-                logger.error(f"entities is not None: {response}")
+            if schema["status"] != 0 or schema["connections"] is not None or schema["entities"] is not None:
+                censored = censor_tokens(response)
+                if schema["status"] != 0:
+                    logger.error(f"status is non-zero: {censored}")
+                elif schema["connections"] is not None:
+                    logger.error(f"connections is not None: {censored}")
+                elif schema["entities"] is not None:
+                    logger.error(f"entities is not None: {censored}")
             else:
                 return True
         except BaseException as e:
