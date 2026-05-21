@@ -111,7 +111,7 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 imgdata = requests.get(url, timeout=10)
                 downloaded = True
             except requests.exceptions.RequestException as e:
-                logger.warning("Error with GET.")
+                logger.warning(f"Error with GET for url: {url} (retry {retries}).")
                 logger.exception(e)
 
             if downloaded and imgdata.ok:
