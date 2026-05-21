@@ -72,7 +72,6 @@ def test_video_properties(mock_get_utils):
 
     for i in range(len(data)):
         res = vp[i]
-        blob_index = 0
         for cmd in res[0]:
             cmd_name = list(cmd.keys())[0]
             if cmd_name == "AddVideo":
@@ -81,5 +80,3 @@ def test_video_properties(mock_get_utils):
                 assert props["adb_video_sha256"] == hashlib.sha256(
                     dummy_video_data).hexdigest()
                 assert "adb_video_id" in props
-            if cmd_name in ["AddImage", "AddVideo", "AddBlob", "AddDescriptor"]:
-                blob_index += 1

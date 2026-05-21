@@ -50,7 +50,7 @@ class FacenetPyTorchEmbeddings(Transformer):
         new_descriptors = []
         new_blobs = []
 
-        for i, cmd_dict in enumerate(x[0]):
+        for cmd_dict in x[0]:
             cmd_name = list(cmd_dict.keys())[0]
             if cmd_name == "AddImage":
                 blob = x[1][blob_index]
