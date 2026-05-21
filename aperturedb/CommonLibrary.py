@@ -266,6 +266,54 @@ def create_connector(
     return __create_connector(config)
 
 
+def censor_tokens(data):
+    """
+    Recursively redact sensitive token fields in a dictionary or list.
+    """
+    import copy
+
+    def censor_string(v):
+        if not isinstance(v, str):
+            return v
+        parts = v.split("_", 1)
+        if len(parts) == 2:
+            prefix = parts[0] + "_"
+            token = parts[1]
+        else:
+            prefix = ""
+            token = v
+
+        if len(token) > 8:
+            return prefix + token[:4] + "..." + token[-4:]
+        elif len(v) > 0:
+            return prefix + "..."
+        return v
+
+    def _censor(obj):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(k, str) and (k.lower().endswith("token") or k.lower().endswith("tokens")):
+                    if isinstance(v, str):
+                        obj[k] = censor_string(v)
+                    elif isinstance(v, list):
+                        for i in range(len(v)):
+                            if isinstance(v[i], str):
+                                v[i] = censor_string(v[i])
+                            else:
+                                _censor(v[i])
+                    else:
+                        _censor(v)
+                else:
+                    _censor(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                _censor(item)
+
+    censored = copy.deepcopy(data)
+    _censor(censored)
+    return censored
+
+
 def execute_query(client: Connector, query: Commands,
                   blobs: Blobs = [],
                   success_statuses: list[int] = [0],
@@ -297,9 +345,11 @@ def execute_query(client: Connector, query: Commands,
         Blobs: The blobs.
     """
     result = 0
-    logger.debug(f"Query={query}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"Query={censor_tokens(query)}")
     r, b = client.query(query, blobs)
-    logger.debug(f"Response={r}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"Response={censor_tokens(r)}")
 
     if client.last_query_ok():
         if response_handler is not None:
@@ -313,7 +363,8 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {query} with response = {r}")
+        logger.error(f"Failed query = {censor_tokens(
+            query)} with response = {censor_tokens(r)}")
         result = 1
 
     statuses = {}
@@ -337,7 +388,7 @@ def execute_query(client: Connector, query: Commands,
                     warn_list.append(wr)
         if len(warn_list) != 0:
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(warn_list, default=str)}")
+                f"Partial errors:\r\n{json.dumps(censor_tokens(query), default=str)}\r\n{json.dumps(censor_tokens(warn_list), default=str)}")
             result = 2
 
     return result, r, b

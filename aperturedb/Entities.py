@@ -5,7 +5,7 @@ from aperturedb.Query import Query, ObjectType
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Constraints import Constraints
 from aperturedb.Connector import Connector
-from aperturedb.CommonLibrary import execute_query
+from aperturedb.CommonLibrary import execute_query, censor_tokens
 from aperturedb.Query import QueryBuilder
 import pandas as pd
 import logging
@@ -71,7 +71,8 @@ class Entities(Subscriptable):
         cls.client = client
 
         query = spec.query()
-        logger.debug(f"query={query}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"query={censor_tokens(query)}")
         res, r, b = execute_query(client, query, [])
         if res > 0:
             logger.warning(f"resp={r}")
