@@ -191,6 +191,14 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             stats (bool, optional): If stats need to be presented, realtime. Defaults to False.
             **kwargs: Additional arguments, such as:
                 progress_callback (callable): A function called after each batch completes.
+                    It must accept the following keyword arguments:
+                    - worker_id (int): The ID of the worker.
+                    - batch_index (int): The 0-based index of the batch for this worker.
+                    - total_batches (int): Total number of batches for this worker.
+                    - batch_start (int): The starting index of the batch.
+                    - batch_end (int): The ending index of the batch.
+                    - worker_stats (dict): The stats for this batch.
+                    - errors (int): The total number of errors encountered so far by all workers.
                 log_progress (bool): If True, logs progress per batch via the logger.
         """
         logger.info(
