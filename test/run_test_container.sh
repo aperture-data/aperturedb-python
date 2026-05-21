@@ -69,23 +69,31 @@ wait_for_stack() {
     local elapsed=0
     echo "Waiting for stack ${tag} to become ready (timeout ${timeout}s)..."
     while [ $elapsed -lt $timeout ]; do
-        local is_ready=0
+        local lenz_ready=0
+        local nginx_ready=0
+
         if docker run --rm --network=${network} curlimages/curl:latest \
-                -sS -o /dev/null -m 2 http://lenz:58085/ >/dev/null 2>&1; then
-            if [[ "$tag" == *"_http" ]]; then
-                if docker run --rm --network=${network} curlimages/curl:latest \
-                        -sS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
-                    is_ready=1
-                fi
-            else
-                is_ready=1
+                -sS -o /dev/null -m 2 telnet://lenz:58085/ >/dev/null 2>&1; then
+            lenz_ready=1
+        fi
+
+        if [[ "$tag" == *"_http" ]]; then
+            if docker run --rm --network=${network} curlimages/curl:latest \
+                    -sS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
+                nginx_ready=1
+            fi
+            
+            if [ "$lenz_ready" -eq 1 ] && [ "$nginx_ready" -eq 1 ]; then
+                echo "Stack ${tag} is ready after ${elapsed}s"
+                return 0
+            fi
+        else
+            if [ "$lenz_ready" -eq 1 ]; then
+                echo "Stack ${tag} is ready after ${elapsed}s"
+                return 0
             fi
         fi
-        
-        if [ "$is_ready" -eq 1 ]; then
-            echo "Stack ${tag} is ready after ${elapsed}s"
-            return 0
-        fi
+
         sleep 2
         elapsed=$((elapsed + 2))
     done

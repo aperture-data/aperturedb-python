@@ -117,7 +117,7 @@ def generate_images(
         "", "--append-text", "-a", help="Text to append to the image")
 ):
     import aperturedb.cli.generate_images as generate_images_mod
-    
+
     size_tuple = (256, 256)
     try:
         parsed_size = generate_images_mod.ImageSize.parse(size)
