@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Optional
 
 import typer
 
@@ -99,6 +99,11 @@ def visualize_schema(
     print(result)
 
 
+class ImageType(str, Enum):
+    PNG = "png"
+    JPG = "jpg"
+
+
 @app.command(name="generate-images", help="Generate placeholder images")
 def generate_images(
     count: int = typer.Option(
@@ -109,9 +114,9 @@ def generate_images(
         "/tmp/generated_image%%", "--output", "-o", help="Output file path pattern"),
     zerofill: int = typer.Option(
         0, "--zerofill", "-z", help="Number of zeros to pad the index with"),
-    imagetype: str = typer.Option(
-        "png", "--imagetype", "-t", help="Type of image to generate (png, jpg)"),
-    manifest: str = typer.Option(
+    imagetype: ImageType = typer.Option(
+        ImageType.PNG, "--imagetype", "-t", help="Type of image to generate (png, jpg)"),
+    manifest: Optional[str] = typer.Option(
         None, "--manifest", "-m", help="Manifest file to write generated image paths to"),
     append_text: str = typer.Option(
         "", "--append-text", "-a", help="Text to append to the image")
@@ -131,7 +136,7 @@ def generate_images(
         size=size_tuple,
         output=output,
         zerofill=zerofill,
-        image_type=imagetype,
+        image_type=imagetype.value,
         manifest=manifest,
         append_text=append_text
     )
