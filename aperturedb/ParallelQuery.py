@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from aperturedb import Parallelizer
 import numpy as np
 import logging
@@ -24,6 +24,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
     Args:
         client (Connector): The database connector.
         dry_run (bool, optional): Whether to run in dry run mode. Defaults to False.
+        use_dask (bool, optional): Whether to use Dask for parallel ingestion. If None, falls back to generator settings. Defaults to None.
     """
 
     # 0 is success, 2 is object exists
@@ -37,8 +38,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
     def getSuccessStatus(cls):
         return cls.success_statuses
 
-    def __init__(self, client: Connector, dry_run: bool = False):
-        super().__init__()
+    def __init__(self, client: Connector, dry_run: bool = False, use_dask: Optional[bool] = None):
+        super().__init__(use_dask=use_dask)
         test_string = f"Connection test successful with {client.config}"
         try:
             _, _ = client.query([{"GetSchema": {}}], [])
@@ -270,8 +271,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
         """
 
-        use_dask = hasattr(generator, "use_dask") and generator.use_dask
+        use_dask = self.use_dask if self.use_dask is not None else (
+            hasattr(generator, "use_dask") and generator.use_dask)
+
         if use_dask:
+            if not hasattr(generator, "df") or not hasattr(generator.df, "map_partitions"):
+                raise ValueError(
+                    "To run with use_dask=True, the generator must have a Dask DataFrame 'df' with map_partitions. Ensure the CSVParser is also initialized with use_dask=True.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 

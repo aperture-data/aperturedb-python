@@ -98,7 +98,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
                                 if x.startswith(SingleEntityUpdateDataCSV.UPDATE_CONSTRAINT_PREFIX)]
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx
+        idx = self._get_row_label(idx)
         query_set = []
 
         self.constraint_keyword = "if_not_found"

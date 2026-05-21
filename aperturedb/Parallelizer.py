@@ -28,7 +28,8 @@ class Parallelizer:
     ```
     """
 
-    def __init__(self):
+    def __init__(self, use_dask=None):
+        self.use_dask = use_dask
         self._reset()
 
     def _reset(self, batchsize: int = 1, numthreads: int = 1):

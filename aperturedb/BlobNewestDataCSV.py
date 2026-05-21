@@ -212,7 +212,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
         return properties
 
     def getitem(self, idx):
-        idx = self.df.index.start + idx
+        idx = self._get_row_label(idx)
         query_set = []
 
         # process is; add if not existing ( # Pt 1 )

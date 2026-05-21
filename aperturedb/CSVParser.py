@@ -51,7 +51,11 @@ class CSVParser(Subscriptable):
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
             "blobs_relative_to_csv"]
-        self.use_dask = "use_dask" in kwargs and kwargs["use_dask"]
+        # Keep use_dask for backwards compatibility but log a warning if used with True
+        if kwargs.get("use_dask"):
+            logger.warning(
+                "The 'use_dask' parameter in CSVParser is deprecated. To enable dask, both the parser and the Parallelizer currently need use_dask=True; in the future this will be consolidated.")
+        self.use_dask = kwargs.get("use_dask", False)
         df = kwargs["df"] if "df" in kwargs else None
 
         self.relative_path_prefix = os.path.dirname(self.filename) if self.blobs_relative_to_csv \
@@ -105,6 +109,12 @@ class CSVParser(Subscriptable):
     def get_indices(self):
         raise NotImplementedError
 
+    def _get_row_label(self, idx):
+        try:
+            return self.df.index.start + idx
+        except AttributeError:
+            return idx
+
     def _parse_prop(self, key, val=None):
         if key.startswith(CONSTRAINTS_PREFIX):
             key = key[len(CONSTRAINTS_PREFIX):]
@@ -119,7 +129,14 @@ class CSVParser(Subscriptable):
         if len(self.props_keys) > 0:
             for key in self.props_keys:
                 prop, value = self._parse_prop(key, self.df.loc[idx, key])
-                if value == value:  # skips nan valies
+                # Handle Pandas/Dask specific value comparisons cleanly
+                try:
+                    is_nan = pd.isna(value)
+                    if hasattr(is_nan, 'any'):
+                        is_nan = is_nan.all()
+                except Exception:
+                    is_nan = value != value
+                if not is_nan:
                     properties[prop] = value
         return properties
 
