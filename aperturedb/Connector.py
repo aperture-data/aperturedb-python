@@ -671,14 +671,15 @@ class Connector(object):
 
     def check_status(self, json_res: CommandResponses) -> int:
         """
-        Returns the status of the first command response from the server.
-        Can traverse a JSON recursively to find the first status.
+        Returns the status of the first negative command response from the server,
+        or the status of the first command if all are non-negative.
+        Can traverse a JSON recursively to find the statuses.
 
         Args:
             json_res (CommandResponses): The actual response from the server.
 
         Returns:
-            int: The value recieved from the server, or -2 if not found.
+            int: The value received from the server, or -2 if not found.
         """
         # Default status is -2, which is an error, but not a server error.
         status = STATUS_ERROR_DEFAULT
