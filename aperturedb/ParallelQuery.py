@@ -265,7 +265,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         return sum([stat["succeeded_commands"]
                     for stat in self.actual_stats])
 
-    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
+    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, transformers: list = None) -> None:
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)
@@ -274,15 +274,22 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
+            transformers (list, optional): A list of Transformer classes to apply to the data. Defaults to None.
         """
 
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:
+            if transformers:
+                raise ValueError("Transformers cannot be used with Dask mode.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
+
+        if transformers:
+            for transformer in transformers:
+                generator = transformer(generator, client=self.client)
 
         if use_dask:
             results, self.total_actions_time = self.daskmanager.run(

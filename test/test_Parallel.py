@@ -3,9 +3,21 @@ import random
 
 from aperturedb.Connector import Connector
 from aperturedb.ParallelQuery import ParallelQuery
+from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.Subscriptable import Subscriptable
+from aperturedb.transformers.transformer import Transformer
 
 logger = logging.getLogger(__name__)
+
+
+class DummyTransformer(Transformer):
+    def __init__(self, generator, client=None):
+        super().__init__(generator, client=client)
+        assert client is not None, "Client was not passed to transformer!"
+
+    def getitem(self, idx):
+        query, blobs = self.data[idx]
+        return query, blobs
 
 # Tests for parallel which don't involve data.
 
@@ -81,3 +93,29 @@ class TestParallel():
             print(e)
             print("Failed to renew Session")
             assert False
+
+    def test_transformers(self, db: Connector):
+        """
+        Verifies that transformers are correctly applied.
+        """
+        elements = 10
+        generator = GeneratorWithErrors(elements=elements, error_pct=0)
+
+        loader = ParallelLoader(db)
+        loader.ingest(generator, batchsize=2, numthreads=2,
+                      stats=False, transformers=[DummyTransformer])
+
+        assert loader.get_succeeded_queries() > 0
+
+    def test_transformers_rejects_dask(self, db: Connector):
+        elements = 10
+        generator = GeneratorWithErrors(elements=elements, error_pct=0)
+        generator.use_dask = True
+
+        loader = ParallelLoader(db)
+        try:
+            loader.ingest(generator, batchsize=2, numthreads=2,
+                          stats=False, transformers=[DummyTransformer])
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "Transformers cannot be used with Dask" in str(e)
