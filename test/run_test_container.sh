@@ -9,6 +9,14 @@ function check_containers_networks(){
     docker network ls
 }
 
+function get_sudo() {
+    if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+        echo "sudo"
+    else
+        echo ""
+    fi
+}
+
 function run_aperturedb_instance(){
     set -e
     TAG=$1
@@ -19,7 +27,7 @@ function run_aperturedb_instance(){
     # ensure latest db
     docker compose pull
 
-    sudo rm -rf output
+    $(get_sudo) rm -rf output
     mkdir -m 777 output
 
     docker network create ${TAG}_host_default
@@ -53,8 +61,8 @@ LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
 RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
-sudo mkdir -p "$RUNNER_INFO_PATH"
-sudo chmod -R 777 "$LOG_PATH" || true
+$(get_sudo) mkdir -p "$RUNNER_INFO_PATH"
+$(get_sudo) chmod -R 777 "$LOG_PATH" || true
 
 # Check if TEST_PROTOCOL is set, otherwise default to both
 TEST_PROTOCOL=${TEST_PROTOCOL:-"both"}
