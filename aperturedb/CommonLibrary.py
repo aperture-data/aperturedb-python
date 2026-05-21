@@ -288,6 +288,8 @@ def execute_query(client: Connector, query: Commands,
         commands_per_query (int, optional): The number of commands per query. Defaults to 1.
         blobs_per_query (int, optional): The number of blobs per query. Defaults to 0.
         strict_response_validation (bool, optional): Whether to strictly validate the response. Defaults to False.
+        cmd_index (int, optional): The index of the command or batch, passed to the response handler. Defaults to None.
+        error_handler (Callable, optional): Callback invoked when the query returns an unexpected status or fails. Expected signature is `error_handler(query, response, blobs)`. Defaults to None.
 
     Returns:
         int: The result code.

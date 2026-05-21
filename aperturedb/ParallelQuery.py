@@ -256,9 +256,6 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if self.stats:
                 self.pb.update(batch_end - batch_start)
         logger.info(f"Worker {thid} executed {total_batches} batches")
-        # Explicitly delete the client to ensure the connection is closed immediately
-        if client is not None:
-            del client
 
     def get_objects_existed(self) -> int:
         return sum([stat["objects_existed"]
