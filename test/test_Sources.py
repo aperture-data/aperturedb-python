@@ -2,9 +2,9 @@ import unittest
 from unittest.mock import patch, MagicMock
 from aperturedb.Sources import Sources
 import botocore.exceptions
-import botocore
+from botocore import UNSIGNED
 from google.auth.exceptions import DefaultCredentialsError
-from google.api_core.exceptions import Forbidden, Unauthorized
+from google.api_core.exceptions import Forbidden
 
 
 class TestSources(unittest.TestCase):
@@ -32,7 +32,7 @@ class TestSources(unittest.TestCase):
         self.assertEqual(mock_client_factory.call_count, 2)
         # The second call should have signature_version=UNSIGNED
         _, kwargs = mock_client_factory.call_args_list[1]
-        self.assertEqual(kwargs['config'].signature_version, botocore.UNSIGNED)
+        self.assertEqual(kwargs['config'].signature_version, UNSIGNED)
 
     @patch('boto3.client')
     def test_s3_fallback_403(self, mock_client_factory):
@@ -53,7 +53,7 @@ class TestSources(unittest.TestCase):
         self.assertTrue(success)
         self.assertEqual(mock_client_factory.call_count, 2)
         _, kwargs = mock_client_factory.call_args_list[1]
-        self.assertEqual(kwargs['config'].signature_version, botocore.UNSIGNED)
+        self.assertEqual(kwargs['config'].signature_version, UNSIGNED)
 
     @patch('google.cloud.storage.Client')
     def test_gs_fallback_nocreds(self, mock_client_factory):
