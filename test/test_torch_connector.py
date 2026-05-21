@@ -71,9 +71,9 @@ class TestTorchDatasets():
             db, query)
 
         assert len(dataset) == utils.count_entities("_Blob")
-        for img, label in dataset:
+        for blob, label in dataset:
             # For FindBlob, the return is raw bytes and label should be 'none' when no label_prop is provided
-            assert isinstance(img, bytes)
+            assert isinstance(blob, bytes)
             assert label == "none"
             break
 

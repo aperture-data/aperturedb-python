@@ -54,15 +54,15 @@ class ApertureDBDataset(data.Dataset):
                     self.command_name = name
 
         if self.command_idx is None:
-            logger.error(
-                "Query error. The query must contain at least one Find* command (e.g., FindImage, FindVideo). The first one encountered will be used.")
-            raise Exception('Query Error')
+            msg = "Query error. The query must contain at least one Find* command (e.g., FindImage, FindVideo). The first one encountered will be used."
+            logger.error(msg)
+            raise ValueError(msg)
 
         if "results" not in self.query[self.command_idx][self.command_name]:
             self.query[self.command_idx][self.command_name]["results"] = {}
 
         self.query[self.command_idx][self.command_name]["batch"] = {}
-        self.query[self.command_idx][self.command_name]["blobs"] = True
+        self.query[self.command_idx][self.command_name]["blobs"] = False
 
         try:
             _, r, b = execute_query(
@@ -77,6 +77,8 @@ class ApertureDBDataset(data.Dataset):
             logger.error(
                 f"Query error: {self.query} {self.client.get_last_response_str()}")
             raise
+        finally:
+            self.query[self.command_idx][self.command_name]["blobs"] = True
 
     def __getitem__(self, index):
 
@@ -93,6 +95,8 @@ class ApertureDBDataset(data.Dataset):
         if self.command_name == "FindImage":
             nparr = np.frombuffer(blob, dtype=np.uint8)
             blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if blob is None:
+                raise ValueError(f"Failed to decode image at index {index}.")
             blob = cv2.cvtColor(blob, cv2.COLOR_BGR2RGB)
 
         return blob, label
@@ -140,6 +144,11 @@ class ApertureDBDataset(data.Dataset):
                 # Connection failed, we have reconnected, we try again.
                 _, r, b = execute_query(
                     query=self.query, blobs=[], client=self.client)
+
+            resp = r[self.command_idx][self.command_name]
+            if resp.get("status", 0) != 0:
+                raise Exception(
+                    f"Query Error: {resp.get('status')} {resp.get('info', '')}")
 
             if len(b) == 0:
                 logger.error(f"index: {index}")
