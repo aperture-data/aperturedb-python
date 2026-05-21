@@ -3,7 +3,7 @@ const request = (query, blobs, handler, sessionToken) => {
     const formData = new FormData();
     formData.append('query', JSON.stringify(query));
     displayContent(query, response=false);
-    
+
     blobs.forEach(element => {
         formData.append('blobs', element);
     });
@@ -15,7 +15,7 @@ const request = (query, blobs, handler, sessionToken) => {
             "Authorization": `Bearer ${sessionToken}`
         }
     }
-    
+
     axios.post(
             url=apiURL,
             data=formData, {
@@ -49,7 +49,7 @@ run_requests = () => {
         // console.log(authData[0]);
         displayContent(authData);
         sessionToken = authData[0].Authenticate.session_token;
-        
+
 
         //List images
         listQuery = [{
@@ -98,8 +98,8 @@ run_requests = () => {
         sessionStorage.setItem("session_token", sessionToken);
     })
 
-    
-    
+
+
 }
 
 const addImage = (event) => {
@@ -116,7 +116,7 @@ const addImage = (event) => {
         response = data["json"];
         displayContent(response);
     }, sessionToken = sessionStorage.getItem("session_token"));
-    
+
 }
 
 window.addEventListener("load", (event)=>{
