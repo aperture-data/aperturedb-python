@@ -44,6 +44,13 @@ class ApertureDBTensorFlowDataset:
         if not "results" in self.query[self.find_image_idx]["FindImage"]:
             self.query[self.find_image_idx]["FindImage"]["results"] = {}
 
+        if self.label_prop is not None:
+            results = self.query[self.find_image_idx]["FindImage"]["results"]
+            if "list" not in results:
+                results["list"] = []
+            if self.label_prop not in results["list"]:
+                results["list"].append(self.label_prop)
+
         self.query[self.find_image_idx]["FindImage"]["batch"] = {}
         self.query[self.find_image_idx]["FindImage"]["blobs"] = True
 
@@ -107,7 +114,11 @@ class ApertureDBTensorFlowDataset:
 
             if self.label_prop:
                 entities = r[self.find_image_idx]["FindImage"]["entities"]
-                self.batch_labels = [l[self.label_prop] for l in entities]
+                try:
+                    self.batch_labels = [l[self.label_prop] for l in entities]
+                except KeyError:
+                    logger.error(f"Property '{self.label_prop}' not found in some entities. Ensure all entities have this property.")
+                    raise
             else:
                 self.batch_labels = ["none" for l in range(len(b))]
         except:

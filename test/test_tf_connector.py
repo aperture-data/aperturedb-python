@@ -26,7 +26,7 @@ class TestTfDatasets():
         if time_taken != 0:
             logger.info(f"Throughput (imgs/s): {expected_length / time_taken}")
 
-    def test_nativeContraints(self, db, utils, images):
+    def test_nativeConstraints(self, db, utils, images):
         assert len(images) > 0
         # This is a hack against a bug in batch API.
         dim = 224 if isinstance(db, ConnectorRest) else 225
@@ -54,7 +54,7 @@ class TestTfDatasets():
 
         self.validate_dataset(dataset, utils.count_images())
 
-    def test_datasetWithMultiprocessing(self, db, utils, images):
+    def test_batchedDataset(self, db, utils, images):
         len_limit = utils.count_images()
         # This is a hack against a bug in batch API.
         dim = 224 if isinstance(db, ConnectorRest) else 225
@@ -88,6 +88,10 @@ class TestTfDatasets():
         for imgs, labels in batched_dataset:
             count += imgs.shape[0]
         assert count == len_limit
+
+        time_taken = time.time() - start
+        if time_taken != 0:
+            logger.info(f"Throughput (imgs/s): {len_limit / time_taken}")
 
     def test_dynamic_label_dtype(self):
         from unittest.mock import patch
