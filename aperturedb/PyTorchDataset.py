@@ -48,7 +48,7 @@ class ApertureDBDataset(data.Dataset):
 
         if self.command_idx is None:
             logger.error(
-                "Query error. The query must contain one Find command")
+                "Query error. The query must contain at least one Find* command (e.g., FindImage, FindVideo). The first one encountered will be used.")
             raise Exception('Query Error')
 
         if "results" not in self.query[self.command_idx][self.command_name]:
