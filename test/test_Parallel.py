@@ -121,7 +121,8 @@ class TestParallel():
 
             import math
             elements_per_thread = math.ceil(elements / numthreads)
-            expected_batches_per_thread = elements_per_thread // batchsize + (1 if elements_per_thread % batchsize > 0 else 0)
+            expected_batches_per_thread = elements_per_thread // batchsize + \
+                (1 if elements_per_thread % batchsize > 0 else 0)
             expected_total_calls = expected_batches_per_thread * numthreads
 
             assert len(callback_calls) == expected_total_calls
@@ -133,9 +134,11 @@ class TestParallel():
                 assert "batch_start" in call
                 assert "batch_end" in call
                 # Check that batch limits align with batch_index
-                expected_start = (call["worker_id"] * elements_per_thread) + call["batch_index"] * batchsize
+                expected_start = (
+                    call["worker_id"] * elements_per_thread) + call["batch_index"] * batchsize
                 assert call["batch_start"] == expected_start
-                expected_end = min(expected_start + batchsize, (call["worker_id"] + 1) * elements_per_thread)
+                expected_end = min(expected_start + batchsize,
+                                   (call["worker_id"] + 1) * elements_per_thread)
                 assert call["batch_end"] == expected_end
                 assert "worker_stats" in call
                 assert "errors" in call
