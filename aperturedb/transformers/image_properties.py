@@ -22,8 +22,6 @@ class ImageProperties(Transformer):
         if "adb_data_source" not in utils.get_indexed_props("_Image"):
             utils.create_entity_index("_Image", "adb_data_source")
 
-        self._blob_index_map = {ic: i for i, ic in enumerate(self._blob_index)}
-
     def getitem(self, subscript):
         x = self.data[subscript]
         try:
