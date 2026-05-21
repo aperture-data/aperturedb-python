@@ -371,7 +371,7 @@ class ParallelQuerySet(ParallelQuery):
         logger.error(type(generator[0]))
         return False
 
-    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
+    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> dict | None:
         """
         This is an override of ParallelQuery.do_batch.
 
@@ -379,7 +379,10 @@ class ParallelQuerySet(ParallelQuery):
 
         Args:
             client (Connector): The ApertureDB Connector
-            data (List[Tuple[Query, Blobs]]): A list of tuples, each containing a list of commands and a list of blobs
+            data (List[Tuple[Commands, Blobs]]): A list of tuples, each containing a list of commands and a list of blobs
+
+        Returns:
+            dict | None: The per-batch worker stats (e.g., succeeded_commands, succeeded_queries).
         """
         if not hasattr(self.generator, "commands_per_query"):
             raise Exception(
@@ -393,7 +396,7 @@ class ParallelQuerySet(ParallelQuery):
         self.batch_command = gen_execute_batch_sets(
             self.base_batch_command)
 
-        ParallelQuery.do_batch(self, client, batch_start, data)
+        return ParallelQuery.do_batch(self, client, batch_start, data)
 
     def print_stats(self) -> None:
 

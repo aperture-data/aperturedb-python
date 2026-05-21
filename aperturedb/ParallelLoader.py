@@ -180,7 +180,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
                         logger.warning(
                             f"Failed to create index for {connection_class}.{property_name}")
 
-    def ingest(self, generator: Subscriptable, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
+    def ingest(self, generator: Subscriptable, batchsize: int = 1, numthreads: int = 4, stats: bool = False, **kwargs) -> None:
         """
         **Method to ingest data into the database**
 
@@ -189,10 +189,13 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             batchsize (int, optional): The size of batch to be used. Defaults to 1.
             numthreads (int, optional): Number of workers to create. Defaults to 4.
             stats (bool, optional): If stats need to be presented, realtime. Defaults to False.
+            **kwargs: Additional arguments, such as:
+                progress_callback (callable): A function called after each batch completes.
+                log_progress (bool): If True, logs progress per batch via the logger.
         """
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")
-        self.query(generator, batchsize, numthreads, stats)
+        self.query(generator, batchsize, numthreads, stats, **kwargs)
 
     def print_stats(self) -> None:
 

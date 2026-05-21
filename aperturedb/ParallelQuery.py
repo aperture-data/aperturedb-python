@@ -124,13 +124,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
         except BaseException as e:
             logger.exception(e)
 
-    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> None:
+    def do_batch(self, client: Connector, batch_start: int,  data: List[Tuple[Commands, Blobs]]) -> dict | None:
         """
         Executes batch of queries and blobs in the database.
 
         Args:
             client (Connector): The database connector.
             data (list[tuple[Commands, Blobs]]): The data to be batched.  Each tuple contains a list of commands and a list of blobs.
+
+        Returns:
+            dict | None: The per-batch worker stats (e.g., succeeded_commands, succeeded_queries).
+                         Overrides of this method should return these stats when progress reporting is enabled.
 
         It also provides a way for invoking a user defined function to handle the
         responses of each of the queries executed. This function can be used to process
@@ -193,7 +197,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["objects_existed"] = sum(
                     [v['status'] == 2 for i in r for k, v in i.items()])
             elif result == 1:
-                self.error_counter += 1
+                with self._error_lock:
+                    self.error_counter += 1
                 worker_stats["succeeded_queries"] = 0
                 worker_stats["succeeded_commands"] = 0
                 worker_stats["objects_existed"] = 0
@@ -222,6 +227,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         # append is thread-safe
         self.times_arr.append(query_time)
         self.actual_stats.append(worker_stats)
+        return worker_stats
 
     def worker(self, thid: int, generator, start: int, end: int, run_event) -> None:
         # A new connection will be created for each thread
@@ -240,17 +246,46 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batch_start = start + i * self.batchsize
             batch_end = min(batch_start + self.batchsize, end)
 
+            worker_stats = {}
             try:
-                self.do_batch(client, batch_start,
-                              generator[batch_start:batch_end])
+                result_stats = self.do_batch(client, batch_start,
+                                             generator[batch_start:batch_end])
+                if result_stats is not None:
+                    worker_stats = result_stats
             except Exception as e:
                 logger.exception(e)
                 logger.warning(
                     f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
-                self.error_counter += 1
+                with self._error_lock:
+                    self.error_counter += 1
 
             if self.stats:
                 self.pb.update(batch_end - batch_start)
+
+            with self._error_lock:
+                current_errors = self.error_counter
+
+            if getattr(self, "log_progress", False):
+                logger.info(
+                    f"Worker {thid} completed batch {i + 1}/{total_batches}. "
+                    f"Worker stats: {dict(worker_stats)}, "
+                    f"Errors so far: {current_errors}"
+                )
+
+            if hasattr(self, "progress_callback") and callable(self.progress_callback):
+                try:
+                    self.progress_callback(
+                        worker_id=thid,
+                        batch_index=i,
+                        total_batches=total_batches,
+                        batch_start=batch_start,
+                        batch_end=batch_end,
+                        worker_stats=dict(worker_stats),
+                        errors=current_errors
+                    )
+                except Exception as cb_e:
+                    logger.exception(f"progress_callback failed: {cb_e}")
+
         logger.info(f"Worker {thid} executed {total_batches} batches")
 
     def get_objects_existed(self) -> int:
@@ -265,7 +300,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         return sum([stat["succeeded_commands"]
                     for stat in self.actual_stats])
 
-    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
+    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, **kwargs) -> None:
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)
@@ -274,9 +309,19 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
             stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
+            **kwargs: Additional arguments, such as:
+                progress_callback (callable): A function called after each batch completes.
+                log_progress (bool): If True, logs progress per batch via the logger.
         """
 
+        self.progress_callback = kwargs.get("progress_callback", None)
+        self.log_progress = kwargs.get("log_progress", False)
+
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
+        if use_dask and (self.progress_callback or self.log_progress):
+            logger.warning(
+                "progress_callback and log_progress are not supported when using Dask.")
+
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
