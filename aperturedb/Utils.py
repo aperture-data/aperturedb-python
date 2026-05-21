@@ -932,14 +932,14 @@ class Utils(object):
         try:
             response, _ = self.execute(transaction)
             schema = response[-1]["GetSchema"]
-            if schema["status"] != 0:
-                logger.error(f"status is non-zero: {censor_tokens(response)}")
-            elif schema["connections"] is not None:
+            if schema["status"] != 0 or schema["connections"] is not None or schema["entities"] is not None:
                 censored = censor_tokens(response)
-                logger.error(f"connections is not None: {censored}")
-            elif schema["entities"] is not None:
-                censored = censor_tokens(response)
-                logger.error(f"entities is not None: {censored}")
+                if schema["status"] != 0:
+                    logger.error(f"status is non-zero: {censored}")
+                elif schema["connections"] is not None:
+                    logger.error(f"connections is not None: {censored}")
+                elif schema["entities"] is not None:
+                    logger.error(f"entities is not None: {censored}")
             else:
                 return True
         except BaseException as e:
