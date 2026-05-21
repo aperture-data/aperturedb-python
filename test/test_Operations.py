@@ -46,6 +46,11 @@ class TestOperations:
         assert op.get_operations_arr() == [
             {"type": "preview", "max_frame_count": 10, "max_time_fraction": 0.5}]
 
+    def test_preview_all_args(self):
+        op = Operations().preview(max_frame_count=10, max_time_fraction=0.5, max_time_offset="00:00:10", max_size_mb=10.5)
+        assert op.get_operations_arr() == [
+            {"type": "preview", "max_frame_count": 10, "max_time_fraction": 0.5, "max_time_offset": "00:00:10", "max_size_mb": 10.5}]
+
     def test_chained_operations(self):
         op = Operations().resize(width=100, height=100).rotate(
             angle=90).crop(x=0, y=0, width=50, height=50)
