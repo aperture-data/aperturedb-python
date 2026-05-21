@@ -278,7 +278,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                         errors=current_errors
                     )
                 except Exception as cb_e:
-                    logger.warning(f"progress_callback failed: {cb_e}")
+                    logger.exception(f"progress_callback failed: {cb_e}")
 
         logger.info(f"Worker {thid} executed {total_batches} batches")
 
@@ -312,6 +312,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.log_progress = kwargs.get("log_progress", False)
 
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
+        if use_dask and (self.progress_callback or self.log_progress):
+            logger.warning("progress_callback and log_progress are not supported when using Dask.")
+
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)

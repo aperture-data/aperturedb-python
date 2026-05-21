@@ -143,7 +143,7 @@ class TestParallel():
                 assert "worker_stats" in call
                 assert "errors" in call
 
-            log_messages = [record.message for record in caplog.records]
+            log_messages = [record.getMessage() for record in caplog.records]
             completed_logs = [
                 msg for msg in log_messages if "completed batch" in msg]
             assert len(completed_logs) == expected_total_calls
