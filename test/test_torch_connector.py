@@ -58,8 +58,9 @@ class TestTorchDatasets():
 
         self.validate_dataset(dataset, utils.count_images())
 
-    def test_findBlob(self, db, utils, images):
-        assert len(images) > 0
+    def test_findBlob(self, db, utils, insert_data_from_csv):
+        blobs, _ = insert_data_from_csv("./input/blobs.adb.csv")
+        assert len(blobs) > 0
         query = [{
             "FindBlob": {
                 "results": {}
@@ -69,7 +70,7 @@ class TestTorchDatasets():
         dataset = PyTorchDataset.ApertureDBDataset(
             db, query)
 
-        assert len(dataset) == utils.count_images()
+        assert len(dataset) == utils.count_entities("_Blob")
         for img, label in dataset:
             # For FindBlob, the return is raw bytes and label should be 'none' when no label_prop is provided
             assert isinstance(img, bytes)

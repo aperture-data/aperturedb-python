@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 class ApertureDBDataset(data.Dataset):
     """
     This class implements a PyTorch Dataset for ApertureDB.
-    It is used to load images or videos from ApertureDB into a PyTorch model.
+    It is used to load blobs returned by a `Find*` command from ApertureDB into a PyTorch model.
     It can be initialized with a query that will be used to retrieve
-    the images or videos from ApertureDB.
+    the blobs from ApertureDB. Note that only `FindImage` blobs are decoded via OpenCV.
     """
 
     def __init__(self, client: Connector, query, label_prop=None, batch_size=1, command_idx=None):
@@ -34,7 +34,11 @@ class ApertureDBDataset(data.Dataset):
         self.label_prop = label_prop
 
         if self.command_idx is not None:
+            if not (0 <= self.command_idx < len(query)):
+                raise ValueError(f"command_idx {self.command_idx} is out of range.")
             self.command_name = list(query[self.command_idx].keys())[0]
+            if not self.command_name.startswith("Find"):
+                raise ValueError(f"Command at index {self.command_idx} is {self.command_name}, which is not a Find* command.")
         else:
             for i in range(len(query)):
                 name = list(query[i].keys())[0]
