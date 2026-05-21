@@ -20,12 +20,14 @@ class VideoProperties(Transformer):
         if "adb_data_source" not in utils.get_indexed_props("_Video"):
             utils.create_entity_index("_Video", "adb_data_source")
 
+        self._blob_index_map = {ic: i for i, ic in enumerate(self._blob_index)}
+
     def getitem(self, subscript):
         x = self.data[subscript]
         try:
             # x is a transaction that has an add_video command and a blob
             for ic in getattr(self, "_add_video_index", []):
-                blob_index = self._blob_index.index(ic)
+                blob_index = self._blob_index_map[ic]
                 src_properties = x[0][ic]["AddVideo"].setdefault(
                     "properties", {})
                 # Compute the dynamic properties and apply them to metadata

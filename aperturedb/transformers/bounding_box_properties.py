@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 class BoundingBoxProperties(Transformer):
     """
-    This computes some bounding box properties and adds them to the metadata.
+    This computes bounding box and polygon properties and adds them to the metadata.
     """
 
     def __init__(self, data: Subscriptable, **kwargs) -> None:
