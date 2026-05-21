@@ -7,7 +7,7 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
-from generateImages import ImageGenerator
+from aperturedb.cli.generate_images import ImageGenerator
 
 from itertools import product
 
