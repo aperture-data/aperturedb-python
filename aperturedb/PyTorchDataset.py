@@ -40,7 +40,8 @@ class ApertureDBDataset(data.Dataset):
                 name = list(query[i].keys())[0]
                 if name.startswith("Find"):
                     if self.command_idx is not None:
-                        logger.warning("Multiple Find commands found. Selected %s at index %s.", self.command_name, self.command_idx)
+                        logger.warning(
+                            "Multiple Find commands found. Selected %s at index %s.", self.command_name, self.command_idx)
                         break
                     self.command_idx = i
                     self.command_name = name
