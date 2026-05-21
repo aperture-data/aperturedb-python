@@ -1,5 +1,10 @@
 """
 **These are miscellaneous helper methods to render responses from ApertureDB in a jupyter environment.**
+
+This module provides helper classes (such as `BoundingBox`, `TemporalBoundingBox`) and functions
+(such as `display`, `draw_bboxes`, `display_video_mp4`, `display_annotated_video`)
+to help render visual results from ApertureDB queries directly within a Jupyter Notebook.
+It makes it easier to visualize bounding boxes, images, and videos without writing boilerplate code.
 """
 
 import os

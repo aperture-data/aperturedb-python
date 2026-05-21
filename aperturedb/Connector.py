@@ -549,7 +549,7 @@ class Connector(object):
         if tries == self.config.retry_max_attempts:
             # We have tried enough times, and failed. Log some state info.
             raise Exception(
-                f"Could not query apertureDB using TCP. \r\n\
+                f"Could not query ApertureDB using TCP. \r\n\
                 {self.connected=}\r\n \
                 {self.authenticated=} \r\n \
                 attempts={tries}/{self.config.retry_max_attempts} \r\n \
