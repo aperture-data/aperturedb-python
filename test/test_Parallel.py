@@ -90,11 +90,11 @@ def test_dask_dry_run(db: Connector):
     utils = Utils(db)
 
     # Ensure starting clean
-    utils.remove_class("Person")
+    utils.remove_entities(class_name="Person")
 
     # Create generator with Dask
     generator = EntityDataCSV(
-        "./test/input/persons.adb.csv", use_dask=True, blobs_relative_to_csv=True)
+        "./input/persons.adb.csv", use_dask=True, blobs_relative_to_csv=True)
 
     # Run ParallelLoader with dry_run=True
     loader = ParallelLoader(db, dry_run=True)
