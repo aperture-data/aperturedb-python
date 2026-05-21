@@ -193,6 +193,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["succeeded_commands"] = 0
                 worker_stats["objects_existed"] = 0
             elif result == 2:
+                if client.last_query_ok():
+                    query_time = client.get_last_query_time()
                 # with result 2, some queries might have failed.
                 if isinstance(r, list):
                     def filter_per_group(group):

@@ -87,7 +87,7 @@ class TestParallel():
         Verifies that it handles a dict response from a failing server properly.
         Guards against regression to "unhashable type: 'slice'" when r is a dict.
         """
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock
         try:
             elements = 10
             generator = GeneratorWithErrors(elements=elements)
