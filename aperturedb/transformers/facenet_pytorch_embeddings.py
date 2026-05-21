@@ -23,8 +23,15 @@ class FacenetPyTorchEmbeddings(Transformer):
         super().__init__(data, **kwargs)
 
         # Let's sample some data to figure out the descriptorset we need.
-        if len(self._add_image_index) > 0:
-            sample = self._get_embedding_from_blob(self.data[0][1][0])
+        sample_blob = None
+        for i, c in enumerate(self.data[0][0]):
+            if list(c.keys())[0] == "AddImage":
+                blob_idx = self._blob_index.index(i)
+                sample_blob = self.data[0][1][blob_idx]
+                break
+
+        if sample_blob is not None:
+            sample = self._get_embedding_from_blob(sample_blob)
             utils = self.get_utils()
             utils.add_descriptorset(self.search_set_name, dim=len(sample) // 4)
 
@@ -39,29 +46,40 @@ class FacenetPyTorchEmbeddings(Transformer):
         self.ncalls += 1
         x = self.data[subscript]
 
-        for ic in self._add_image_index:
-            serialized = self._get_embedding_from_blob(
-                x[1][self._add_image_index.index(ic)])
-            # If the image already has an image_sha256, we use it.
-            image_sha256 = x[0][ic]["AddImage"].get("properties", {}).get(
-                "adb_image_sha256", None)
-            if not image_sha256:
-                image_sha256 = hashlib.sha256(x[1][ic]).hexdigest()
-            x[1].append(serialized)
-            x[0].append(
-                {
-                    "AddDescriptor": {
-                        "set": self.search_set_name,
-                        "properties": {
-                            "image_sha256": image_sha256,
-                        },
-                        "if_not_found": {
-                            "image_sha256": ["==", image_sha256],
-                        },
-                        "connect": {
-                            "ref": x[0][ic]["AddImage"]["_ref"]
+        blob_index = 0
+        new_descriptors = []
+        new_blobs = []
+
+        for i, cmd_dict in enumerate(x[0]):
+            cmd_name = list(cmd_dict.keys())[0]
+            if cmd_name == "AddImage":
+                blob = x[1][blob_index]
+                serialized = self._get_embedding_from_blob(blob)
+                # If the image already has an image_sha256, we use it.
+                image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
+                    "adb_image_sha256", None)
+                if not image_sha256:
+                    image_sha256 = hashlib.sha256(blob).hexdigest()
+                new_blobs.append(serialized)
+                new_descriptors.append(
+                    {
+                        "AddDescriptor": {
+                            "set": self.search_set_name,
+                            "properties": {
+                                "image_sha256": image_sha256,
+                            },
+                            "if_not_found": {
+                                "image_sha256": ["==", image_sha256],
+                            },
+                            "connect": {
+                                "ref": cmd_dict["AddImage"]["_ref"]
+                            }
                         }
-                    }
-                })
+                    })
+            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+                blob_index += 1
+
+        x[0].extend(new_descriptors)
+        x[1].extend(new_blobs)
         self.cumulative_time += time.time() - start
         return x
