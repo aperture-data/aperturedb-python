@@ -19,7 +19,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
     **Parallel and Batch Querier for ApertureDB**
 
     This class provides the abstraction for partitioning data into batches,
-    so that they may be processed using different threads.
+    so that they may be processed using different threads. It is useful
+    when you need to perform many queries or large bulk inserts/updates
+    and want to speed up the process by executing them concurrently.
+
+    By using `ParallelQuery`, users can fully utilize their CPU cores and
+    network bandwidth to communicate with ApertureDB in parallel.
+    For information on JSON queries and batching, see the [ApertureDB JSON API documentation](/query_language/Overview/Transactions).
 
     Args:
         client (Connector): The database connector.
