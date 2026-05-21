@@ -26,12 +26,14 @@ python3 generateInput.py
 echo "Done generating input files."
 
 echo "Running tests..."
+CREDENTIALS_FILE=$(mktemp)
+trap 'rm -f "$CREDENTIALS_FILE"' EXIT
 if [ -n "$GCP_SERVICE_ACCOUNT_KEY" ]; then
-	CREDENTIALS_FILE=$(mktemp)
-	trap 'rm -f "$CREDENTIALS_FILE"' EXIT
 	printf "%s\n" "$GCP_SERVICE_ACCOUNT_KEY" > "$CREDENTIALS_FILE"
-	export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
+else
+	echo "{}" > "$CREDENTIALS_FILE"
 fi
+export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
 # capture errors
 set +e
 
@@ -44,12 +46,10 @@ fi
 mkdir -p "$CLIENT_PATH"
 
 if [ -n "$FILTER" ]; then
-	PYTEST_ARGS=("-m" "$FILTER")
+	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$FILTER" test_*.py -v | tee "${CLIENT_PATH}/test.log"
 else
-	PYTEST_ARGS=()
+	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb test_*.py -v | tee "${CLIENT_PATH}/test.log"
 fi
-
-PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb "${PYTEST_ARGS[@]}" test_*.py -v | tee "${CLIENT_PATH}/test.log"
 RESULT=$?
 cp error*.log -v "$CLIENT_PATH" || true
 
