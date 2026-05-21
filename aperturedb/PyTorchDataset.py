@@ -39,7 +39,9 @@ class ApertureDBDataset(data.Dataset):
                     f"command_idx {self.command_idx} is out of range.")
             self.command_name = list(query[self.command_idx].keys())[0]
             if not self.command_name.startswith("Find"):
-                raise ValueError(f"Command at index {self.command_idx} is {self.command_name}, which is not a Find* command.")
+                raise ValueError(
+                    f"Command at index {self.command_idx} is "
+                    f"{self.command_name}, which is not a Find* command.")
         else:
             for i in range(len(query)):
                 name = list(query[i].keys())[0]
