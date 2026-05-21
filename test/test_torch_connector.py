@@ -58,6 +58,26 @@ class TestTorchDatasets():
 
         self.validate_dataset(dataset, utils.count_images())
 
+    def test_findBlob(self, db, utils, images):
+        assert len(images) > 0
+        query = [{
+            "FindBlob": {
+                "results": {
+                    "limit": utils.count_images()
+                }
+            }
+        }]
+
+        dataset = PyTorchDataset.ApertureDBDataset(
+            db, query)
+        
+        assert len(dataset) == utils.count_images()
+        for img, label in dataset:
+            # For FindBlob, the return is raw bytes and label should be 'none' when no label_prop is provided
+            assert isinstance(img, bytes)
+            assert label == "none"
+            break
+
     def test_datasetWithMultiprocessing(self, db, utils, images):
         len_limit = utils.count_images()
         # This is a hack against a bug in batch API.

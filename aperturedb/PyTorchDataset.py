@@ -20,25 +20,30 @@ class ApertureDBDataset(data.Dataset):
     the images or videos from ApertureDB.
     """
 
-    def __init__(self, client: Connector, query, label_prop=None, batch_size=1):
+    def __init__(self, client: Connector, query, label_prop=None, batch_size=1, command_idx=None):
 
         self.client = client.clone()
         self.query = query
-        self.command_idx = None
+        self.command_idx = command_idx
         self.command_name = None
         self.total_elements = 0
         self.batch_size = batch_size
-        self.batch_images = []
+        self.batch_blobs = []
         self.batch_start = 0
         self.batch_end = 0
         self.label_prop = label_prop
 
-        for i in range(len(query)):
-
-            name = list(query[i].keys())[0]
-            if name.startswith("Find"):
-                self.command_idx = i
-                self.command_name = name
+        if self.command_idx is not None:
+            self.command_name = list(query[self.command_idx].keys())[0]
+        else:
+            for i in range(len(query)):
+                name = list(query[i].keys())[0]
+                if name.startswith("Find"):
+                    if self.command_idx is not None:
+                        logger.warning(f"Multiple Find commands found. Selected {self.command_name} at index {self.command_idx}.")
+                        break
+                    self.command_idx = i
+                    self.command_name = name
 
         if self.command_idx is None:
             logger.error(
@@ -70,15 +75,15 @@ class ApertureDBDataset(data.Dataset):
             self.get_batch(index)
 
         idx = index % self.batch_size
-        img = self.batch_images[idx]
+        blob = self.batch_blobs[idx]
         label = self.batch_labels[idx]
 
         if self.command_name == "FindImage":
-            nparr = np.frombuffer(img, dtype=np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            nparr = np.frombuffer(blob, dtype=np.uint8)
+            blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            blob = cv2.cvtColor(blob, cv2.COLOR_BGR2RGB)
 
-        return img, label
+        return blob, label
 
     def __len__(self):
 
@@ -128,7 +133,7 @@ class ApertureDBDataset(data.Dataset):
                 logger.error(f"index: {index}")
                 raise Exception("No results returned from ApertureDB")
 
-            self.batch_images = b
+            self.batch_blobs = b
             self.batch_start = self.batch_size * batch_idx
             self.batch_end = self.batch_start + len(b)
 
