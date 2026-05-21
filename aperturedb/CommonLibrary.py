@@ -15,6 +15,7 @@ from aperturedb.Configuration import Configuration
 from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.types import Blobs, CommandResponses, Commands
+from aperturedb.LoggingUtils import censor_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -302,7 +303,9 @@ def execute_query(client: Connector, query: Commands,
     result = 0
     logger.debug(f"Query={query}")
     r, b = client.query(query, blobs)
-    logger.debug(f"Response={r}")
+
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"Response={censor_tokens(r)}")
 
     if client.last_query_ok():
         if response_handler is not None:
@@ -316,7 +319,8 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Transaction failed. Response: {r}")
+        logger.error(
+            f"Failed query = {query} with response = {censor_tokens(r)}")
         result = 1
 
     statuses = {}
