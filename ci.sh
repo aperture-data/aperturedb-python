@@ -119,7 +119,7 @@ build_tests(){
     # Skipped on PR runs (NO_PUSH=true) to avoid polluting the registry with PR images.
     if [ "${NO_PUSH}" != "true" ]
     then
-        docker push ${TESTS_IMAGE}
+        docker push ${TESTS_IMAGE} || echo "Warning: Failed to push ${TESTS_IMAGE}. Check Docker Hub permissions/repository existence."
     fi
 }
 
