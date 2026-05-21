@@ -82,7 +82,7 @@ wait_for_stack() {
                     -sS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
                 nginx_ready=1
             fi
-            
+
             if [ "$lenz_ready" -eq 1 ] && [ "$nginx_ready" -eq 1 ]; then
                 echo "Stack ${tag} is ready after ${elapsed}s"
                 return 0
