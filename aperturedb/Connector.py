@@ -331,7 +331,7 @@ class Connector(object):
                                   self.config.username,
                                   self.config.password,
                                   self.token)
-                raise UnauthorizedException(response)
+                raise UnauthorizedException(censor_tokens(response))
 
             self.shared_data.session = Session(
                 session_info["session_token"],
