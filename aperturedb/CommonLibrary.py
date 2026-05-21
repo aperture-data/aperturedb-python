@@ -270,7 +270,8 @@ def execute_query(client: Connector, query: Commands,
                   blobs: Blobs = [],
                   success_statuses: list[int] = [0],
                   response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
-                  strict_response_validation: bool = False, cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
+                  strict_response_validation: bool = False, cmd_index=None,
+                  error_handler: Optional[Callable] = None) -> Tuple[int, CommandResponses, Blobs]:
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -287,6 +288,8 @@ def execute_query(client: Connector, query: Commands,
         commands_per_query (int, optional): The number of commands per query. Defaults to 1.
         blobs_per_query (int, optional): The number of blobs per query. Defaults to 0.
         strict_response_validation (bool, optional): Whether to strictly validate the response. Defaults to False.
+        cmd_index (int, optional): The index of the command or batch, passed to the response handler. Defaults to None.
+        error_handler (Callable, optional): Callback invoked when the query returns an unexpected status or fails. Expected signature is `error_handler(query, response, blobs)`. Defaults to None.
 
     Returns:
         int: The result code.
@@ -313,7 +316,7 @@ def execute_query(client: Connector, query: Commands,
                     raise e
     else:
         # Transaction failed entirely.
-        logger.error(f"Failed query = {query} with response = {r}")
+        logger.error(f"Transaction failed. Response: {r}")
         result = 1
 
     statuses = {}
@@ -337,8 +340,18 @@ def execute_query(client: Connector, query: Commands,
                     warn_list.append(wr)
         if len(warn_list) != 0:
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(warn_list, default=str)}")
+                f"Encountered {len(warn_list)} partial errors. "
+                "Use error_handler or inspect response for details."
+            )
             result = 2
+
+    if result != 0 and error_handler is not None:
+        try:
+            error_handler(query, r, b)
+        except BaseException as e:
+            logger.exception(e)
+            if strict_response_validation:
+                raise e
 
     return result, r, b
 
