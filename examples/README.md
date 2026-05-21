@@ -16,6 +16,7 @@ The following files are under *loaders_101*
 | File | Description | instructions |
 | -----| ------------| -----|
 | loaders.ipynb | A notebook with some sample code for aperturedb | Also available to read at [Aperturedb documentation](https://docs.aperturedata.io/HowToGuides/Advanced/loaders)|
+| data_loader_hierarchy.py | A script explaining the data loader hierarchy and tying them together | ``python data_loader_hierarchy.py``|
 
 ## Example 2: Image classification using a pretrained model
 The following files are under *image_classification*
