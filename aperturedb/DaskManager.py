@@ -100,7 +100,33 @@ class DaskManager:
         start_time = time.time()
         # Connector cannot be serialized across processes,
         # so we pass session and host/port information instead.
-        computation = generator.df.map_partitions(
+        
+        if not hasattr(generator.df, "map_partitions"):
+            # If generator.df is a Pandas DataFrame, convert to Dask DataFrame
+            # Alternatively, if it has a filename, we could read it directly with dask.
+            import dask.dataframe as dd
+            import os
+            import multiprocessing as mp
+            PARTITIONS_PER_CORE = 10
+            CORES_USED_FOR_PARALLELIZATION = 0.9
+            
+            if hasattr(generator, "filename") and generator.filename:
+                cores_used = int(CORES_USED_FOR_PARALLELIZATION * mp.cpu_count())
+                blocksize = os.path.getsize(
+                    generator.filename) // (cores_used * PARTITIONS_PER_CORE)
+                if blocksize == 0:
+                    cpus = mp.cpu_count()
+                    raise Exception(
+                        f"CSV file too small to be read in parallel. Use normal mode. cpus: {cpus}")
+                dask_df = dd.read_csv(
+                    generator.filename,
+                    blocksize=blocksize)
+            else:
+                dask_df = dd.from_pandas(generator.df, npartitions=self.__num_workers * 2 if self.__num_workers > 0 else mp.cpu_count())
+        else:
+            dask_df = generator.df
+
+        computation = dask_df.map_partitions(
             process,
             client.host,
             client.port,

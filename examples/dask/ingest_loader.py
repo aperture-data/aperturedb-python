@@ -13,8 +13,8 @@ def main(use_dask: bool = False, csv_path: str = "data.csv"):
     client = create_connector()
 
     data = EntityDataCSV(filename=os.path.join(
-        os.path.dirname(__file__), csv_path), use_dask=use_dask)
-    loader = ParallelLoader(client=client)
+        os.path.dirname(__file__), csv_path))
+    loader = ParallelLoader(client=client, use_dask=use_dask)
     loader.ingest(generator=data, batchsize=2000, numthreads=8, stats=True)
 
 

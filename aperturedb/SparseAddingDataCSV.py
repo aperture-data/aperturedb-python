@@ -61,9 +61,8 @@ class SparseAddingDataCSV(CSVParser.CSVParser):
     def validate(self):
         self._setupkeys()
         valid = True
-        if not self.use_dask:
-            if len(self.constraints_keys) < 1:
-                logger.error("Cannot add/update " +
-                             self.entity + "; no constraint keys")
-                valid = False
+        if len(self.constraints_keys) < 1:
+            logger.error("Cannot add/update " +
+                         self.entity + "; no constraint keys")
+            valid = False
         return valid

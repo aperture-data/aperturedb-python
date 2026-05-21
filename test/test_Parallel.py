@@ -94,10 +94,10 @@ def test_dask_dry_run(db: Connector):
 
     # Create generator with Dask
     generator = EntityDataCSV(
-        "./input/persons.adb.csv", use_dask=True, blobs_relative_to_csv=True)
+        "./input/persons.adb.csv", blobs_relative_to_csv=True)
 
     # Run ParallelLoader with dry_run=True
-    loader = ParallelLoader(db, dry_run=True)
+    loader = ParallelLoader(db, dry_run=True, use_dask=True)
     loader.ingest(generator, batchsize=503, numthreads=4, stats=True)
 
     # Verify no objects were created

@@ -282,17 +282,16 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
     def validate(self):
         self._setupkeys()
         valid = True
-        if not self.use_dask:
-            if len(self.constraints_keys) < 1:
-                logger.error("Cannot add/update " +
-                             self.entity + "; no constraint keys")
-                valid = False
-            if valid and len(self.search_keys) < 1:
-                logger.error("Cannot update " + self.entity +
-                             "; no update constraint keys")
-                valid = False
-            if len(self.filter_generated_constraints()) < 1:
-                logger.error("Cannot differentiate update and reinsert for  " +
-                             self.__class__.__name__ + ": no generated constraints for blob comparison")
-                valid = False
+        if len(self.constraints_keys) < 1:
+            logger.error("Cannot add/update " +
+                         self.entity + "; no constraint keys")
+            valid = False
+        if valid and len(self.search_keys) < 1:
+            logger.error("Cannot update " + self.entity +
+                         "; no update constraint keys")
+            valid = False
+        if len(self.filter_generated_constraints()) < 1:
+            logger.error("Cannot differentiate update and reinsert for  " +
+                         self.__class__.__name__ + ": no generated constraints for blob comparison")
+            valid = False
         return valid
