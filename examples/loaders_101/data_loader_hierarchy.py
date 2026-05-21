@@ -70,7 +70,7 @@ def create_sample_csvs(base_dir):
     })
     connections_csv = os.path.join(base_dir, "connections.csv")
     df_connections.to_csv(connections_csv, index=False)
-    
+
     return persons_csv, images_csv, connections_csv
 
 
@@ -94,7 +94,8 @@ def main():
 
         # 2. Load Images
         print("Loading Images...")
-        image_loader = ImageDataCSV(images_csv, image_id="image_id", source="source")
+        image_loader = ImageDataCSV(
+            images_csv, image_id="image_id", source="source")
         loader.ingest(image_loader)
 
         # 3. Load Connections
