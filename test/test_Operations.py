@@ -3,6 +3,10 @@ from aperturedb.Operations import Operations
 
 
 class TestOperations:
+    def test_empty_operations(self):
+        op = Operations()
+        assert op.get_operations_arr() == []
+
     def test_resize_width_height(self):
         op = Operations().resize(width=100, height=200)
         assert op.get_operations_arr() == [
