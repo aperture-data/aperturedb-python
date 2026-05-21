@@ -313,10 +313,10 @@ def execute_query(client: Connector, query: Commands,
                 map_response_to_handler(response_handler,
                                         query, blobs, r, b, commands_per_query, blobs_per_query,
                                         cmd_index)
-            except BaseException as e:
+            except Exception as e:
                 logger.exception(e)
                 if strict_response_validation:
-                    raise e
+                    raise
     else:
         # Transaction failed entirely.
         logger.error(
@@ -352,10 +352,10 @@ def execute_query(client: Connector, query: Commands,
     if result != 0 and error_handler is not None:
         try:
             error_handler(query, r, b)
-        except BaseException as e:
+        except Exception as e:
             logger.exception(e)
             if strict_response_validation:
-                raise e
+                raise
 
     return result, r, b
 

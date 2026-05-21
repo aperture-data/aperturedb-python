@@ -488,3 +488,101 @@ class TestResponseHandler():
         querier.query(generator, numthreads=1, batchsize=2, stats=False)
 
         assert len(changed_ids) == 2
+    def test_error_handler_total_failure(self, db, monkeypatch):
+        from aperturedb.QueryGenerator import QueryGenerator
+        from aperturedb.ParallelQuery import ParallelQuery
+        from aperturedb.Connector import Connector
+
+        class QGErrorHandlerFailure(QueryGenerator):
+            def __init__(self):
+                self.error_handler_called = False
+
+            def __len__(self):
+                return 1
+
+            def getitem(self, idx):
+                return [{"FindImage": {}}], []
+
+            def error_handler(self, q, r, b):
+                self.error_handler_called = True
+
+        def mock_query(self, request, blobs):
+            self.response = [{"status": -1}]
+            self.blobs = []
+            return self.response, []
+
+        monkeypatch.setattr(Connector, "query", mock_query)
+        monkeypatch.setattr(Connector, "last_query_ok", lambda self: False)
+        monkeypatch.setattr(Connector, "clone", lambda self: self)
+
+        generator = QGErrorHandlerFailure()
+        querier = ParallelQuery(db)
+        querier.query(generator, numthreads=1, batchsize=1, stats=False)
+
+        assert generator.error_handler_called
+
+    def test_error_handler_partial_error(self, db, monkeypatch):
+        from aperturedb.QueryGenerator import QueryGenerator
+        from aperturedb.ParallelQuery import ParallelQuery
+        from aperturedb.Connector import Connector
+
+        class QGErrorHandlerPartial(QueryGenerator):
+            def __init__(self):
+                self.error_handler_called = False
+
+            def __len__(self):
+                return 1
+
+            def getitem(self, idx):
+                return [{"FindImage": {}}, {"AddImage": {}}], []
+
+            def error_handler(self, q, r, b):
+                self.error_handler_called = True
+
+        def mock_query(self, request, blobs):
+            self.response = [{"FindImage": {"status": 0}}, {"AddImage": {"status": 2}}]
+            self.blobs = []
+            return self.response, []
+
+        monkeypatch.setattr(Connector, "query", mock_query)
+        monkeypatch.setattr(Connector, "last_query_ok", lambda self: True)
+        monkeypatch.setattr(Connector, "clone", lambda self: self)
+
+        generator = QGErrorHandlerPartial()
+        querier = ParallelQuery(db)
+        querier.query(generator, numthreads=1, batchsize=1, stats=False)
+
+        assert generator.error_handler_called
+
+    def test_error_handler_success(self, db, monkeypatch):
+        from aperturedb.QueryGenerator import QueryGenerator
+        from aperturedb.ParallelQuery import ParallelQuery
+        from aperturedb.Connector import Connector
+
+        class QGErrorHandlerSuccess(QueryGenerator):
+            def __init__(self):
+                self.error_handler_called = False
+
+            def __len__(self):
+                return 1
+
+            def getitem(self, idx):
+                return [{"FindImage": {}}, {"AddImage": {}}], []
+
+            def error_handler(self, q, r, b):
+                self.error_handler_called = True
+
+        def mock_query(self, request, blobs):
+            self.response = [{"FindImage": {"status": 0}}, {"AddImage": {"status": 0}}]
+            self.blobs = []
+            return self.response, []
+
+        monkeypatch.setattr(Connector, "query", mock_query)
+        monkeypatch.setattr(Connector, "last_query_ok", lambda self: True)
+        monkeypatch.setattr(Connector, "clone", lambda self: self)
+
+        generator = QGErrorHandlerSuccess()
+        querier = ParallelQuery(db)
+        querier.query(generator, numthreads=1, batchsize=1, stats=False)
+
+        assert not generator.error_handler_called
