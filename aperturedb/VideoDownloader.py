@@ -141,6 +141,10 @@ class VideoDownloader(Parallelizer.Parallelizer):
         print("====== ApertureDB VideoDownloader Stats ======")
 
         times = np.array(self.times_arr)
+        if len(times) <= 0:
+            print("Error: No downloads.")
+            return
+            
         print("Avg Video download time(s):", np.mean(times))
         print("Img download time std:", np.std(times))
         print("Avg download throughput (videos/s)):",
