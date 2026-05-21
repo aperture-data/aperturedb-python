@@ -67,8 +67,8 @@ class ApertureDBDataset(data.Dataset):
                 client=self.client, query=self.query, blobs=[])
             resp = r[self.command_idx][self.command_name]
             if resp.get("status", 0) != 0:
-                raise Exception(f"Query Error: {resp.get('status')} {
-                                resp.get('info', '')}")
+                raise Exception(
+                    f"Query Error: {resp.get('status')} {resp.get('info', '')}")
             batch = resp["batch"]
             self.total_elements = batch["total_elements"]
         except:
