@@ -229,15 +229,14 @@ class Connector(object):
             self.authenticated = True
 
     def close(self):
-        if getattr(self, "connected", False):
-            if getattr(self, "conn", None):
-                try:
-                    self.conn.close()
-                except Exception:
-                    pass
-            self.connected = False
-            self.conn = None
-            self.authenticated = False
+        if getattr(self, "conn", None):
+            try:
+                self.conn.close()
+            except Exception:
+                pass
+        self.connected = False
+        self.conn = None
+        self.authenticated = False
 
     def __del__(self):
         try:
