@@ -115,7 +115,7 @@ class Connector(object):
 
     :::note
     - The connection is established only when a query is run.
-    - A new connection is established for each instance that runs a query, and gets closed only at destruction.
+    - A new connection is established for each instance that runs a query, and gets closed explicitly by calling `close()` or at destruction.
     :::
 
     Args:
@@ -230,10 +230,10 @@ class Connector(object):
             self.authenticated = True
 
     def close(self):
-        if self.connected:
-            if self.conn is not None:
-                self.conn.close()
-            self.connected = False
+        if self.conn is not None:
+            self.conn.close()
+            self.conn = None
+        self.connected = False
 
     def __del__(self):
         self.close()
