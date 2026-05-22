@@ -71,8 +71,7 @@ class ApertureDBDataset(data.Dataset):
             if resp.get("status", 0) != 0:
                 raise Exception(
                     f"Query Error: {resp.get('status')} {resp.get('info', '')}")
-            batch = resp["batch"]
-            self.total_elements = batch["total_elements"]
+            self.total_elements = resp.get("batch", {}).get("total_elements", resp.get("returned", 0))
         except:
             logger.error(
                 f"Query error: {self.query} {self.client.get_last_response_str()}")
