@@ -31,19 +31,21 @@ class ApertureDBTensorFlowDataset:
         self.label_prop = label_prop
         self.label_type = None
 
+        allowed_find_commands = {"FindImage", "FindVideo", "FindBlob", "FindDescriptor", "FindBoundingBox"}
+
         if self.command_idx is not None:
             if not (0 <= self.command_idx < len(query)):
                 raise ValueError(
                     f"command_idx {self.command_idx} is out of range.")
             self.command_name = list(query[self.command_idx].keys())[0]
-            if not self.command_name.startswith("Find"):
+            if self.command_name not in allowed_find_commands:
                 raise ValueError(
                     f"Command at index {self.command_idx} is "
-                    f"{self.command_name}, which is not a Find* command.")
+                    f"{self.command_name}, which is not a supported blob-returning Find* command.")
         else:
             for i in range(len(query)):
                 name = list(query[i].keys())[0]
-                if name.startswith("Find"):
+                if name in allowed_find_commands:
                     if self.command_idx is not None:
                         logger.warning(
                             "Multiple Find commands found. Selected %s at index %s.", self.command_name, self.command_idx)
@@ -52,7 +54,7 @@ class ApertureDBTensorFlowDataset:
                     self.command_name = name
 
         if self.command_idx is None:
-            msg = "Query error. The query must contain at least one Find* command (e.g., FindImage, FindVideo). The first one encountered will be used."
+            msg = "Query error. The query must contain at least one supported blob-returning Find command (e.g., FindImage, FindVideo, FindBlob). The first one encountered will be used."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -65,6 +67,11 @@ class ApertureDBTensorFlowDataset:
                 results["list"] = []
             if self.label_prop not in results["list"]:
                 results["list"].append(self.label_prop)
+
+        for i in range(len(self.query)):
+            name = list(self.query[i].keys())[0]
+            if name.startswith("Find") and i != self.command_idx:
+                self.query[i][name]["blobs"] = False
 
         self.query[self.command_idx][self.command_name]["batch"] = {}
         self.query[self.command_idx][self.command_name]["blobs"] = False
@@ -193,4 +200,3 @@ class ApertureDBTensorFlowDataset:
                 tf.TensorSpec(shape=(), dtype=self.label_type)
             )
         )
-# trigger CI
