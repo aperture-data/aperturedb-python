@@ -143,7 +143,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
 
 class EntityUpdatDataCSV(SingleEntityUpdateDataCSV):
     def __init__(self, entity_type, filename, df=None):
-        super().__init__("Entity", filename, df)
+        super().__init__("Entity", filename, df=df)
         self.entity_type = entity_type
         # Add had blob and update has blob.
         self.blobs_per_query = [0, 0]

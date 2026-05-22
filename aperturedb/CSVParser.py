@@ -51,13 +51,17 @@ class CSVParser(Subscriptable):
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
             "blobs_relative_to_csv"]
+        self.use_dask = kwargs.get("use_dask", False)
         df = kwargs["df"] if "df" in kwargs else None
 
         self.relative_path_prefix = os.path.dirname(self.filename) if self.blobs_relative_to_csv \
             else ""
 
         if df is None:
-            self.df = pd.read_csv(filename)
+            if self.use_dask:
+                self.df = pd.read_csv(filename, nrows=0)
+            else:
+                self.df = pd.read_csv(filename)
         else:
             self.df = df
 
@@ -68,7 +72,7 @@ class CSVParser(Subscriptable):
             raise TypeError(
                 f"CSVParser requires a RangeIndex. the supplied DataFrame has a {type(self.df.index)} index.")
 
-        if len(self.df) == 0:
+        if not self.use_dask and len(self.df) == 0:
             logger.error("Dataframe empty. Is the CSV file ok?")
 
         self.df = self.df.astype('object')

@@ -83,9 +83,9 @@ class DaskManager:
                 end = min(i + batchsize, len(df))
                 slice = df[i:end]
                 data = generator.__class__(
-                    filename=generator.filename,
+                    filename=getattr(generator, "filename", None),
                     df=slice,
-                    blobs_relative_to_csv=generator.blobs_relative_to_csv)
+                    blobs_relative_to_csv=getattr(generator, "blobs_relative_to_csv", False))
 
                 loader.query(generator=data, batchsize=len(
                     slice), numthreads=1, stats=False)
@@ -100,6 +100,9 @@ class DaskManager:
         start_time = time.time()
         # Connector cannot be serialized across processes,
         # so we pass session and host/port information instead.
+
+        if not hasattr(generator, "df"):
+            raise ValueError("Dask mode requires a generator with a 'df' attribute.")
 
         if not hasattr(generator.df, "map_partitions"):
             # If generator.df is a Pandas DataFrame, convert to Dask DataFrame

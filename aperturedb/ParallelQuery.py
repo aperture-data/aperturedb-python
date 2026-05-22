@@ -277,6 +277,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
 
         if self.use_dask:
+            if not hasattr(generator, "df"):
+                raise ValueError("Dask mode requires a generator with a 'df' attribute.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskmanager = DaskManager(num_workers=numthreads)
 
