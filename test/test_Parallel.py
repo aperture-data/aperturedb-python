@@ -85,12 +85,15 @@ class TestParallel():
     def test_parallel_query_worker_closes_connection(self, db, monkeypatch):
         from aperturedb.ParallelQuery import ParallelQuery
         from aperturedb.QueryGenerator import QueryGenerator
+        import threading
 
         class MockQueryGenerator(QueryGenerator):
             def __len__(self):
-                return 1
+                return 2
 
             def getitem(self, idx):
+                if idx == 1:
+                    raise Exception("Simulated do_batch exception")
                 return [{"FindImage": {}}], []
 
         closed_count = [0]
@@ -107,6 +110,17 @@ class TestParallel():
             return cloned
         monkeypatch.setattr(db, "clone", mock_clone)
 
+        # Test exception in do_batch
         pq = ParallelQuery(db)
         pq.query(MockQueryGenerator(), batchsize=1, numthreads=1)
+        # Should close even if exception occurred in do_batch
+        assert closed_count[0] == 1
+
+        # Test early exit when run_event is cleared
+        closed_count[0] = 0
+        run_event = threading.Event()
+        run_event.clear() # Not set, so worker breaks immediately
+        
+        # worker signature: worker(self, thid: int, generator, start: int, end: int, run_event)
+        pq.worker(0, MockQueryGenerator(), 0, 1, run_event)
         assert closed_count[0] == 1
