@@ -71,7 +71,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
     """
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
 
-    def __init__(self, entity_class: str, filename: str, **kwargs):
+    def __init__(self, entity_class: str, filename: str, use_dask: bool = False, **kwargs):
 
         if entity_class in ("Image", "Video", "Blob", "BoundingBox", "Connection", "Polygon", "Descriptor", "DescriptorSet", "Frame"):
             self.entity = entity_class
@@ -80,7 +80,7 @@ class SingleEntityUpdateDataCSV(CSVParser.CSVParser):
             self.entity = "Entity"
             self.entity_selection = entity_class
         self.keys_set = False
-        super().__init__(filename, **kwargs)
+        super().__init__(filename, use_dask=use_dask, **kwargs)
         # We do not expect a blob in either query, if a subclass adds blob, the first query will need a blob.
         self.blobs_per_query = [0, 0]
         self.commands_per_query = [1, 1]

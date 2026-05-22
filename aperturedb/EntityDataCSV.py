@@ -41,8 +41,8 @@ class EntityDataCSV(CSVParser.CSVParser):
 
     """
 
-    def __init__(self, filename: str, **kwargs):
-        super().__init__(filename, **kwargs)
+    def __init__(self, filename: str, use_dask: bool = False, **kwargs):
+        super().__init__(filename, use_dask=use_dask, **kwargs)
 
         self.props_keys = [x for x in self.header[1:]
                            if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]

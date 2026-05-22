@@ -113,8 +113,8 @@ class DaskManager:
             CORES_USED_FOR_PARALLELIZATION = 0.9
 
             if hasattr(generator, "filename") and generator.filename:
-                cores_used = int(
-                    CORES_USED_FOR_PARALLELIZATION * mp.cpu_count())
+                cores_used = max(1, int(
+                    CORES_USED_FOR_PARALLELIZATION * mp.cpu_count()))
                 blocksize = os.path.getsize(
                     generator.filename) // (cores_used * PARTITIONS_PER_CORE)
                 if blocksize == 0:
