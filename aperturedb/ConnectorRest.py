@@ -112,6 +112,16 @@ class ConnectorRest(Connector):
         # Session is useful because it does not add "Connection: close header"
         # Since we will be making same call to the same URL, making a session
         # REF: https://requests.readthedocs.io/en/latest/user/advanced/
+        self.http_session = None
+        self._init_session()
+
+        self.last_response   = ''
+        self.last_query_time = 0
+
+        self.url = ('https' if self.use_ssl else 'http') + \
+            '://' + self.host + ':' + str(self.port) + '/api/'
+
+    def _init_session(self):
         self.http_session = requests.Session()
         if self.config.verify_hostname:
             if self.config.ca_cert:
@@ -120,23 +130,18 @@ class ConnectorRest(Connector):
                 adapter = CustomHTTPAdapter(ca_cert=None)
             self.http_session.mount('https://', adapter=adapter)
 
-        self.last_response   = ''
-        self.last_query_time = 0
-
-        self.url = ('https' if self.use_ssl else 'http') + \
-            '://' + self.host + ':' + str(self.port) + '/api/'
-
     def close(self):
-        logger.info("Closing connector REST.")
-        if hasattr(self, 'http_session'):
+        if hasattr(self, 'http_session') and self.http_session is not None:
             self.http_session.close()
+            self.http_session = None
         super().close()
 
     def __del__(self):
-        logger.info("Done with connector REST.")
         self.close()
 
     def _query(self, query, blob_array = [], try_resume=True):
+        if getattr(self, 'http_session', None) is None:
+            self._init_session()
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
