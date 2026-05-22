@@ -82,10 +82,9 @@ class DaskManager:
             for i in range(0, len(df), batchsize):
                 end = min(i + batchsize, len(df))
                 slice = df[i:end]
-                data = generator.__class__(
-                    filename=getattr(generator, "filename", None),
-                    df=slice,
-                    blobs_relative_to_csv=getattr(generator, "blobs_relative_to_csv", False))
+                import copy
+                data = copy.copy(generator)
+                data.df = slice
 
                 loader.query(generator=data, batchsize=len(
                     slice), numthreads=1, stats=False)
