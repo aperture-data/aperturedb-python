@@ -31,7 +31,7 @@ class TestTorchDatasets():
         if time_taken != 0:
             logger.info(f"Throughput (imgs/s): {len(dataset) / time_taken}")
 
-    def test_nativeContraints(self, db, utils, images):
+    def test_nativeConstraints(self, db, utils, images):
         assert len(images) > 0
         # This is a hack against a bug in batch API.
         dim = 224 if isinstance(db, ConnectorRest) else 225

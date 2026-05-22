@@ -137,6 +137,7 @@ class TestTfDatasets():
             ), [{"FindImage": {"results": {"list": ["prop"]}}}], label_prop="prop")
             dataset_f = dataset_wrapper_f.get_dataset()
             assert dataset_f.element_spec[1].dtype == tf.float32
+<<<<<<< HEAD
 
     def test_findBlob(self, db, utils, insert_data_from_csv):
         blobs, _ = insert_data_from_csv("./input/blobs.adb.csv")
@@ -158,3 +159,5 @@ class TestTfDatasets():
             count += 1
 
         assert count == utils.count_entities("_Blob")
+=======
+>>>>>>> origin/develop

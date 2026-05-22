@@ -173,7 +173,16 @@ class ApertureDBDataset(data.Dataset):
 
             if self.label_prop:
                 entities = r[self.command_idx][self.command_name]["entities"]
-                self.batch_labels = [l[self.label_prop] for l in entities]
+                try:
+                    self.batch_labels = [l[self.label_prop] for l in entities]
+                except KeyError:
+                    prop = self.label_prop
+                    msg = (
+                        f"Property '{prop}' not found in some entities. "
+                        "Ensure all entities have this property."
+                    )
+                    logger.error(msg)
+                    raise
             else:
                 self.batch_labels = ["none" for l in range(len(b))]
         except:

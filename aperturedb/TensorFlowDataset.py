@@ -136,17 +136,6 @@ class ApertureDBTensorFlowDataset:
                 raise Exception(
                     f"Query Error: {resp.get('status')} {resp.get('info', '')}")
 
-            if len(b) == 0:
-                logger.error(f"index: {index}")
-                raise Exception("No results returned from ApertureDB")
-
-            self.batch_blobs = b
-            self.batch_start = self.batch_size * batch_idx
-            self.batch_end = self.batch_start + len(b)
-
-            if self.label_prop:
-                entities = r[self.command_idx][self.command_name]["entities"]
-                self.batch_labels = [l[self.label_prop] for l in entities]
             else:
                 self.batch_labels = ["none" for l in range(len(b))]
         except:
