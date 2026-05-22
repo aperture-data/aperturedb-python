@@ -23,6 +23,7 @@ function run_aperturedb_instance(){
     #Ensure clean environment (as much as possible)
     RUNNER_NAME=$TAG docker compose -f docker-compose.yml down --remove-orphans
     docker network rm ${TAG}_host_default || true
+    docker network rm ${TAG}_default || true
 
     # ensure latest db
     docker compose pull
@@ -48,10 +49,12 @@ function teardown() {
     if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         RUNNER_NAME="${RUNNER_NAME}_http" docker compose -f docker-compose.yml down --remove-orphans || true
         docker network rm "${RUNNER_NAME}_http_host_default" || true
+        docker network rm "${RUNNER_NAME}_http_default" || true
     fi
     if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         RUNNER_NAME="${RUNNER_NAME}_non_http" docker compose -f docker-compose.yml down --remove-orphans || true
         docker network rm "${RUNNER_NAME}_non_http_host_default" || true
+        docker network rm "${RUNNER_NAME}_non_http_default" || true
     fi
 }
 trap teardown EXIT
