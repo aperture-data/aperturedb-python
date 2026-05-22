@@ -6,6 +6,7 @@ ADD docker/pytorch-gpu/aperturedata /aperturedata
 RUN pip install awscli
 RUN apt-get update && apt-get install -y libopencv-dev python3-opencv fuse libfuse-dev
 RUN cd /aperturedata && pip install -e ".[dev]"
+RUN pip install git+https://github.com/openai/CLIP.git
 
 COPY docker/pytorch-gpu/scripts/start.sh /start.sh
 RUN  chmod 755 /start.sh
