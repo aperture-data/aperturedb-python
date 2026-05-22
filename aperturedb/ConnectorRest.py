@@ -133,7 +133,9 @@ class ConnectorRest(Connector):
                 self.http_session.close()
             except Exception:
                 pass
+        self.http_session = None
         self.connected = False
+        self.authenticated = False
 
     def __del__(self):
         try:

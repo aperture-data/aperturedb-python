@@ -81,3 +81,32 @@ class TestParallel():
             print(e)
             print("Failed to renew Session")
             assert False
+
+    def test_parallel_query_worker_closes_connection(self, db, monkeypatch):
+        from aperturedb.ParallelQuery import ParallelQuery
+        from aperturedb.QueryGenerator import QueryGenerator
+
+        class MockQueryGenerator(QueryGenerator):
+            def __len__(self):
+                return 1
+
+            def getitem(self, idx):
+                return [{"FindImage": {}}], []
+
+        closed_count = [0]
+        original_clone = db.clone
+
+        def mock_clone():
+            cloned = original_clone()
+            original_close = cloned.close
+
+            def mock_close():
+                closed_count[0] += 1
+                original_close()
+            cloned.close = mock_close
+            return cloned
+        monkeypatch.setattr(db, "clone", mock_clone)
+
+        pq = ParallelQuery(db)
+        pq.query(MockQueryGenerator(), batchsize=1, numthreads=1)
+        assert closed_count[0] == 1
