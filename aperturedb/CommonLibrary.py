@@ -350,7 +350,7 @@ def execute_query(client: Connector, query: Commands,
 
     if result != 0 and error_handler is not None:
         try:
-            error_handler(query, r, b)
+            error_handler(query, r, blobs)
         except Exception as e:
             logger.exception(e)
             if strict_response_validation:

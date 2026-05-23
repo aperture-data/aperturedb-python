@@ -46,11 +46,14 @@ def gen_execute_batch_sets(base_executor):
     # if blob_set is a list of lists, each inner list will be given to the inner
     #  execution
     #
-    def execute_batch_sets(client, query_set, blob_set, success_statuses: list[int] = [0],
+    def execute_batch_sets(client, query_set, blob_set, success_statuses: Optional[list[int]] = None,
                            response_handler: Optional[Callable] = None, commands_per_query: Optional[list[int]] = None,
                            blobs_per_query: Optional[list[int]] = None,
                            strict_response_validation: bool = False, cmd_index: int = None,
                            error_handler: Optional[Callable] = None):
+
+        if success_statuses is None:
+            success_statuses = [0]
 
         logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
             len(query_set), commands_per_query, blobs_per_query))
@@ -279,7 +282,7 @@ def gen_execute_batch_sets(base_executor):
 
                 query_filter = constraint_filter
 
-            local_success_statuses = [0, 2]
+            local_success_statuses = success_statuses
 
             # queries are by row first, so we run query_filter on each query
             # we pass the entire row's data, then we retrieve all of the stored results for that row
