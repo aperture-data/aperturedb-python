@@ -33,9 +33,8 @@ class Sources():
             with open(filename, "rb") as fd:
                 buff = fd.read()
             return True, buff
-        except Exception as e:
-            logger.error(f"VALIDATION ERROR: {filename}")
-            logger.exception(e)
+        except Exception:
+            logger.exception(f"VALIDATION ERROR: {filename}")
         return False, None
 
     def load_from_http_url(self, url, validator):
