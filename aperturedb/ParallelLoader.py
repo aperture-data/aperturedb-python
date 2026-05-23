@@ -24,6 +24,22 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
     This takes a dataset (which is a collection of homogeneous objects)
     or a derived class, and optimally inserts them into database by splitting them
     into batches, and passing the batches to multiple workers.
+
+    **Hierarchy of Data Loaders:**
+
+    It accepts any `Subscriptable` that yields `(commands, blobs)` (e.g., standard data loaders), and the dataset is passed to `ingest()` rather than the constructor. Examples of supported loaders include:
+
+    * `aperturedb.BBoxDataCSV.BBoxDataCSV`
+    * `aperturedb.BlobDataCSV.BlobDataCSV`
+    * `aperturedb.ConnectionDataCSV.ConnectionDataCSV`
+    * `aperturedb.DescriptorDataCSV.DescriptorDataCSV`
+    * `aperturedb.DescriptorSetDataCSV.DescriptorSetDataCSV`
+    * `aperturedb.EntityDataCSV.EntityDataCSV`
+    * `aperturedb.ImageDataCSV.ImageDataCSV`
+    * `aperturedb.PolygonDataCSV.PolygonDataCSV`
+    * `aperturedb.VideoDataCSV.VideoDataCSV`
+    * A class derived from `aperturedb.PyTorchData.PyTorchData`
+    * A class derived from `aperturedb.KaggleData.KaggleData`
     """
 
     def __init__(self, client: Connector, dry_run: bool = False):
