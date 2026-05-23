@@ -274,6 +274,12 @@ class ParallelQuery(Parallelizer.Parallelizer):
         use_dask = self.use_dask if self.use_dask is not None else (
             hasattr(generator, "use_dask") and generator.use_dask)
 
+        if self.use_dask is False and getattr(generator, "use_dask", False):
+            raise ValueError(
+                "Cannot run with use_dask=False when the generator is dask-backed. "
+                "Either run with dask enabled or create the generator in non-dask mode."
+            )
+
         if use_dask:
             if not hasattr(generator, "df") or not hasattr(generator.df, "map_partitions"):
                 raise ValueError(
