@@ -19,20 +19,7 @@ class CLIPPyTorchEmbeddings(Transformer):
         self.search_set_name = kwargs.pop(
             "search_set_name", descriptor_set)
         super().__init__(data, **kwargs)
-
-        # Let's sample some data to figure out the descriptorset we need.
-        sample_blob = None
-        for i, c in enumerate(self.data[0][0]):
-            if list(c.keys())[0] == "AddImage":
-                blob_idx = self._blob_index.index(i)
-                sample_blob = self.data[0][1][blob_idx]
-                break
-
-        if sample_blob is not None:
-            sample = generate_embedding(sample_blob)
-            utils = self.get_utils()
-            utils.add_descriptorset(
-                self.search_set_name, dim=len(sample) // 4, metric=["CS"])
+        self._descriptorset_initialized = False
 
     def getitem(self, subscript):
         x = self.data[subscript]
