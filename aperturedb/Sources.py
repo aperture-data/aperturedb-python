@@ -16,6 +16,12 @@ class Sources():
 
         # Use custom clients if specified
         self.s3 = None if "s3_client" not in kwargs else kwargs["s3_client"]
+        self._default_s3_client = None
+        self._anonymous_s3_client = None
+        self._use_anonymous_s3 = False
+        self._default_gs_client = None
+        self._anonymous_gs_client = None
+        self._use_anonymous_gs = False
         self.http_client = requests.Session(
         ) if "http_client" not in kwargs else kwargs["http_client"]
 
@@ -24,16 +30,11 @@ class Sources():
         Load data from a file.
         """
         try:
-            fd = open(filename, "rb")
-            buff = fd.read()
-            fd.close()
+            with open(filename, "rb") as fd:
+                buff = fd.read()
             return True, buff
-        except Exception as e:
-            logger.error(f"VALIDATION ERROR: {filename}")
-            logger.exception(e)
-        finally:
-            if not fd.closed:
-                fd.close()
+        except Exception:
+            logger.exception(f"VALIDATION ERROR: {filename}")
         return False, None
 
     def load_from_http_url(self, url, validator):
@@ -63,13 +64,32 @@ class Sources():
 
     def load_from_s3_url(self, s3_url, validator):
         import numpy as np
+        import boto3
+        import botocore.exceptions
 
         retries = 0
+        tried_anonymous = False
+        active_s3_client = self.s3
+
         while True:
             try:
                 bucket_name = s3_url.split("/")[2]
                 object_name = s3_url.split("s3://" + bucket_name + "/")[-1]
-                s3_response_object = self.s3.get_object(
+
+                if active_s3_client is None:
+                    if self._use_anonymous_s3:
+                        if self._anonymous_s3_client is None:
+                            from botocore import UNSIGNED
+                            from botocore.config import Config
+                            self._anonymous_s3_client = boto3.client(
+                                's3', config=Config(signature_version=UNSIGNED))
+                        active_s3_client = self._anonymous_s3_client
+                    else:
+                        if self._default_s3_client is None:
+                            self._default_s3_client = boto3.client('s3')
+                        active_s3_client = self._default_s3_client
+
+                s3_response_object = active_s3_client.get_object(
                     Bucket=bucket_name, Key=object_name)
                 img = s3_response_object['Body'].read()
                 imgbuffer = np.frombuffer(img, dtype='uint8')
@@ -79,6 +99,28 @@ class Sources():
 
                 return True, img
             except Exception as e:
+                is_auth_error = False
+                if isinstance(e, (botocore.exceptions.NoCredentialsError, botocore.exceptions.PartialCredentialsError)):
+                    is_auth_error = True
+                elif isinstance(e, botocore.exceptions.ClientError):
+                    error_code = e.response.get('Error', {}).get('Code', '')
+                    status_code = e.response.get(
+                        'ResponseMetadata', {}).get('HTTPStatusCode')
+                    if error_code in ['AccessDenied', 'InvalidAccessKeyId'] or status_code in [401, 403]:
+                        is_auth_error = True
+
+                if not tried_anonymous and is_auth_error:
+                    from botocore import UNSIGNED
+                    from botocore.config import Config
+                    if self._anonymous_s3_client is None:
+                        self._anonymous_s3_client = boto3.client(
+                            's3', config=Config(signature_version=UNSIGNED))
+                    active_s3_client = self._anonymous_s3_client
+                    if self.s3 is None:
+                        self._use_anonymous_s3 = True
+                    tried_anonymous = True
+                    continue
+
                 if retries >= self.n_download_retries:
                     break
                 logger.warning(f"Retrying object: {s3_url}", exc_info=True)
@@ -93,9 +135,20 @@ class Sources():
         from google.cloud import storage
 
         retries = 0
-        client = storage.Client()
+        tried_anonymous = False
+        client = None
         while True:
             try:
+                if client is None:
+                    if self._use_anonymous_gs:
+                        if self._anonymous_gs_client is None:
+                            self._anonymous_gs_client = storage.Client.create_anonymous_client()
+                        client = self._anonymous_gs_client
+                    else:
+                        if self._default_gs_client is None:
+                            self._default_gs_client = storage.Client()
+                        client = self._default_gs_client
+
                 bucket_name = gs_url.split("/")[2]
                 object_name = gs_url.split("gs://" + bucket_name + "/")[-1]
 
@@ -106,10 +159,24 @@ class Sources():
                     logger.warning(f"VALIDATION ERROR: {gs_url}")
                     return False, None
                 return True, blob
-            except:
+            except Exception as e:
+                from google.auth.exceptions import DefaultCredentialsError
+                from google.api_core.exceptions import Forbidden, Unauthorized
+
+                is_auth_error = isinstance(
+                    e, (DefaultCredentialsError, Forbidden, Unauthorized))
+
+                if not tried_anonymous and is_auth_error:
+                    if self._anonymous_gs_client is None:
+                        self._anonymous_gs_client = storage.Client.create_anonymous_client()
+                    client = self._anonymous_gs_client
+                    self._use_anonymous_gs = True
+                    tried_anonymous = True
+                    continue
+
                 if retries >= self.n_download_retries:
                     break
-                logger.warning("Retrying object: {gs_url}", exc_info=True)
+                logger.warning(f"Retrying object: {gs_url}", exc_info=True)
                 retries += 1
                 time.sleep(2)
 

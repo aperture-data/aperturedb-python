@@ -44,6 +44,7 @@ from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
 from aperturedb.types import CommandResponses
+from aperturedb.LoggingUtils import censor_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -314,7 +315,9 @@ class Connector(object):
 
         response, _ = self._query(query, [], try_resume=False)
 
-        logger.info(f"Refresh token response: \r\n{response}")
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                f"Refresh token response: \r\n{censor_tokens(response)}")
         if isinstance(response, list):
             session_info = response[0]["RefreshToken"]
             if session_info["status"] != STATUS_OK:
@@ -328,7 +331,7 @@ class Connector(object):
                                   self.config.username,
                                   self.config.password,
                                   self.token)
-                raise UnauthorizedException(response)
+                raise UnauthorizedException(censor_tokens(response))
 
             self.shared_data.session = Session(
                 session_info["session_token"],
@@ -451,13 +454,16 @@ class Connector(object):
             try:
                 self._connect()
             except socket.error as e:
+                details_str = f" \r\n{details}." if details else ""
                 logger.error(
                     f"Error connecting to server: "
-                    f"{self.config} \r\n{details}. {e=}",
+                    f"{self.config}{details_str}",
                     exc_info=True,
                     stack_info=True)
 
-    def _query(self, query, blob_array = [], try_resume=True):
+    def _query(self, query, blob_array=None, try_resume=True):
+        if blob_array is None:
+            blob_array = []
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
@@ -549,7 +555,7 @@ class Connector(object):
         if tries == self.config.retry_max_attempts:
             # We have tried enough times, and failed. Log some state info.
             raise Exception(
-                f"Could not query apertureDB using TCP. \r\n\
+                f"Could not query ApertureDB using TCP. \r\n\
                 {self.connected=}\r\n \
                 {self.authenticated=} \r\n \
                 attempts={tries}/{self.config.retry_max_attempts} \r\n \
@@ -639,8 +645,7 @@ class Connector(object):
         return self.clone()
 
     def get_last_response_str(self):
-
-        return json.dumps(self.last_response, indent=4, sort_keys=False)
+        return json.dumps(censor_tokens(self.last_response), indent=4, sort_keys=False)
 
     def print_last_response(self):
 
