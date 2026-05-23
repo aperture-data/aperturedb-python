@@ -283,7 +283,7 @@ def from_croissant(
     except ImportError:
         console.log(
             "mlcroissant is not installed. Please install it with `pip install -U mlcroissant`.")
-        typer.Abort()
+        raise typer.Abort()
 
     from aperturedb.MLCroissant import MLCroissantRecordSet, persist_metadata
 
