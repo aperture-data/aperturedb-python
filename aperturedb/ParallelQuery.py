@@ -273,7 +273,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             generator (_type_): The class that generates the queries to be executed.
             batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
-            stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
+            stats (bool, optional): Show statistics at end of query execution. Defaults to False.
             transformers (list, optional): A list of Transformer classes to apply to the data. Defaults to None.
         """
 
