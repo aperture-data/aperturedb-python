@@ -21,9 +21,9 @@ class TestTorchDatasets():
         count = 0
         # Iterate over dataset.
         for data in dataset:
-            if len(data[0]) < 0:
+            if len(data[0]) == 0:
                 logger.error("Empty data?")
-                assert True == False
+                assert False
             count += len(data[1]) if isinstance(dataset, DataLoader) else 1
         assert count == expected_length
 

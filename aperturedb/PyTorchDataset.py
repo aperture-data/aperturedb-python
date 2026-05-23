@@ -22,8 +22,10 @@ class ApertureDBDataset(data.Dataset):
 
     def __init__(self, client: Connector, query, label_prop=None, batch_size=1, command_idx=None):
 
+        import copy
+
         self.client = client.clone()
-        self.query = query
+        self.query = copy.deepcopy(query)
         self.command_idx = command_idx
         self.command_name = None
         self.total_elements = 0
@@ -72,7 +74,7 @@ class ApertureDBDataset(data.Dataset):
 
         for i in range(len(self.query)):
             name = list(self.query[i].keys())[0]
-            if name.startswith("Find") and i != self.command_idx:
+            if name in allowed_find_commands and i != self.command_idx:
                 self.query[i][name]["blobs"] = False
 
         self.query[self.command_idx][self.command_name]["batch"] = {}

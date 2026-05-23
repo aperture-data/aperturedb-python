@@ -19,8 +19,10 @@ class ApertureDBTensorFlowDataset:
 
     def __init__(self, client: Connector, query, label_prop=None, batch_size=1, command_idx=None):
 
+        import copy
+
         self.client = client.clone()
-        self.query = query
+        self.query = copy.deepcopy(query)
         self.command_idx = command_idx
         self.command_name = None
         self.total_elements = 0
@@ -70,7 +72,7 @@ class ApertureDBTensorFlowDataset:
 
         for i in range(len(self.query)):
             name = list(self.query[i].keys())[0]
-            if name.startswith("Find") and i != self.command_idx:
+            if name in allowed_find_commands and i != self.command_idx:
                 self.query[i][name]["blobs"] = False
 
         self.query[self.command_idx][self.command_name]["batch"] = {}
@@ -185,12 +187,30 @@ class ApertureDBTensorFlowDataset:
 
         if self.label_type is None:
             if self.total_elements > 0:
-                self.get_batch(0)
-                if isinstance(self.batch_labels[0], int):
-                    self.label_type = tf.int32
-                elif isinstance(self.batch_labels[0], float):
-                    self.label_type = tf.float32
-                else:
+                # Infer label_type with a lightweight query (blobs=False, limit=1)
+                import copy
+                infer_query = copy.deepcopy(self.query)
+                infer_query[self.command_idx][self.command_name]["blobs"] = False
+                infer_query[self.command_idx][self.command_name].setdefault("batch", {})
+                infer_query[self.command_idx][self.command_name]["batch"]["batch_size"] = 1
+                infer_query[self.command_idx][self.command_name]["batch"]["batch_id"] = 0
+                
+                try:
+                    _, r, _ = execute_query(query=infer_query, blobs=[], client=self.client)
+                    resp = r[self.command_idx][self.command_name]
+                    if self.label_prop and "entities" in resp and len(resp["entities"]) > 0:
+                        sample_label = resp["entities"][0].get(self.label_prop)
+                    else:
+                        sample_label = "none"
+                        
+                    if isinstance(sample_label, int):
+                        self.label_type = tf.int32
+                    elif isinstance(sample_label, float):
+                        self.label_type = tf.float32
+                    else:
+                        self.label_type = tf.string
+                except Exception as e:
+                    logger.warning(f"Failed to infer label_type: {e}. Defaulting to tf.string.")
                     self.label_type = tf.string
             else:
                 self.label_type = tf.string
