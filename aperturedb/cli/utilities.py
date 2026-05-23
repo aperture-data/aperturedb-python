@@ -25,10 +25,14 @@ def confirm(command: CommandTypes):
 @app.command()
 def execute(command: CommandTypes):
     utils = Utils(create_connector())
+
+    def handle_remove_all():
+        confirm(CommandTypes.REMOVE_ALL)
+        utils.remove_all_objects()
+
     available_commands = {
         CommandTypes.SUMMARY: utils.summary,
-        CommandTypes.REMOVE_ALL: lambda: confirm(
-            CommandTypes.REMOVE_ALL) and utils.remove_all_objects
+        CommandTypes.REMOVE_ALL: handle_remove_all
     }
 
     available_commands[command]()

@@ -56,7 +56,6 @@ def create_connector():
     config = all_configs["local"][ac] if "local" in all_configs else all_configs["global"][ac]
 
     if env_config is not None:
-        # TODO test me.
         config = all_configs["global"][env_config] if env_config in all_configs["global"] else all_configs["local"][env_config]
         return __create_connector(config)
     # Then check if the local config has active
