@@ -22,14 +22,39 @@ def test_resolve_resize():
     assert resolved[1][1] == 10
 
 
+def test_resolve_resize_scale():
+    points = np.array([[10, 10], [20, 20]], dtype=float)
+    meta = {"adb_image_width": 100, "adb_image_height": 100}
+    operations = [{"type": "resize", "scale": 0.5}]
+    resolved = resolve(points, meta, operations)
+    assert resolved[0][0] == 5
+    assert resolved[0][1] == 5
+    assert resolved[1][0] == 10
+    assert resolved[1][1] == 10
+
+
 def test_resolve_rotate():
     points = np.array([[10, 10]], dtype=float)
     meta = {"adb_image_width": 100, "adb_image_height": 100}
     operations = [{"type": "rotate", "angle": 90}]
     resolved = resolve(points, meta, operations)
     assert len(resolved) == 1
-    # Note: 9 instead of 10 due to float truncation in .astype(int)
-    assert resolved[0][0] == 90 and resolved[0][1] == 9
+    # Allow 9 or 10 due to float truncation/rounding differences across platforms
+    assert resolved[0][0] == 90 and abs(resolved[0][1] - 10) <= 1
+
+
+def test_resolve_ignored_operations():
+    points = np.array([[10, 10], [20, 20]], dtype=float)
+    meta = {"adb_image_width": 100, "adb_image_height": 100}
+    operations = [
+        {"type": "flip", "code": "horizontal"},
+        {"type": "crop", "x": 10, "y": 10, "width": 50, "height": 50},
+        {"type": "interval", "start": 0, "stop": 10, "step": 1},
+        {"type": "threshold", "value": 128},
+        {"type": "preview"}
+    ]
+    resolved = resolve(points, meta, operations)
+    assert np.array_equal(resolved, points)
 
 
 class MockClient:

@@ -62,9 +62,8 @@ class ImageDataProcessor():
                 if a.size <= 0:
                     logger.error(f"IMAGE SIZE ERROR: {filename}")
                     return False, None
-            except Exception as e:
-                logger.error(f"IMAGE ERROR: {filename}")
-                logger.exception(e)
+            except Exception:
+                logger.exception(f"IMAGE ERROR: {filename}")
 
         return self.sources.load_from_file(filename)
 

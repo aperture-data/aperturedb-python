@@ -25,7 +25,7 @@
 # THE SOFTWARE.
 #
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 from . import queryMessage
 import sys
 import os
@@ -43,7 +43,7 @@ from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
-from aperturedb.types import CommandResponses
+from aperturedb.LoggingUtils import censor_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -314,7 +314,9 @@ class Connector(object):
 
         response, _ = self._query(query, [], try_resume=False)
 
-        logger.info(f"Refresh token response: \r\n{response}")
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                f"Refresh token response: \r\n{censor_tokens(response)}")
         if isinstance(response, list):
             session_info = response[0]["RefreshToken"]
             if session_info["status"] != STATUS_OK:
@@ -328,7 +330,7 @@ class Connector(object):
                                   self.config.username,
                                   self.config.password,
                                   self.token)
-                raise UnauthorizedException(response)
+                raise UnauthorizedException(censor_tokens(response))
 
             self.shared_data.session = Session(
                 session_info["session_token"],
@@ -451,13 +453,16 @@ class Connector(object):
             try:
                 self._connect()
             except socket.error as e:
+                details_str = f" \r\n{details}." if details else ""
                 logger.error(
                     f"Error connecting to server: "
-                    f"{self.config} \r\n{details}. {e=}",
+                    f"{self.config}{details_str}",
                     exc_info=True,
                     stack_info=True)
 
-    def _query(self, query, blob_array = [], try_resume=True):
+    def _query(self, query, blob_array=None, try_resume=True):
+        if blob_array is None:
+            blob_array = []
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
@@ -549,7 +554,7 @@ class Connector(object):
         if tries == self.config.retry_max_attempts:
             # We have tried enough times, and failed. Log some state info.
             raise Exception(
-                f"Could not query apertureDB using TCP. \r\n\
+                f"Could not query ApertureDB using TCP. \r\n\
                 {self.connected=}\r\n \
                 {self.authenticated=} \r\n \
                 attempts={tries}/{self.config.retry_max_attempts} \r\n \
@@ -639,8 +644,7 @@ class Connector(object):
         return self.clone()
 
     def get_last_response_str(self):
-
-        return json.dumps(self.last_response, indent=4, sort_keys=False)
+        return json.dumps(censor_tokens(self.last_response), indent=4, sort_keys=False)
 
     def print_last_response(self):
 
@@ -664,28 +668,36 @@ class Connector(object):
 
         return self.check_status(self.response) >= 0
 
-    def check_status(self, json_res: CommandResponses) -> int:
+    def check_status(self, json_res: Any) -> int:
         """
-        Returns the status of the first command response from the server.
-        Can traverse a JSON recursively to find the first status.
+        Returns the status of the first negative command response from the server,
+        or the status of the first command if all are non-negative.
+        Can traverse a JSON recursively to find the statuses.
 
         Args:
-            json_res (CommandResponses): The actual response from the server.
+            json_res (Any): The actual response from the server.
 
         Returns:
-            int: The value recieved from the server, or -2 if not found.
+            int: The value received from the server, or -2 if not found.
         """
         # Default status is -2, which is an error, but not a server error.
         status = STATUS_ERROR_DEFAULT
         if (isinstance(json_res, dict)):
             if ("status" not in json_res):
-                status = self.check_status(json_res[list(json_res.keys())[0]])
+                for i, val in enumerate(json_res.values()):
+                    st = self.check_status(val)
+                    if i == 0:
+                        status = st
+                    if st < 0:
+                        return st
             else:
                 status = json_res["status"]
         elif (isinstance(json_res, (tuple, list))):
-            if ("status" not in json_res[0]):
-                status = self.check_status(json_res[0])
-            else:
-                status = json_res[0]["status"]
+            for i, res in enumerate(json_res):
+                st = self.check_status(res)
+                if i == 0:
+                    status = st
+                if st < 0:
+                    return st
 
         return status
