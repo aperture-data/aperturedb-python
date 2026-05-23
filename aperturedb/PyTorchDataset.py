@@ -35,7 +35,10 @@ class ApertureDBDataset(data.Dataset):
         self.batch_end = 0
         self.label_prop = label_prop
 
-        allowed_find_commands = {"FindImage", "FindVideo", "FindBlob", "FindDescriptor", "FindBoundingBox"}
+        allowed_find_commands = {
+            "FindImage", "FindVideo", "FindBlob",
+            "FindDescriptor", "FindBoundingBox"
+        }
 
         if self.command_idx is not None:
             if not (0 <= self.command_idx < len(query)):
@@ -87,7 +90,8 @@ class ApertureDBDataset(data.Dataset):
             if resp.get("status", 0) != 0:
                 raise Exception(
                     f"Query Error: {resp.get('status')} {resp.get('info', '')}")
-            self.total_elements = resp.get("batch", {}).get("total_elements", resp.get("returned", 0))
+            self.total_elements = resp.get("batch", {}).get(
+                "total_elements", resp.get("returned", 0))
         except:
             logger.error(
                 f"Query error: {self.query} {self.client.get_last_response_str()}")

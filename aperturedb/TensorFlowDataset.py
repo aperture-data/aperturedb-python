@@ -33,7 +33,10 @@ class ApertureDBTensorFlowDataset:
         self.label_prop = label_prop
         self.label_type = None
 
-        allowed_find_commands = {"FindImage", "FindVideo", "FindBlob", "FindDescriptor", "FindBoundingBox"}
+        allowed_find_commands = {
+            "FindImage", "FindVideo", "FindBlob",
+            "FindDescriptor", "FindBoundingBox"
+        }
 
         if self.command_idx is not None:
             if not (0 <= self.command_idx < len(query)):
@@ -85,7 +88,8 @@ class ApertureDBTensorFlowDataset:
             if resp.get("status", 0) != 0:
                 raise Exception(
                     f"Query Error: {resp.get('status')} {resp.get('info', '')}")
-            self.total_elements = resp.get("batch", {}).get("total_elements", resp.get("returned", 0))
+            self.total_elements = resp.get("batch", {}).get(
+                "total_elements", resp.get("returned", 0))
         except:
             logger.error(
                 f"Query error: {self.query} {self.client.get_last_response_str()}")
@@ -177,7 +181,8 @@ class ApertureDBTensorFlowDataset:
                 nparr = np.frombuffer(blob, dtype=np.uint8)
                 blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if blob is None:
-                    raise ValueError(f"Failed to decode image at index {index}.")
+                    raise ValueError(
+                        f"Failed to decode image at index {index}.")
                 blob = cv2.cvtColor(blob, cv2.COLOR_BGR2RGB)
 
             yield blob, label
@@ -191,18 +196,20 @@ class ApertureDBTensorFlowDataset:
                 import copy
                 infer_query = copy.deepcopy(self.query)
                 infer_query[self.command_idx][self.command_name]["blobs"] = False
-                infer_query[self.command_idx][self.command_name].setdefault("batch", {})
+                infer_query[self.command_idx][self.command_name].setdefault(
+                    "batch", {})
                 infer_query[self.command_idx][self.command_name]["batch"]["batch_size"] = 1
                 infer_query[self.command_idx][self.command_name]["batch"]["batch_id"] = 0
-                
+
                 try:
-                    _, r, _ = execute_query(query=infer_query, blobs=[], client=self.client)
+                    _, r, _ = execute_query(
+                        query=infer_query, blobs=[], client=self.client)
                     resp = r[self.command_idx][self.command_name]
                     if self.label_prop and "entities" in resp and len(resp["entities"]) > 0:
                         sample_label = resp["entities"][0].get(self.label_prop)
                     else:
                         sample_label = "none"
-                        
+
                     if isinstance(sample_label, int):
                         self.label_type = tf.int32
                     elif isinstance(sample_label, float):
@@ -210,7 +217,8 @@ class ApertureDBTensorFlowDataset:
                     else:
                         self.label_type = tf.string
                 except Exception as e:
-                    logger.warning(f"Failed to infer label_type: {e}. Defaulting to tf.string.")
+                    logger.warning(
+                        "Failed to infer label_type: %s. Defaulting to tf.string.", e)
                     self.label_type = tf.string
             else:
                 self.label_type = tf.string
