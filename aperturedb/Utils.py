@@ -9,6 +9,7 @@ from aperturedb.Connector import Connector
 import logging
 import json
 from typing import List, Optional, Dict
+from aperturedb.LoggingUtils import censor_tokens
 
 HAS_GRAPHVIZ = True
 try:
@@ -931,12 +932,14 @@ class Utils(object):
         try:
             response, _ = self.execute(transaction)
             schema = response[-1]["GetSchema"]
-            if schema["status"] != 0:
-                logger.error(f"status is non-zero: {response}")
-            elif schema["connections"] is not None:
-                logger.error(f"connections is not None: {response}")
-            elif schema["entities"] is not None:
-                logger.error(f"entities is not None: {response}")
+            if schema["status"] != 0 or schema["connections"] is not None or schema["entities"] is not None:
+                censored = censor_tokens(response)
+                if schema["status"] != 0:
+                    logger.error(f"status is non-zero: {censored}")
+                elif schema["connections"] is not None:
+                    logger.error(f"connections is not None: {censored}")
+                elif schema["entities"] is not None:
+                    logger.error(f"entities is not None: {censored}")
             else:
                 return True
         except BaseException as e:
