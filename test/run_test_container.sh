@@ -25,10 +25,12 @@ function run_aperturedb_instance(){
     docker network create ${TAG}_host_default
     GATEWAY=$(docker network inspect ${TAG}_host_default | jq -r .[0].IPAM.Config[0].Gateway)
     GATEWAY=$GATEWAY RUNNER_NAME=$TAG docker compose -f docker-compose.yml up -d
-    if [ "$TAG" == "${RUNNER_NAME}_http" ]; then
-        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port nginx 80 | cut -d: -f2)
+    if [[ "$TAG" == *_non_http ]]; then
+        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port lenz 55551 | awk -F: '{print $NF}')
+    elif [[ "$TAG" == *_http ]]; then
+        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port nginx 80 | awk -F: '{print $NF}')
     else
-        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port lenz 55551 | cut -d: -f2)
+        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port lenz 55551 | awk -F: '{print $NF}')
     fi
     echo "$GATEWAY:$PORT"
 }
@@ -59,7 +61,34 @@ then
      REPOSITORY="$1"
 fi
 
-sleep 20 # wait for the containers to be up and running
+# Wait for the stack(s) to be ready instead of blindly sleeping. Each lenz
+# instance exposes a health port (58085) that becomes reachable once the
+# service is up; nginx is ready as soon as port 80 accepts connections.
+wait_for_stack() {
+    local tag=$1
+    local network=${tag}_default
+    local timeout=60
+    local elapsed=0
+    echo "Waiting for stack ${tag} to become ready (timeout ${timeout}s)..."
+    while [ $elapsed -lt $timeout ]; do
+        if docker run --rm --network=${network} curlimages/curl:latest \
+                -sS -o /dev/null -m 2 http://lenz:58085/ >/dev/null 2>&1; then
+            echo "Stack ${tag} is ready after ${elapsed}s"
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    echo "WARNING: stack ${tag} did not report ready within ${timeout}s; proceeding anyway"
+    return 0
+}
+
+if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    wait_for_stack "${RUNNER_NAME}_http"
+fi
+if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    wait_for_stack "${RUNNER_NAME}_non_http"
+fi
 
 pid1=0
 pid2=0
@@ -71,6 +100,7 @@ if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         -v $(pwd)/${RUNNER_NAME}_http_ca:/ca \
         --network=${RUNNER_NAME}_http_default \
         -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
+        -v $(pwd)/run_test.sh:/aperturedata/test/run_test.sh \
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
         -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
@@ -89,6 +119,7 @@ if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         -v $(pwd)/${RUNNER_NAME}_non_http_ca:/ca \
         --network=${RUNNER_NAME}_non_http_default \
         -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
+        -v $(pwd)/run_test.sh:/aperturedata/test/run_test.sh \
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
         -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
