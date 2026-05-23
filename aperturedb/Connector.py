@@ -25,7 +25,7 @@
 # THE SOFTWARE.
 #
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 from . import queryMessage
 import sys
 import os
@@ -45,6 +45,7 @@ from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
 from aperturedb.types import CommandResponses
 from aperturedb.LoggingUtils import censor_tokens
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -669,14 +670,14 @@ class Connector(object):
 
         return self.check_status(self.response) >= 0
 
-    def check_status(self, json_res: CommandResponses) -> int:
+    def check_status(self, json_res: Any) -> int:
         """
         Returns the status of the first negative command response from the server,
         or the status of the first command if all are non-negative.
-        Can traverse a JSON recursively to find the statuses.
+        Can traverse a JSON recursively (descending into the first key of a dictionary) to find the statuses.
 
         Args:
-            json_res (CommandResponses): The actual response from the server.
+            json_res (Any): The actual response from the server.
 
         Returns:
             int: The value received from the server, or -2 if not found.

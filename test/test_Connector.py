@@ -11,8 +11,8 @@ class TestConnector:
         assert connector.check_status(res1) == 0
 
         # Test case 2: first is ok, second is negative
-        res2 = [{"FindImage": {"status": 0}}, {"FindImage": {"status": -2}}]
-        assert connector.check_status(res2) == -2
+        res2 = [{"FindImage": {"status": 0}}, {"FindImage": {"status": -4}}]
+        assert connector.check_status(res2) == -4
 
         # Test case 3: first is negative, second is ok
         res3 = [{"FindImage": {"status": -1}}, {"FindImage": {"status": 0}}]
