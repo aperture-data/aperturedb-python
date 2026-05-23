@@ -43,9 +43,7 @@ from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
-from aperturedb.types import CommandResponses
 from aperturedb.LoggingUtils import censor_tokens
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
