@@ -45,6 +45,14 @@ class CLIPPyTorchEmbeddings(Transformer):
             cmd_name = list(cmd_dict.keys())[0]
             if cmd_name == "AddImage":
                 blob = x[1][blob_index]
+
+                if not getattr(self, "_descriptorset_initialized", False):
+                    sample = generate_embedding(blob)
+                    utils = self.get_utils()
+                    utils.add_descriptorset(
+                        self.search_set_name, dim=len(sample) // 4, metric=["CS"])
+                    self._descriptorset_initialized = True
+
                 serialized = generate_embedding(blob)
                 # If the image already has an image_sha256, we use it.
                 image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(

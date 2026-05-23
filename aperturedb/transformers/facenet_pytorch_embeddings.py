@@ -21,19 +21,7 @@ class FacenetPyTorchEmbeddings(Transformer):
         self.search_set_name = kwargs.pop(
             "search_set_name", "facenet_pytorch_embeddings")
         super().__init__(data, **kwargs)
-
-        # Let's sample some data to figure out the descriptorset we need.
-        sample_blob = None
-        for i, c in enumerate(self.data[0][0]):
-            if list(c.keys())[0] == "AddImage":
-                blob_idx = self._blob_index.index(i)
-                sample_blob = self.data[0][1][blob_idx]
-                break
-
-        if sample_blob is not None:
-            sample = self._get_embedding_from_blob(sample_blob)
-            utils = self.get_utils()
-            utils.add_descriptorset(self.search_set_name, dim=len(sample) // 4)
+        self._descriptorset_initialized = False
 
     def _get_embedding_from_blob(self, image_blob: bytes):
         pil_image = Image.open(io.BytesIO(image_blob))
@@ -54,6 +42,13 @@ class FacenetPyTorchEmbeddings(Transformer):
             cmd_name = list(cmd_dict.keys())[0]
             if cmd_name == "AddImage":
                 blob = x[1][blob_index]
+
+                if not getattr(self, "_descriptorset_initialized", False):
+                    sample = self._get_embedding_from_blob(blob)
+                    utils = self.get_utils()
+                    utils.add_descriptorset(self.search_set_name, dim=len(sample) // 4)
+                    self._descriptorset_initialized = True
+
                 serialized = self._get_embedding_from_blob(blob)
                 # If the image already has an image_sha256, we use it.
                 image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
