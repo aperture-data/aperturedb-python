@@ -285,13 +285,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 raise ValueError(
                     "To run with use_dask=True, the generator must have a Dask DataFrame 'df' with map_partitions. Ensure the CSVParser is also initialized with use_dask=True.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
-            self.daskmanager = DaskManager(num_workers=numthreads)
+            self.daskManager = DaskManager(num_workers=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
 
         if use_dask:
-            results, self.total_actions_time = self.daskmanager.run(
+            results, self.total_actions_time = self.daskManager.run(
                 self.__class__, self.client, generator, batchsize, stats=stats)
             self.actual_stats = []
             for result in results:
