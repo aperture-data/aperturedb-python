@@ -275,6 +275,7 @@ class TestSession():
             class MockConn:
                 def close(self): pass
             self.conn = MockConn()
+
         monkeypatch.setattr(Connector, "connect", mock_connect)
 
         new_db = Connector(

@@ -5,13 +5,16 @@ on:
     branches:
       - develop
 
+# Newer pushes to develop supersede older in-flight runs. The post-test
+# publish job (build_and_deploy_docs) only matters for the latest commit, so
+# cancelling stale runs avoids wasting an hour of CI for code that is already
+# obsolete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        protocol: [http, non_http]
-
     runs-on:
     - benchmark
 
@@ -34,11 +37,25 @@ jobs:
 
     - name: Build and Run Tests
       env:
-        TEST_PROTOCOL: ${{ matrix.protocol }}
+        # Run both protocols inside a single job. run_test_container.sh starts
+        # the http and non_http stacks in parallel, so wall-clock time is
+        # roughly max(http, non_http) instead of the previous matrix approach
+        # which duplicated every docker image build (notebook deps / notebook
+        # / tests / coverage) on a second runner.
+        TEST_PROTOCOL: both
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        RUNNER_NAME: ${{ runner.name }}_develop
+        # BuildKit + inline cache so subsequent runs actually reuse layers
+        # pulled via --cache-from in ci.sh.
+        DOCKER_BUILDKIT: 1
+        COMPOSE_DOCKER_CLI_BUILD: 1
+        ADB_REPO: aperturedata/aperturedb
+        ADB_TAG: dev
+        LENZ_REPO: aperturedata/lenz
+        LENZ_TAG: dev
       run: RUN_TESTS=true ./ci.sh
       shell: bash
 
@@ -65,6 +82,8 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         RUNNER_NAME: ${{ runner.name }}
+        DOCKER_BUILDKIT: 1
+        COMPOSE_DOCKER_CLI_BUILD: 1
         ADB_REPO: aperturedata/aperturedb
         ADB_TAG: dev
         LENZ_REPO: aperturedata/lenz
