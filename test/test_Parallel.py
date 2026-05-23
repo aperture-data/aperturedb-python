@@ -119,3 +119,23 @@ class TestParallel():
             assert False, "Should have raised ValueError"
         except ValueError as e:
             assert "Transformers cannot be used with Dask" in str(e)
+
+    def test_transformers_equivalence(self, db: Connector):
+        '''
+        Verifies that using transformers parameter is equivalent to manual wrapping.
+        '''
+        elements = 10
+        
+        # Manual wrapping
+        generator1 = GeneratorWithErrors(elements=elements, error_pct=0)
+        transformer1 = DummyTransformer(generator1, client=db)
+        loader1 = ParallelLoader(db)
+        loader1.ingest(transformer1, batchsize=2, numthreads=2, stats=False)
+        
+        # transformers parameter
+        generator2 = GeneratorWithErrors(elements=elements, error_pct=0)
+        loader2 = ParallelLoader(db)
+        loader2.ingest(generator2, batchsize=2, numthreads=2, stats=False, transformers=[DummyTransformer])
+        
+        assert loader1.get_succeeded_queries() == loader2.get_succeeded_queries()
+        assert loader1.get_succeeded_queries() > 0
