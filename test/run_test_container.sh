@@ -75,7 +75,7 @@ wait_for_stack() {
         local nginx_ready=0
 
         if docker run --rm --network=${network} curlimages/curl:latest \
-                -sS -o /dev/null -m 2 http://lenz:58085/ >/dev/null 2>&1; then
+                nc -z -w 2 lenz 58085 >/dev/null 2>&1; then
             lenz_ready=1
         fi
 
