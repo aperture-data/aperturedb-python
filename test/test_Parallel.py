@@ -18,6 +18,8 @@ class DummyGeneratorDaskBacked(Subscriptable):
         class DummyDF:
             def map_partitions(self):
                 pass
+            def __len__(self):
+                return 1
         self.df = DummyDF()
 
     def __len__(self):
@@ -33,7 +35,8 @@ class DummyGeneratorPandasBacked(Subscriptable):
         if with_use_dask_attr:
             self.use_dask = False
         class DummyDF:
-            pass
+            def __len__(self):
+                return 1
         self.df = DummyDF()
 
     def __len__(self):
