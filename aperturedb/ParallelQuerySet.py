@@ -47,8 +47,8 @@ def gen_execute_batch_sets(base_executor):
     #  execution
     #
     def execute_batch_sets(client, query_set, blob_set, success_statuses: list[int] = [0],
-                           response_handler: Optional[Callable] = None, commands_per_query: list[int] = -1,
-                           blobs_per_query: list[int] = -1,
+                           response_handler: Optional[Callable] = None, commands_per_query: Optional[list[int]] = None,
+                           blobs_per_query: Optional[list[int]] = None,
                            strict_response_validation: bool = False, cmd_index: int = None,
                            error_handler: Optional[Callable] = None):
 

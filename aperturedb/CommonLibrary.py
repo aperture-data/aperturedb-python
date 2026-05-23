@@ -337,14 +337,13 @@ def execute_query(client: Connector, query: Commands,
 
     # last_query_ok means result status >= 0
     if result != 1:
-        warn_list = []
+        warnings_count = 0
         for status, results in statuses.items():
             if status not in success_statuses:
-                for wr in results:
-                    warn_list.append(wr)
-        if len(warn_list) != 0:
+                warnings_count += len(results)
+        if warnings_count != 0:
             logger.warning(
-                f"Encountered {len(warn_list)} partial errors. "
+                f"Encountered {warnings_count} partial errors. "
                 "Use error_handler or inspect response for details."
             )
             result = 2
