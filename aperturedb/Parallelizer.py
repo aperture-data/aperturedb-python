@@ -3,6 +3,7 @@ import time
 import threading
 
 from threading import Thread
+from typing import Optional
 from tqdm import tqdm as tqdm
 
 
@@ -28,7 +29,7 @@ class Parallelizer:
     ```
     """
 
-    def __init__(self, use_dask=None):
+    def __init__(self, use_dask: Optional[bool] = None):
         self.use_dask = use_dask
         self._reset()
 
