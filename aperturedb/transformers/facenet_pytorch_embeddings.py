@@ -47,7 +47,8 @@ class FacenetPyTorchEmbeddings(Transformer):
 
                 if not getattr(self, "_descriptorset_initialized", False):
                     utils = self.get_utils()
-                    utils.add_descriptorset(self.search_set_name, dim=len(serialized) // 4)
+                    utils.add_descriptorset(
+                        self.search_set_name, dim=len(serialized) // 4)
                     self._descriptorset_initialized = True
 
                 # If the image already has an image_sha256, we use it.
