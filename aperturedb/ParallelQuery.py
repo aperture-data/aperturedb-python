@@ -192,7 +192,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["succeeded_commands"] = len(q)
                 worker_stats["succeeded_queries"] = len(data)
                 worker_stats["objects_existed"] = sum(
-                    [v['status'] == 2 for i in r for k, v in i.items()])
+                    v['status'] == 2 for i in r for k, v in i.items())
             elif result == 1:
                 self.error_counter += 1
                 worker_stats["succeeded_queries"] = 0
