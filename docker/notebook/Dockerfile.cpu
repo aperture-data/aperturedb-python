@@ -27,7 +27,7 @@ RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/c
 RUN pip install facenet-pytorch --no-deps
 
 # Install CLIP (for running transformers)
-RUN pip install git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
+RUN pip install openai-clip
 
 RUN apt update && apt install -y curl && apt clean
 
