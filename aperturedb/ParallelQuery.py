@@ -64,7 +64,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         self.commands_per_query = 1
         self.blobs_per_query = 0
-        self.daskManager = None
+        self.dask_manager = None
         self.batch_command = execute_query
 
     def generate_batch(self, data: List[Tuple[Commands, Blobs]]) -> Tuple[Commands, Blobs]:
@@ -291,13 +291,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 raise ValueError(
                     "To run with use_dask=True, the generator must have a Dask DataFrame 'df' with map_partitions. Ensure the CSVParser is also initialized with use_dask=True.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
-            self.daskManager = DaskManager(num_workers=numthreads)
+            self.dask_manager = DaskManager(num_workers=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
 
         if use_dask:
-            results, self.total_actions_time = self.daskManager.run(
+            results, self.total_actions_time = self.dask_manager.run(
                 self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run)
             self.actual_stats = []
             for result in results:

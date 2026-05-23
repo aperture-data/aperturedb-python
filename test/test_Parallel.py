@@ -94,19 +94,21 @@ class TestParallel():
             querier.query(generator)
 
     def test_use_dask_override_fallback_dask_generator(self, db: Connector):
-        from unittest.mock import patch
+        from unittest.mock import patch, MagicMock
         # use_dask=None still falls back to generator.use_dask
         querier = ParallelQuery(db, dry_run=True, use_dask=None)
         generator = DummyGeneratorDaskBacked()
         
-        # We mock daskManager.run so it doesn't actually try to run map_partitions
-        # But we want to ensure it passes the ValueError validations
-        with patch("aperturedb.DaskManager.DaskManager.run") as mock_dask_run:
-            mock_dask_run.return_value = ([], 0)
-            
+        mock_dask_manager_class = MagicMock()
+        mock_instance = mock_dask_manager_class.return_value
+        mock_instance.run.return_value = ([], 0)
+        
+        with patch("aperturedb.ParallelQuery.DaskManager", mock_dask_manager_class):
             querier.query(generator)
+            
             assert querier.use_dask is None
-            mock_dask_run.assert_called_once()
+            mock_dask_manager_class.assert_called_once()
+            mock_instance.run.assert_called_once()
 
     def test_someBadQueries(self, db: Connector):
         """
