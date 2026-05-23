@@ -62,7 +62,7 @@ class TestParallel():
         except Exception as e:
             print(e)
             print("Failed to renew Session")
-            assert False
+            raise
 
     def test_allBadQueries(self, db: Connector):
         """
@@ -80,7 +80,7 @@ class TestParallel():
         except Exception as e:
             print(e)
             print("Failed to renew Session")
-            assert False
+            raise
 
     def test_dictResponseHandling(self):
         """
@@ -112,7 +112,7 @@ class TestParallel():
             assert len(querier.actual_stats) > 0
         except Exception as e:
             print(e)
-            assert False
+            raise
 
 
 def test_dask_dry_run(db: Connector):

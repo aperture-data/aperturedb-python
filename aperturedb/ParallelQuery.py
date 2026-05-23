@@ -204,16 +204,16 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 # with result 2, some queries might have failed.
                 if isinstance(r, list):
                     def filter_per_group(group):
-                        return group.items() if isinstance(group, dict) else {}.items()
+                        return group.items() if isinstance(group, dict) else ()
                     worker_stats["succeeded_commands"] = sum(
-                        [v['status'] == 0 for i in r for k, v in filter_per_group(i)])
+                        v['status'] == 0 for i in r for k, v in filter_per_group(i))
                     worker_stats["objects_existed"] = sum(
-                        [v['status'] == 2 for i in r for k, v in filter_per_group(i)])
+                        v['status'] == 2 for i in r for k, v in filter_per_group(i))
                     sq = 0
                     for i in range(0, len(r), self.commands_per_query):
                         # Some errors stop the whole query from being executed
                         # https://docs.aperturedata.io/query_language/Overview/Responses#return-status
-                        if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
+                        if all(v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)):
                             sq += 1
                     worker_stats["succeeded_queries"] = sq
                 else:
@@ -261,16 +261,16 @@ class ParallelQuery(Parallelizer.Parallelizer):
         logger.info(f"Worker {thid} executed {total_batches} batches")
 
     def get_objects_existed(self) -> int:
-        return sum([stat["objects_existed"]
-                    for stat in self.actual_stats])
+        return sum(stat["objects_existed"]
+                   for stat in self.actual_stats)
 
     def get_succeeded_queries(self) -> int:
-        return sum([stat["succeeded_queries"]
-                    for stat in self.actual_stats])
+        return sum(stat["succeeded_queries"]
+                   for stat in self.actual_stats)
 
     def get_succeeded_commands(self) -> int:
-        return sum([stat["succeeded_commands"]
-                    for stat in self.actual_stats])
+        return sum(stat["succeeded_commands"]
+                   for stat in self.actual_stats)
 
     def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
         """
