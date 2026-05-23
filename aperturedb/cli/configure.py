@@ -15,7 +15,7 @@ import re
 
 # alnum for first character, then anum with - or _ for rest. Max Length 64
 CONFIG_NAME_RE = re.compile(
-    r'^([a-zA-Z0-9]([a-zA-Z0-9-_]){0,63})'
+    r'^([a-zA-Z0-9]([a-zA-Z0-9-_]){0,63})$'
 )
 
 
@@ -129,8 +129,13 @@ def get_active_config(all_configs):
     if active.startswith("env:"):
         return all_configs["environment"][active[4:]]
     else:
-        return all_configs["local"][active] if "local" in all_configs and active in all_configs["local"] \
-            else all_configs["global"][active]
+        if "local" in all_configs and active in all_configs["local"]:
+            return all_configs["local"][active]
+        elif "global" in all_configs and active in all_configs["global"]:
+            return all_configs["global"][active]
+        else:
+            console.log(f"Active configuration '{active}' not found in any config file.")
+            raise typer.Exit(code=2)
 
 
 @app.command()

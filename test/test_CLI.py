@@ -358,3 +358,23 @@ class TestConfigure():
                         result = runner.invoke(app, ["activate", "blah"])
                         assert result.exit_code == 2
                         assert "Configuration blah not found" in result.stdout
+
+    def test_create_no_interactive_no_name(self):
+        with tempfile.TemporaryDirectory() as tmp_global:
+            fake_file = os.path.join(tmp_global, "adb.json")
+            with patch.multiple(typer,
+                                get_app_dir=MagicMock(return_value=tmp_global)):
+                runner = CliRunner()
+                result = runner.invoke(app, ["create", "--no-interactive"])
+                assert result.exit_code == 2
+                assert not os.path.exists(fake_file)
+
+    def test_activate_missing_config_file(self):
+        with tempfile.TemporaryDirectory() as tmp_global:
+            fake_file = os.path.join(tmp_global, "adb.json")
+            with patch.multiple(typer,
+                                get_app_dir=MagicMock(return_value=tmp_global)):
+                runner = CliRunner()
+                result = runner.invoke(app, ["activate", "something", "--global"])
+                assert result.exit_code == 2
+                assert not os.path.exists(fake_file)
