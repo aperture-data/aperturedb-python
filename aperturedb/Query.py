@@ -121,7 +121,7 @@ def generate_add_query(
         parent: int = 0) -> Tuple[List[object], List[bytearray], int]:
     """
     Takes the user model, and builds out a sequence of commands that creates
-    a similar structure on apertureDB's graph. For example, given the following
+    a similar structure on ApertureDB's graph. For example, given the following
 
     ```mermaid
     erDiagram

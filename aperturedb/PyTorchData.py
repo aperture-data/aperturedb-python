@@ -30,7 +30,7 @@ class PyTorchData(Subscriptable):
 
     def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
         """
-        **Takes information from one atomic record from the Data and converts it to Query for apertureDB**
+        **Takes information from one atomic record from the Data and converts it to Query for ApertureDB**
 
         Args:
             idx (int): index of the record in collection.
