@@ -428,6 +428,7 @@ def get_key(name: Annotated[str, typer.Argument(
         target_path = config_path
         if name not in configs and name in gc:
             target_configs = gc
+            target_configs["active"] = ga
             target_path = global_config_path
 
         if user is None:
