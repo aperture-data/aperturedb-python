@@ -16,7 +16,11 @@ class TestTfDatasets():
         count = 0
         # Iterate over dataset.
         for data, label in dataset:
-            if tf.size(data).numpy() == 0:
+            if data.dtype == tf.string:
+                size = tf.strings.length(data).numpy()
+            else:
+                size = tf.size(data).numpy()
+            if size == 0:
                 logger.error("Empty data?")
                 assert False
             count += 1
