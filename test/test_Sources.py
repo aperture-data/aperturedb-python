@@ -183,7 +183,7 @@ class TestSources(unittest.TestCase):
         mock_response.ok = True
         mock_response.headers = {}
         mock_response.content = b'mock_data'
-        
+
         # Raise TypeError with expected message on first call with timeout, succeed on second without
         def side_effect(*args, **kwargs):
             if 'timeout' in kwargs:
