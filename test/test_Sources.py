@@ -189,7 +189,7 @@ class TestSources(unittest.TestCase):
             if 'timeout' in kwargs:
                 raise TypeError("get() got an unexpected keyword argument 'timeout'")
             return mock_response
-            
+
         mock_client.get.side_effect = side_effect
 
         self.sources.http_client = mock_client
@@ -203,7 +203,7 @@ class TestSources(unittest.TestCase):
     @patch('time.sleep', return_value=None)
     def test_http_request_exception_retries(self, mock_sleep):
         mock_client = MagicMock()
-        
+
         # Raise RequestException on all calls
         mock_client.get.side_effect = requests.exceptions.RequestException("connection error")
 
