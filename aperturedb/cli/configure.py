@@ -100,7 +100,8 @@ def get_all_configs():
         try:
             configs, active = get_configurations(config_path.as_posix())
             all_configs[context] = configs
-            all_configs["active"] = active
+            if active:
+                all_configs["active"] = active
         except FileNotFoundError:
             check_configured(as_global)
         except json.JSONDecodeError:
@@ -298,7 +299,7 @@ def create(
     configs[name] = gen_config
     if active:
         configs["active"] = name
-    else:
+    elif ac:
         configs["active"] = ac
 
     _write_config(config_path, configs)
@@ -387,8 +388,9 @@ def remove(
         if new_active:
             ac = new_active
         else:
-            ac = next(iter(configs))
-    configs["active"] = ac
+            ac = next(iter(configs), None)
+    if ac:
+        configs["active"] = ac
     _write_config(config_path, configs)
 
 
@@ -422,13 +424,15 @@ def get_key(name: Annotated[str, typer.Argument(
         if name not in configs and name not in gc:
             console.log(f"Configuration {name} not found")
             raise typer.Exit(code=2)
-        configs["active"] = active
+        if active:
+            configs["active"] = active
 
         target_configs = configs
         target_path = config_path
         if name not in configs and name in gc:
             target_configs = gc
-            target_configs["active"] = ga
+            if ga:
+                target_configs["active"] = ga
             target_path = global_config_path
 
         if user is None:

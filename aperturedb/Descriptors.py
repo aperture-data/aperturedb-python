@@ -31,13 +31,13 @@ class Descriptors(Entities):
             set (str): Descriptor set name.
             vector (list): Input descriptor vector.
             k_neighbors (int): Number of neighbors to return.
-            constraints (dict or aperturedb.Constraints.Constraints, optional): Constraints for the search. Defaults to None.
+            constraints (aperturedb.Constraints.Constraints, optional): Constraints for the search. Defaults to None.
             distances (bool, optional): Return similarity metric values. Defaults to False.
             blobs (bool, optional): Return vectors of the neighbors. Defaults to False.
             results (dict, optional): Dictionary with the results format. Defaults to {"all_properties": True}.
 
         Returns:
-            list: Parsed JSON response from the database or None on error (also populates self.response).
+            None: Populates self.response with the parsed JSON response from the database.
         """
 
         command = {
@@ -51,10 +51,7 @@ class Descriptors(Entities):
         }
 
         if constraints is not None:
-            if isinstance(constraints, dict):
-                command["FindDescriptor"]["constraints"] = constraints
-            else:
-                command["FindDescriptor"]["constraints"] = constraints.constraints
+            command["FindDescriptor"]["constraints"] = constraints.constraints
 
         query = [command]
         blobs_in = [np.array(vector, dtype=np.float32).tobytes()]
@@ -66,8 +63,6 @@ class Descriptors(Entities):
             for i, entity in enumerate(self.response):
                 entity["vector"] = np.frombuffer(
                     blobs_out[i], dtype=np.float32)
-
-        return self.response
 
     def _descriptorset_metric(self, set: str):
         """Find default metric for descriptor set"""
