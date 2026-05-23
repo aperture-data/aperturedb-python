@@ -250,10 +250,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     else:
                         item_bytes += 100
 
-                if len(current_batch) == 0 and item_bytes > max_bytes:
-                    logger.warning(
-                        f"Worker {thid} executing batch starting at {batch_start} that exceeds max_bytes_per_batch: {item_bytes} > {max_bytes}")
-                elif len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes or len(current_batch) >= batchsize):
+                if len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes or len(current_batch) >= self.batchsize):
                     try:
                         self.do_batch(client, batch_start, current_batch)
                     except Exception as e:
@@ -268,6 +265,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     current_batch = []
                     current_bytes = 0
                     batch_start = i
+
+                if len(current_batch) == 0 and item_bytes > max_bytes:
+                    logger.warning(
+                        f"Worker {thid} executing batch starting at {batch_start} that exceeds max_bytes_per_batch: {item_bytes} > {max_bytes}")
 
                 current_batch.append(item)
                 current_bytes += item_bytes
