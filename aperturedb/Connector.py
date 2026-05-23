@@ -44,6 +44,7 @@ from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
 from aperturedb.types import CommandResponses
+from aperturedb.LoggingUtils import censor_tokens
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +154,8 @@ class Connector(object):
                  retry_interval_seconds=DEFAULT_RETRY_INTERVAL_SECONDS,
                  retry_max_attempts=DEFAULT_RETRY_MAX_ATTEMPTS,
                  config: Optional[Configuration] = None,
-                 key: Optional[str] = None):
+                 key: Optional[str] = None,
+                 connect: bool = False):
         """
         Constructor for the Connector class.
         """
@@ -209,6 +211,9 @@ class Connector(object):
         # One time flag to indicate if we ever connected,
         # to prevent logging of connection errors on first connect.
         self._ever_connected = False
+
+        if connect:
+            self.connect()
 
     def authenticate(self, shared_data, user, password, token):
         """
@@ -310,7 +315,9 @@ class Connector(object):
 
         response, _ = self._query(query, [], try_resume=False)
 
-        logger.info(f"Refresh token response: \r\n{response}")
+        if logger.isEnabledFor(logging.INFO):
+            logger.info(
+                f"Refresh token response: \r\n{censor_tokens(response)}")
         if isinstance(response, list):
             session_info = response[0]["RefreshToken"]
             if session_info["status"] != STATUS_OK:
@@ -324,7 +331,7 @@ class Connector(object):
                                   self.config.username,
                                   self.config.password,
                                   self.token)
-                raise UnauthorizedException(response)
+                raise UnauthorizedException(censor_tokens(response))
 
             self.shared_data.session = Session(
                 session_info["session_token"],
@@ -422,8 +429,7 @@ class Connector(object):
 
         except FileNotFoundError as e:
             logger.exception(
-                f"The certificate file does not exist: {self.config.ca_cert}")
-            logger.exception(
+                f"The certificate file does not exist: {self.config.ca_cert}\n"
                 f"You can use the ca_cert parameter to specify a custom CA certificate")
             assert False, "Certificate verification failed" + os.linesep + \
                 f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
@@ -448,13 +454,16 @@ class Connector(object):
             try:
                 self._connect()
             except socket.error as e:
+                details_str = f" \r\n{details}." if details else ""
                 logger.error(
                     f"Error connecting to server: "
-                    f"{self.config} \r\n{details}. {e=}",
+                    f"{self.config}{details_str}",
                     exc_info=True,
                     stack_info=True)
 
-    def _query(self, query, blob_array = [], try_resume=True):
+    def _query(self, query, blob_array=None, try_resume=True):
+        if blob_array is None:
+            blob_array = []
         response_blob_array = []
         # Check the query type
         if not isinstance(query, str):  # assumes json
@@ -500,24 +509,24 @@ class Connector(object):
                 if tries != 0 or (self.last_query_timestamp is not None and
                                   (now - self.last_query_timestamp) <
                                   self.query_connection_error_suppression_delta):
-                    logger.exception(ssle)
                     logger.warning(
-                        f"SSL connection error on process {os.getpid()}")
+                        f"SSL connection error on process {os.getpid()}",
+                        exc_info=True)
             except ssl.SSLError as ssle:
                 # This can happen in a scenario where multiple
                 # processes might be accessing a single connection.
                 # The copy does not make usable connections.
-                logger.exception(ssle)
-                logger.warning(f"SSL error on process {os.getpid()}")
+                logger.warning(
+                    f"SSL error on process {os.getpid()}", exc_info=True)
             except OSError as ose:
-                logger.exception(ose)
-                logger.warning(f"OS error on process {os.getpid()}")
+                logger.warning(
+                    f"OS error on process {os.getpid()}", exc_info=True)
             except AttributeError as ae:
                 if self.connected:
                     # Only log if we got this while connected.
                     # else it is expected after unification of query/connect
-                    logger.exception(ae)
-                    logger.warning(f"Attribute error on process {os.getpid()}")
+                    logger.warning(
+                        f"Attribute error on process {os.getpid()}", exc_info=True)
 
             tries += 1
             # Do not log when trying for the first time.
@@ -546,7 +555,7 @@ class Connector(object):
         if tries == self.config.retry_max_attempts:
             # We have tried enough times, and failed. Log some state info.
             raise Exception(
-                f"Could not query apertureDB using TCP. \r\n\
+                f"Could not query ApertureDB using TCP. \r\n\
                 {self.connected=}\r\n \
                 {self.authenticated=} \r\n \
                 attempts={tries}/{self.config.retry_max_attempts} \r\n \
@@ -636,8 +645,7 @@ class Connector(object):
         return self.clone()
 
     def get_last_response_str(self):
-
-        return json.dumps(self.last_response, indent=4, sort_keys=False)
+        return json.dumps(censor_tokens(self.last_response), indent=4, sort_keys=False)
 
     def print_last_response(self):
 
