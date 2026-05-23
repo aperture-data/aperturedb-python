@@ -25,7 +25,7 @@
 # THE SOFTWARE.
 #
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Any
 from . import queryMessage
 import sys
 import os
@@ -43,7 +43,6 @@ from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
 from aperturedb.Configuration import Configuration
-from aperturedb.types import CommandResponses
 from aperturedb.LoggingUtils import censor_tokens
 
 logger = logging.getLogger(__name__)
@@ -680,28 +679,36 @@ class Connector(object):
 
         return self.check_status(self.response) >= 0
 
-    def check_status(self, json_res: CommandResponses) -> int:
+    def check_status(self, json_res: Any) -> int:
         """
-        Returns the status of the first command response from the server.
-        Can traverse a JSON recursively to find the first status.
+        Returns the status of the first negative command response from the server,
+        or the status of the first command if all are non-negative.
+        Can traverse a JSON recursively to find the statuses.
 
         Args:
-            json_res (CommandResponses): The actual response from the server.
+            json_res (Any): The actual response from the server.
 
         Returns:
-            int: The value recieved from the server, or -2 if not found.
+            int: The value received from the server, or -2 if not found.
         """
         # Default status is -2, which is an error, but not a server error.
         status = STATUS_ERROR_DEFAULT
         if (isinstance(json_res, dict)):
             if ("status" not in json_res):
-                status = self.check_status(json_res[list(json_res.keys())[0]])
+                for i, val in enumerate(json_res.values()):
+                    st = self.check_status(val)
+                    if i == 0:
+                        status = st
+                    if st < 0:
+                        return st
             else:
                 status = json_res["status"]
         elif (isinstance(json_res, (tuple, list))):
-            if ("status" not in json_res[0]):
-                status = self.check_status(json_res[0])
-            else:
-                status = json_res[0]["status"]
+            for i, res in enumerate(json_res):
+                st = self.check_status(res)
+                if i == 0:
+                    status = st
+                if st < 0:
+                    return st
 
         return status
