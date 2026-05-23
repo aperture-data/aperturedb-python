@@ -32,6 +32,7 @@ def test_resolve_resize_scale():
     assert resolved[1][0] == 10
     assert resolved[1][1] == 10
 
+
 def test_resolve_rotate():
     points = np.array([[10, 10]], dtype=float)
     meta = {"adb_image_width": 100, "adb_image_height": 100}
