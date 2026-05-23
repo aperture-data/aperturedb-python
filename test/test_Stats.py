@@ -38,7 +38,7 @@ class TestStats():
                             f"with value {second}"
                         )
                         seen.add(first_stripped)
-        
+
         missing = set(assertions.keys()) - seen
         assert not missing, f"Missing stats output for keys: {missing}"
 
