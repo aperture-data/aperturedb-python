@@ -92,12 +92,12 @@ class TestParallel():
                 return 2
 
             def getitem(self, idx):
-                if idx == 1:
-                    raise Exception("Simulated do_batch exception")
                 return [{"FindImage": {}}], []
 
+        pq = ParallelQuery(db)
+
         closed_count = [0]
-        original_clone = db.clone
+        original_clone = pq.client.clone
 
         def mock_clone():
             cloned = original_clone()
@@ -108,10 +108,16 @@ class TestParallel():
                 original_close()
             cloned.close = mock_close
             return cloned
-        monkeypatch.setattr(db, "clone", mock_clone)
+        monkeypatch.setattr(pq.client, "clone", mock_clone)
+
+        original_do_batch = pq.do_batch
+        def mock_do_batch(client, batch_start, data):
+            if batch_start == 1:
+                raise Exception("Simulated do_batch exception")
+            original_do_batch(client, batch_start, data)
+        monkeypatch.setattr(pq, "do_batch", mock_do_batch)
 
         # Test exception in do_batch
-        pq = ParallelQuery(db)
         pq.query(MockQueryGenerator(), batchsize=1, numthreads=1)
         # Should close even if exception occurred in do_batch
         assert closed_count[0] == 1

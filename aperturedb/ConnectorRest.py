@@ -163,6 +163,10 @@ class ConnectorRest(Connector):
         for blob in blob_array:
             files.append(('blobs', blob))
 
+        # Ensure session is created if missing
+        if getattr(self, "http_session", None) is None:
+            self.connect(details="Initial connect from _query")
+
         # Set Auth token, only when not authenticated before
         if self.shared_data.session and self.shared_data.session.valid():
             headers = {'Authorization': "Bearer " +
@@ -210,4 +214,12 @@ class ConnectorRest(Connector):
 
     def _connect(self):
         logger.info("Connecting to ApertureDB using REST")
+        if getattr(self, "http_session", None) is None:
+            self.http_session = requests.Session()
+            if self.config.verify_hostname:
+                if getattr(self.config, "ca_cert", None):
+                    adapter = CustomHTTPAdapter(ca_cert=self.config.ca_cert)
+                else:
+                    adapter = CustomHTTPAdapter(ca_cert=None)
+                self.http_session.mount('https://', adapter=adapter)
         self.connected = True
