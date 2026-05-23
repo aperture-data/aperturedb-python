@@ -105,15 +105,13 @@ class ImageDownloader(Parallelizer.Parallelizer):
         retries = 0
         imgdata = None
         downloaded = False
-        imgdata = None
         while True:
             try:
                 imgdata = requests.get(url, timeout=10)
                 downloaded = True
             except requests.exceptions.RequestException as e:
                 logger.warning(
-                    "Error with GET for url: %s (retry %d).", url, retries)
-                logger.exception(e)
+                    "Error with GET for url: %s (retry %d).", url, retries, exc_info=True)
 
             if downloaded and imgdata is not None and imgdata.ok:
                 break
@@ -139,8 +137,11 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 logger.exception(f"Downloaded image cannot be decoded: {url}")
                 os.remove(filename)
                 self.error_counter += 1
+        elif not downloaded:
+            logger.error(f"Failed to download URL (connection/timeout error): {url}")
+            self.error_counter += 1
         else:
-            logger.error(f"URL not found: {url}")
+            logger.error(f"URL not found or returned error: {url}")
             self.error_counter += 1
 
         self.times_arr.append(time.time() - start)

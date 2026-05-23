@@ -48,8 +48,11 @@ class Sources():
             try:
                 try:
                     imgdata = self.http_client.get(url, timeout=10)
-                except TypeError:
-                    imgdata = self.http_client.get(url)
+                except TypeError as e:
+                    if "unexpected keyword argument" in str(e) and "timeout" in str(e):
+                        imgdata = self.http_client.get(url)
+                    else:
+                        raise
 
                 success = imgdata.ok and ("Content-Length" not in imgdata.headers or int(
                     imgdata.headers["Content-Length"]) == imgdata.raw._fp_bytes_read)
