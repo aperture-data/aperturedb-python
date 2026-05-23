@@ -64,6 +64,11 @@ def gen_execute_batch_sets(base_executor):
             raise Exception("Query set must be a list of lists")
         set_total = len(first_element)
 
+        if commands_per_query is None:
+            commands_per_query = [1] * set_total
+        if blobs_per_query is None:
+            blobs_per_query = [0] * set_total
+
         # Check if blobs are a simple array or nested array of blobs
         per_set_blobs = isinstance(blob_set, list) and len(
             blob_set) > 0 and isinstance(blob_set[0], list)
