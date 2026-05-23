@@ -155,3 +155,25 @@ def test_dynamic_batching_oversized_item():
     assert len(db.queries) == 10
     for q in db.queries:
         assert len(q) == 1
+def test_dask_dry_run(db: Connector):
+    from aperturedb.ParallelLoader import ParallelLoader
+    from aperturedb.EntityDataCSV import EntityDataCSV
+    from aperturedb.Utils import Utils
+    utils = Utils(db)
+
+    # Ensure starting clean
+    utils.remove_entities(class_name="Person")
+
+    # Create generator with Dask
+    generator = EntityDataCSV(
+        "./input/persons.adb.csv", use_dask=True, blobs_relative_to_csv=True)
+
+    # Run ParallelLoader with dry_run=True
+    loader = ParallelLoader(db, dry_run=True)
+    loader.ingest(generator, batchsize=503, numthreads=4, stats=True)
+
+    # Verify no objects were created
+    res, _ = db.query(
+        [{"FindEntity": {"with_class": "Person", "results": {"count": True}}}])
+    assert db.last_query_ok(), res
+    assert res[0]["FindEntity"]["count"] == 0
