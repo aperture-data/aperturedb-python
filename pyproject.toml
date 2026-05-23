@@ -40,6 +40,9 @@ aperturedb = "aperturedb"
 "Bug Reports" = "https://github.com/aperture-data/aperturedb-python/issues"
 
 [project.optional-dependencies]
+speedups = [
+    "pybase64",
+]
 # This is used when we build the docker image for notebook
 notebook = [
     "torch",

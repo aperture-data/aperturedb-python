@@ -3,19 +3,16 @@ import numpy as np
 import cv2
 import logging
 
-from torch.utils import data
-
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Connector import Connector
-
 
 logger = logging.getLogger(__name__)
 
 
-class ApertureDBDataset(data.Dataset):
+class ApertureDBTensorFlowDataset:
     """
-    This class implements a PyTorch Dataset for ApertureDB.
-    It is used to load images from ApertureDB into a PyTorch model.
+    This class implements a TensorFlow Dataset for ApertureDB.
+    It is used to load images from ApertureDB into a TensorFlow model.
     It can be initialized with a query that will be used to retrieve
     the images from ApertureDB.
     """
@@ -31,16 +28,19 @@ class ApertureDBDataset(data.Dataset):
         self.batch_start    = 0
         self.batch_end      = 0
         self.label_prop     = label_prop
+        self.label_type     = None
 
+        find_image_count = 0
         for i in range(len(query)):
 
             name = list(query[i].keys())[0]
             if name == "FindImage":
                 self.find_image_idx = i
+                find_image_count += 1
 
-        if self.find_image_idx is None:
+        if find_image_count != 1:
             logger.error(
-                "Query error. The query must contain one FindImage command")
+                "Query error. The query must contain exactly one FindImage command")
             raise Exception('Query Error')
 
         if not "results" in self.query[self.find_image_idx]["FindImage"]:
@@ -54,7 +54,7 @@ class ApertureDBDataset(data.Dataset):
                 results["list"].append(self.label_prop)
 
         self.query[self.find_image_idx]["FindImage"]["batch"] = {}
-        self.query[self.find_image_idx]["FindImage"]["blobs"] = True
+        self.query[self.find_image_idx]["FindImage"]["blobs"] = False
 
         try:
             _, r, b = execute_query(
@@ -66,27 +66,7 @@ class ApertureDBDataset(data.Dataset):
                 f"Query error: {self.query} {self.client.get_last_response_str()}")
             raise
 
-    def __getitem__(self, index):
-
-        if index >= self.total_elements:
-            raise StopIteration
-
-        if not self.is_in_range(index):
-            self.get_batch(index)
-
-        idx = index % self.batch_size
-        img   = self.batch_images[idx]
-        label = self.batch_labels[idx]
-
-        nparr = np.frombuffer(img, dtype=np.uint8)
-        img   = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        img   = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        return img, label
-
-    def __len__(self):
-
-        return self.total_elements
+        self.query[self.find_image_idx]["FindImage"]["blobs"] = True
 
     def is_in_range(self, index):
 
@@ -153,3 +133,41 @@ class ApertureDBDataset(data.Dataset):
         except:
             logger.error(f"Query error: {self.client.get_last_response_str()}")
             raise
+
+    def generator(self):
+        for index in range(self.total_elements):
+            if not self.is_in_range(index):
+                self.get_batch(index)
+
+            idx = index % self.batch_size
+            img   = self.batch_images[idx]
+            label = self.batch_labels[idx]
+
+            nparr = np.frombuffer(img, dtype=np.uint8)
+            img   = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            img   = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            yield img, label
+
+    def get_dataset(self):
+        import tensorflow as tf
+
+        if self.label_type is None:
+            if self.total_elements > 0:
+                self.get_batch(0)
+                if isinstance(self.batch_labels[0], int):
+                    self.label_type = tf.int32
+                elif isinstance(self.batch_labels[0], float):
+                    self.label_type = tf.float32
+                else:
+                    self.label_type = tf.string
+            else:
+                self.label_type = tf.string
+
+        return tf.data.Dataset.from_generator(
+            self.generator,
+            output_signature=(
+                tf.TensorSpec(shape=(None, None, 3), dtype=tf.uint8),
+                tf.TensorSpec(shape=(), dtype=self.label_type)
+            )
+        )
