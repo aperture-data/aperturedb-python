@@ -6,7 +6,7 @@ ARG PIP_TRUSTED_HOST=pypi.org
 RUN mkdir /aperturedata
 
 # Install CLIP (for running transformers)
-RUN PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} pip install git+https://github.com/openai/CLIP.git
+RUN PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} pip install git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
 
 RUN apt update && apt install -y curl && apt clean && rm -rf /var/lib/apt/lists/*
 

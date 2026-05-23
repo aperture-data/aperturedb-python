@@ -6,9 +6,9 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 error_message = """
-CLIP transformer requires git+https://github.com/openai/CLIP.git and torch
+CLIP transformer requires git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6 and torch
 Install with: pip install aperturedb[complete], followed by explicit install of CLIP.
-Can be done with : "pip install git+https://github.com/openai/CLIP.git" in the same
+Can be done with : "pip install git+https://github.com/openai/CLIP.git@d05afc436d78f1c48dc0dbf8e5980a9d471f35f6" in the same
 venv as aperturedb.
 """
 
