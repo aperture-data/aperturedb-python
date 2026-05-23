@@ -282,7 +282,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             if transformers:
                 raise ValueError("Transformers cannot be used with Dask mode.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
-            self.daskmanager = DaskManager(num_workers=numthreads)
+            self.daskManager = DaskManager(num_workers=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
@@ -292,7 +292,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 generator = transformer(generator, client=self.client)
 
         if use_dask:
-            results, self.total_actions_time = self.daskmanager.run(
+            results, self.total_actions_time = self.daskManager.run(
                 self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run)
             self.actual_stats = []
             for result in results:
