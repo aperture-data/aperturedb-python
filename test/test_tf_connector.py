@@ -15,9 +15,9 @@ class TestTfDatasets():
 
         count = 0
         # Iterate over dataset.
-        for img, label in dataset:
-            if tf.size(img).numpy() == 0:
-                logger.error("Empty image?")
+        for data, label in dataset:
+            if tf.size(data).numpy() == 0:
+                logger.error("Empty data?")
                 assert False
             count += 1
         assert count == expected_length
@@ -85,8 +85,8 @@ class TestTfDatasets():
 
         start = time.time()
         count = 0
-        for imgs, labels in batched_dataset:
-            count += tf.shape(imgs)[0].numpy()
+        for data, labels in batched_dataset:
+            count += tf.shape(data)[0].numpy()
         assert count == len_limit
 
         time_taken = time.time() - start

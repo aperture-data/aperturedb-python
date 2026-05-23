@@ -20,11 +20,11 @@ class TestTorchDatasets():
 
         count = 0
         # Iterate over dataset.
-        for img in dataset:
-            if len(img[0]) < 0:
-                logger.error("Empty image?")
+        for data in dataset:
+            if len(data[0]) < 0:
+                logger.error("Empty data?")
                 assert True == False
-            count += len(img[1]) if isinstance(dataset, DataLoader) else 1
+            count += len(data[1]) if isinstance(dataset, DataLoader) else 1
         assert count == expected_length
 
         time_taken = time.time() - start
