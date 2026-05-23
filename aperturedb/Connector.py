@@ -135,7 +135,7 @@ class Connector(object):
             If True, connects immediately instead of waiting for the first query, but does not authenticate until the first query or explicitly requested.
 
     The Configuration class options:
-    host,port,user,password,token,use_ssl,use_keepalive,retry_interval_seconds,retry_max_attempts
+    host,port,username,password,token,use_ssl,use_keepalive,retry_interval_seconds,retry_max_attempts
     are all ignored in the initializer if a config or key is passed in.
 
     If a key is passed in, it is chosen over a config.

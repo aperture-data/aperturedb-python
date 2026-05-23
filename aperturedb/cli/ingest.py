@@ -369,7 +369,8 @@ def generate_embedding_csv_from_image_csv(
     all_enrichments.insert(0, "image_properties")
     data = _apply_pipeline(data, all_enrichments,
                            adb_data_source=f"{os.path.basename(input_file)}")
-    filename = f"{os.path.basename(input_file)}_{all_enrichments[-1]}"
+    suffix = os.path.splitext(os.path.basename(str(all_enrichments[-1])))[0]
+    filename = f"{os.path.basename(input_file)}_{suffix}"
     metadata = []
     connection = []
     embeddings = []

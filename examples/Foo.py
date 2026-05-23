@@ -4,7 +4,7 @@ from aperturedb.transformers.transformer import Transformer
 class Foo(Transformer):
     """
     An example of a non-packaged enrichment step.
-    example usage in adb (The argument to cli is --user-enrich):
+    Example usage in adb (The argument to CLI is --user-enrich):
     adb ingest generate examples/CelebADataKaggle.py --sample-count 1 --user-enrich examples/Foo.py
     """
 
