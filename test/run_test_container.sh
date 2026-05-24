@@ -9,17 +9,26 @@ function check_containers_networks(){
     docker network ls
 }
 
+function get_sudo() {
+    if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+        echo "sudo"
+    else
+        echo ""
+    fi
+}
+
 function run_aperturedb_instance(){
     set -e
     TAG=$1
     #Ensure clean environment (as much as possible)
     RUNNER_NAME=$TAG docker compose -f docker-compose.yml down --remove-orphans
     docker network rm ${TAG}_host_default || true
+    docker network rm ${TAG}_default || true
 
     # ensure latest db
     docker compose pull
 
-    rm -rf output
+    $(get_sudo) rm -rf output
     mkdir -m 777 output
 
     docker network create ${TAG}_host_default
@@ -37,6 +46,29 @@ function run_aperturedb_instance(){
 
 IP_REGEX='[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
 
+function teardown() {
+    echo "Tearing down containers and networks..."
+    if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+        RUNNER_NAME="${RUNNER_NAME}_http" docker compose -f docker-compose.yml down --remove-orphans || true
+        docker network rm "${RUNNER_NAME}_http_host_default" || true
+        docker network rm "${RUNNER_NAME}_http_default" || true
+    fi
+    if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+        RUNNER_NAME="${RUNNER_NAME}_non_http" docker compose -f docker-compose.yml down --remove-orphans || true
+        docker network rm "${RUNNER_NAME}_non_http_host_default" || true
+        docker network rm "${RUNNER_NAME}_non_http_default" || true
+    fi
+}
+trap teardown EXIT
+
+# The LOG_PATH and RUNNER_INFO_PATH are set to the current working directory
+LOG_PATH="$(pwd)/aperturedb/logs"
+TESTING_LOG_PATH="/aperturedb/test/server_logs"
+RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
+
+$(get_sudo) mkdir -p "$RUNNER_INFO_PATH"
+$(get_sudo) chmod -R 777 "$LOG_PATH" || true
+
 # Check if TEST_PROTOCOL is set, otherwise default to both
 TEST_PROTOCOL=${TEST_PROTOCOL:-"both"}
 
@@ -47,11 +79,6 @@ fi
 if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
     GATEWAY_NON_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_non_http" | grep $IP_REGEX )
 fi
-
-# The LOG_PATH and RUNNER_INFO_PATH are set to the current working directory
-LOG_PATH="$(pwd)/aperturedb/logs"
-TESTING_LOG_PATH="/aperturedb/test/server_logs"
-RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
 check_containers_networks | tee "$RUNNER_INFO_PATH"/runner_state.log
 
