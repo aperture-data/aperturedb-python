@@ -83,7 +83,6 @@ class TestParallel():
             assert False
 
     def test_parallel_query_worker_closes_connection(self, db, monkeypatch):
-        from aperturedb.ParallelQuery import ParallelQuery
         from aperturedb.QueryGenerator import QueryGenerator
         import threading
 

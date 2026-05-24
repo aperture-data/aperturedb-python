@@ -4,6 +4,7 @@ from aperturedb import Parallelizer
 import numpy as np
 import logging
 import inspect
+import threading
 
 
 from aperturedb.DaskManager import DaskManager
@@ -65,6 +66,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.blobs_per_query = 0
         self.daskManager = None
         self.batch_command = execute_query
+        self.error_counter_lock = threading.Lock()
 
     def generate_batch(self, data: List[Tuple[Commands, Blobs]]) -> Tuple[Commands, Blobs]:
         """
@@ -193,7 +195,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["objects_existed"] = sum(
                     [v['status'] == 2 for i in r for k, v in i.items()])
             elif result == 1:
-                self.error_counter += 1
+                with self.error_counter_lock:
+                    self.error_counter += 1
                 worker_stats["succeeded_queries"] = 0
                 worker_stats["succeeded_commands"] = 0
                 worker_stats["objects_existed"] = 0
@@ -235,6 +238,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
             logger.info(
                 f"Worker {thid} executing {total_batches} batches, {self.stats=}")
+            executed_batches = 0
             for i in range(total_batches):
                 if not run_event.is_set():
                     break
@@ -248,11 +252,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     logger.exception(e)
                     logger.warning(
                         f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
-                    self.error_counter += 1
+                    with self.error_counter_lock:
+                        self.error_counter += 1
 
+                executed_batches += 1
                 if self.stats:
                     self.pb.update(batch_end - batch_start)
-            logger.info(f"Worker {thid} executed {total_batches} batches")
+            logger.info(f"Worker {thid} executed {executed_batches} batches")
         finally:
             # Explicitly close the connection to avoid exhausting server connection limits
             if client is not self.client and hasattr(client, 'close') and callable(client.close):
@@ -296,7 +302,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
             for result in results:
                 if result is not None:
                     self.times_arr.extend(result.times_arr)
-                    self.error_counter += result.error_counter
+                    with self.error_counter_lock:
+                        self.error_counter += result.error_counter
                     self.actual_stats.append(
                         {"succeeded_queries": result.succeeded_queries,
                          "succeeded_commands": result.succeeded_commands,
