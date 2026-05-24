@@ -77,6 +77,7 @@ class TestUserConvenience():
             client.query("[{\"FindEntity\": {\"_ref\": 1}}]")
             assert posts == 2  # 1 auth, 1 query
             assert client.http_session is not None
+            old_session = client.http_session
 
             # Explicitly close the connector
             client.close()
@@ -89,5 +90,6 @@ class TestUserConvenience():
             # But let's check posts
             assert posts >= 3
             assert client.http_session is not None
+            assert client.http_session is not old_session
         finally:
             Session.post = old_post
