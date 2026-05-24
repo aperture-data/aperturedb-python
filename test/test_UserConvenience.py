@@ -85,10 +85,7 @@ class TestUserConvenience():
 
             # Query 2: Should transparently recreate the session
             client.query("[{\"FindEntity\": {\"_ref\": 2}}]")
-            # Since auth is already done, it only does 1 query call?
-            # Wait, Should authentication be redone? We still have client.shared_data.session.valid()
-            # But let's check posts
-            assert posts >= 3
+            assert posts == 3
             assert client.http_session is not None
             assert client.http_session is not old_session
         finally:
