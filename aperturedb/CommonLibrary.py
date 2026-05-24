@@ -322,8 +322,10 @@ def execute_query(client: Connector, query: Commands,
         num_commands = len(query) if isinstance(query, list) else 1
         truncated_query = query[:2] if isinstance(
             query, list) and num_commands > 2 else query
-        query_summary = f"{num_commands} commands (showing first 2: {
-            truncated_query})" if num_commands > 2 else str(query)
+        query_summary = (
+            f"{num_commands} commands (showing first 2: {truncated_query})"
+            if num_commands > 2 else str(query)
+        )
         logger.error(
             f"Failed query = {query_summary} with response = {censor_tokens(r)}")
         result = 1

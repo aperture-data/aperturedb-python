@@ -49,7 +49,7 @@ def gen_execute_batch_sets(base_executor):
     def execute_batch_sets(client, query_set, blob_set, success_statuses: Optional[list[int]] = None,
                            response_handler: Optional[Callable] = None, commands_per_query: Optional[list[int]] = None,
                            blobs_per_query: Optional[list[int]] = None,
-                           strict_response_validation: bool = False, cmd_index: int = None,
+                           strict_response_validation: bool = False, cmd_index: Optional[int] = None,
                            error_handler: Optional[Callable] = None):
 
         if success_statuses is None:
@@ -69,7 +69,7 @@ def gen_execute_batch_sets(base_executor):
         if blobs_per_query is None:
             blobs_per_query = [0] * set_total
 
-        logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
+        logger.info("Execute Batch Sets = Batch Size {0}  Commands Per Query {1} Blobs Per Query {2}".format(
             batch_size, commands_per_query, blobs_per_query))
 
         # Check if blobs are a simple array or nested array of blobs
