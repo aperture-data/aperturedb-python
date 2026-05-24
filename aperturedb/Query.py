@@ -278,7 +278,7 @@ class QueryBuilder():
             if len(query) != 1:
                 raise ValueError("Command dict must have exactly 1 key")
             return list(query.keys())[0]
-        elif isinstance(query, list) and len(query) >= 2 and isinstance(query[0], dict) \
+        elif isinstance(query, list) and len(query) == 2 and isinstance(query[0], dict) \
                 and query[0] and all(k in known_constraint_keywords for k in query[0].keys()) \
                 and isinstance(query[1], dict):
             if len(query[1]) != 1:
