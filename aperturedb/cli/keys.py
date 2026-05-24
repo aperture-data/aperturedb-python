@@ -6,7 +6,7 @@ from aperturedb.cli.console import console
 from aperturedb.Configuration import Configuration
 from aperturedb.Connector import Connector
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 
 
 @app.command(help="Create Key for a user")
