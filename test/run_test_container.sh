@@ -102,12 +102,17 @@ wait_for_stack() {
         local lenz_ready=0
         local nginx_ready=0
 
-        if docker run --rm --network=${network} curlimages/curl:latest \
-                nc -z -w 2 lenz 58085 >/dev/null 2>&1; then
+        if docker run --rm --network=${network} --entrypoint nc curlimages/curl:latest \
+                -z -w 2 lenz 58085 >/dev/null 2>&1; then
             lenz_ready=1
         fi
 
-        if [[ "$tag" == *"_http" ]]; then
+        if [[ "$tag" == *"_non_http" ]]; then
+            if [ "$lenz_ready" -eq 1 ]; then
+                echo "Stack ${tag} is ready after ${elapsed}s"
+                return 0
+            fi
+        elif [[ "$tag" == *"_http" ]]; then
             if docker run --rm --network=${network} curlimages/curl:latest \
                     -fsS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
                 nginx_ready=1
