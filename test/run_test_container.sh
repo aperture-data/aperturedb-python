@@ -155,6 +155,7 @@ if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
         -e GATEWAY="nginx" \
         -e FILTER="http" \
+        -e SKIP_SLOW_TESTS="${SKIP_SLOW_TESTS:-false}" \
         $REPOSITORY &
     pid1=$!
 fi
@@ -174,6 +175,7 @@ if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
         -e GATEWAY="lenz" \
         -e FILTER="not http" \
+        -e SKIP_SLOW_TESTS="${SKIP_SLOW_TESTS:-false}" \
         $REPOSITORY &
     pid2=$!
 fi

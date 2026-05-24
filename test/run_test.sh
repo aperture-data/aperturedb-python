@@ -36,7 +36,6 @@ else
 fi
 # capture errors
 set +e
-
 SAFE_FILTER=$(printf "%s" "$FILTER" | tr -c 'a-zA-Z0-9_-' '_')
 if [ -n "$APERTUREDB_LOG_PATH" ]; then
 	CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${SAFE_FILTER}"
@@ -45,8 +44,19 @@ else
 fi
 mkdir -p "$CLIENT_PATH"
 
-if [ -n "$FILTER" ]; then
-	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$FILTER" test_*.py -v | tee "${CLIENT_PATH}/test.log"
+if [ "${SKIP_SLOW_TESTS:-false}" == "true" ]; then
+    echo "Skipping slow and external tests for this run..."
+    if [ -n "$FILTER" ]; then
+        pytest_filter="${FILTER} and not slow and not external_network"
+    else
+        pytest_filter="not slow and not external_network"
+    fi
+else
+    pytest_filter="${FILTER}"
+fi
+
+if [ -n "$pytest_filter" ]; then
+	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$pytest_filter" test_*.py -v | tee "${CLIENT_PATH}/test.log"
 else
 	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb test_*.py -v | tee "${CLIENT_PATH}/test.log"
 fi
