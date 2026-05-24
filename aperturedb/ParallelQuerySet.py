@@ -53,7 +53,7 @@ def gen_execute_batch_sets(base_executor):
                            error_handler: Optional[Callable] = None):
 
         if success_statuses is None:
-            success_statuses = [0]
+            success_statuses = ParallelQuery.success_statuses
 
         logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
             len(query_set), commands_per_query, blobs_per_query))
