@@ -26,7 +26,7 @@ def load_fuse():
             "fuse not found for this env. This is not critical for adb to continue.")
 
 
-app = typer.Typer(callback=load_fuse)
+app = typer.Typer(callback=load_fuse, pretty_exceptions_enable=False)
 
 
 class OutputTypes(str, Enum):
