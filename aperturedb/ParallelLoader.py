@@ -206,10 +206,10 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         print(f"Total time (s): {self.total_actions_time}")
         print(f"Total queries executed: {total_queries_exec}")
 
-        succeeded_queries = sum([stat["succeeded_queries"]
-                                for stat in self.actual_stats])
-        succeeded_commands = sum([stat["succeeded_commands"]
-                                  for stat in self.actual_stats])
+        succeeded_queries = sum(stat["succeeded_queries"]
+                                for stat in self.actual_stats)
+        succeeded_commands = sum(stat["succeeded_commands"]
+                                 for stat in self.actual_stats)
 
         if succeeded_queries == 0:
             print("All queries failed!")

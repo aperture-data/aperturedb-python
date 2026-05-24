@@ -17,7 +17,7 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb/db* /workspace/test/aperturedb/logs*"
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb"
       continue-on-error: true
 
     - uses: actions/checkout@v3
@@ -67,3 +67,49 @@ jobs:
         LENZ_TAG: dev
       run: ./ci.sh
       shell: bash
+
+  run_test_conda_gpu:
+
+    runs-on:
+    - self-hosted
+    - deployer
+
+    steps:
+
+    - name: Cleanup previous run
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb"
+      continue-on-error: true
+
+    - uses: actions/checkout@v3
+
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASS }}
+
+    - name: Login to Google Cloud
+      uses: google-github-actions/setup-gcloud@v0
+      with:
+        service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        project_id:          ${{ secrets.GCP_SERVICE_ACCOUNT_PROJECT_ID }}
+        export_default_credentials: true
+
+    - name: Build tests on pytorch GPU image
+      run: |
+        rm -rf docker/pytorch-gpu/aperturedata
+        mkdir -p docker/pytorch-gpu/aperturedata
+        cp -r aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata
+        bash docker/pytorch-gpu/build.sh
+      shell: bash
+
+    - name: Run Tests
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+        RUNNER_NAME: ${{ runner.name }}_${{ github.run_id }}
+      run: |
+        cd test
+        ./run_test_container.sh aperturedata/aperturedb-pytorch-gpu
