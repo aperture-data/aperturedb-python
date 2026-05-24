@@ -15,9 +15,11 @@ class DummyGeneratorDaskBacked(Subscriptable):
     def __init__(self):
         super().__init__()
         self.use_dask = True
+
         class DummyDF:
             def map_partitions(self):
                 pass
+
             def __len__(self):
                 return 1
         self.df = DummyDF()
@@ -34,6 +36,7 @@ class DummyGeneratorPandasBacked(Subscriptable):
         super().__init__()
         if with_use_dask_attr:
             self.use_dask = False
+
         class DummyDF:
             def __len__(self):
                 return 1
@@ -101,14 +104,14 @@ class TestParallel():
         # use_dask=None still falls back to generator.use_dask
         querier = ParallelQuery(db, dry_run=True, use_dask=None)
         generator = DummyGeneratorDaskBacked()
-        
+
         mock_dask_manager_class = MagicMock()
         mock_instance = mock_dask_manager_class.return_value
         mock_instance.run.return_value = ([], 0)
-        
+
         with patch("aperturedb.ParallelQuery.DaskManager", mock_dask_manager_class):
             querier.query(generator)
-            
+
             assert querier.use_dask is None
             mock_dask_manager_class.assert_called_once()
             mock_instance.run.assert_called_once()

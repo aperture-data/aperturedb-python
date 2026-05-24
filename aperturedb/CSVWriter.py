@@ -32,7 +32,7 @@ def convert_entity_data(input, entity_class: str, unique_key: Optional[str] = No
     if unique_key:
         if unique_key not in df.columns:
             raise ValueError(
-                f"unique_key {unique_key} not found in the input data")
+                "unique_key {} not found in the input data".format(unique_key))
         df[f"constraint_{unique_key}"] = df[unique_key]
     return df
 
@@ -70,7 +70,8 @@ def convert_image_data(input, source_column: str, source_type: Optional[str] = N
 
     if source_column not in df.columns:
         raise ValueError(
-            f"source_column {source_column} not found in the input data"
+            "source_column {} not found in the input data".format(
+                source_column)
         )
 
     if source_type is None:
@@ -90,7 +91,7 @@ def convert_image_data(input, source_column: str, source_type: Optional[str] = N
     if unique_key is not None:
         if unique_key not in df.columns:
             raise ValueError(
-                f"unique_key {unique_key} not found in the input data")
+                "unique_key {} not found in the input data".format(unique_key))
         df[f"constraint_{unique_key}"] = df[unique_key]
 
     if format is not None:
@@ -154,14 +155,16 @@ def convert_connection_data(input,
         source_column = source_property
     if source_column not in df.columns:
         raise ValueError(
-            f"source_column {source_column} not found in the input data"
+            "source_column {} not found in the input data".format(
+                source_column)
         )
 
     if destination_column is None:
         destination_column = destination_property
     if destination_column not in df.columns:
         raise ValueError(
-            f"destination_column {destination_column} not found in the input data"
+            "destination_column {} not found in the input data".format(
+                destination_column)
         )
 
     df.insert(0, 'ConnectionClass', connection_class)
@@ -172,7 +175,7 @@ def convert_connection_data(input,
     if unique_key:
         if unique_key not in df.columns:
             raise ValueError(
-                f"unique_key {unique_key} not found in the input data")
+                "unique_key {} not found in the input data".format(unique_key))
         df[f"constraint_{unique_key}"] = df[unique_key]
 
     return df
