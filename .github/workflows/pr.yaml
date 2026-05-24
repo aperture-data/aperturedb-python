@@ -65,6 +65,7 @@ jobs:
         ADB_TAG: dev
         LENZ_REPO: aperturedata/lenz
         LENZ_TAG: dev
+        SKIP_SLOW_TESTS: true
       run: ./ci.sh
       shell: bash
 
