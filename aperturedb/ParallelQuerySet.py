@@ -241,7 +241,7 @@ def gen_execute_batch_sets(base_executor):
                                     prev_query)
                             except ValueError as e:
                                 raise ValueError(
-                                    f"Constraints only implemented with single queries; query {result_number} not single item.") from e
+                                    f"Constraints only implemented with single queries; query {result_number} is not a single item.") from e
 
                             target_results = single_results[result_number][prev_query_cmd]
                             target_constraints = result_constraints[result_number]
