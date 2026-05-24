@@ -229,7 +229,7 @@ class Connector(object):
             self.authenticated = True
 
     def close(self):
-        if self.conn is not None:
+        if getattr(self, 'conn', None) is not None:
             self.conn.close()
             self.conn = None
         self.connected = False
