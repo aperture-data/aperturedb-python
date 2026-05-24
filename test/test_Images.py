@@ -40,7 +40,8 @@ def test_resolve_rotate():
     resolved = resolve(points, meta, operations)
     assert len(resolved) == 1
     assert resolved[0][0] == 90
-    assert abs(resolved[0][1] - 10) <= 1  # Account for floating point truncation differences
+    # Account for floating point truncation differences
+    assert abs(resolved[0][1] - 10) <= 1
 
 
 def test_resolve_ignored_operations():

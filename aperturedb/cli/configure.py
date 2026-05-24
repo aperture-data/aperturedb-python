@@ -124,7 +124,8 @@ def get_all_configs():
 def get_active_config(all_configs):
     active = all_configs.get("active")
     if not active:
-        console.log("No active configuration found. Please run adb config activate <name>")
+        console.log(
+            "No active configuration found. Please run adb config activate <name>")
         raise typer.Exit(code=2)
     if active.startswith("env:"):
         return all_configs["environment"][active[4:]]
@@ -134,7 +135,8 @@ def get_active_config(all_configs):
         elif "global" in all_configs and active in all_configs["global"]:
             return all_configs["global"][active]
         else:
-            console.log(f"Active configuration '{active}' not found in any config file.")
+            console.log(f"Active configuration '{
+                        active}' not found in any config file.")
             raise typer.Exit(code=2)
 
 

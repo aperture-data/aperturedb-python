@@ -375,6 +375,7 @@ class TestConfigure():
             with patch.multiple(typer,
                                 get_app_dir=MagicMock(return_value=tmp_global)):
                 runner = CliRunner()
-                result = runner.invoke(app, ["activate", "something", "--global"])
+                result = runner.invoke(
+                    app, ["activate", "something", "--global"])
                 assert result.exit_code == 2
                 assert not os.path.exists(fake_file)
