@@ -155,6 +155,8 @@ def test_dynamic_batching_oversized_item():
     assert len(db.queries) == 10
     for q in db.queries:
         assert len(q) == 1
+
+
 def test_dask_dry_run(db: Connector):
     from aperturedb.ParallelLoader import ParallelLoader
     from aperturedb.EntityDataCSV import EntityDataCSV
