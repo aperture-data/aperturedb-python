@@ -143,3 +143,34 @@ class TestTorchDatasets():
 
         self.validate_dataset(data_loader, len_limit)
         dist.destroy_process_group()
+
+    def test_findVideo_mocked(self):
+        from unittest.mock import patch
+
+        class DummyClient:
+            def clone(self):
+                return self
+
+            def get_last_response_str(self):
+                return ""
+
+        query = [{"FindVideo": {"results": {"list": ["prop"]}}}]
+
+        with patch('aperturedb.PyTorchDataset.execute_query') as mock_exec:
+            def side_effect(*args, **kwargs):
+                batch_dict = {"total_elements": 1}
+                entities = [{"prop": 1}]
+                r = [{"FindVideo": {"batch": batch_dict, "entities": entities}}]
+                b = [b"mock_video_bytes"]
+                return None, r, b
+
+            mock_exec.side_effect = side_effect
+            dataset = PyTorchDataset.ApertureDBDataset(
+                DummyClient(), query, label_prop="prop")
+
+            assert len(dataset) == 1
+            for blob, label in dataset:
+                assert isinstance(blob, bytes)
+                assert blob == b"mock_video_bytes"
+                assert label == 1
+                break

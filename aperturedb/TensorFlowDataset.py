@@ -205,6 +205,9 @@ class ApertureDBTensorFlowDataset:
                     _, r, _ = execute_query(
                         query=infer_query, blobs=[], client=self.client)
                     resp = r[self.command_idx][self.command_name]
+                    if resp.get("status", 0) != 0:
+                        raise Exception(
+                            f"Query Error: {resp.get('status')} {resp.get('info', '')}")
                     if self.label_prop and "entities" in resp and len(resp["entities"]) > 0:
                         sample_label = resp["entities"][0].get(self.label_prop)
                     else:
