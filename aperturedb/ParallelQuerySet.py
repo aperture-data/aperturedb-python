@@ -55,15 +55,12 @@ def gen_execute_batch_sets(base_executor):
         if success_statuses is None:
             success_statuses = ParallelQuery.success_statuses
 
-        logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
-            len(query_set), commands_per_query, blobs_per_query))
-
         batch_size = len(query_set)
 
         # test query set
         first_element = query_set[0]
         if not isinstance(first_element, list):
-            logger.error("First Element not a list: {first_element}")
+            logger.error(f"First Element not a list: {first_element}")
             raise Exception("Query set must be a list of lists")
         set_total = len(first_element)
 
@@ -71,6 +68,9 @@ def gen_execute_batch_sets(base_executor):
             commands_per_query = [1] * set_total
         if blobs_per_query is None:
             blobs_per_query = [0] * set_total
+
+        logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
+            batch_size, commands_per_query, blobs_per_query))
 
         # Check if blobs are a simple array or nested array of blobs
         per_set_blobs = isinstance(blob_set, list) and len(
