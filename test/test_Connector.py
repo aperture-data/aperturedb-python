@@ -42,4 +42,3 @@ class TestConnector:
         # Should not raise AttributeError
         connector.close()
         assert getattr(connector, "connected", True) is False
-

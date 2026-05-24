@@ -91,4 +91,3 @@ class TestUserConvenience():
             assert client.http_session is not None
         finally:
             Session.post = old_post
-
