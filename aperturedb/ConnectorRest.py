@@ -144,7 +144,9 @@ class ConnectorRest(Connector):
     def __del__(self):
         self.close()
 
-    def _query(self, query, blob_array = [], try_resume=True):
+    def _query(self, query, blob_array=None, try_resume=True):
+        if blob_array is None:
+            blob_array = []
         if getattr(self, 'http_session', None) is None:
             self._init_session()
         response_blob_array = []
