@@ -152,13 +152,13 @@ class TestTfDatasets():
         }]
 
         dataset_wrapper = ApertureDBTensorFlowDataset(
-            db, query)
+            db, query, label_prop="license")
         dataset = dataset_wrapper.get_dataset()
 
         count = 0
         for blob, label in dataset:
             assert isinstance(blob.numpy(), bytes)
-            assert label.numpy().decode("utf-8") == "none"
+            assert label.dtype == tf.int32
             count += 1
 
         assert count == utils.count_entities("_Blob")

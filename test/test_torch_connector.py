@@ -68,13 +68,13 @@ class TestTorchDatasets():
         }]
 
         dataset = PyTorchDataset.ApertureDBDataset(
-            db, query)
+            db, query, label_prop="license")
 
         assert len(dataset) == utils.count_entities("_Blob")
         for blob, label in dataset:
-            # For FindBlob, the return is raw bytes and label should be 'none' when no label_prop is provided
+            # For FindBlob, the return is raw bytes and label should be an int when label_prop='license'
             assert isinstance(blob, bytes)
-            assert label == "none"
+            assert isinstance(label, int)
             break
 
     def test_datasetWithMultiprocessing(self, db, utils, images):
