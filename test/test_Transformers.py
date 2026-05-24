@@ -22,7 +22,8 @@ def test_variable_annotation_counts():
         ([{"AddImage": {}}], []),
         ([{"AddImage": {}}, {"AddBoundingBox": {}}, {
          "AddBoundingBox": {}}, {"AddPolygon": {}}], []),
-        ([{"AddImage": {}}, {"AddPolygon": {}}, {"AddPolygon": {}}], [])
+        ([{"AddImage": {}}, {"AddPolygon": {}}, {"AddPolygon": {}}], []),
+        ([{"AddVideo": {}}, {"AddBoundingBox": {}}], [])
     ]
     dummy_data = DummyData(data)
 
@@ -31,7 +32,7 @@ def test_variable_annotation_counts():
         res = cp[i]
         for cmd in res[0]:
             cmd_name = list(cmd.keys())[0]
-            if cmd_name in ["AddImage", "AddBoundingBox", "AddPolygon"]:
+            if cmd_name in ["AddImage", "AddBoundingBox", "AddPolygon", "AddVideo"]:
                 assert cmd[cmd_name]["properties"]["adb_data_source"] == "test_source"
 
     bbp = BoundingBoxProperties(
@@ -43,7 +44,7 @@ def test_variable_annotation_counts():
             if cmd_name in ["AddBoundingBox", "AddPolygon"]:
                 assert cmd[cmd_name]["properties"]["annotation_source"] == "test_anno"
                 assert cmd[cmd_name]["properties"]["annotation_mode"] == "auto"
-            elif cmd_name == "AddImage":
+            elif cmd_name in ["AddImage", "AddVideo"]:
                 assert "properties" not in cmd[cmd_name] or "annotation_source" not in cmd[cmd_name]["properties"]
 
 
