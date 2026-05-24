@@ -172,10 +172,12 @@ class TestSources(unittest.TestCase):
         mock_client.get.return_value = mock_response
 
         self.sources.http_client = mock_client
-        success, img = self.sources.load_from_http_url("http://example.com/image.jpg", self.validator)
+        success, img = self.sources.load_from_http_url(
+            "http://example.com/image.jpg", self.validator)
 
         self.assertTrue(success)
-        mock_client.get.assert_called_once_with("http://example.com/image.jpg", timeout=10)
+        mock_client.get.assert_called_once_with(
+            "http://example.com/image.jpg", timeout=10)
 
     def test_http_typeerror_fallback(self):
         mock_client = MagicMock()
@@ -187,17 +189,20 @@ class TestSources(unittest.TestCase):
         # Raise TypeError with expected message on first call with timeout, succeed on second without
         def side_effect(*args, **kwargs):
             if 'timeout' in kwargs:
-                raise TypeError("get() got an unexpected keyword argument 'timeout'")
+                raise TypeError(
+                    "get() got an unexpected keyword argument 'timeout'")
             return mock_response
 
         mock_client.get.side_effect = side_effect
 
         self.sources.http_client = mock_client
-        success, img = self.sources.load_from_http_url("http://example.com/image.jpg", self.validator)
+        success, img = self.sources.load_from_http_url(
+            "http://example.com/image.jpg", self.validator)
 
         self.assertTrue(success)
         self.assertEqual(mock_client.get.call_count, 2)
-        mock_client.get.assert_any_call("http://example.com/image.jpg", timeout=10)
+        mock_client.get.assert_any_call(
+            "http://example.com/image.jpg", timeout=10)
         mock_client.get.assert_any_call("http://example.com/image.jpg")
 
     @patch('time.sleep', return_value=None)
@@ -205,10 +210,12 @@ class TestSources(unittest.TestCase):
         mock_client = MagicMock()
 
         # Raise RequestException on all calls
-        mock_client.get.side_effect = requests.exceptions.RequestException("connection error")
+        mock_client.get.side_effect = requests.exceptions.RequestException(
+            "connection error")
 
         self.sources.http_client = mock_client
-        success, img = self.sources.load_from_http_url("http://example.com/image.jpg", self.validator)
+        success, img = self.sources.load_from_http_url(
+            "http://example.com/image.jpg", self.validator)
 
         self.assertFalse(success)
         self.assertIsNone(img)

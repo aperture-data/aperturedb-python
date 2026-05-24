@@ -138,7 +138,8 @@ class ImageDownloader(Parallelizer.Parallelizer):
                 os.remove(filename)
                 self.error_counter += 1
         elif not downloaded:
-            logger.error(f"Failed to download URL (connection/timeout error): {url}")
+            logger.error(
+                f"Failed to download URL (connection/timeout error): {url}")
             self.error_counter += 1
         else:
             logger.error(f"URL not found or returned error: {url}")
