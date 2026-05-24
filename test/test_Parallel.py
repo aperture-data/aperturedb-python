@@ -111,6 +111,7 @@ class TestParallel():
         monkeypatch.setattr(pq.client, "clone", mock_clone)
 
         original_do_batch = pq.do_batch
+
         def mock_do_batch(client, batch_start, data):
             if batch_start == 1:
                 raise Exception("Simulated do_batch exception")
@@ -125,8 +126,8 @@ class TestParallel():
         # Test early exit when run_event is cleared
         closed_count[0] = 0
         run_event = threading.Event()
-        run_event.clear() # Not set, so worker breaks immediately
-        
+        run_event.clear()  # Not set, so worker breaks immediately
+
         # worker signature: worker(self, thid: int, generator, start: int, end: int, run_event)
         pq.worker(0, MockQueryGenerator(), 0, 1, run_event)
         assert closed_count[0] == 1
