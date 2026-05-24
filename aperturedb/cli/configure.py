@@ -32,7 +32,7 @@ APP_FULL_NAME = "CLI for aperturedb"
 APP_NAME = "aperturedb"
 APP_NAME_CLI = "adb"
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 
 
 def _config_file_path(as_global: bool) -> Path:

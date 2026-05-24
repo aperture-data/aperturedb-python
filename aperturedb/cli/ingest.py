@@ -14,7 +14,7 @@ from aperturedb.cli.console import console
 from tqdm import tqdm
 
 logger = logging.getLogger(__file__)
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 
 
 IngestType = Enum('IngestType', {k: str(k) for k in ObjectType._member_names_})
