@@ -192,7 +192,7 @@ class ApertureDBTensorFlowDataset:
 
         if self.label_type is None:
             if self.total_elements > 0:
-                # Infer label_type with a lightweight query (blobs=False, limit=1)
+                # Infer label_type with a lightweight query (blobs=False, batch_size=1)
                 import copy
                 infer_query = copy.deepcopy(self.query)
                 infer_query[self.command_idx][self.command_name]["blobs"] = False
