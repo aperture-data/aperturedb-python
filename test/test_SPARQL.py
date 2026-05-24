@@ -58,12 +58,6 @@ def load_cookbook(utils: Utils, db):
         os.chdir(original_dir)
 
 
-# Tag the test functions that depend on the setup as external_network
-def pytest_collection_modifyitems(items):
-    for item in items:
-        if "load_cookbook" in getattr(item, "fixturenames", ()):
-            item.add_marker("external_network")
-
 # Test functions that depends on the setup
 
 
@@ -76,6 +70,7 @@ def sparql(db):
     return sparql
 
 
+@pytest.mark.external_network
 @pytest.mark.parametrize("description,query", [
     ('Find all images with chicken and butter as ingredients',
      """
