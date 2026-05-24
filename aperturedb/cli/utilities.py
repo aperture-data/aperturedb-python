@@ -1,11 +1,11 @@
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Optional
 
 import typer
 
 from aperturedb.cli.console import console
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_enable=False)
 
 import aperturedb.cli.keys as keys
 import aperturedb.cli.tokens as tokens
@@ -97,3 +97,47 @@ def visualize_schema(
     s = utils.visualize_schema()
     result = s.render(filename, format=format)
     print(result)
+
+
+class ImageType(str, Enum):
+    PNG = "png"
+    JPG = "jpg"
+
+
+@app.command(name="generate-images", help="Generate placeholder images")
+def generate_images(
+    count: int = typer.Option(
+        1, "--count", "-c", help="Number of images to generate"),
+    size: str = typer.Option("256x256", "--size", "-s",
+                             help="Size of images (widthxheight)"),
+    output: str = typer.Option(
+        "/tmp/generated_image%%", "--output", "-o", help="Output file path pattern"),
+    zerofill: int = typer.Option(
+        0, "--zerofill", "-z", help="Number of zeros to pad the index with"),
+    imagetype: ImageType = typer.Option(
+        ImageType.PNG, "--imagetype", "-t", help="Type of image to generate (png, jpg)"),
+    manifest: Optional[str] = typer.Option(
+        None, "--manifest", "-m", help="Manifest file to write generated image paths to"),
+    append_text: str = typer.Option(
+        "", "--append-text", "-a", help="Text to append to the image")
+):
+    import aperturedb.cli.generate_images as generate_images_mod
+
+    size_tuple = (256, 256)
+    try:
+        parsed_size = generate_images_mod.ImageSize.parse(size)
+        size_tuple = (parsed_size.width, parsed_size.height)
+    except Exception as e:
+        typer.echo(f"Invalid size: {e}")
+        raise typer.Abort()
+
+    generator = generate_images_mod.ImageGenerator(
+        count=count,
+        size=size_tuple,
+        output=output,
+        zerofill=zerofill,
+        image_type=imagetype.value,
+        manifest=manifest,
+        append_text=append_text
+    )
+    generator.run()
