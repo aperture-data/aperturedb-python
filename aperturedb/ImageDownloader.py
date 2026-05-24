@@ -109,9 +109,11 @@ class ImageDownloader(Parallelizer.Parallelizer):
             try:
                 imgdata = requests.get(url, timeout=10)
                 downloaded = True
-            except requests.exceptions.RequestException:
+            except requests.exceptions.RequestException as e:
+                imgdata = None
+                downloaded = False
                 logger.warning(
-                    "Error with GET for url: %s (retry %d).", url, retries, exc_info=True)
+                    "Error with GET for url: %s (retry %d): %s", url, retries, e)
 
             if downloaded and imgdata is not None and imgdata.ok:
                 break

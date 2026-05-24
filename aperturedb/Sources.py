@@ -55,7 +55,7 @@ class Sources():
                         raise
 
                 success = imgdata.ok and ("Content-Length" not in imgdata.headers or int(
-                    imgdata.headers["Content-Length"]) == imgdata.raw._fp_bytes_read)
+                    imgdata.headers["Content-Length"]) == len(imgdata.content))
             except requests.exceptions.RequestException as e:
                 logger.warning(f"Error downloading object: {url} - {e}")
                 success = False
