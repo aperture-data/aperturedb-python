@@ -1,5 +1,6 @@
 import logging
 import random
+import pytest
 
 from aperturedb.Connector import Connector
 from aperturedb.ParallelQuery import ParallelQuery
@@ -145,12 +146,9 @@ class TestParallel():
         generator.use_dask = True
 
         loader = ParallelLoader(db)
-        try:
+        with pytest.raises(ValueError, match="Transformers cannot be used with Dask"):
             loader.ingest(generator, batchsize=2, numthreads=2,
                           stats=False, transformers=[DummyTransformer])
-            assert False, "Should have raised ValueError"
-        except ValueError as e:
-            assert "Transformers cannot be used with Dask" in str(e)
 
     def test_transformers_equivalence(self, db: Connector):
         '''

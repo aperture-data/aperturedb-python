@@ -294,7 +294,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
 
-        if transformers:
+        if transformers and len(generator) > 0:
             for transformer in transformers:
                 generator = transformer(generator, client=self.client)
 
