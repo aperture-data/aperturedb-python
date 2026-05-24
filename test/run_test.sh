@@ -30,7 +30,15 @@ set +e
 CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${FILTER}"
 CLIENT_PATH=${CLIENT_PATH// /_}
 mkdir -p ${CLIENT_PATH}
-PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$FILTER" test_*.py -v | tee ${CLIENT_PATH}/test.log
+
+if [ "${SKIP_SLOW_TESTS:-false}" == "true" ]; then
+    echo "Skipping slow and external tests for this run..."
+    pytest_filter="${FILTER} and not slow and not external_network"
+else
+    pytest_filter="${FILTER}"
+fi
+
+PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$pytest_filter" test_*.py -v | tee ${CLIENT_PATH}/test.log
 RESULT=$?
 cp error*.log -v ${CLIENT_PATH} || true
 
