@@ -96,7 +96,14 @@ class VideoDownloader(Parallelizer.Parallelizer):
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
 
-        videodata = requests.get(url)
+        try:
+            videodata = requests.get(url, timeout=10)
+        except requests.exceptions.RequestException as e:
+            print(f"Error with GET for url: {url} - {e}")
+            self.error_counter += 1
+            self.times_arr.append(time.time() - start)
+            return
+
         if videodata.ok:
             fd = open(filename, "wb")
             fd.write(videodata.content)
@@ -134,8 +141,12 @@ class VideoDownloader(Parallelizer.Parallelizer):
         print("====== ApertureDB VideoDownloader Stats ======")
 
         times = np.array(self.times_arr)
+        if len(times) <= 0:
+            print("Error: No downloads.")
+            return
+
         print("Avg Video download time(s):", np.mean(times))
-        print("Img download time std:", np.std(times))
+        print("Video download time std:", np.std(times))
         print("Avg download throughput (videos/s)):",
               1 / np.mean(times) * self.numthreads)
 
