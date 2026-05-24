@@ -15,7 +15,7 @@ import re
 
 # alnum for first character, then anum with - or _ for rest. Max Length 64
 CONFIG_NAME_RE = re.compile(
-    r'^([a-zA-Z0-9]([a-zA-Z0-9-_]){0,63})$'
+    r'^([a-zA-Z0-9]([a-zA-Z0-9-_]){0,63})'
 )
 
 
@@ -135,8 +135,8 @@ def get_active_config(all_configs):
         elif "global" in all_configs and active in all_configs["global"]:
             return all_configs["global"][active]
         else:
-            console.log(f"Active configuration '{
-                        active}' not found in any config file.")
+            console.log(f"Active configuration '{active}' "
+                        "not found in any config file.")
             raise typer.Exit(code=2)
 
 
@@ -261,7 +261,7 @@ def create(
                             style="bold yellow")
                 raise typer.Exit(code=2)
 
-        if not CONFIG_NAME_RE.match(name):
+        if not CONFIG_NAME_RE.fullmatch(name):
             console.log(
                 f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
             raise typer.Exit(code=2)
