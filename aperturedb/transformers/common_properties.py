@@ -42,6 +42,6 @@ class CommonProperties(Transformer):
                         src_properties["adb_main_object"] = self.adb_main_object
 
         except Exception as e:
-            logger.exception(e.with_traceback(None), stack_info=True)
+            logger.exception("Error applying common properties", stack_info=True)
 
         return x
