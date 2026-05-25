@@ -37,9 +37,10 @@ class CLIPPyTorchEmbeddings(Transformer):
 
                 if not getattr(self, "_descriptorset_initialized", False):
                     utils = self.get_utils()
-                    utils.add_descriptorset(
+                    success = utils.add_descriptorset(
                         self.search_set_name, dim=len(serialized) // 4, metric=["CS"])
-                    self._descriptorset_initialized = True
+                    if success or self.search_set_name in utils.get_descriptorset_list():
+                        self._descriptorset_initialized = True
 
                 # If the image already has an image_sha256, we use it.
                 image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
