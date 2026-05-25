@@ -48,22 +48,31 @@ def gen_execute_batch_sets(base_executor):
     # if blob_set is a list of lists, each inner list will be given to the inner
     #  execution
     #
-    def execute_batch_sets(client, query_set, blob_set, success_statuses: list[int] = [0],
-                           response_handler: Optional[Callable] = None, commands_per_query: list[int] = -1,
-                           blobs_per_query: list[int] = -1,
-                           strict_response_validation: bool = False, cmd_index: int = None):
+    def execute_batch_sets(client, query_set, blob_set, success_statuses: Optional[list[int]] = None,
+                           response_handler: Optional[Callable] = None, commands_per_query: Optional[list[int]] = None,
+                           blobs_per_query: Optional[list[int]] = None,
+                           strict_response_validation: bool = False, cmd_index: Optional[int] = None,
+                           error_handler: Optional[Callable] = None):
 
-        logger.info("Execute Batch Sets = Batch Size {0}  Comands Per Query {1} Blobs Per Query {2}".format(
-            len(query_set), commands_per_query, blobs_per_query))
+        if success_statuses is None:
+            success_statuses = ParallelQuery.success_statuses
 
         batch_size = len(query_set)
 
         # test query set
         first_element = query_set[0]
         if not isinstance(first_element, list):
-            logger.error("First Element not a list: {first_element}")
+            logger.error(f"First Element not a list: {first_element}")
             raise Exception("Query set must be a list of lists")
         set_total = len(first_element)
+
+        if commands_per_query is None:
+            commands_per_query = [1] * set_total
+        if blobs_per_query is None:
+            blobs_per_query = [0] * set_total
+
+        logger.info("Execute Batch Sets = Batch Size {0}  Commands Per Query {1} Blobs Per Query {2}".format(
+            batch_size, commands_per_query, blobs_per_query))
 
         # Check if blobs are a simple array or nested array of blobs
         per_set_blobs = isinstance(blob_set, list) and len(
@@ -270,7 +279,7 @@ def gen_execute_batch_sets(base_executor):
 
                 query_filter = constraint_filter
 
-            local_success_statuses = [0, 2]
+            local_success_statuses = success_statuses
 
             # queries are by row first, so we run query_filter on each query
             # we pass the entire row's data, then we retrieve all of the stored results for that row
@@ -300,7 +309,8 @@ def gen_execute_batch_sets(base_executor):
                                                                   commands_per_query[i],
                                                                   blobs_per_query[i],
                                                                   strict_response_validation=strict_response_validation,
-                                                                  cmd_index=cmd_index)
+                                                                  cmd_index=cmd_index,
+                                                                  error_handler=error_handler)
                 if response_handler != None and client.last_query_ok():
                     def map_to_set(query, query_blobs, resp, resp_blobs):
                         response_handler(
