@@ -321,15 +321,14 @@ def activate(
     """
     global_config_path = _config_file_path(True)
     try:
-        gc, ga = get_configurations(global_config_path.as_posix())
+        gc, _ = get_configurations(global_config_path.as_posix())
     except (FileNotFoundError, json.JSONDecodeError):
-        gc, ga = {}, None
+        gc = {}
 
     config_path = _config_file_path(as_global)
     configs = {}
-    ac = None
     try:
-        configs, ac = get_configurations(config_path.as_posix())
+        configs, _ = get_configurations(config_path.as_posix())
         if name not in configs and name not in gc:
             console.log(f"Configuration {name} not found")
             raise typer.Exit(code=2)
