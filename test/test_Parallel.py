@@ -149,7 +149,7 @@ class TestParallel():
         with pytest.raises(ValueError, match="Transformers cannot be used with Dask"):
             loader.ingest(generator, batchsize=2, numthreads=2,
                           stats=False, transformers=[DummyTransformer])
-            
+
         # Test manual wrapping also gets rejected
         transformer = DummyTransformer(generator, client=db)
         with pytest.raises(ValueError, match="Transformers cannot be used with Dask"):
