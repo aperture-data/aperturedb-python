@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 class DummyTransformer(Transformer):
     def __init__(self, generator, client=None):
         super().__init__(generator, client=client)
-        assert client is not None, "Client was not passed to transformer!"
+        if client is None:
+            pytest.fail("Client was not passed to transformer!")
 
     def getitem(self, idx):
         query, blobs = self.data[idx]
@@ -156,9 +157,9 @@ class TestParallel():
             loader.ingest(transformer, batchsize=2, numthreads=2, stats=False)
 
     def test_transformers_equivalence(self, db: Connector):
-        '''
+        """
         Verifies that using transformers parameter is equivalent to manual wrapping.
-        '''
+        """
         elements = 10
 
         # Manual wrapping
@@ -175,6 +176,19 @@ class TestParallel():
 
         assert loader1.get_succeeded_queries() == loader2.get_succeeded_queries()
         assert loader1.get_succeeded_queries() > 0
+
+    def test_query_transformers(self, db: Connector):
+        """
+        Verifies that transformers are correctly applied when calling ParallelQuery.query().
+        """
+        elements = 10
+        generator = GeneratorWithErrors(elements=elements, error_pct=0)
+
+        querier = ParallelQuery(db)
+        querier.query(generator, batchsize=2, numthreads=2,
+                      stats=False, transformers=[DummyTransformer])
+
+        assert querier.get_succeeded_queries() > 0
 
 
 def test_dask_dry_run(db: Connector):
