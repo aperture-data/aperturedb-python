@@ -284,9 +284,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
             transformers (list, optional): A list of Transformer classes to apply to the data. Defaults to None.
         """
 
+        from aperturedb.transformers.transformer import Transformer
+
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:
-            if transformers:
+            if transformers or isinstance(generator, Transformer):
                 raise ValueError("Transformers cannot be used with Dask mode.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskManager = DaskManager(num_workers=numthreads)
