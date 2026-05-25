@@ -130,6 +130,21 @@ class GeneratorWithLargeBlobs(Subscriptable):
         return query, blobs
 
 
+class GeneratorWithSmallImages(Subscriptable):
+    def __init__(self, elements=10, blob_size=10) -> None:
+        super().__init__()
+        self.elements = elements
+        self.blob_size = blob_size
+
+    def __len__(self):
+        return self.elements
+
+    def getitem(self, subscript):
+        query = [{"AddImage": {}}]
+        blobs = [b"0" * self.blob_size]
+        return query, blobs
+
+
 class MockClient:
     def __init__(self):
         from types import SimpleNamespace
@@ -187,6 +202,30 @@ def test_dynamic_batching_oversized_item():
     assert len(db.queries) == 10
     for q in db.queries:
         assert len(q) == 1
+
+
+def test_dynamic_batching_add_image():
+    db = MockClient()
+    db.queries = []
+
+    # 10 elements, 10 bytes each
+    generator = GeneratorWithSmallImages(10, 10)
+    querier = ParallelQuery(db)
+    db.queries = []
+
+    # Expected item size: len(str([{"AddImage": {}}])) -> 18 + 10 bytes blob = 28 bytes.
+    # With a limit of 100 bytes, we should be able to fit 3 items per batch (3 * 28 = 84 bytes).
+    # Since batchsize=5 is larger than 3, the max_bytes_per_batch limit will be the bottleneck,
+    # producing 3, 3, 3, 1 item batches.
+    querier.query(generator, batchsize=5, numthreads=1,
+                  max_bytes_per_batch=100)
+
+    # It should have succeeded in processing all queries
+    assert querier.get_succeeded_queries() == 10
+    assert len(db.queries) == 4
+    for q in db.queries[:-1]:
+        assert len(q) == 3
+    assert len(db.queries[-1]) == 1
 
 
 def test_dask_dry_run(db: Connector):
