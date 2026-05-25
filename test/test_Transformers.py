@@ -245,3 +245,71 @@ def test_base_transformer():
     # getitem is abstract
     with pytest.raises(NotImplementedError):
         _ = transformer[0]
+
+
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+def test_clip_descriptorset_initialization_retry(mock_get_utils):
+    try:
+        from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for CLIP")
+
+    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+        dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
+        mock_generate_embedding.return_value = dummy_embedding
+
+        mock_utils = mock_get_utils.return_value
+        # Fail the first time, succeed the second time
+        mock_utils.add_descriptorset.side_effect = [False, True]
+        mock_utils.get_descriptorset_list.return_value = []
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [b"image1"]),
+            ([{"AddImage": {"_ref": 2}}], [b"image2"])
+        ]
+
+        dummy_data = DummyData(data)
+        clip = CLIPPyTorchEmbeddings(dummy_data)
+
+        # First item: creation fails, should not be initialized
+        res1 = clip[0]
+        assert mock_utils.add_descriptorset.call_count == 1
+        assert not clip._descriptorset_initialized
+
+        # Second item: creation succeeds, should be initialized
+        res2 = clip[1]
+        assert mock_utils.add_descriptorset.call_count == 2
+        assert clip._descriptorset_initialized
+
+
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+def test_facenet_descriptorset_initialization_retry(mock_get_utils):
+    try:
+        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for Facenet")
+
+    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+        dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
+        mock_get_embedding.return_value = dummy_embedding
+
+        mock_utils = mock_get_utils.return_value
+        # Fail both add and get first time, then succeed get the second time
+        mock_utils.add_descriptorset.return_value = False
+        mock_utils.get_descriptorset_list.side_effect = [[], ["facenet"]]
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [b"image1"]),
+            ([{"AddImage": {"_ref": 2}}], [b"image2"])
+        ]
+
+        dummy_data = DummyData(data)
+        facenet = FacenetPyTorchEmbeddings(dummy_data)
+
+        res1 = facenet[0]
+        assert mock_utils.add_descriptorset.call_count == 1
+        assert not facenet._descriptorset_initialized
+
+        res2 = facenet[1]
+        assert mock_utils.add_descriptorset.call_count == 2
+        assert facenet._descriptorset_initialized
