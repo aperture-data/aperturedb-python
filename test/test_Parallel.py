@@ -228,20 +228,20 @@ def test_dynamic_batching_add_image():
     assert len(db.queries[-1]) == 1
 
 
-
 def test_dynamic_batching_add_image_variable_sizes():
     db = MockClient()
     db.queries = []
-    
+
     # 1. Smaller images (2 bytes each) -> larger batches
     generator_small = GeneratorWithSmallImages(10, 2)
     querier_small = ParallelQuery(db)
     db.queries = []
-    
+
     # Expected item size: 18 + 2 = 20 bytes.
     # Max bytes = 100 -> 100 // 20 = 5 items per batch.
-    querier_small.query(generator_small, batchsize=10, numthreads=1, max_bytes_per_batch=100)
-    
+    querier_small.query(generator_small, batchsize=10,
+                        numthreads=1, max_bytes_per_batch=100)
+
     assert querier_small.get_succeeded_queries() == 10
     assert len(db.queries) == 2
     for q in db.queries:
@@ -252,11 +252,12 @@ def test_dynamic_batching_add_image_variable_sizes():
     db.queries = []
     querier_large = ParallelQuery(db)
     db.queries = []
-    
+
     # Expected item size: 18 + 32 = 50 bytes.
     # Max bytes = 100 -> 100 // 50 = 2 items per batch.
-    querier_large.query(generator_large, batchsize=10, numthreads=1, max_bytes_per_batch=100)
-    
+    querier_large.query(generator_large, batchsize=10,
+                        numthreads=1, max_bytes_per_batch=100)
+
     assert querier_large.get_succeeded_queries() == 10
     assert len(db.queries) == 5
     for q in db.queries:
