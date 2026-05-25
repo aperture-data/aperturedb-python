@@ -286,6 +286,9 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         from aperturedb.transformers.transformer import Transformer
 
+        if transformers is not None and not isinstance(transformers, (list, tuple)):
+            transformers = [transformers]
+
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:
             if transformers or isinstance(generator, Transformer):
