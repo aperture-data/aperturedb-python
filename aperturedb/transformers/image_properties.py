@@ -49,6 +49,7 @@ class ImageProperties(Transformer):
         except Exception as e:
             # Importantly, do not raise an exception here, since it will kill ingestion.
             # Create a log message instead, for post-mortem analysis.
-            logger.exception("Error applying image properties", stack_info=True)
+            logger.exception(
+                "Error applying image properties", stack_info=True)
 
         return x

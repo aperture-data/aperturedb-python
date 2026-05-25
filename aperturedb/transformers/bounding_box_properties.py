@@ -28,6 +28,7 @@ class BoundingBoxProperties(Transformer):
                     if self.annotation_mode:
                         src_properties["annotation_mode"] = self.annotation_mode
         except Exception as e:
-            logger.exception("Error applying bounding box properties", stack_info=True)
+            logger.exception(
+                "Error applying bounding box properties", stack_info=True)
 
         return x

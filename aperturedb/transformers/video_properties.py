@@ -43,6 +43,7 @@ class VideoProperties(Transformer):
         except Exception as e:
             # Importantly, do not raise an exception here, since it will kill ingestion.
             # Create a log message instead, for post-mortem analysis.
-            logger.exception("Error applying video properties", stack_info=True)
+            logger.exception(
+                "Error applying video properties", stack_info=True)
 
         return x
