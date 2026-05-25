@@ -4,6 +4,10 @@ set -u
 set -e
 set -o pipefail
 
+: "${GCP_SERVICE_ACCOUNT_KEY:=""}"
+: "${APERTUREDB_LOG_PATH:=""}"
+: "${FILTER:=""}"
+
 mkdir -p output
 rm -rf output/*
 mkdir -p input/blobs
@@ -22,25 +26,42 @@ python3 generateInput.py
 echo "Done generating input files."
 
 echo "Running tests..."
-CREDENTIALS_FILE='/tmp/key.json'
-echo $GCP_SERVICE_ACCOUNT_KEY > $CREDENTIALS_FILE
-export GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_FILE
+if [ -n "$GCP_SERVICE_ACCOUNT_KEY" ]; then
+	CREDENTIALS_FILE=$(mktemp "${TMPDIR:-/tmp}/key.XXXXXX")
+	trap 'rm -f "$CREDENTIALS_FILE"' EXIT
+	printf "%s\n" "$GCP_SERVICE_ACCOUNT_KEY" > "$CREDENTIALS_FILE"
+	export GOOGLE_APPLICATION_CREDENTIALS="$CREDENTIALS_FILE"
+else
+	unset GOOGLE_APPLICATION_CREDENTIALS
+fi
 # capture errors
 set +e
-CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${FILTER}"
-CLIENT_PATH=${CLIENT_PATH// /_}
-mkdir -p ${CLIENT_PATH}
+SAFE_FILTER=$(printf "%s" "$FILTER" | tr -c 'a-zA-Z0-9_-' '_')
+if [ -n "$APERTUREDB_LOG_PATH" ]; then
+	CLIENT_PATH="${APERTUREDB_LOG_PATH}/../client/${SAFE_FILTER}"
+else
+	CLIENT_PATH="output/client/${SAFE_FILTER}"
+fi
+mkdir -p "$CLIENT_PATH"
 
 if [ "${SKIP_SLOW_TESTS:-false}" == "true" ]; then
     echo "Skipping slow and external tests for this run..."
-    pytest_filter="${FILTER} and not slow and not external_network"
+    if [ -n "$FILTER" ]; then
+        pytest_filter="${FILTER} and not slow and not external_network"
+    else
+        pytest_filter="not slow and not external_network"
+    fi
 else
     pytest_filter="${FILTER}"
 fi
 
-PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$pytest_filter" test_*.py -v | tee ${CLIENT_PATH}/test.log
+if [ -n "$pytest_filter" ]; then
+	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$pytest_filter" test_*.py -v | tee "${CLIENT_PATH}/test.log"
+else
+	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb test_*.py -v | tee "${CLIENT_PATH}/test.log"
+fi
 RESULT=$?
-cp error*.log -v ${CLIENT_PATH} || true
+cp error*.log -v "$CLIENT_PATH" || true
 
 if [[ $RESULT != 0 ]]; then
 	echo "Test failed; outputting db log:"
@@ -49,9 +70,9 @@ if [[ $RESULT != 0 ]]; then
 		BUCKET=python-ci-runs
 		NOW=$(date -Iseconds)
 		ARCHIVE_NAME=logs.tar.gz
-		DESTINATION="s3://${BUCKET}/aperturedb-${NOW}-${FILTER// /_}.tgz"
-		tar czf ${ARCHIVE_NAME} ${APERTUREDB_LOG_PATH}/..
-		aws s3 cp ${ARCHIVE_NAME} $DESTINATION
+		DESTINATION="s3://${BUCKET}/aperturedb-${NOW}-${SAFE_FILTER}.tgz"
+		tar czf "${ARCHIVE_NAME}" "${APERTUREDB_LOG_PATH}/.."
+		aws s3 cp "${ARCHIVE_NAME}" "$DESTINATION"
 		echo "Log output to $DESTINATION"
 	else
 		echo "Unable to output log, APERTUREDB_LOG_PATH not set."
