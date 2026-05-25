@@ -136,9 +136,8 @@ class VideoDataCSV(CSVParser.CSVParser):
                 logger.exception(f"Video Error: {filename}")
 
         try:
-            fd = open(filename, "rb")
-            buff = fd.read()
-            fd.close()
+            with open(filename, "rb") as fd:
+                buff = fd.read()
             return True, buff
         except Exception:
             logger.exception(f"Video Error: {filename}")
