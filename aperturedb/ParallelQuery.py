@@ -251,15 +251,24 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 if not run_event.is_set():
                     break
 
-                item = generator[i]
+                try:
+                    item = generator[i]
 
-                # Estimate item size (mostly blobs + some json overhead)
-                item_bytes = len(str(item[0]))
-                for blob in item[1]:
-                    if isinstance(blob, (bytes, bytearray, memoryview)):
-                        item_bytes += len(blob)
-                    else:
-                        item_bytes += 100
+                    # Estimate item size (mostly blobs + some json overhead)
+                    item_bytes = len(str(item[0]))
+                    for blob in item[1]:
+                        if isinstance(blob, (bytes, bytearray, memoryview)):
+                            item_bytes += len(blob)
+                        else:
+                            item_bytes += 100
+                except Exception as e:
+                    logger.exception(e)
+                    logger.warning(
+                        f"Worker {thid} failed to retrieve/estimate item {i}")
+                    self.error_counter += 1
+                    if self.stats:
+                        self.pb.update(1)
+                    continue
 
                 if len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes or len(current_batch) >= self.batchsize):
                     try:
