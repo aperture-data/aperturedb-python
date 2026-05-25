@@ -4,6 +4,7 @@ from aperturedb.transformers.common_properties import CommonProperties
 from aperturedb.transformers.bounding_box_properties import BoundingBoxProperties
 from aperturedb.transformers.video_properties import VideoProperties
 from aperturedb.transformers.image_properties import ImageProperties
+from aperturedb.transformers.transformer import Transformer
 import hashlib
 
 
@@ -19,7 +20,7 @@ class DummyData:
 
 
 def test_variable_annotation_counts():
-    data = [
+    data_orig = [
         ([{"AddImage": {}}, {"AddBoundingBox": {}}], []),
         ([{"AddImage": {}}], []),
         ([{"AddImage": {}}, {"AddBoundingBox": {}}, {
@@ -27,19 +28,28 @@ def test_variable_annotation_counts():
         ([{"AddImage": {}}, {"AddPolygon": {}}, {"AddPolygon": {}}], []),
         ([{"AddVideo": {}}, {"AddBoundingBox": {}}], [])
     ]
+    import copy
+
+    data = copy.deepcopy(data_orig)
     dummy_data = DummyData(data)
 
-    cp = CommonProperties(dummy_data, adb_data_source="test_source")
+    cp = CommonProperties(
+        dummy_data, adb_data_source="test_source", adb_timestamp="2026-05-24", adb_main_object="test_object"
+    )
     for i in range(len(data)):
         res = cp[i]
         for cmd in res[0]:
             cmd_name = list(cmd.keys())[0]
             if cmd_name in ["AddImage", "AddBoundingBox", "AddPolygon", "AddVideo"]:
                 assert cmd[cmd_name]["properties"]["adb_data_source"] == "test_source"
+                assert cmd[cmd_name]["properties"]["adb_timestamp"] == "2026-05-24"
+                assert cmd[cmd_name]["properties"]["adb_main_object"] == "test_object"
 
+    data_bbp = copy.deepcopy(data_orig)
+    dummy_data_bbp = DummyData(data_bbp)
     bbp = BoundingBoxProperties(
-        dummy_data, annotation_source="test_anno", annotation_mode="auto")
-    for i in range(len(data)):
+        dummy_data_bbp, annotation_source="test_anno", annotation_mode="auto")
+    for i in range(len(data_bbp)):
         res = bbp[i]
         for cmd in res[0]:
             cmd_name = list(cmd.keys())[0]
@@ -48,6 +58,19 @@ def test_variable_annotation_counts():
                 assert cmd[cmd_name]["properties"]["annotation_mode"] == "auto"
             elif cmd_name in ["AddImage", "AddVideo"]:
                 assert "properties" not in cmd[cmd_name] or "annotation_source" not in cmd[cmd_name]["properties"]
+
+    # Test empty or missing annotations
+    data_empty = copy.deepcopy(data_orig)
+    dummy_data_empty = DummyData(data_empty)
+    bbp_empty = BoundingBoxProperties(
+        dummy_data_empty, annotation_source=None, annotation_mode=None)
+    for i in range(len(data_empty)):
+        res = bbp_empty[i]
+        for cmd in res[0]:
+            cmd_name = list(cmd.keys())[0]
+            if cmd_name in ["AddBoundingBox", "AddPolygon"]:
+                assert "properties" not in cmd[cmd_name] or "annotation_source" not in cmd[cmd_name].get(
+                    "properties", {})
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
@@ -72,6 +95,11 @@ def test_video_properties(mock_get_utils):
 
     dummy_data = DummyData(data)
     vp = VideoProperties(dummy_data)
+
+    # Verify index creation
+    mock_utils.get_indexed_props.assert_called_with("_Video")
+    mock_utils.create_entity_index.assert_called_with(
+        "_Video", "adb_data_source")
 
     for i in range(len(data)):
         res = vp[i]
@@ -196,3 +224,20 @@ def test_facenet_pytorch_embeddings(mock_get_utils):
 
         assert len(res[1]) == 3
         assert res[1][-1] == [0.5, 0.6, 0.7, 0.8]
+
+
+def test_base_transformer():
+    data = [
+        ([{"AddImage": {}}], [b"dummy"])
+    ]
+    dummy_data = DummyData(data)
+    transformer = Transformer(dummy_data)
+
+    assert len(transformer) == 1
+    assert transformer._queries == 1
+    assert transformer._blobs == 1
+    assert transformer._blob_index == [0]
+
+    # getitem is abstract
+    with pytest.raises(NotImplementedError):
+        _ = transformer[0]
