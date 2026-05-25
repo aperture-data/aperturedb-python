@@ -268,7 +268,26 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     self.error_counter += 1
                     if self.stats:
                         self.pb.update(1)
+
+                    if len(current_batch) > 0:
+                        try:
+                            self.do_batch(client, batch_start, current_batch)
+                        except Exception as e2:
+                            logger.exception(e2)
+                            logger.warning(
+                                f"Worker {thid} failed to execute dynamic batch starting at {batch_start}")
+                            self.error_counter += 1
+
+                        if self.stats:
+                            self.pb.update(len(current_batch))
+
+                        current_batch = []
+                        current_bytes = 0
+
                     continue
+
+                if len(current_batch) == 0:
+                    batch_start = i
 
                 if len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes or len(current_batch) >= self.batchsize):
                     try:
