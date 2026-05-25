@@ -22,12 +22,12 @@ class DummyData:
 
 def test_variable_annotation_counts():
     data_orig = [
-        ([{"AddImage": {}}, {"AddBoundingBox": {}}], []),
-        ([{"AddImage": {}}], []),
+        ([{"AddImage": {}}, {"AddBoundingBox": {}}], [b"dummy_image"]),
+        ([{"AddImage": {}}], [b"dummy_image"]),
         ([{"AddImage": {}}, {"AddBoundingBox": {}}, {
-         "AddBoundingBox": {}}, {"AddPolygon": {}}], []),
-        ([{"AddImage": {}}, {"AddPolygon": {}}, {"AddPolygon": {}}], []),
-        ([{"AddVideo": {}}, {"AddBoundingBox": {}}], [])
+         "AddBoundingBox": {}}, {"AddPolygon": {}}], [b"dummy_image"]),
+        ([{"AddImage": {}}, {"AddPolygon": {}}, {"AddPolygon": {}}], [b"dummy_image"]),
+        ([{"AddVideo": {}}, {"AddBoundingBox": {}}], [b"dummy_video"])
     ]
     import copy
 
