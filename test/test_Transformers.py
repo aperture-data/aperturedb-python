@@ -6,6 +6,7 @@ from aperturedb.transformers.video_properties import VideoProperties
 from aperturedb.transformers.image_properties import ImageProperties
 from aperturedb.transformers.transformer import Transformer
 import hashlib
+import struct
 
 
 class DummyData:
@@ -165,7 +166,8 @@ def test_clip_pytorch_embeddings(mock_get_utils):
         pytest.skip("Missing deps for CLIP")
 
     with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
-        mock_generate_embedding.return_value = [0.1, 0.2, 0.3, 0.4]
+        dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
+        mock_generate_embedding.return_value = dummy_embedding
         mock_utils = mock_get_utils.return_value
 
         dummy_image_data = b"fake_image_blob_content"
@@ -189,7 +191,7 @@ def test_clip_pytorch_embeddings(mock_get_utils):
 
         # 2 blobs originally + 1 generated embedding blob
         assert len(res[1]) == 3
-        assert res[1][-1] == [0.1, 0.2, 0.3, 0.4]
+        assert res[1][-1] == dummy_embedding
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
@@ -200,7 +202,8 @@ def test_facenet_pytorch_embeddings(mock_get_utils):
         pytest.skip("Missing deps for Facenet")
 
     with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
-        mock_get_embedding.return_value = [0.5, 0.6, 0.7, 0.8]
+        dummy_embedding = struct.pack('<4f', 0.5, 0.6, 0.7, 0.8)
+        mock_get_embedding.return_value = dummy_embedding
         mock_utils = mock_get_utils.return_value
 
         dummy_image_data = b"fake_image_blob_content"
@@ -223,7 +226,7 @@ def test_facenet_pytorch_embeddings(mock_get_utils):
         assert desc_cmd[0]["AddDescriptor"]["connect"]["ref"] == 2
 
         assert len(res[1]) == 3
-        assert res[1][-1] == [0.5, 0.6, 0.7, 0.8]
+        assert res[1][-1] == dummy_embedding
 
 
 def test_base_transformer():
