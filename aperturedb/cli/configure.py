@@ -459,9 +459,11 @@ def get_key(name: Annotated[str, typer.Argument(
     except FileNotFoundError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
+        raise typer.Exit(code=2)
     except json.JSONDecodeError:
         check_configured(as_global=False) or \
             check_configured(as_global=True, show_error=True)
+        raise typer.Exit(code=2)
 
     print(f"{user_key}")
 
