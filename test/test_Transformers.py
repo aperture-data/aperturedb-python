@@ -26,7 +26,8 @@ def test_variable_annotation_counts():
         ([{"AddImage": {}}], [b"dummy_image"]),
         ([{"AddImage": {}}, {"AddBoundingBox": {}}, {
          "AddBoundingBox": {}}, {"AddPolygon": {}}], [b"dummy_image"]),
-        ([{"AddImage": {}}, {"AddPolygon": {}}, {"AddPolygon": {}}], [b"dummy_image"]),
+        ([{"AddImage": {}}, {"AddPolygon": {}},
+         {"AddPolygon": {}}], [b"dummy_image"]),
         ([{"AddVideo": {}}, {"AddBoundingBox": {}}], [b"dummy_video"])
     ]
     import copy
