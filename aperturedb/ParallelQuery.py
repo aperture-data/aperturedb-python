@@ -301,13 +301,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
-            self.daskmanager = DaskManager(num_workers=numthreads)
+            self.daskManager = DaskManager(num_workers=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
 
         if use_dask:
-            results, self.total_actions_time = self.daskmanager.run(
+            results, self.total_actions_time = self.daskManager.run(
                 self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run)
             self.actual_stats = []
             for result in results:
