@@ -296,7 +296,8 @@ def test_facenet_descriptorset_initialization_retry(mock_get_utils):
         mock_utils = mock_get_utils.return_value
         # Fail both add and get first time, then succeed get the second time
         mock_utils.add_descriptorset.return_value = False
-        mock_utils.get_descriptorset_list.side_effect = [[], ["facenet"]]
+        mock_utils.get_descriptorset_list.side_effect = [
+            [], ["facenet_pytorch_embeddings"]]
 
         data = [
             ([{"AddImage": {"_ref": 1}}], [b"image1"]),
