@@ -55,21 +55,15 @@ Expected results with a clean environment: ~118 passed + 4 skipped for non-HTTP,
 
 A subset of the `pytest` tests interact with external objects, such as fetching blob configurations directly from cloud providers (AWS S3, Google Storage - GS). If your local environment or the automated agent lacks valid AWS/GCP credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `GCP_SERVICE_ACCOUNT_KEY`), you will hit authentication validation errors when resolving `storage.Client()` architectures or boto3 structures during execution.
 
-To dynamically skip external storage tests, modify the `pytest` invocation inside `test/run_test.sh` before running. Because `run_test_container.sh` mounts this file directly into the test container at runtime, no image rebuild is needed — just edit the file and re-run.
-
-Use this quick `sed` command to patch the exclusion:
+To skip these tests, set `SKIP_SLOW_TESTS=true` before running `run_test_container.sh`. This environment variable is passed into the container and automatically appends `and not slow and not external_network` to the `pytest` marker expression.
 
 ```bash
 cd test
-# Modify the pytest invocation to ignore AWS/GCP specific loaders and remotely constrained mark configurations
-sed -i 's/pytest --cov=aperturedb -m "\$FILTER"/pytest --cov=aperturedb -k "not test_S3ImageLoader and not test_GSImageLoader and not test_S3VideoLoader and not test_GSVideoLoader" -m "\$FILTER and not remote_credentials and not external_network"/' run_test.sh
-
-# Then run the tests as usual
 set -a && source .env && set +a
-bash run_test_container.sh
+SKIP_SLOW_TESTS=true bash run_test_container.sh
 ```
 
-By applying this change, any LLM/agent can successfully execute internal `aperturedb` connector + python-centric API tests without raising failures tied strictly to external cloud requirements.
+By setting this variable, any LLM/agent can successfully execute internal `aperturedb` connector + python-centric API tests without raising failures tied strictly to external cloud requirements.
 
 ---
 
@@ -92,7 +86,7 @@ These warnings appear during a successful local run and can be ignored:
 | **DB image** | `aperturedata/aperturedb-community:latest` | `aperturedata/aperturedb:dev` |
 | **Lenz tag** | `latest` | `dev` |
 | **Test filtering** | Skips `remote_credentials`, `external_network`, S3/GCS loaders | Runs all tests including cloud-dependent ones |
-| **AWS/GCP credentials** | Not present — must patch `run_test.sh` | Present as GitHub secrets |
+| **AWS/GCP credentials** | Not present — use `SKIP_SLOW_TESTS=true` | Present as GitHub secrets |
 | **Log upload on failure** | Skipped (no AWS creds) | Uploads to S3 bucket `python-ci-runs` |
 | **`BUILD_AUX_IMAGES`** | `true` (default in `ci.sh`) — builds notebook/coverage images | `false` — skips aux images to save time |
 | **`TEST_PROTOCOL`** | `both` (default in `run_test_container.sh`) | `both` (explicit in `pr.yaml`) |
@@ -102,4 +96,4 @@ These warnings appear during a successful local run and can be ignored:
 | **Kaggle credentials** | Dummy (`KAGGLE_username=ci`, `KAGGLE_key=dummy`) | Same dummy values |
 | **Coverage HTML** | `coverage html` fails (no data in container path) | Same issue; coverage not collected meaningfully |
 | **Concurrency** | N/A | New push to PR cancels in-progress run |
-| **`run_test.sh` override** | Mounted as volume — edit `test/run_test.sh` locally (e.g. apply credentials filter from Section 3), no image rebuild needed | Also mounted as volume — the committed `test/run_test.sh` runs in CI. Do NOT commit the credentials filter; CI needs full test coverage |
+| **`run_test.sh` override** | Mounted as volume — edits locally apply immediately | Also mounted as volume |
