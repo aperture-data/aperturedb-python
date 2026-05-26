@@ -27,6 +27,9 @@ class CommonProperties(Transformer):
         self.adb_main_object = kwargs.get("adb_main_object", None)
 
     def getitem(self, subscript):
+        if not (self.adb_data_source or self.adb_timestamp or self.adb_main_object):
+            return self.data[subscript]
+
         x = self.data[subscript]
         try:
             for cmd_dict in x[0]:

@@ -16,6 +16,9 @@ class BoundingBoxProperties(Transformer):
         self.annotation_mode = kwargs.get("annotation_mode", "auto")
 
     def getitem(self, subscript):
+        if not (self.annotation_source or self.annotation_mode):
+            return self.data[subscript]
+
         x = self.data[subscript]
         try:
             for cmd_dict in x[0]:
