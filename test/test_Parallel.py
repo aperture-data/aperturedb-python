@@ -114,6 +114,55 @@ class TestParallel():
             print(e)
             raise
 
+    def test_parallel_query_worker_closes_connection(self, db, monkeypatch):
+        from aperturedb.QueryGenerator import QueryGenerator
+        import threading
+
+        class MockQueryGenerator(QueryGenerator):
+            def __len__(self):
+                return 2
+
+            def getitem(self, idx):
+                return [{"FindImage": {}}], []
+
+        pq = ParallelQuery(db)
+
+        closed_count = [0]
+        original_clone = pq.client.clone
+
+        def mock_clone():
+            cloned = original_clone()
+            original_close = cloned.close
+
+            def mock_close():
+                closed_count[0] += 1
+                original_close()
+            cloned.close = mock_close
+            return cloned
+        monkeypatch.setattr(pq.client, "clone", mock_clone)
+
+        original_do_batch = pq.do_batch
+
+        def mock_do_batch(client, batch_start, data):
+            if batch_start == 1:
+                raise Exception("Simulated do_batch exception")
+            original_do_batch(client, batch_start, data)
+        monkeypatch.setattr(pq, "do_batch", mock_do_batch)
+
+        # Test exception in do_batch
+        pq.query(MockQueryGenerator(), batchsize=1, numthreads=1)
+        # Should close even if exception occurred in do_batch
+        assert closed_count[0] == 1
+
+        # Test early exit when run_event is cleared
+        closed_count[0] = 0
+        run_event = threading.Event()
+        run_event.clear()  # Not set, so worker breaks immediately
+
+        # worker signature: worker(self, thid: int, generator, start: int, end: int, run_event)
+        pq.worker(0, MockQueryGenerator(), 0, 1, run_event)
+        assert closed_count[0] == 1
+
 
 class GeneratorWithLargeBlobs(Subscriptable):
     def __init__(self, elements=10, blob_size=100) -> None:

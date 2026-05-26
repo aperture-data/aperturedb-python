@@ -4,6 +4,7 @@ from aperturedb import Parallelizer
 import numpy as np
 import logging
 import inspect
+import threading
 
 
 from aperturedb.DaskManager import DaskManager
@@ -65,6 +66,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.blobs_per_query = 0
         self.daskManager = None
         self.batch_command = execute_query
+        self.error_counter_lock = threading.Lock()
 
     def generate_batch(self, data: List[Tuple[Commands, Blobs]]) -> Tuple[Commands, Blobs]:
         """
@@ -198,7 +200,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 worker_stats["objects_existed"] = sum(
                     v['status'] == 2 for i in r for k, v in i.items())
             elif result == 1:
-                self.error_counter += 1
+                with self.error_counter_lock:
+                    self.error_counter += 1
                 worker_stats["succeeded_queries"] = 0
                 worker_stats["succeeded_commands"] = 0
                 worker_stats["objects_existed"] = 0
@@ -240,120 +243,136 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         max_bytes = getattr(self, "max_bytes_per_batch", None)
 
-        if max_bytes is not None and max_bytes > 0:
-            logger.info(
-                f"Worker {thid} executing dynamically sized batches (max {max_bytes} bytes), {self.stats=}")
-            current_batch = []
-            current_bytes = 0
-            batch_start = start
+        try:
+            if max_bytes is not None and max_bytes > 0:
+                logger.info(
+                    f"Worker {thid} executing dynamically sized batches (max {max_bytes} bytes), {self.stats=}")
+                current_batch = []
+                current_bytes = 0
+                batch_start = start
+                executed_batches = 0
 
-            for i in range(start, end):
-                if not run_event.is_set():
-                    break
+                for i in range(start, end):
+                    if not run_event.is_set():
+                        break
 
-                try:
-                    item = generator[i]
+                    try:
+                        item = generator[i]
 
-                    # Estimate item size (mostly blobs + some json overhead)
-                    item_bytes = len(str(item[0]))
-                    for blob in item[1]:
-                        if isinstance(blob, (bytes, bytearray, memoryview)):
-                            item_bytes += len(blob)
-                        else:
-                            item_bytes += 100
-                except Exception as e:
-                    logger.exception(e)
-                    logger.warning(
-                        f"Worker {thid} failed to retrieve/estimate item {i}")
-                    self.error_counter += 1
-                    if self.stats:
-                        self.pb.update(1)
+                        # Estimate item size (mostly blobs + some json overhead)
+                        item_bytes = len(str(item[0]))
+                        for blob in item[1]:
+                            if isinstance(blob, (bytes, bytearray, memoryview)):
+                                item_bytes += len(blob)
+                            else:
+                                item_bytes += 100
+                    except Exception as e:
+                        logger.exception(e)
+                        logger.warning(
+                            f"Worker {thid} failed to retrieve/estimate item {i}")
+                        with self.error_counter_lock:
+                            self.error_counter += 1
+                        if self.stats:
+                            self.pb.update(1)
 
-                    if len(current_batch) > 0:
+                        if len(current_batch) > 0:
+                            try:
+                                self.do_batch(client, batch_start, current_batch)
+                                executed_batches += 1
+                            except Exception as e2:
+                                logger.exception(e2)
+                                logger.warning(
+                                    f"Worker {thid} failed to execute dynamic batch starting at {batch_start}")
+                                with self.error_counter_lock:
+                                    self.error_counter += 1
+
+                            if self.stats:
+                                self.pb.update(len(current_batch))
+
+                            current_batch = []
+                            current_bytes = 0
+
+                        continue
+
+                    if len(current_batch) == 0:
+                        batch_start = i
+
+                    if len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes or len(current_batch) >= self.batchsize):
                         try:
                             self.do_batch(client, batch_start, current_batch)
-                        except Exception as e2:
-                            logger.exception(e2)
+                            executed_batches += 1
+                        except Exception as e:
+                            logger.exception(e)
                             logger.warning(
                                 f"Worker {thid} failed to execute dynamic batch starting at {batch_start}")
-                            self.error_counter += 1
+                            with self.error_counter_lock:
+                                self.error_counter += 1
 
                         if self.stats:
                             self.pb.update(len(current_batch))
 
                         current_batch = []
                         current_bytes = 0
+                        batch_start = i
 
-                    continue
+                    if len(current_batch) == 0 and item_bytes > max_bytes:
+                        logger.warning(
+                            f"Worker {thid} executing batch starting at {batch_start} that exceeds max_bytes_per_batch: {item_bytes} > {max_bytes}")
 
-                if len(current_batch) == 0:
-                    batch_start = i
+                    current_batch.append(item)
+                    current_bytes += item_bytes
 
-                if len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes or len(current_batch) >= self.batchsize):
+                # Remainder
+                if len(current_batch) > 0 and run_event.is_set():
                     try:
                         self.do_batch(client, batch_start, current_batch)
+                        executed_batches += 1
                     except Exception as e:
                         logger.exception(e)
                         logger.warning(
-                            f"Worker {thid} failed to execute dynamic batch starting at {batch_start}")
-                        self.error_counter += 1
+                            f"Worker {thid} failed to execute dynamic batch remainder starting at {batch_start}")
+                        with self.error_counter_lock:
+                            self.error_counter += 1
 
                     if self.stats:
                         self.pb.update(len(current_batch))
 
-                    current_batch = []
-                    current_bytes = 0
-                    batch_start = i
+                logger.info(
+                    f"Worker {thid} finished executing {executed_batches} dynamically sized batches")
 
-                if len(current_batch) == 0 and item_bytes > max_bytes:
-                    logger.warning(
-                        f"Worker {thid} executing batch starting at {batch_start} that exceeds max_bytes_per_batch: {item_bytes} > {max_bytes}")
+            else:
+                total_batches = (end - start) // self.batchsize
 
-                current_batch.append(item)
-                current_bytes += item_bytes
+                if (end - start) % self.batchsize > 0:
+                    total_batches += 1
 
-            # Remainder
-            if len(current_batch) > 0 and run_event.is_set():
-                try:
-                    self.do_batch(client, batch_start, current_batch)
-                except Exception as e:
-                    logger.exception(e)
-                    logger.warning(
-                        f"Worker {thid} failed to execute dynamic batch remainder starting at {batch_start}")
-                    self.error_counter += 1
+                logger.info(
+                    f"Worker {thid} executing {total_batches} batches, {self.stats=}")
+                executed_batches = 0
+                for i in range(total_batches):
+                    if not run_event.is_set():
+                        break
+                    batch_start = start + i * self.batchsize
+                    batch_end = min(batch_start + self.batchsize, end)
 
-                if self.stats:
-                    self.pb.update(len(current_batch))
+                    try:
+                        self.do_batch(client, batch_start,
+                                      generator[batch_start:batch_end])
+                    except Exception as e:
+                        logger.exception(e)
+                        logger.warning(
+                            f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
+                        with self.error_counter_lock:
+                            self.error_counter += 1
 
-            logger.info(
-                f"Worker {thid} finished executing dynamically sized batches")
-
-        else:
-            total_batches = (end - start) // self.batchsize
-
-            if (end - start) % self.batchsize > 0:
-                total_batches += 1
-
-            logger.info(
-                f"Worker {thid} executing {total_batches} batches, {self.stats=}")
-            for i in range(total_batches):
-                if not run_event.is_set():
-                    break
-                batch_start = start + i * self.batchsize
-                batch_end = min(batch_start + self.batchsize, end)
-
-                try:
-                    self.do_batch(client, batch_start,
-                                  generator[batch_start:batch_end])
-                except Exception as e:
-                    logger.exception(e)
-                    logger.warning(
-                        f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
-                    self.error_counter += 1
-
-                if self.stats:
-                    self.pb.update(batch_end - batch_start)
-            logger.info(f"Worker {thid} executed {total_batches} batches")
+                    executed_batches += 1
+                    if self.stats:
+                        self.pb.update(batch_end - batch_start)
+                logger.info(f"Worker {thid} executed {executed_batches} batches")
+        finally:
+            # Explicitly close the connection to avoid exhausting server connection limits
+            if client is not self.client and hasattr(client, 'close') and callable(client.close):
+                client.close()
 
     def get_objects_existed(self) -> int:
         return sum(stat["objects_existed"]
@@ -383,19 +402,20 @@ class ParallelQuery(Parallelizer.Parallelizer):
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
-            self.daskmanager = DaskManager(num_workers=numthreads)
+            self.daskManager = DaskManager(num_workers=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
 
         if use_dask:
-            results, self.total_actions_time = self.daskmanager.run(
+            results, self.total_actions_time = self.daskManager.run(
                 self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run, max_bytes_per_batch=self.max_bytes_per_batch)
             self.actual_stats = []
             for result in results:
                 if result is not None:
                     self.times_arr.extend(result.times_arr)
-                    self.error_counter += result.error_counter
+                    with self.error_counter_lock:
+                        self.error_counter += result.error_counter
                     self.actual_stats.append(
                         {"succeeded_queries": result.succeeded_queries,
                          "succeeded_commands": result.succeeded_commands,

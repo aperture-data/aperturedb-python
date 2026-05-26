@@ -43,3 +43,50 @@ class TestUserConvenience():
         # Ensure that the mock post was called, 1 time to authenticate, 1 time to query
         assert posts == 2
         Session.post = old_post
+
+    def test_ConnectorRest_close_and_recreate_session(self):
+        """
+        Test that ConnectorRest can be closed, clearing its http_session,
+        and that a subsequent call to query() will transparently recreate it.
+        """
+        client = ConnectorRest(host="dummy", user="admin", password="password")
+        posts = 0
+
+        def mock_post(self, url, headers, files, verify):
+            nonlocal posts
+            response1 = {
+                "json": [{"Authenticate": {
+                    "status": 0,
+                    "session_token": "x",
+                    "refresh_token": "2",
+                    "session_token_expires_in": 3600,
+                    "refresh_token_expires_in": 3600
+                }}],
+                "blobs": []
+            }
+
+            r = SimpleNamespace(status_code=200, text=json.dumps(response1))
+            posts += 1
+            return r
+
+        old_post = Session.post
+        Session.post = mock_post
+
+        try:
+            # Query 1: Initialize normally
+            client.query("[{\"FindEntity\": {\"_ref\": 1}}]")
+            assert posts == 2  # 1 auth, 1 query
+            assert client.http_session is not None
+            old_session = client.http_session
+
+            # Explicitly close the connector
+            client.close()
+            assert getattr(client, "http_session", None) is None
+
+            # Query 2: Should transparently recreate the session
+            client.query("[{\"FindEntity\": {\"_ref\": 2}}]")
+            assert posts == 3
+            assert client.http_session is not None
+            assert client.http_session is not old_session
+        finally:
+            Session.post = old_post
