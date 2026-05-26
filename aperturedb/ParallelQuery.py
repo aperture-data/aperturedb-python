@@ -277,7 +277,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
                         if len(current_batch) > 0:
                             try:
-                                self.do_batch(client, batch_start, current_batch)
+                                self.do_batch(
+                                    client, batch_start, current_batch)
                                 executed_batches += 1
                             except Exception as e2:
                                 logger.exception(e2)
@@ -368,7 +369,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     executed_batches += 1
                     if self.stats:
                         self.pb.update(batch_end - batch_start)
-                logger.info(f"Worker {thid} executed {executed_batches} batches")
+                msg = f"Worker {thid} executed {executed_batches} batches"
+                logger.info(msg)
         finally:
             # Explicitly close the connection to avoid exhausting server connection limits
             if client is not self.client and hasattr(client, 'close') and callable(client.close):
