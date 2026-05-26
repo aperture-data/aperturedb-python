@@ -263,7 +263,7 @@ def create(
 
         if not CONFIG_NAME_RE.fullmatch(name):
             console.log(
-                f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
+                f"Configuration name {name} must be alphanumerical with dashes and underscores of 1-64 characters in length", style="bold yellow")
             raise typer.Exit(code=2)
 
         if interactive:
