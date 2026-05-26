@@ -301,8 +301,13 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         from aperturedb.transformers.transformer import Transformer
 
-        if transformers is not None and not isinstance(transformers, (list, tuple)):
-            transformers = [transformers]
+        if transformers is not None:
+            if not isinstance(transformers, (list, tuple)):
+                transformers = [transformers]
+            for t in transformers:
+                if not (isinstance(t, type) and issubclass(t, Transformer)) and not callable(t):
+                    raise TypeError(
+                        "Each transformer must be a subclass of Transformer or a callable.")
 
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:

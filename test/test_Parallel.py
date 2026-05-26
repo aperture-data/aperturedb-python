@@ -190,6 +190,24 @@ class TestParallel():
 
         assert querier.get_succeeded_queries() > 0
 
+    def test_transformers_single_and_invalid(self, db: Connector):
+        """
+        Verifies that passing a single transformer works and invalid inputs raise TypeError.
+        """
+        elements = 10
+        generator = GeneratorWithErrors(elements=elements, error_pct=0)
+        loader = ParallelLoader(db)
+
+        # Single transformer
+        loader.ingest(generator, batchsize=2, numthreads=2,
+                      stats=False, transformers=DummyTransformer)
+        assert loader.get_succeeded_queries() > 0
+
+        # Invalid input
+        with pytest.raises(TypeError, match="must be a subclass of Transformer or a callable"):
+            loader.ingest(generator, batchsize=2, numthreads=2,
+                          stats=False, transformers="invalid_transformer")
+
     def test_parallel_query_worker_closes_connection(self, db, monkeypatch):
         from aperturedb.QueryGenerator import QueryGenerator
         import threading

@@ -1,6 +1,7 @@
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.CommonLibrary import create_connector
 from aperturedb.Utils import Utils
+import threading
 import logging
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ class Transformer(Subscriptable):
         self._blob_index = []
         self._add_image_index = []
         self._client = client
+        self._thread_local = threading.local()
 
         bc = 0
         for i, c in enumerate(x[0]):
@@ -82,16 +84,35 @@ class Transformer(Subscriptable):
         return len(self.data)
 
     def get_client(self):
-        if self._client is None:
-            self._client = create_connector()
-        return self._client
+        if not hasattr(self, "_thread_local"):
+            self._thread_local = threading.local()
+
+        if not hasattr(self._thread_local, "client"):
+            if self._client is not None:
+                if hasattr(self._client, "clone"):
+                    self._thread_local.client = self._client.clone()
+                else:
+                    self._thread_local.client = self._client
+            else:
+                self._thread_local.client = create_connector()
+        return self._thread_local.client
 
     def get_utils(self):
         return Utils(self.get_client())
 
     def __getattr__(self, name):
-        # Delegate attribute access to the underlying data (generator)
-        if "data" in self.__dict__:
+        # Delegate specific attribute access to the underlying data (generator)
+        # to preserve behaviors from original generators (like CSVParser).
+        allowed_attributes = {
+            "use_dask",
+            "strict_response_validation",
+            "response_handler",
+            "error_handler",
+            "blobs_relative_to_csv",
+            "commands_per_query",
+            "blobs_per_query"
+        }
+        if name in allowed_attributes and "data" in self.__dict__:
             return getattr(self.data, name)
         raise AttributeError(
             f"'{type(self).__name__}' object has no attribute '{name}'")
