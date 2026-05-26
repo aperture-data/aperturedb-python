@@ -114,7 +114,7 @@ class Connector(object):
 
     :::note
     - The connection is established only when a query is run.
-    - A new connection is established for each instance that runs a query, and gets closed only at destruction.
+    - A new connection is established for each instance that runs a query, and gets closed explicitly by calling `close()` or at destruction.
     :::
 
     Args:
@@ -228,10 +228,14 @@ class Connector(object):
                 self.shared_data = shared_data
             self.authenticated = True
 
-    def __del__(self):
-        if self.connected:
+    def close(self):
+        if getattr(self, 'conn', None) is not None:
             self.conn.close()
-            self.connected = False
+            self.conn = None
+        self.connected = False
+
+    def __del__(self):
+        self.close()
 
     def _send_msg(self, data):
         if len(data) > (DEFAULT_MAX_MESSAGE_SIZE_MB * 2**20):
