@@ -275,11 +275,13 @@ def test_clip_descriptorset_initialization_retry(mock_get_utils):
         res1 = clip[0]
         assert mock_utils.add_descriptorset.call_count == 1
         assert not clip._descriptorset_initialized
+        assert not any("AddDescriptor" in c for c in res1[0])
 
         # Second item: creation succeeds, should be initialized
         res2 = clip[1]
         assert mock_utils.add_descriptorset.call_count == 2
         assert clip._descriptorset_initialized
+        assert any("AddDescriptor" in c for c in res2[0])
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
@@ -310,7 +312,9 @@ def test_facenet_descriptorset_initialization_retry(mock_get_utils):
         res1 = facenet[0]
         assert mock_utils.add_descriptorset.call_count == 1
         assert not facenet._descriptorset_initialized
+        assert not any("AddDescriptor" in c for c in res1[0])
 
         res2 = facenet[1]
         assert mock_utils.add_descriptorset.call_count == 2
         assert facenet._descriptorset_initialized
+        assert any("AddDescriptor" in c for c in res2[0])
