@@ -70,6 +70,7 @@ def sparql(db):
     return sparql
 
 
+@pytest.mark.external_network
 @pytest.mark.parametrize("description,query", [
     ('Find all images with chicken and butter as ingredients',
      """
