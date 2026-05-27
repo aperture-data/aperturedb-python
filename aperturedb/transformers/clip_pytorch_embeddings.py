@@ -43,26 +43,27 @@ class CLIPPyTorchEmbeddings(Transformer):
                         self._descriptorset_initialized = True
 
                 # If the image already has an image_sha256, we use it.
-                image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
-                    "adb_image_sha256", None)
-                if not image_sha256:
-                    image_sha256 = hashlib.sha256(blob).hexdigest()
-                new_blobs.append(serialized)
-                new_descriptors.append(
-                    {
-                        "AddDescriptor": {
-                            "set": self.search_set_name,
-                            "properties": {
-                                "image_sha256": image_sha256,
-                            },
-                            "if_not_found": {
-                                "image_sha256": ["==", image_sha256],
-                            },
-                            "connect": {
-                                "ref": cmd_dict["AddImage"]["_ref"]
+                if getattr(self, "_descriptorset_initialized", False):
+                    image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
+                        "adb_image_sha256", None)
+                    if not image_sha256:
+                        image_sha256 = hashlib.sha256(blob).hexdigest()
+                    new_blobs.append(serialized)
+                    new_descriptors.append(
+                        {
+                            "AddDescriptor": {
+                                "set": self.search_set_name,
+                                "properties": {
+                                    "image_sha256": image_sha256,
+                                },
+                                "if_not_found": {
+                                    "image_sha256": ["==", image_sha256],
+                                },
+                                "connect": {
+                                    "ref": cmd_dict["AddImage"]["_ref"]
+                                }
                             }
-                        }
-                    })
+                        })
             if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
                 blob_index += 1
 
