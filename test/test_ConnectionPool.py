@@ -81,6 +81,31 @@ class TestConnectionPool(unittest.TestCase):
                 with pool.get_connection(timeout=0.1):
                     pass
 
+    def test_pool_close(self):
+        pool = ConnectionPool(pool_size=2, connection_factory=_make_connector)
+
+        # Borrow one connection to ensure it connects
+        with pool.get_connection() as conn:
+            conn.query([{"GetStatus": {}}])
+            # Connection is established
+            self.assertTrue(conn.connected)
+            self.assertIsNotNone(conn.conn)
+            borrowed_conn = conn
+
+        # Close the pool
+        pool.close()
+
+        # Verify connections are closed and in a predictable state
+        self.assertFalse(borrowed_conn.connected)
+        self.assertIsNone(borrowed_conn.conn)
+        self.assertEqual(pool.available(), 0)
+
+        # Verify that after closing, the connector can still query (reconnects)
+        response, _ = borrowed_conn.query([{"GetStatus": {}}])
+        self.assertTrue(isinstance(response, list))
+        self.assertTrue(borrowed_conn.connected)
+        self.assertIsNotNone(borrowed_conn.conn)
+
 
 if __name__ == '__main__':
     unittest.main()
