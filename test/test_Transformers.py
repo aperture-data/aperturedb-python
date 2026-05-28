@@ -318,3 +318,44 @@ def test_facenet_descriptorset_initialization_retry(mock_get_utils):
         assert mock_utils.add_descriptorset.call_count == 2
         assert facenet._descriptorset_initialized
         assert any("AddDescriptor" in c for c in res2[0])
+
+
+def test_common_properties_early_return():
+    data = [([{"AddImage": {}}], [b"dummy"])]
+    dummy_data = DummyData(data)
+    cp = CommonProperties(dummy_data, adb_data_source=None,
+                          adb_timestamp=None, adb_main_object=None)
+    res = cp[0]
+    assert "properties" not in res[0][0]["AddImage"]
+
+
+def test_bounding_box_properties_early_return():
+    data = [([{"AddBoundingBox": {}}], [])]
+    dummy_data = DummyData(data)
+    bbp = BoundingBoxProperties(
+        dummy_data, annotation_source=None, annotation_mode=None)
+    res = bbp[0]
+    assert "properties" not in res[0][0]["AddBoundingBox"]
+
+
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+@patch('aperturedb.transformers.video_properties.hashlib.sha256')
+def test_video_properties_exception_handling(mock_sha256, mock_get_utils):
+    mock_utils = mock_get_utils.return_value
+    mock_utils.get_indexed_props.return_value = []
+
+    mock_sha256.side_effect = Exception("Test Exception")
+
+    dummy_video_data = b"fake_video_blob_content"
+    data = [
+        ([
+            {"AddVideo": {}}
+        ], [dummy_video_data])
+    ]
+
+    dummy_data = DummyData(data)
+    vp = VideoProperties(dummy_data)
+
+    res = vp[0]
+
+    assert "adb_video_sha256" not in res[0][0]["AddVideo"]["properties"]
