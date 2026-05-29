@@ -83,7 +83,7 @@ def test_video_properties(mock_get_utils):
     dummy_video_data = b"fake_video_blob_content"
     data = [
         ([
-            {"AddVideo": {}},
+            {"AddVideo": {"properties": {"id": "test_id"}}},
             {"AddBoundingBox": {}}
         ], [dummy_video_data]),
         ([
@@ -113,6 +113,8 @@ def test_video_properties(mock_get_utils):
                 assert props["adb_video_sha256"] == hashlib.sha256(
                     dummy_video_data).hexdigest()
                 assert "adb_video_id" in props
+                if "id" in props and props["id"] == "test_id":
+                    assert props["adb_video_id"] == "test_id"
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
@@ -129,7 +131,7 @@ def test_image_properties(mock_image_open, mock_get_utils):
     dummy_image_data = b"fake_image_blob_content"
     data = [
         ([
-            {"AddImage": {"_ref": 1}},
+            {"AddImage": {"_ref": 1, "properties": {"id": "test_image_id"}}},
             {"AddVideo": {}}
         ], [dummy_image_data, b"video_blob"]),
         ([
@@ -156,6 +158,8 @@ def test_image_properties(mock_image_open, mock_get_utils):
                 assert props["adb_image_width"] == 800
                 assert props["adb_image_height"] == 600
                 assert "adb_image_id" in props
+                if "id" in props and props["id"] == "test_image_id":
+                    assert props["adb_image_id"] == "test_image_id"
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
@@ -359,3 +363,59 @@ def test_video_properties_exception_handling(mock_sha256, mock_get_utils):
     res = vp[0]
 
     assert "adb_video_sha256" not in res[0][0]["AddVideo"]["properties"]
+
+
+@patch('aperturedb.transformers.bounding_box_properties.logger')
+def test_bounding_box_properties_exception_handling(mock_logger):
+    # Pass a malformed command dictionary where "AddBoundingBox" is not a dict
+    data = [([{"AddBoundingBox": "invalid_type_not_dict"}], [])]
+    dummy_data = DummyData(data)
+
+    bbp = BoundingBoxProperties(
+        dummy_data, annotation_source="test_anno", annotation_mode="auto")
+
+    # This should raise an AttributeError when calling setdefault on a string
+    # But the exception should be caught and logged
+    res = bbp[0]
+
+    assert mock_logger.exception.called
+    assert "Error applying bounding box properties" in mock_logger.exception.call_args[0][0]
+    # The original command should remain unchanged
+    assert res[0][0]["AddBoundingBox"] == "invalid_type_not_dict"
+
+
+@patch('aperturedb.transformers.image_properties.logger')
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+@patch('aperturedb.transformers.image_properties.Image.open')
+def test_image_properties_exception_handling(mock_image_open, mock_get_utils, mock_logger):
+    mock_utils = mock_get_utils.return_value
+    mock_utils.get_indexed_props.return_value = []
+
+    # Make Image.open raise an exception
+    mock_image_open.side_effect = Exception("Image load error")
+
+    dummy_image_data = b"fake_image_blob_content"
+    data = [([{"AddImage": {}}], [dummy_image_data])]
+    dummy_data = DummyData(data)
+
+    ip = ImageProperties(dummy_data)
+    res = ip[0]
+
+    assert mock_logger.exception.called
+    assert "Error applying image properties" in mock_logger.exception.call_args[0][0]
+    # The properties should not have the size or width/height
+    assert "adb_image_width" not in res[0][0]["AddImage"]["properties"]
+
+
+@patch('aperturedb.transformers.common_properties.logger')
+def test_common_properties_exception_handling(mock_logger):
+    # Pass a malformed command dictionary
+    data = [([{"AddImage": "invalid_type_not_dict"}], [b"dummy"])]
+    dummy_data = DummyData(data)
+
+    cp = CommonProperties(dummy_data, adb_data_source="test_source")
+    res = cp[0]
+
+    assert mock_logger.exception.called
+    assert "Error applying common properties" in mock_logger.exception.call_args[0][0]
+    assert res[0][0]["AddImage"] == "invalid_type_not_dict"
