@@ -403,8 +403,15 @@ def test_image_properties_exception_handling(mock_image_open, mock_get_utils, mo
 
     assert mock_logger.exception.called
     assert "Error applying image properties" in mock_logger.exception.call_args[0][0]
-    # The properties should not have the size or width/height
-    assert "adb_image_width" not in res[0][0]["AddImage"]["properties"]
+
+    props = res[0][0]["AddImage"]["properties"]
+    # size and sha256 are computed before Image.open, so they should be present
+    assert "adb_image_size" in props
+    assert "adb_image_sha256" in props
+    # width, height, and id are computed after Image.open, so they should be missing
+    assert "adb_image_width" not in props
+    assert "adb_image_height" not in props
+    assert "adb_image_id" not in props
 
 
 @patch('aperturedb.transformers.common_properties.logger')
