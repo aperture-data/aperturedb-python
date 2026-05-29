@@ -24,10 +24,10 @@ class ImageProperties(Transformer):
 
     def getitem(self, subscript):
         x = self.data[subscript]
-        try:
-            blob_index = 0
-            for cmd_dict in x[0]:
-                cmd_name = list(cmd_dict.keys())[0]
+        blob_index = 0
+        for cmd_dict in x[0]:
+            cmd_name = list(cmd_dict.keys())[0]
+            try:
                 if cmd_name == "AddImage":
                     src_properties = cmd_dict["AddImage"].setdefault(
                         "properties", {})
@@ -43,13 +43,13 @@ class ImageProperties(Transformer):
                     src_properties["adb_image_id"] = str(
                         src_properties["id"] if "id" in src_properties else uuid.uuid4().hex)
 
-                if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
-                    blob_index += 1
+            except Exception as e:
+                # Importantly, do not raise an exception here, since it will kill ingestion.
+                # Create a log message instead, for post-mortem analysis.
+                logger.exception(
+                    "Error applying image properties", stack_info=True)
 
-        except Exception as e:
-            # Importantly, do not raise an exception here, since it will kill ingestion.
-            # Create a log message instead, for post-mortem analysis.
-            logger.exception(
-                "Error applying image properties", stack_info=True)
+            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+                blob_index += 1
 
         return x
