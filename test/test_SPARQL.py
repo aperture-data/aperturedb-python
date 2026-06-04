@@ -16,6 +16,8 @@ from aperturedb.transformers.image_properties import ImageProperties
 from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
 
 import logging
+
+pytestmark = pytest.mark.external_network
 logger = logging.getLogger(__name__)
 
 
