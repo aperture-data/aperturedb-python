@@ -93,6 +93,9 @@ def test_video_properties(mock_get_utils):
             {"AddImage": {}},
             {"AddVideo": {}}
         ], [b"image_blob", dummy_video_data]),
+        ([
+            {"AddVideo": {}}
+        ], [dummy_video_data]),
     ]
 
     dummy_data = DummyData(data)
@@ -115,6 +118,9 @@ def test_video_properties(mock_get_utils):
                 assert "adb_video_id" in props
                 if "id" in props and props["id"] == "test_id":
                     assert props["adb_video_id"] == "test_id"
+                else:
+                    # uuid hex is 32 chars
+                    assert len(props["adb_video_id"]) == 32
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
@@ -141,6 +147,9 @@ def test_image_properties(mock_image_open, mock_get_utils):
             {"AddVideo": {}},
             {"AddImage": {"_ref": 2}}
         ], [b"video_blob", dummy_image_data]),
+        ([
+            {"AddImage": {"_ref": 3}}
+        ], [dummy_image_data]),
     ]
 
     dummy_data = DummyData(data)
@@ -160,6 +169,9 @@ def test_image_properties(mock_image_open, mock_get_utils):
                 assert "adb_image_id" in props
                 if "id" in props and props["id"] == "test_image_id":
                     assert props["adb_image_id"] == "test_image_id"
+                else:
+                    # uuid hex is 32 chars
+                    assert len(props["adb_image_id"]) == 32
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
