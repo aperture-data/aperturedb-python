@@ -20,8 +20,8 @@ class BoundingBoxProperties(Transformer):
             return self.data[subscript]
 
         x = self.data[subscript]
-        try:
-            for cmd_dict in x[0]:
+        for cmd_dict in x[0]:
+            try:
                 cmd_name = list(cmd_dict.keys())[0]
                 if cmd_name in ["AddBoundingBox", "AddPolygon"]:
                     src_properties = cmd_dict[cmd_name].setdefault(
@@ -30,8 +30,8 @@ class BoundingBoxProperties(Transformer):
                         src_properties["annotation_source"] = self.annotation_source
                     if self.annotation_mode:
                         src_properties["annotation_mode"] = self.annotation_mode
-        except Exception as e:
-            logger.exception(
-                "Error applying bounding box properties", stack_info=True)
+            except Exception as e:
+                logger.exception(
+                    "Error applying bounding box properties", stack_info=True)
 
         return x

@@ -26,8 +26,9 @@ class ImageProperties(Transformer):
         x = self.data[subscript]
         blob_index = 0
         for cmd_dict in x[0]:
-            cmd_name = list(cmd_dict.keys())[0]
+            cmd_name = None
             try:
+                cmd_name = list(cmd_dict.keys())[0]
                 if cmd_name == "AddImage":
                     src_properties = cmd_dict["AddImage"].setdefault(
                         "properties", {})

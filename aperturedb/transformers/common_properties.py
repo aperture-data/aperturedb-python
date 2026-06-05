@@ -31,8 +31,8 @@ class CommonProperties(Transformer):
             return self.data[subscript]
 
         x = self.data[subscript]
-        try:
-            for cmd_dict in x[0]:
+        for cmd_dict in x[0]:
+            try:
                 cmd_name = list(cmd_dict.keys())[0]
                 if cmd_name in ["AddImage", "AddVideo", "AddBoundingBox", "AddPolygon"]:
                     src_properties = cmd_dict[cmd_name].setdefault(
@@ -44,8 +44,8 @@ class CommonProperties(Transformer):
                     if self.adb_main_object:
                         src_properties["adb_main_object"] = self.adb_main_object
 
-        except Exception as e:
-            logger.exception(
-                "Error applying common properties", stack_info=True)
+            except Exception as e:
+                logger.exception(
+                    "Error applying common properties", stack_info=True)
 
         return x
