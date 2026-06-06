@@ -16,9 +16,9 @@ try:
     import clip
     import torch
     import cv2
-except ImportError:
+except ImportError as e:
     logger.critical(error_message)
-    exit(1)
+    raise ImportError(error_message) from e
 
 descriptor_set = "ViT-B/16"
 device = "cuda" if torch.cuda.is_available() else "cpu"
