@@ -438,8 +438,11 @@ def test_common_properties_exception_handling(mock_logger):
     assert mock_logger.exception.called
     assert "Error applying common properties" in mock_logger.exception.call_args[0][0]
     assert res[0][0]["AddImage"] == "invalid_type_not_dict"
+
+
 import pytest
 import aperturedb.transformers as transformers
+
 
 def test_transformers_init():
     assert transformers.Transformer is not None
@@ -447,16 +450,16 @@ def test_transformers_init():
     assert transformers.ImageProperties is not None
     assert transformers.VideoProperties is not None
     assert transformers.BoundingBoxProperties is not None
-    
+
     try:
         assert transformers.FacenetPyTorchEmbeddings is not None
     except ImportError:
         pass
-        
+
     try:
         assert transformers.CLIPPyTorchEmbeddings is not None
     except ImportError:
         pass
-        
+
     with pytest.raises(AttributeError):
         _ = transformers.NonExistentTransformer
