@@ -17,7 +17,6 @@ from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbedding
 
 import logging
 
-pytestmark = pytest.mark.external_network
 logger = logging.getLogger(__name__)
 
 
