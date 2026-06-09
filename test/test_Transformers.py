@@ -440,7 +440,6 @@ def test_common_properties_exception_handling(mock_logger):
     assert res[0][0]["AddImage"] == "invalid_type_not_dict"
 
 
-import pytest
 import aperturedb.transformers as transformers
 
 
