@@ -4,6 +4,9 @@ import runpy
 import requests
 import pytest
 import numpy as np
+
+pytestmark = pytest.mark.external_network
+
 import tempfile
 from aperturedb.Utils import Utils
 from aperturedb.SPARQL import SPARQL
