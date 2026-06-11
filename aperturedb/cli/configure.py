@@ -334,12 +334,11 @@ def activate(
             raise typer.Exit(code=2)
         configs["active"] = name
     except FileNotFoundError:
-        check_configured(as_global=False) or \
-            check_configured(as_global=True, show_error=True)
+        check_configured(as_global=as_global, show_error=True)
         raise typer.Exit(code=2)
     except json.JSONDecodeError:
-        check_configured(as_global=False) or \
-            check_configured(as_global=True, show_error=True)
+        msg = f"Configuration file at {config_path.as_posix()} is malformed."
+        console.log(msg)
         raise typer.Exit(code=2)
 
     _write_config(config_path, configs)
@@ -456,12 +455,11 @@ def get_key(name: Annotated[str, typer.Argument(
             target_configs[name].add_user_key(key_user, user_key)
             _write_config(target_path, target_configs)
     except FileNotFoundError:
-        check_configured(as_global=False) or \
-            check_configured(as_global=True, show_error=True)
+        check_configured(as_global=as_global, show_error=True)
         raise typer.Exit(code=2)
     except json.JSONDecodeError:
-        check_configured(as_global=False) or \
-            check_configured(as_global=True, show_error=True)
+        msg = f"Configuration file at {config_path.as_posix()} is malformed."
+        console.log(msg)
         raise typer.Exit(code=2)
 
     print(f"{user_key}")
