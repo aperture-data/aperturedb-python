@@ -17,8 +17,12 @@ class VideoProperties(Transformer):
         super().__init__(data, **kwargs)
         utils = self.get_utils()
 
-        if "adb_data_source" not in utils.get_indexed_props("_Video"):
-            utils.create_entity_index("_Video", "adb_data_source")
+        try:
+            if "adb_data_source" not in utils.get_indexed_props("_Video"):
+                utils.create_entity_index("_Video", "adb_data_source")
+        except Exception as e:
+            logger.exception(
+                "Error checking or creating index for _Video properties", stack_info=True)
 
     def getitem(self, subscript):
         x = self.data[subscript]
