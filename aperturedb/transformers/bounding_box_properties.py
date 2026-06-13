@@ -20,6 +20,7 @@ class BoundingBoxProperties(Transformer):
             return self.data[subscript]
 
         x = self.data[subscript]
+        # Iterate over current transaction commands to handle variable annotation counts
         for cmd_dict in x[0]:
             try:
                 cmd_name = list(cmd_dict.keys())[0]
