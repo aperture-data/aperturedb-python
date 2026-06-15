@@ -3,19 +3,16 @@ import numpy as np
 import cv2
 import logging
 
-from torch.utils import data
-
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Connector import Connector
-
 
 logger = logging.getLogger(__name__)
 
 
-class ApertureDBDataset(data.Dataset):
+class ApertureDBTensorFlowDataset:
     """
-    This class implements a PyTorch Dataset for ApertureDB.
-    It is used to load blobs returned by a `Find*` command from ApertureDB into a PyTorch model.
+    This class implements a TensorFlow Dataset for ApertureDB.
+    It is used to load blobs returned by a `Find*` command from ApertureDB into a TensorFlow model.
     It can be initialized with a query that will be used to retrieve
     the blobs from ApertureDB. Note that only `FindImage` blobs are decoded via OpenCV.
     """
@@ -34,6 +31,7 @@ class ApertureDBDataset(data.Dataset):
         self.batch_start = 0
         self.batch_end = 0
         self.label_prop = label_prop
+        self.label_type = None
 
         allowed_find_commands = {
             "FindImage", "FindVideo", "FindBlob",
@@ -99,31 +97,6 @@ class ApertureDBDataset(data.Dataset):
         finally:
             self.query[self.command_idx][self.command_name]["blobs"] = True
 
-    def __getitem__(self, index):
-
-        if index >= self.total_elements:
-            raise StopIteration
-
-        if not self.is_in_range(index):
-            self.get_batch(index)
-
-        idx = index % self.batch_size
-        blob = self.batch_blobs[idx]
-        label = self.batch_labels[idx]
-
-        if self.command_name == "FindImage":
-            nparr = np.frombuffer(blob, dtype=np.uint8)
-            blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if blob is None:
-                raise ValueError(f"Failed to decode image at index {index}.")
-            blob = cv2.cvtColor(blob, cv2.COLOR_BGR2RGB)
-
-        return blob, label
-
-    def __len__(self):
-
-        return self.total_elements
-
     def is_in_range(self, index):
 
         if index >= self.batch_start and index < self.batch_end:
@@ -140,7 +113,7 @@ class ApertureDBDataset(data.Dataset):
             raise Exception("Index out of range")
 
         query = self.query
-        qbatch = query[self.command_idx][self.command_name]["batch"]
+        qbatch = query[self.command_idx][self.command_name].get("batch", {})
         qbatch["batch_size"] = self.batch_size
         qbatch["batch_id"] = batch_idx
 
@@ -194,3 +167,76 @@ class ApertureDBDataset(data.Dataset):
         except:
             logger.error(f"Query error: {self.client.get_last_response_str()}")
             raise
+
+    def generator(self):
+        for index in range(self.total_elements):
+            if not self.is_in_range(index):
+                self.get_batch(index)
+
+            idx = index % self.batch_size
+            blob = self.batch_blobs[idx]
+            label = self.batch_labels[idx]
+
+            if self.command_name == "FindImage":
+                nparr = np.frombuffer(blob, dtype=np.uint8)
+                blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                if blob is None:
+                    raise ValueError(
+                        f"Failed to decode image at index {index}.")
+                blob = cv2.cvtColor(blob, cv2.COLOR_BGR2RGB)
+
+            yield blob, label
+
+    def get_dataset(self):
+        import tensorflow as tf
+
+        if self.label_type is None:
+            if self.total_elements > 0:
+                # Infer label_type with a lightweight query (blobs=False, batch_size=1)
+                import copy
+                infer_query = copy.deepcopy(self.query)
+                infer_query[self.command_idx][self.command_name]["blobs"] = False
+                infer_query[self.command_idx][self.command_name].setdefault(
+                    "batch", {})
+                infer_query[self.command_idx][self.command_name]["batch"]["batch_size"] = 1
+                infer_query[self.command_idx][self.command_name]["batch"]["batch_id"] = 0
+
+                try:
+                    _, r, _ = execute_query(
+                        query=infer_query, blobs=[], client=self.client)
+                    resp = r[self.command_idx][self.command_name]
+                    if resp.get("status", 0) != 0:
+                        raise Exception(
+                            f"Query Error: {resp.get('status')} {resp.get('info', '')}")
+                    if self.label_prop and "entities" in resp and len(resp["entities"]) > 0:
+                        sample_label = resp["entities"][0].get(self.label_prop)
+                    else:
+                        sample_label = "none"
+
+                    if isinstance(sample_label, int):
+                        self.label_type = tf.int32
+                    elif isinstance(sample_label, float):
+                        self.label_type = tf.float32
+                    else:
+                        self.label_type = tf.string
+                except Exception as e:
+                    logger.warning(
+                        "Failed to infer label_type: %s. Defaulting to tf.string.", e)
+                    self.label_type = tf.string
+            else:
+                self.label_type = tf.string
+
+        if self.command_name == "FindImage":
+            tensor_shape = (None, None, 3)
+            tensor_dtype = tf.uint8
+        else:
+            tensor_shape = ()
+            tensor_dtype = tf.string
+
+        return tf.data.Dataset.from_generator(
+            self.generator,
+            output_signature=(
+                tf.TensorSpec(shape=tensor_shape, dtype=tensor_dtype),
+                tf.TensorSpec(shape=(), dtype=self.label_type)
+            )
+        )

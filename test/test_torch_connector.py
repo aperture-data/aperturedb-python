@@ -20,18 +20,18 @@ class TestTorchDatasets():
 
         count = 0
         # Iterate over dataset.
-        for img in dataset:
-            if len(img[0]) < 0:
-                logger.error("Empty image?")
-                assert True == False
-            count += len(img[1]) if isinstance(dataset, DataLoader) else 1
+        for data in dataset:
+            if len(data[0]) == 0:
+                logger.error("Empty data?")
+                assert False
+            count += len(data[1]) if isinstance(dataset, DataLoader) else 1
         assert count == expected_length
 
         time_taken = time.time() - start
         if time_taken != 0:
             logger.info(f"Throughput (imgs/s): {len(dataset) / time_taken}")
 
-    def test_nativeContraints(self, db, utils, images):
+    def test_nativeConstraints(self, db, utils, images):
         assert len(images) > 0
         # This is a hack against a bug in batch API.
         dim = 224 if isinstance(db, ConnectorRest) else 225
@@ -57,6 +57,25 @@ class TestTorchDatasets():
             db, query, label_prop="license")
 
         self.validate_dataset(dataset, utils.count_images())
+
+    def test_findBlob(self, db, utils, insert_data_from_csv):
+        blobs, _ = insert_data_from_csv("./input/blobs.adb.csv")
+        assert len(blobs) > 0
+        query = [{
+            "FindBlob": {
+                "results": {}
+            }
+        }]
+
+        dataset = PyTorchDataset.ApertureDBDataset(
+            db, query, label_prop="license")
+
+        assert len(dataset) == utils.count_entities("_Blob")
+        for blob, label in dataset:
+            # For FindBlob, the return is raw bytes and label should be an int when label_prop='license'
+            assert isinstance(blob, bytes)
+            assert isinstance(label, int)
+            break
 
     def test_datasetWithMultiprocessing(self, db, utils, images):
         len_limit = utils.count_images()
@@ -124,3 +143,34 @@ class TestTorchDatasets():
 
         self.validate_dataset(data_loader, len_limit)
         dist.destroy_process_group()
+
+    def test_findVideo_mocked(self):
+        from unittest.mock import patch
+
+        class DummyClient:
+            def clone(self):
+                return self
+
+            def get_last_response_str(self):
+                return ""
+
+        query = [{"FindVideo": {"results": {"list": ["prop"]}}}]
+
+        with patch('aperturedb.PyTorchDataset.execute_query') as mock_exec:
+            def side_effect(*args, **kwargs):
+                batch_dict = {"total_elements": 1}
+                entities = [{"prop": 1}]
+                r = [{"FindVideo": {"batch": batch_dict, "entities": entities}}]
+                b = [b"mock_video_bytes"]
+                return None, r, b
+
+            mock_exec.side_effect = side_effect
+            dataset = PyTorchDataset.ApertureDBDataset(
+                DummyClient(), query, label_prop="prop")
+
+            assert len(dataset) == 1
+            for blob, label in dataset:
+                assert isinstance(blob, bytes)
+                assert blob == b"mock_video_bytes"
+                assert label == 1
+                break

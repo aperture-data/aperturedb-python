@@ -1,14 +1,9 @@
-name: develop
+name: nightly
 
 on:
-  push:
-    branches:
-      - develop
+  schedule:
+    - cron: '0 0 * * *'
 
-# Newer pushes to develop supersede older in-flight runs. The post-test
-# publish job (build_and_deploy_docs) only matters for the latest commit, so
-# cancelling stale runs avoids wasting an hour of CI for code that is already
-# obsolete.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -36,7 +31,6 @@ jobs:
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
-
     - name: Build and Run Tests
       env:
         # Run both protocols inside a single job. run_test_container.sh starts
@@ -49,7 +43,7 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-        RUNNER_NAME: ${{ runner.name }}_develop
+        RUNNER_NAME: ${{ runner.name }}_nightly
         # BuildKit + inline cache so subsequent runs actually reuse layers
         # pulled via --cache-from in ci.sh.
         DOCKER_BUILDKIT: 1
@@ -61,34 +55,3 @@ jobs:
       run: RUN_TESTS=true ./ci.sh
       shell: bash
 
-  build_and_deploy_docs:
-    needs:
-    - build-test
-
-    runs-on:
-    - benchmark
-
-    steps:
-
-    - uses: actions/checkout@v3
-
-    - name: Login to DockerHub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USER }}
-        password: ${{ secrets.DOCKER_PASS }}
-
-    - name: Build Notebook,docs Docker
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        RUNNER_NAME: ${{ runner.name }}
-        DOCKER_BUILDKIT: 1
-        COMPOSE_DOCKER_CLI_BUILD: 1
-        ADB_REPO: aperturedata/aperturedb
-        ADB_TAG: dev
-        LENZ_REPO: aperturedata/lenz
-        LENZ_TAG: dev
-      run: BUILD_COMPLETE=true ./ci.sh
-      shell: bash

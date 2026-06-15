@@ -62,7 +62,7 @@ class TestParallel():
         except Exception as e:
             print(e)
             print("Failed to renew Session")
-            assert False
+            raise
 
     def test_allBadQueries(self, db: Connector):
         """
@@ -80,7 +80,88 @@ class TestParallel():
         except Exception as e:
             print(e)
             print("Failed to renew Session")
-            assert False
+            raise
+
+    def test_dictResponseHandling(self):
+        """
+        Verifies that it handles a dict response from a failing server properly.
+        Guards against regression to "unhashable type: 'slice'" when r is a dict.
+        """
+        from unittest.mock import MagicMock
+        try:
+            elements = 10
+            generator = GeneratorWithErrors(elements=elements)
+            db = MagicMock(spec=Connector)
+            db.clone.return_value = db
+            db.config = "mock_config"
+            db.query.return_value = ([{"GetSchema": {"status": 0}}], [])
+            querier = ParallelQuery(db, dry_run=False)
+
+            # Now set the mock for the actual queries
+            db.query.return_value = (
+                {"status": 3, "error_msg": "mock error"}, [])
+            db.last_query_ok.return_value = True
+            db.get_last_query_time.return_value = 1.0
+
+            querier.query(generator, batchsize=2, numthreads=1, stats=True)
+
+            # Since all queries got status 3, no commands or queries succeeded.
+            assert querier.get_succeeded_commands() == 0
+            assert querier.get_succeeded_queries() == 0
+            # Ensure stats were recorded properly
+            assert len(querier.actual_stats) > 0
+        except Exception as e:
+            print(e)
+            raise
+
+    def test_parallel_query_worker_closes_connection(self, db, monkeypatch):
+        from aperturedb.QueryGenerator import QueryGenerator
+        import threading
+
+        class MockQueryGenerator(QueryGenerator):
+            def __len__(self):
+                return 2
+
+            def getitem(self, idx):
+                return [{"FindImage": {}}], []
+
+        pq = ParallelQuery(db)
+
+        closed_count = [0]
+        original_clone = pq.client.clone
+
+        def mock_clone():
+            cloned = original_clone()
+            original_close = cloned.close
+
+            def mock_close():
+                closed_count[0] += 1
+                original_close()
+            cloned.close = mock_close
+            return cloned
+        monkeypatch.setattr(pq.client, "clone", mock_clone)
+
+        original_do_batch = pq.do_batch
+
+        def mock_do_batch(client, batch_start, data):
+            if batch_start == 1:
+                raise Exception("Simulated do_batch exception")
+            original_do_batch(client, batch_start, data)
+        monkeypatch.setattr(pq, "do_batch", mock_do_batch)
+
+        # Test exception in do_batch
+        pq.query(MockQueryGenerator(), batchsize=1, numthreads=1)
+        # Should close even if exception occurred in do_batch
+        assert closed_count[0] == 1
+
+        # Test early exit when run_event is cleared
+        closed_count[0] = 0
+        run_event = threading.Event()
+        run_event.clear()  # Not set, so worker breaks immediately
+
+        # worker signature: worker(self, thid: int, generator, start: int, end: int, run_event)
+        pq.worker(0, MockQueryGenerator(), 0, 1, run_event)
+        assert closed_count[0] == 1
 
 
 def test_dask_dry_run(db: Connector):

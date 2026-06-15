@@ -4,6 +4,7 @@ from aperturedb import Parallelizer
 import numpy as np
 import logging
 import inspect
+import threading
 
 
 from aperturedb.DaskManager import DaskManager
@@ -65,6 +66,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         self.blobs_per_query = 0
         self.daskManager = None
         self.batch_command = execute_query
+        self.error_counter_lock = threading.Lock()
 
     def generate_batch(self, data: List[Tuple[Commands, Blobs]]) -> Tuple[Commands, Blobs]:
         """
@@ -158,9 +160,12 @@ class ParallelQuery(Parallelizer.Parallelizer):
         worker_stats = {}
         if not self.dry_run:
             response_handler = None
+            error_handler = None
             strict_response_validation = False
             if hasattr(self.generator, "response_handler") and callable(self.generator.response_handler):
                 response_handler = self.generator.response_handler
+            if hasattr(self.generator, "error_handler") and callable(self.generator.error_handler):
+                error_handler = self.generator.error_handler
             if hasattr(self.generator, "strict_response_validation") and isinstance(self.generator.strict_response_validation, bool):
                 strict_response_validation = self.generator.strict_response_validation
 
@@ -173,6 +178,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                                     f"expected 6 > args > 3, got {parameter_count}")
                 if parameter_count == 4:
                     indexless_handler = response_handler
+
                     def response_handler(query, qblobs, resp, rblobs, qindex): return indexless_handler(
                         query, qblobs, resp, rblobs)
 
@@ -185,34 +191,42 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.commands_per_query,
                 self.blobs_per_query,
                 strict_response_validation=strict_response_validation,
-                cmd_index=batch_start)
+                cmd_index=batch_start,
+                error_handler=error_handler)
             if result == 0:
                 query_time = client.get_last_query_time()
                 worker_stats["succeeded_commands"] = len(q)
                 worker_stats["succeeded_queries"] = len(data)
                 worker_stats["objects_existed"] = sum(
-                    [v['status'] == 2 for i in r for k, v in i.items()])
+                    v['status'] == 2 for i in r for k, v in i.items())
             elif result == 1:
-                self.error_counter += 1
+                with self.error_counter_lock:
+                    self.error_counter += 1
                 worker_stats["succeeded_queries"] = 0
                 worker_stats["succeeded_commands"] = 0
                 worker_stats["objects_existed"] = 0
             elif result == 2:
+                if client.last_query_ok():
+                    query_time = client.get_last_query_time()
                 # with result 2, some queries might have failed.
-                def filter_per_group(group):
-                    return group.items() if isinstance(group, dict) else {}
-                worker_stats["succeeded_commands"] = sum(
-                    [v['status'] == 0 for i in r for k, v in filter_per_group(i)])
-                worker_stats["objects_existed"] = sum(
-                    [v['status'] == 2 for i in r for k, v in filter_per_group(i)])
-                sq = 0
-                for i in range(0, len(r), self.commands_per_query):
-                    # Some errors stop the whole query from being executed
-                    # https://docs.aperturedata.io/query_language/Overview/Responses#return-status
-                    if issubclass(type(r), list):
-                        if all([v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)]):
+                if isinstance(r, list):
+                    def filter_per_group(group):
+                        return group.items() if isinstance(group, dict) else ()
+                    worker_stats["succeeded_commands"] = sum(
+                        v['status'] == 0 for i in r for k, v in filter_per_group(i))
+                    worker_stats["objects_existed"] = sum(
+                        v['status'] == 2 for i in r for k, v in filter_per_group(i))
+                    sq = 0
+                    for i in range(0, len(r), self.commands_per_query):
+                        # Some errors stop the whole query from being executed
+                        # https://docs.aperturedata.io/query_language/Overview/Responses#return-status
+                        if all(v['status'] == 0 for j in r[i:i + self.commands_per_query] for k, v in filter_per_group(j)):
                             sq += 1
-                worker_stats["succeeded_queries"] = sq
+                    worker_stats["succeeded_queries"] = sq
+                else:
+                    worker_stats["succeeded_commands"] = 0
+                    worker_stats["objects_existed"] = 0
+                    worker_stats["succeeded_queries"] = 0
         else:
             query_time = 1
             worker_stats["succeeded_commands"] = len(q)
@@ -227,43 +241,51 @@ class ParallelQuery(Parallelizer.Parallelizer):
         # A new connection will be created for each thread
         client = self.client.clone()
 
-        total_batches = (end - start) // self.batchsize
+        try:
+            total_batches = (end - start) // self.batchsize
 
-        if (end - start) % self.batchsize > 0:
-            total_batches += 1
+            if (end - start) % self.batchsize > 0:
+                total_batches += 1
 
-        logger.info(
-            f"Worker {thid} executing {total_batches} batches, {self.stats=}")
-        for i in range(total_batches):
-            if not run_event.is_set():
-                break
-            batch_start = start + i * self.batchsize
-            batch_end = min(batch_start + self.batchsize, end)
+            logger.info(
+                f"Worker {thid} executing {total_batches} batches, {self.stats=}")
+            executed_batches = 0
+            for i in range(total_batches):
+                if not run_event.is_set():
+                    break
+                batch_start = start + i * self.batchsize
+                batch_end = min(batch_start + self.batchsize, end)
 
-            try:
-                self.do_batch(client, batch_start,
-                              generator[batch_start:batch_end])
-            except Exception as e:
-                logger.exception(e)
-                logger.warning(
-                    f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
-                self.error_counter += 1
+                try:
+                    self.do_batch(client, batch_start,
+                                  generator[batch_start:batch_end])
+                except Exception as e:
+                    logger.exception(e)
+                    logger.warning(
+                        f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
+                    with self.error_counter_lock:
+                        self.error_counter += 1
 
-            if self.stats:
-                self.pb.update(batch_end - batch_start)
-        logger.info(f"Worker {thid} executed {total_batches} batches")
+                executed_batches += 1
+                if self.stats:
+                    self.pb.update(batch_end - batch_start)
+            logger.info(f"Worker {thid} executed {executed_batches} batches")
+        finally:
+            # Explicitly close the connection to avoid exhausting server connection limits
+            if client is not self.client and hasattr(client, 'close') and callable(client.close):
+                client.close()
 
     def get_objects_existed(self) -> int:
-        return sum([stat["objects_existed"]
-                    for stat in self.actual_stats])
+        return sum(stat["objects_existed"]
+                   for stat in self.actual_stats)
 
     def get_succeeded_queries(self) -> int:
-        return sum([stat["succeeded_queries"]
-                    for stat in self.actual_stats])
+        return sum(stat["succeeded_queries"]
+                   for stat in self.actual_stats)
 
     def get_succeeded_commands(self) -> int:
-        return sum([stat["succeeded_commands"]
-                    for stat in self.actual_stats])
+        return sum(stat["succeeded_commands"]
+                   for stat in self.actual_stats)
 
     def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False) -> None:
         """
@@ -279,19 +301,20 @@ class ParallelQuery(Parallelizer.Parallelizer):
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:
             self._reset(batchsize=batchsize, numthreads=numthreads)
-            self.daskmanager = DaskManager(num_workers=numthreads)
+            self.daskManager = DaskManager(num_workers=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
 
         if use_dask:
-            results, self.total_actions_time = self.daskmanager.run(
+            results, self.total_actions_time = self.daskManager.run(
                 self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run)
             self.actual_stats = []
             for result in results:
                 if result is not None:
                     self.times_arr.extend(result.times_arr)
-                    self.error_counter += result.error_counter
+                    with self.error_counter_lock:
+                        self.error_counter += result.error_counter
                     self.actual_stats.append(
                         {"succeeded_queries": result.succeeded_queries,
                          "succeeded_commands": result.succeeded_commands,
@@ -302,7 +325,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 self.print_stats()
         else:
             # allow subclass to do verification
-            if issubclass(type(self), ParallelQuery) and hasattr(self, 'verify_generator') and callable(self.verify_generator):
+            if isinstance(self, ParallelQuery) and hasattr(self, 'verify_generator') and callable(self.verify_generator):
                 self.verify_generator(generator)
             elif len(generator) > 0:
                 if isinstance(generator[0], tuple) and isinstance(generator[0][0], list):

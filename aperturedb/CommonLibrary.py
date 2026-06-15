@@ -271,7 +271,8 @@ def execute_query(client: Connector, query: Commands,
                   blobs: Blobs = [],
                   success_statuses: list[int] = [0],
                   response_handler: Optional[Callable] = None, commands_per_query: int = 1, blobs_per_query: int = 0,
-                  strict_response_validation: bool = False, cmd_index=None) -> Tuple[int, CommandResponses, Blobs]:
+                  strict_response_validation: bool = False, cmd_index=None,
+                  error_handler: Optional[Callable] = None) -> Tuple[int, CommandResponses, Blobs]:
     """
     Execute a batch of queries, doing useful logging around it.
     Calls the response handler if provided.
@@ -288,6 +289,8 @@ def execute_query(client: Connector, query: Commands,
         commands_per_query (int, optional): The number of commands per query. Defaults to 1.
         blobs_per_query (int, optional): The number of blobs per query. Defaults to 0.
         strict_response_validation (bool, optional): Whether to strictly validate the response. Defaults to False.
+        cmd_index (int, optional): The index of the command or batch, passed to the response handler. Defaults to None.
+        error_handler (Callable, optional): Callback invoked when the query returns an unexpected status or fails. Expected signature is `error_handler(query, response, blobs)`. Defaults to None.
 
     Returns:
         int: The result code.
@@ -310,14 +313,21 @@ def execute_query(client: Connector, query: Commands,
                 map_response_to_handler(response_handler,
                                         query, blobs, r, b, commands_per_query, blobs_per_query,
                                         cmd_index)
-            except BaseException as e:
+            except Exception as e:
                 logger.exception(e)
                 if strict_response_validation:
-                    raise e
+                    raise
     else:
         # Transaction failed entirely.
+        num_commands = len(query) if isinstance(query, list) else 1
+        truncated_query = query[:2] if isinstance(
+            query, list) and num_commands > 2 else query
+        query_summary = (
+            f"{num_commands} commands (showing first 2: {truncated_query})"
+            if num_commands > 2 else str(query)
+        )
         logger.error(
-            f"Failed query = {query} with response = {censor_tokens(r)}")
+            f"Failed query = {query_summary} with response = {censor_tokens(r)}")
         result = 1
 
     statuses = {}
@@ -334,15 +344,24 @@ def execute_query(client: Connector, query: Commands,
 
     # last_query_ok means result status >= 0
     if result != 1:
-        warn_list = []
+        warnings_count = 0
         for status, results in statuses.items():
             if status not in success_statuses:
-                for wr in results:
-                    warn_list.append(wr)
-        if len(warn_list) != 0:
+                warnings_count += len(results)
+        if warnings_count != 0:
             logger.warning(
-                f"Partial errors:\r\n{json.dumps(query, default=str)}\r\n{json.dumps(censor_tokens(warn_list), default=str)}")
+                f"Encountered {warnings_count} partial errors. "
+                "Use error_handler or inspect response for details."
+            )
             result = 2
+
+    if result != 0 and error_handler is not None:
+        try:
+            error_handler(query, r, blobs)
+        except Exception as e:
+            logger.exception(e)
+            if strict_response_validation:
+                raise
 
     return result, r, b
 
@@ -375,8 +394,7 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
         handler(
             query[start:end],
             query_blobs[blobs_start:blobs_end],
-            response[start:end] if isinstance(
-                response, list) else response,
+            response[start:end] if is_list else response,
             response_blobs[blobs_returned:blobs_returned + b_count] if
             len(response_blobs) >= blobs_returned + b_count else None,
             None if cmd_index_offset is None else cmd_index_offset + i)
