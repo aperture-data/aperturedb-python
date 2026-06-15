@@ -100,10 +100,8 @@ jobs:
       with:
         credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         project_id: ${{ secrets.GCP_SERVICE_ACCOUNT_PROJECT_ID }}
-
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
-
     - name: Build tests on pytorch GPU image
       run: |
         rm -rf docker/pytorch-gpu/aperturedata

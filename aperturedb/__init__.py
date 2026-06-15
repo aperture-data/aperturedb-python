@@ -10,7 +10,7 @@ import faulthandler
 import signal
 import sys
 
-__version__ = "0.4.59"
+__version__ = "0.4.60"
 
 logger = logging.getLogger(__name__)
 
