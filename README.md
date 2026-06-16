@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/aperturedb.svg)](https://badge.fury.io/py/aperturedb)
 [![Python versions](https://img.shields.io/pypi/pyversions/aperturedb.svg)](https://pypi.org/project/aperturedb/)
 [![License](https://img.shields.io/pypi/l/aperturedb.svg)](https://github.com/aperture-data/aperturedb-python/blob/main/LICENSE)
-[![Build Status](https://github.com/aperture-data/aperturedb-python/actions/workflows/ci.yml/badge.svg)](https://github.com/aperture-data/aperturedb-python/actions)
+[![Build Status](https://github.com/aperture-data/aperturedb-python/actions/workflows/main.yml/badge.svg)](https://github.com/aperture-data/aperturedb-python/actions)
 
 The **ApertureDB Python SDK** provides a seamless interface for interacting with [ApertureDB](https://docs.aperturedata.io/Introduction/WhatIsAperture), the purpose-built database for storing, managing, and querying visual data (images, videos) alongside metadata, embeddings, and annotations.
 
@@ -11,7 +11,7 @@ This SDK includes comprehensive utilities to efficiently ingest and retrieve dat
 
 ## 🚀 Integrations & Capabilities
 
-The SDK is designed for modern ML workflows and offers out-of-the-box integrations with:
+The SDK is designed for modern ML workflows and offers seamless integrations with (some require additional dependencies):
 *   **Deep Learning Frameworks:** Seamless conversion of ApertureDB queries into `PyTorch` (`PyTorchDataset`) and `TensorFlow` (`TensorFlowDataset`) data loaders for immediate model training.
 *   **Vector Search & Embeddings:** First-class support for storing and retrieving high-dimensional descriptors, including native embedding extraction utilizing `CLIP` and `Facenet`.
 *   **Distributed Data Processing:** Integration with `Dask` to handle parallelized data loading and large-scale query execution.
@@ -24,7 +24,7 @@ The SDK is designed for modern ML workflows and offers out-of-the-box integratio
 To install the SDK in a standard virtual environment with all core integrations (such as PyTorch and TensorFlow support):
 
 ```bash
-pip install aperturedb[complete]
+pip install "aperturedb[complete]"
 ```
 
 To install just the lightweight core client without the heavy ML dependencies:
@@ -63,12 +63,12 @@ docker compose up -d
 
 ### Development Environment Adjustments
 
-To connect to the local test environment natively from your host, edit `test/dbinfo.py` to match the exposed ports:
+To connect to the local test environment natively from your host, edit `test/dbinfo.py` to match the exposed ports (you can find the ephemeral ports by running `docker compose port lenz 55551` and `docker compose port nginx 80`):
 ```python
 DB_TCP_HOST = 'localhost'
 DB_REST_HOST = 'localhost'
-DB_TCP_PORT  = '55556'
-DB_REST_PORT = '8087'
+DB_TCP_PORT  = 55551  # Replace with the mapped host port for lenz
+DB_REST_PORT = 8080   # Replace with the mapped host port for nginx
 ```
 
 ### Executing Tests
