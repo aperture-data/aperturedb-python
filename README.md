@@ -13,11 +13,11 @@ This SDK includes comprehensive utilities to efficiently ingest and retrieve dat
 
 The SDK is designed for modern ML workflows and offers seamless integrations with (some require additional dependencies):
 *   **Deep Learning Frameworks:** Seamless conversion of ApertureDB queries into `PyTorch` (`PyTorchDataset`) and `TensorFlow` (`TensorFlowDataset`) data loaders for immediate model training.
-*   **Vector Search & Embeddings:** First-class support for storing and retrieving high-dimensional descriptors, including native embedding extraction utilizing `CLIP` and `Facenet`.
+*   **Vector Search & Embeddings:** First-class support for storing and retrieving high-dimensional descriptors, including native embedding extraction utilizing `CLIP` (requires `openai-clip`) and `Facenet`.
 *   **Distributed Data Processing:** Integration with `Dask` to handle parallelized data loading and large-scale query execution.
 *   **Cloud Storage Integrations:** Easy handling of assets stored remotely using `Boto3` (AWS S3) and Google Cloud Storage.
 *   **ML Croissant:** Native parsing and handling of datasets aligned with the ML Croissant metadata format.
-*   **Knowledge Graphs:** Ability to execute and map SPARQL queries natively into the database.
+*   **Knowledge Graphs:** Ability to execute and map SPARQL queries natively into the database (requires `rdflib`).
 
 ## 📦 Installation
 
@@ -53,7 +53,7 @@ pip install -e .[dev]
 
 ## 🧪 Running Tests
 
-The tests are located inside the `test/` directory. They are designed to run within an isolated Linux container network composed of `aperturedb-community`, `lenz`, `nginx`, `ca`, and `webui`.
+The tests are located inside the `test/` directory. They are designed to run within an isolated Linux container network composed of `aperturedb`, `lenz`, `nginx`, `ca`, and `webui`.
 
 If you'd like to bring up the environment manually, ensure your working directory is `test/` and run:
 
@@ -63,12 +63,13 @@ docker compose up -d
 
 ### Development Environment Adjustments
 
-To connect to the local test environment natively from your host, edit `test/dbinfo.py` to match the exposed ports (you can find the ephemeral ports by running `docker compose port lenz 55551` and `docker compose port nginx 80`):
+To connect to the local test environment natively from your host, edit `test/dbinfo.py` to match the exposed ports (you can find the ephemeral ports by running `docker compose port lenz 55551` and `docker compose port nginx 443`):
 ```python
 DB_TCP_HOST = 'localhost'
 DB_REST_HOST = 'localhost'
 DB_TCP_PORT  = 55551  # Replace with the mapped host port for lenz
-DB_REST_PORT = 8080   # Replace with the mapped host port for nginx
+DB_REST_PORT = 8443   # Replace with the mapped host port for nginx 443
+VERIFY_HOSTNAME = False # Required when connecting to localhost to skip cert hostname validation
 ```
 
 ### Executing Tests
