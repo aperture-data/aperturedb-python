@@ -91,3 +91,4 @@ except Exception as e:
 if __version__ != latest_version:
     logger.warning(
         f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")
+from .ConnectionPool import ConnectionPool
