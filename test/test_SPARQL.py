@@ -4,6 +4,9 @@ import runpy
 import requests
 import pytest
 import numpy as np
+
+pytestmark = pytest.mark.external_network
+
 import tempfile
 from aperturedb.Utils import Utils
 from aperturedb.SPARQL import SPARQL
@@ -16,6 +19,7 @@ from aperturedb.transformers.image_properties import ImageProperties
 from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,12 +61,6 @@ def load_cookbook(utils: Utils, db):
     finally:
         os.chdir(original_dir)
 
-
-# Tag the test functions that depend on the setup as external_network
-def pytest_collection_modifyitems(items):
-    for item in items:
-        if "load_cookbook" in getattr(item, "fixturenames", ()):
-            item.add_marker("external_network")
 
 # Test functions that depends on the setup
 

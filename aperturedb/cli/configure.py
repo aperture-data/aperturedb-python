@@ -88,7 +88,7 @@ def get_configurations(file: str):
                 verify_hostname=config.get("verify_hostname", True))
             if "user_keys" in config:
                 configs[c].set_user_keys(config["user_keys"])
-    active = configurations["active"]
+    active = configurations.get("active")
     return configs, active
 
 
@@ -100,7 +100,8 @@ def get_all_configs():
         try:
             configs, active = get_configurations(config_path.as_posix())
             all_configs[context] = configs
-            all_configs["active"] = active
+            if active:
+                all_configs["active"] = active
         except FileNotFoundError:
             check_configured(as_global)
         except json.JSONDecodeError:
@@ -121,12 +122,22 @@ def get_all_configs():
 
 
 def get_active_config(all_configs):
-    active = all_configs["active"]
+    active = all_configs.get("active")
+    if not active:
+        console.log(
+            "No active configuration found. Please run adb config activate <name>")
+        raise typer.Exit(code=2)
     if active.startswith("env:"):
         return all_configs["environment"][active[4:]]
     else:
-        return all_configs["local"][active] if "locan" in all_configs and active in all_configs["local"] \
-            else all_configs["global"][active]
+        if "local" in all_configs and active in all_configs["local"]:
+            return all_configs["local"][active]
+        elif "global" in all_configs and active in all_configs["global"]:
+            return all_configs["global"][active]
+        else:
+            console.log(f"Active configuration '{active}' "
+                        "not found in any config file.")
+            raise typer.Exit(code=2)
 
 
 @app.command()
@@ -208,6 +219,7 @@ def create(
     db_verify_hostname = verify_hostname
     config_path = _config_file_path(as_global)
     configs = {}
+    ac = None
     try:
         configs, ac = get_configurations(config_path.as_posix())
     except FileNotFoundError as e:
@@ -236,16 +248,25 @@ def create(
         name = name if name is not None else gen_config.name
 
     else:
-        if not CONFIG_NAME_RE.match(name):
-            console.log(
-                f"Configuration name {name} must be alphanumerical with dashes of 1-64 characters in length", style="bold yellow")
-            raise typer.Exit(code=2)
-        if interactive:
-            if name is None:
-                name = typer.prompt(
-                    "Enter configuration name", default=name)
-                assert name is not None, "Configuration name must be specified"
+        if name is None:
+            if interactive:
+                name = typer.prompt("Enter configuration name", default="")
+                if not name:
+                    console.log(
+                        "Configuration name must be specified", style="bold yellow")
+                    raise typer.Exit(code=2)
                 check_for_overwrite(name)
+            else:
+                console.log("Configuration name must be specified",
+                            style="bold yellow")
+                raise typer.Exit(code=2)
+
+        if not CONFIG_NAME_RE.fullmatch(name):
+            console.log(
+                f"Configuration name {name} must be alphanumerical with dashes and underscores of 1-64 characters in length", style="bold yellow")
+            raise typer.Exit(code=2)
+
+        if interactive:
             db_host = typer.prompt(
                 f"Enter {APP_NAME} host name", default=db_host)
             db_port = typer.prompt(
@@ -285,7 +306,7 @@ def create(
     configs[name] = gen_config
     if active:
         configs["active"] = name
-    else:
+    elif ac:
         configs["active"] = ac
 
     _write_config(config_path, configs)
@@ -299,22 +320,26 @@ def activate(
     Set the default configuration.
     """
     global_config_path = _config_file_path(True)
-    gc, ga = get_configurations(global_config_path)
+    try:
+        gc, _ = get_configurations(global_config_path.as_posix())
+    except (FileNotFoundError, json.JSONDecodeError):
+        gc = {}
 
     config_path = _config_file_path(as_global)
     configs = {}
     try:
-        configs, ac = get_configurations(config_path.as_posix())
+        configs, _ = get_configurations(config_path.as_posix())
         if name not in configs and name not in gc:
             console.log(f"Configuration {name} not found")
             raise typer.Exit(code=2)
         configs["active"] = name
     except FileNotFoundError:
-        check_configured(as_global=False) or \
-            check_configured(as_global=True, show_error=True)
+        check_configured(as_global=as_global, show_error=True)
+        raise typer.Exit(code=2)
     except json.JSONDecodeError:
-        check_configured(as_global=False) or \
-            check_configured(as_global=True, show_error=True)
+        msg = f"Configuration file at {config_path.as_posix()} is malformed."
+        console.log(msg)
+        raise typer.Exit(code=2)
 
     _write_config(config_path, configs)
 
@@ -368,8 +393,9 @@ def remove(
         if new_active:
             ac = new_active
         else:
-            ac = next(iter(configs))
-    configs["active"] = ac
+            ac = next(iter(configs), None)
+    if ac:
+        configs["active"] = ac
     _write_config(config_path, configs)
 
 
@@ -382,6 +408,12 @@ def get_key(name: Annotated[str, typer.Argument(
     """
     Makes a token from the configuration
     """
+
+    global_config_path = _config_file_path(True)
+    try:
+        gc, ga = get_configurations(global_config_path.as_posix())
+    except (FileNotFoundError, json.JSONDecodeError):
+        gc, ga = {}, None
 
     config_path = _config_file_path(as_global)
     configs = {}
@@ -397,28 +429,38 @@ def get_key(name: Annotated[str, typer.Argument(
         if name not in configs and name not in gc:
             console.log(f"Configuration {name} not found")
             raise typer.Exit(code=2)
-        configs["active"] = active
+        if active:
+            configs["active"] = active
+
+        target_configs = configs
+        target_path = config_path
+        if name not in configs and name in gc:
+            target_configs = gc
+            if ga is not None:
+                target_configs["active"] = ga
+            target_path = global_config_path
 
         if user is None:
-            key_user = configs[name].username
+            key_user = target_configs[name].username
         else:
             key_user = user
 
-        if configs[name].has_user_keys():
-            user_key = configs[name].get_user_key(key_user)
+        if target_configs[name].has_user_keys():
+            user_key = target_configs[name].get_user_key(key_user)
 
         if user_key is None:
-            conn = __create_connector(configs[name])
+            conn = __create_connector(target_configs[name])
 
             user_key = keys.generate_user_key(conn, key_user)
-            configs[name].add_user_key(key_user, user_key)
-            _write_config(config_path, configs)
+            target_configs[name].add_user_key(key_user, user_key)
+            _write_config(target_path, target_configs)
     except FileNotFoundError:
-        check_configured(as_global=False) or \
-            check_configured(as_global=True, show_error=True)
+        check_configured(as_global=as_global, show_error=True)
+        raise typer.Exit(code=2)
     except json.JSONDecodeError:
-        check_configured(as_global=False) or \
-            check_configured(as_global=True, show_error=True)
+        msg = f"Configuration file at {config_path.as_posix()} is malformed."
+        console.log(msg)
+        raise typer.Exit(code=2)
 
     print(f"{user_key}")
 
