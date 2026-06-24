@@ -12,11 +12,11 @@ This SDK includes comprehensive utilities to efficiently ingest and retrieve dat
 ## 🚀 Integrations & Capabilities
 
 The SDK is designed for modern ML workflows and offers seamless integrations with (some require additional dependencies):
-*   **Deep Learning Frameworks:** Seamless conversion of ApertureDB queries into `PyTorch` (`PyTorchDataset`) and `TensorFlow` (`TensorFlowDataset`) data loaders for immediate model training.
+*   **Deep Learning Frameworks:** Seamless conversion of ApertureDB queries into `PyTorch` (`PyTorchDataset.ApertureDBDataset`) and `TensorFlow` (`ApertureDBTensorFlowDataset`) data loaders for immediate model training.
 *   **Vector Search & Embeddings:** First-class support for storing and retrieving high-dimensional descriptors, including native embedding extraction utilizing `CLIP` (requires `openai-clip`) and `Facenet`.
 *   **Distributed Data Processing:** Integration with `Dask` to handle parallelized data loading and large-scale query execution.
 *   **Cloud Storage Integrations:** Easy handling of assets stored remotely using `Boto3` (AWS S3) and Google Cloud Storage.
-*   **ML Croissant:** Native parsing and handling of datasets aligned with the ML Croissant metadata format.
+*   **ML Croissant:** Native parsing and handling of datasets aligned with the ML Croissant metadata format (requires `mlcroissant`).
 *   **Knowledge Graphs:** Ability to execute and map SPARQL queries natively into the database (requires `rdflib`).
 
 ## 📦 Installation
@@ -27,7 +27,7 @@ To install the SDK in a standard virtual environment with all core integrations 
 pip install "aperturedb[complete]"
 ```
 
-To install just the lightweight core client without the heavy ML dependencies:
+To install just the base client without optional deep learning extras:
 
 ```bash
 pip install aperturedb
@@ -48,7 +48,7 @@ The recommended way to contribute is to clone this repository and perform an edi
 ```bash
 git clone https://github.com/aperture-data/aperturedb-python.git
 cd aperturedb-python
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
 ## 🧪 Running Tests
@@ -67,9 +67,9 @@ To connect to the local test environment natively from your host, edit `test/dbi
 ```python
 DB_TCP_HOST = 'localhost'
 DB_REST_HOST = 'localhost'
-DB_TCP_PORT  = 55551  # Replace with the mapped host port for lenz
-DB_REST_PORT = 8443   # Replace with the mapped host port for nginx 443
-VERIFY_HOSTNAME = False # Required when connecting to localhost to skip cert hostname validation
+DB_TCP_PORT  = 0  # Replace with the mapped host port for lenz
+DB_REST_PORT = 0  # Replace with the mapped host port for nginx 443
+# VERIFY_HOSTNAME = False # Optional: Only required if connecting via IP instead of localhost
 ```
 
 ### Executing Tests
@@ -95,7 +95,7 @@ The following environment variables can modify the runtime behavior of the SDK, 
 
 | Variable | Type | Description | Default Value |
 | --- | --- | --- | --- |
-| `ADB_DEBUGGABLE` | `boolean` | Allows the application to register a fault handler that dumps a trace when `SIGUSR1` is sent to the process. | *Not set* |
+| `ADB_DEBUGGABLE` | `flag` | If set (to any value), allows the application to register a fault handler that dumps a trace when `SIGUSR1` is sent to the process. | *Not set* |
 | `LOG_FILE_LEVEL` | `string` | The threshold for emitting log messages into the `error<timestamp>.log` file. | `WARN` |
 | `LOG_CONSOLE_LEVEL`| `string` | The threshold for emitting log messages to `stdout`. | `ERROR` |
 | `ADB_LOG_FILE` | `string` | Custom file path for the log output. | *Not set* |
