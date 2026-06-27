@@ -29,4 +29,6 @@ __all__ = [
     "ImageProperties",
     "VideoProperties",
     "BoundingBoxProperties",
+    "FacenetPyTorchEmbeddings",
+    "CLIPPyTorchEmbeddings",
 ]
