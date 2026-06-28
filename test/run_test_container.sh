@@ -147,7 +147,7 @@ pid2=0
 
 if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
     echo "running tests on docker image $REPOSITORY with $GATEWAY_HTTP"
-    docker run \
+    docker run --rm \
         -v $(pwd)/output:/aperturedata/test/output \
         -v $(pwd)/${RUNNER_NAME}_http_ca:/ca \
         --network=${RUNNER_NAME}_http_default \
@@ -167,7 +167,7 @@ fi
 
 if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
     echo "running tests on docker image $REPOSITORY with $GATEWAY_NON_HTTP"
-    docker run \
+    docker run --rm \
         -v $(pwd)/output:/aperturedata/test/output \
         -v $(pwd)/${RUNNER_NAME}_non_http_ca:/ca \
         --network=${RUNNER_NAME}_non_http_default \
