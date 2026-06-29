@@ -110,7 +110,8 @@ class Transformer(Subscriptable):
             "error_handler",
             "blobs_relative_to_csv",
             "commands_per_query",
-            "blobs_per_query"
+            "blobs_per_query",
+            "get_indices"
         }
         if name in allowed_attributes and "data" in self.__dict__:
             return getattr(self.data, name)

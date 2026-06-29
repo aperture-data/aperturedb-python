@@ -321,7 +321,16 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if transformers and len(generator) > 0:
             for transformer in transformers:
-                generator = transformer(generator, client=self.client)
+                try:
+                    sig = inspect.signature(transformer)
+                    accepts_client = "client" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+                except ValueError:
+                    accepts_client = False
+                
+                if accepts_client:
+                    generator = transformer(generator, client=self.client)
+                else:
+                    generator = transformer(generator)
 
         if use_dask:
             results, self.total_actions_time = self.daskManager.run(
