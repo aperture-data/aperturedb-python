@@ -1,10 +1,10 @@
 # ApertureDB Python SDK Agent Instructions
 
-This guide provides high-signal context for AI agents working in this repository. 
+This guide provides high-signal context for AI agents working in this repository.
 
 ## Architecture & Entrypoints
 - **Type**: Python SDK for ApertureDB.
-- **Entrypoints**: The core package is in the `aperturedb/` directory. 
+- **Entrypoints**: The core package is in the `aperturedb/` directory.
 - **CLI**: Provides the `adb` CLI tool, mapped to `aperturedb.cli.adb:app`.
 - **Packaging**: Uses `setuptools` with configurations defined in `pyproject.toml`.
 
