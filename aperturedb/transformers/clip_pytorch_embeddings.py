@@ -1,7 +1,10 @@
 import hashlib
+import logging
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.transformers.transformer import Transformer
 from .clip import generate_embedding, descriptor_set
+
+logger = logging.getLogger(__name__)
 
 
 class CLIPPyTorchEmbeddings(Transformer):
@@ -40,8 +43,8 @@ class CLIPPyTorchEmbeddings(Transformer):
                     try:
                         if success or self.search_set_name in utils.get_descriptorset_list():
                             self._descriptorset_initialized = True
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Failed to check descriptorset list: {e}")
 
                 # If the image already has an image_sha256, we use it.
                 if getattr(self, "_descriptorset_initialized", False):
