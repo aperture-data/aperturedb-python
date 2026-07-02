@@ -31,8 +31,10 @@ class ImageProperties(Transformer):
         blob_index = 0
         for cmd_dict in x[0]:
             cmd_name = None
+            if isinstance(cmd_dict, dict) and len(cmd_dict) > 0:
+                cmd_name = next(iter(cmd_dict.keys()))
+
             try:
-                cmd_name = list(cmd_dict.keys())[0]
                 if cmd_name == "AddImage":
                     src_properties = cmd_dict["AddImage"].setdefault(
                         "properties", {})
