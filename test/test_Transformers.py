@@ -338,7 +338,45 @@ def test_clip_descriptorset_initialization_backend_error(mock_get_utils):
         assert "AddDescriptor" in res2[0][-1]
 
 
-@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+@patch("aperturedb.transformers.transformer.Transformer.get_utils")
+def test_clip_descriptorset_initialization_add_backend_error(mock_get_utils):
+    try:
+        from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for CLIP")
+
+    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+        dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
+        mock_generate_embedding.return_value = dummy_embedding
+
+        mock_utils = mock_get_utils.return_value
+
+        # Simulation 1: add_descriptorset raises exception directly
+        mock_utils.add_descriptorset.side_effect = Exception(
+            "DB Connection Lost during add")
+        mock_utils.get_descriptorset_list.return_value = []
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [b"image1"]),
+            ([{"AddImage": {"_ref": 2}}], [b"image2"])
+        ]
+
+        dummy_data = DummyData(data)
+        clip = CLIPPyTorchEmbeddings(dummy_data)
+
+        # First item: creation fails by raising, exception caught, initialized remains False
+        res1 = clip[0]
+        assert not clip._descriptorset_initialized
+        assert not any("AddDescriptor" in c for c in res1[0])
+
+        # Simulation 2: Now add_descriptorset succeeds
+        mock_utils.add_descriptorset.side_effect = None
+        mock_utils.add_descriptorset.return_value = True
+        res2 = clip[1]
+        assert clip._descriptorset_initialized
+        assert "AddDescriptor" in res2[0][-1]
+
+
 def test_facenet_descriptorset_initialization_retry(mock_get_utils):
     try:
         from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
@@ -406,6 +444,45 @@ def test_facenet_descriptorset_initialization_backend_error(mock_get_utils):
         assert not any("AddDescriptor" in c for c in res1[0])
 
         # Simulation 2: Now add_descriptorset succeeds
+        mock_utils.add_descriptorset.return_value = True
+        res2 = facenet[1]
+        assert facenet._descriptorset_initialized
+        assert "AddDescriptor" in res2[0][-1]
+
+
+@patch("aperturedb.transformers.transformer.Transformer.get_utils")
+def test_facenet_descriptorset_initialization_add_backend_error(mock_get_utils):
+    try:
+        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for Facenet")
+
+    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+        dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
+        mock_get_embedding.return_value = dummy_embedding
+
+        mock_utils = mock_get_utils.return_value
+
+        # Simulation 1: add_descriptorset raises exception directly
+        mock_utils.add_descriptorset.side_effect = Exception(
+            "DB Connection Lost during add")
+        mock_utils.get_descriptorset_list.return_value = []
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [b"image1"]),
+            ([{"AddImage": {"_ref": 2}}], [b"image2"])
+        ]
+
+        dummy_data = DummyData(data)
+        facenet = FacenetPyTorchEmbeddings(dummy_data)
+
+        # First item: creation fails by raising, exception caught, initialized remains False
+        res1 = facenet[0]
+        assert not facenet._descriptorset_initialized
+        assert not any("AddDescriptor" in c for c in res1[0])
+
+        # Simulation 2: Now add_descriptorset succeeds
+        mock_utils.add_descriptorset.side_effect = None
         mock_utils.add_descriptorset.return_value = True
         res2 = facenet[1]
         assert facenet._descriptorset_initialized
