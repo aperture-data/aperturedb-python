@@ -12,8 +12,8 @@ class BoundingBoxProperties(Transformer):
 
     def __init__(self, data: Subscriptable, **kwargs) -> None:
         super().__init__(data, **kwargs)
-        self.annotation_source = kwargs.get("annotation_source", "coco")
-        self.annotation_mode = kwargs.get("annotation_mode", "auto")
+        self.annotation_source = kwargs.get("annotation_source", None)
+        self.annotation_mode = kwargs.get("annotation_mode", None)
 
     def getitem(self, subscript):
         if not (self.annotation_source or self.annotation_mode):
