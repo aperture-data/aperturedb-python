@@ -58,6 +58,8 @@ function teardown() {
         docker network rm "${RUNNER_NAME}_non_http_host_default" || true
         docker network rm "${RUNNER_NAME}_non_http_default" || true
     fi
+    echo "Cleaning up generated volumes..."
+    $(get_sudo) rm -rf aperturedb
 }
 trap teardown EXIT
 
