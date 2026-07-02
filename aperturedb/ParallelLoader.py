@@ -189,7 +189,7 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
             batchsize (int, optional): The size of batch to be used. Defaults to 1.
             numthreads (int, optional): Number of workers to create. Defaults to 4.
             stats (bool, optional): If stats need to be presented, realtime. Defaults to False.
-            transformers (list, optional): A list of Transformer classes to apply to the data. Defaults to None.
+            transformers (list, optional): A Transformer class, a callable, or a list of Transformer classes/callables to apply to the data. Defaults to None.
         """
         logger.info(
             f"Starting ingestion with batchsize={batchsize}, numthreads={numthreads}")

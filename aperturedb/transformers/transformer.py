@@ -100,20 +100,21 @@ class Transformer(Subscriptable):
     def get_utils(self):
         return Utils(self.get_client())
 
+    _ALLOWED_DELEGATED_ATTRIBUTES = frozenset({
+        "use_dask",
+        "strict_response_validation",
+        "response_handler",
+        "error_handler",
+        "blobs_relative_to_csv",
+        "commands_per_query",
+        "blobs_per_query",
+        "get_indices"
+    })
+
     def __getattr__(self, name):
         # Delegate specific attribute access to the underlying data (generator)
         # to preserve behaviors from original generators (like CSVParser).
-        allowed_attributes = {
-            "use_dask",
-            "strict_response_validation",
-            "response_handler",
-            "error_handler",
-            "blobs_relative_to_csv",
-            "commands_per_query",
-            "blobs_per_query",
-            "get_indices"
-        }
-        if name in allowed_attributes and "data" in self.__dict__:
+        if name in self._ALLOWED_DELEGATED_ATTRIBUTES and "data" in self.__dict__:
             return getattr(self.data, name)
         raise AttributeError(
             f"'{type(self).__name__}' object has no attribute '{name}'")

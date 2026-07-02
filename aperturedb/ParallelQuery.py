@@ -296,7 +296,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
             stats (bool, optional): Show statistics at end of query execution. Defaults to False.
-            transformers (list, optional): A list of Transformer classes to apply to the data. Defaults to None.
+            transformers (list, optional): A Transformer class, a callable, or a list of Transformer classes/callables to apply to the data. Defaults to None.
         """
 
         from aperturedb.transformers.transformer import Transformer
@@ -323,10 +323,11 @@ class ParallelQuery(Parallelizer.Parallelizer):
             for transformer in transformers:
                 try:
                     sig = inspect.signature(transformer)
-                    accepts_client = "client" in sig.parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+                    accepts_client = "client" in sig.parameters or any(
+                        p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
                 except ValueError:
                     accepts_client = False
-                
+
                 if accepts_client:
                     generator = transformer(generator, client=self.client)
                 else:
