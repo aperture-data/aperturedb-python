@@ -20,7 +20,7 @@ class VideoProperties(Transformer):
         try:
             if "adb_data_source" not in utils.get_indexed_props("_Video"):
                 utils.create_entity_index("_Video", "adb_data_source")
-        except Exception as e:
+        except Exception:
             logger.exception(
                 "Error checking or creating index for _Video properties", stack_info=True)
 
@@ -42,7 +42,7 @@ class VideoProperties(Transformer):
                     src_properties["adb_video_id"] = str(
                         src_properties["id"] if src_properties.get("id") not in (None, "") else uuid.uuid4().hex)
 
-            except Exception as e:
+            except Exception:
                 # Importantly, do not raise an exception here, since it will kill ingestion.
                 # Create a log message instead, for post-mortem analysis.
                 logger.exception(

@@ -48,7 +48,7 @@ IP_REGEX='[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
 
 function teardown() {
     echo "Tearing down containers and networks..."
-    $(get_sudo) chmod -R a+rwX "$(pwd)/aperturedb/logs" "$(pwd)/"*_ca 2>/dev/null || true
+    $(get_sudo) chmod -R a+rwX "$(pwd)/aperturedb/logs" "$(pwd)"/*_ca 2>/dev/null || true
     if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         RUNNER_NAME="${RUNNER_NAME}_http" docker compose -f docker-compose.yml down --remove-orphans || true
         docker network rm "${RUNNER_NAME}_http_host_default" || true
@@ -68,7 +68,7 @@ TESTING_LOG_PATH="/aperturedb/test/server_logs"
 RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
 $(get_sudo) mkdir -p "$RUNNER_INFO_PATH"
-$(get_sudo) chmod -R a+rwX "$(pwd)/aperturedb/logs" "$(pwd)/"*_ca 2>/dev/null || true
+$(get_sudo) chmod -R a+rwX "$(pwd)/aperturedb/logs" "$(pwd)"/*_ca 2>/dev/null || true
 
 # Check if TEST_PROTOCOL is set, otherwise default to both
 TEST_PROTOCOL=${TEST_PROTOCOL:-"both"}
