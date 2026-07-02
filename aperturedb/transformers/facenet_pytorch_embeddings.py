@@ -51,9 +51,9 @@ class FacenetPyTorchEmbeddings(Transformer):
 
                 if not getattr(self, "_descriptorset_initialized", False):
                     utils = self.get_utils()
-                    success = utils.add_descriptorset(
-                        self.search_set_name, dim=512)
                     try:
+                        success = utils.add_descriptorset(
+                            self.search_set_name, dim=512)
                         if success or self.search_set_name in utils.get_descriptorset_list():
                             self._descriptorset_initialized = True
                     except Exception as e:
