@@ -46,7 +46,7 @@ class ImageProperties(Transformer):
                     src_properties["adb_image_width"] = pil_image.width
                     src_properties["adb_image_height"] = pil_image.height
                     src_properties["adb_image_id"] = str(
-                        src_properties["id"] if "id" in src_properties else uuid.uuid4().hex)
+                        src_properties["id"] if src_properties.get("id") not in (None, "") else uuid.uuid4().hex)
 
             except Exception as e:
                 # Importantly, do not raise an exception here, since it will kill ingestion.
