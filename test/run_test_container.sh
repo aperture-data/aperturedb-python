@@ -63,7 +63,7 @@ function teardown() {
 trap teardown EXIT
 
 # The LOG_PATH and RUNNER_INFO_PATH are set to the current working directory
-LOG_PATH="$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* 
+LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
 RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
