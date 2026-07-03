@@ -103,7 +103,7 @@ jobs:
       run: |
         rm -rf docker/pytorch-gpu/aperturedata
         mkdir -p docker/pytorch-gpu/aperturedata
-        cp -r aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata
+        rsync -a --exclude='test/aperturedb/db*' --exclude='test/aperturedb/log*' --exclude='test/aperturedb/certificate*' aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata/
         bash docker/pytorch-gpu/build.sh
       shell: bash
 
