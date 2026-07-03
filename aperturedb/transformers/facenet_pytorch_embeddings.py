@@ -58,7 +58,7 @@ class FacenetPyTorchEmbeddings(Transformer):
                             self._descriptorset_initialized = True
                     except Exception as e:
                         logger.warning(
-                            f"Failed to check descriptorset list: {e}", exc_info=True)
+                            f"Failed to initialize descriptorset: {e}", exc_info=True)
 
                 # If the image already has an image_sha256, we use it.
                 if getattr(self, "_descriptorset_initialized", False):
