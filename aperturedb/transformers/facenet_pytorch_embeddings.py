@@ -50,8 +50,8 @@ class FacenetPyTorchEmbeddings(Transformer):
                 blob = x[1][blob_index]
 
                 if not getattr(self, "_descriptorset_initialized", False):
-                    utils = self.get_utils()
                     try:
+                        utils = self.get_utils()
                         success = utils.add_descriptorset(
                             self.search_set_name, dim=512)
                         if success or self.search_set_name in utils.get_descriptorset_list():
@@ -62,28 +62,32 @@ class FacenetPyTorchEmbeddings(Transformer):
 
                 # If the image already has an image_sha256, we use it.
                 if getattr(self, "_descriptorset_initialized", False):
-                    serialized = self._get_embedding_from_blob(blob)
-                    image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
-                        "adb_image_sha256", None)
-                    if not image_sha256:
-                        image_sha256 = hashlib.sha256(blob).hexdigest()
-                    new_blobs.append(serialized)
-                    desc_cmd = {
-                        "AddDescriptor": {
-                            "set": self.search_set_name,
-                            "properties": {
-                                "image_sha256": image_sha256,
-                            },
-                            "if_not_found": {
-                                "image_sha256": ["==", image_sha256],
+                    try:
+                        serialized = self._get_embedding_from_blob(blob)
+                        image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
+                            "adb_image_sha256", None)
+                        if not image_sha256:
+                            image_sha256 = hashlib.sha256(blob).hexdigest()
+                        new_blobs.append(serialized)
+                        desc_cmd = {
+                            "AddDescriptor": {
+                                "set": self.search_set_name,
+                                "properties": {
+                                    "image_sha256": image_sha256,
+                                },
+                                "if_not_found": {
+                                    "image_sha256": ["==", image_sha256],
+                                }
                             }
                         }
-                    }
-                    if "_ref" in cmd_dict["AddImage"]:
-                        desc_cmd["AddDescriptor"]["connect"] = {
-                            "ref": cmd_dict["AddImage"]["_ref"]
-                        }
-                    new_descriptors.append(desc_cmd)
+                        if "_ref" in cmd_dict["AddImage"]:
+                            desc_cmd["AddDescriptor"]["connect"] = {
+                                "ref": cmd_dict["AddImage"]["_ref"]
+                            }
+                        new_descriptors.append(desc_cmd)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to generate embedding or descriptor: {e}", exc_info=True)
             if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
                 blob_index += 1
 
