@@ -48,7 +48,8 @@ IP_REGEX='[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
 
 function teardown() {
     echo "Tearing down containers and networks..."
-    $(get_sudo) chmod -R a+rwX "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"*  "$(pwd)"/*_ca 2>/dev/null || true
+    $(get_sudo) chmod -R a+rwX "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* 2>/dev/null || true
+    $(get_sudo) chmod -R a+rX "$(pwd)"/*_ca 2>/dev/null || true
     if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         RUNNER_NAME="${RUNNER_NAME}_http" docker compose -f docker-compose.yml down --remove-orphans || true
         docker network rm "${RUNNER_NAME}_http_host_default" || true

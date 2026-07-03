@@ -377,6 +377,7 @@ def test_clip_descriptorset_initialization_add_backend_error(mock_get_utils):
         assert "AddDescriptor" in res2[0][-1]
 
 
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
 def test_facenet_descriptorset_initialization_retry(mock_get_utils):
     try:
         from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
