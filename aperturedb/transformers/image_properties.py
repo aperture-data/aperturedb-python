@@ -42,13 +42,13 @@ class ImageProperties(Transformer):
                     src_properties["adb_image_size"] = len(x[1][blob_index])
                     src_properties["adb_image_sha256"] = hashlib.sha256(
                         x[1][blob_index]).hexdigest()
+                    src_properties["adb_image_id"] = str(
+                        src_properties["id"] if src_properties.get("id") not in (None, "") else uuid.uuid4().hex)
 
                     # Compute the image dimensions.
                     pil_image = Image.open(io.BytesIO(x[1][blob_index]))
                     src_properties["adb_image_width"] = pil_image.width
                     src_properties["adb_image_height"] = pil_image.height
-                    src_properties["adb_image_id"] = str(
-                        src_properties["id"] if src_properties.get("id") not in (None, "") else uuid.uuid4().hex)
 
             except Exception:
                 # Importantly, do not raise an exception here, since it will kill ingestion.
