@@ -17,7 +17,9 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb"
+      run: |
+        sudo rm -rf test/aperturedb test/*_ca docker/pytorch-gpu/aperturedata || true
+        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb /workspace/test/*_ca /workspace/docker/pytorch-gpu/aperturedata"
       continue-on-error: true
 
     - uses: actions/checkout@v3
@@ -80,7 +82,9 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb"
+      run: |
+        sudo rm -rf test/aperturedb test/*_ca docker/pytorch-gpu/aperturedata || true
+        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb /workspace/test/*_ca /workspace/docker/pytorch-gpu/aperturedata"
       continue-on-error: true
 
     - uses: actions/checkout@v3
