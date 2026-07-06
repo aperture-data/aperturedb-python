@@ -15,9 +15,9 @@ class VideoProperties(Transformer):
 
     def __init__(self, data: Subscriptable, **kwargs) -> None:
         super().__init__(data, **kwargs)
-        utils = self.get_utils()
 
         try:
+            utils = self.get_utils()
             if "adb_data_source" not in utils.get_indexed_props("_Video"):
                 utils.create_entity_index("_Video", "adb_data_source")
         except Exception:
