@@ -325,7 +325,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     sig = inspect.signature(transformer)
                     accepts_client = "client" in sig.parameters or any(
                         p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
-                except ValueError:
+                except (ValueError, TypeError):
                     accepts_client = False
 
                 if accepts_client:
