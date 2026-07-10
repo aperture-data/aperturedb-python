@@ -39,14 +39,15 @@ class ImageProperties(Transformer):
                     src_properties = cmd_dict["AddImage"].setdefault(
                         "properties", {})
                     # Compute the dynamic properties and apply them to metadata
-                    src_properties["adb_image_size"] = len(x[1][blob_index])
-                    src_properties["adb_image_sha256"] = hashlib.sha256(
-                        x[1][blob_index]).hexdigest()
+                    blob = x[1][blob_index]
+                    src_properties["adb_image_size"] = len(blob)
                     src_properties["adb_image_id"] = str(
                         src_properties["id"] if src_properties.get("id") not in (None, "") else uuid.uuid4().hex)
+                    src_properties["adb_image_sha256"] = hashlib.sha256(
+                        blob).hexdigest()
 
                     # Compute the image dimensions.
-                    pil_image = Image.open(io.BytesIO(x[1][blob_index]))
+                    pil_image = Image.open(io.BytesIO(blob))
                     src_properties["adb_image_width"] = pil_image.width
                     src_properties["adb_image_height"] = pil_image.height
 

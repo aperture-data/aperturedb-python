@@ -37,12 +37,12 @@ class VideoProperties(Transformer):
                     src_properties = cmd_dict["AddVideo"].setdefault(
                         "properties", {})
                     # Compute the dynamic properties and apply them to metadata
-                    src_properties["adb_video_size"] = len(x[1][blob_index])
-                    src_properties["adb_video_sha256"] = hashlib.sha256(
-                        x[1][blob_index]).hexdigest()
-
+                    blob = x[1][blob_index]
+                    src_properties["adb_video_size"] = len(blob)
                     src_properties["adb_video_id"] = str(
                         src_properties["id"] if src_properties.get("id") not in (None, "") else uuid.uuid4().hex)
+                    src_properties["adb_video_sha256"] = hashlib.sha256(
+                        blob).hexdigest()
 
             except Exception:
                 # Importantly, do not raise an exception here, since it will kill ingestion.

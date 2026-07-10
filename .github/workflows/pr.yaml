@@ -17,9 +17,7 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: |
-        sudo rm -rf test/aperturedb test/*_ca docker/pytorch-gpu/aperturedata || true
-        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb /workspace/test/*_ca /workspace/docker/pytorch-gpu/aperturedata"
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb"
       continue-on-error: true
 
     - uses: actions/checkout@v3
@@ -82,9 +80,7 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: |
-        sudo rm -rf test/aperturedb test/*_ca docker/pytorch-gpu/aperturedata || true
-        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb /workspace/test/*_ca /workspace/docker/pytorch-gpu/aperturedata"
+      run: docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb"
       continue-on-error: true
 
     - uses: actions/checkout@v3
@@ -107,7 +103,7 @@ jobs:
       run: |
         rm -rf docker/pytorch-gpu/aperturedata
         mkdir -p docker/pytorch-gpu/aperturedata
-        rsync -a --exclude='test/aperturedb/db*' --exclude='test/aperturedb/log*' --exclude='test/aperturedb/certificate*' aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata/
+        cp -r aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata
         bash docker/pytorch-gpu/build.sh
       shell: bash
 
