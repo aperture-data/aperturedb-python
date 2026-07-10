@@ -192,7 +192,10 @@ def test_clip_pytorch_embeddings(mock_get_utils):
             ([
                 {"AddImage": {"_ref": 1}},
                 {"AddVideo": {}}
-            ], [dummy_image_data, b"video_blob"])
+            ], [dummy_image_data, b"video_blob"]),
+            ([
+                {"AddImage": {"_ref": 2}}
+            ], [])
         ]
 
         dummy_data = DummyData(data)
@@ -209,6 +212,11 @@ def test_clip_pytorch_embeddings(mock_get_utils):
         # 2 blobs originally + 1 generated embedding blob
         assert len(res[1]) == 3
         assert res[1][-1] == dummy_embedding
+
+        # Test malformed data
+        res2 = clip[1]
+        assert len(res2[0]) == 1  # AddImage only, Descriptor skipped
+        assert len(res2[1]) == 0  # No blobs
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
@@ -228,7 +236,10 @@ def test_facenet_pytorch_embeddings(mock_get_utils):
             ([
                 {"AddVideo": {}},
                 {"AddImage": {"_ref": 2}}
-            ], [b"video_blob", dummy_image_data])
+            ], [b"video_blob", dummy_image_data]),
+            ([
+                {"AddImage": {"_ref": 3}}
+            ], [])
         ]
 
         dummy_data = DummyData(data)
@@ -244,6 +255,11 @@ def test_facenet_pytorch_embeddings(mock_get_utils):
 
         assert len(res[1]) == 3
         assert res[1][-1] == dummy_embedding
+
+        # Test malformed data
+        res2 = facenet[1]
+        assert len(res2[0]) == 1  # AddImage only, Descriptor skipped
+        assert len(res2[1]) == 0  # No blobs
 
 
 def test_base_transformer():

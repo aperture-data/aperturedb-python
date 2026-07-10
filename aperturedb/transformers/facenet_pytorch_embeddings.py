@@ -47,7 +47,12 @@ class FacenetPyTorchEmbeddings(Transformer):
                 cmd_name = next(iter(cmd_dict.keys()))
 
             if cmd_name == "AddImage":
-                blob = x[1][blob_index]
+                try:
+                    blob = x[1][blob_index]
+                except IndexError:
+                    logger.warning(
+                        f"Missing blob for AddImage at index {blob_index}")
+                    continue
 
                 if not getattr(self, "_descriptorset_initialized", False):
                     try:
