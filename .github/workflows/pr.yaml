@@ -115,6 +115,11 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         RUNNER_NAME: ${{ runner.name }}_${{ github.run_id }}
+        ADB_REPO: aperturedata/aperturedb
+        ADB_TAG: dev
+        LENZ_REPO: aperturedata/lenz
+        LENZ_TAG: dev
+        SKIP_SLOW_TESTS: true
       run: |
         cd test
         ./run_test_container.sh aperturedata/aperturedb-pytorch-gpu
