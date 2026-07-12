@@ -36,7 +36,10 @@ def test_variable_annotation_counts():
     dummy_data = DummyData(data)
 
     cp = CommonProperties(
-        dummy_data, adb_data_source="test_source", adb_timestamp="2026-05-24", adb_main_object="test_object"
+        dummy_data,
+        adb_data_source="test_source",
+        adb_timestamp="2026-05-24",
+        adb_main_object="test_object"
     )
     for i in range(len(data)):
         res = cp[i]
@@ -59,7 +62,8 @@ def test_variable_annotation_counts():
                 assert cmd[cmd_name]["properties"]["annotation_source"] == "test_anno"
                 assert cmd[cmd_name]["properties"]["annotation_mode"] == "auto"
             elif cmd_name in ["AddImage", "AddVideo"]:
-                assert "properties" not in cmd[cmd_name] or "annotation_source" not in cmd[cmd_name]["properties"]
+                assert "properties" not in cmd[cmd_name] or \
+                    "annotation_source" not in cmd[cmd_name]["properties"]
 
     # Test empty or missing annotations
     data_empty = copy.deepcopy(data_orig)
@@ -71,8 +75,8 @@ def test_variable_annotation_counts():
         for cmd in res[0]:
             cmd_name = list(cmd.keys())[0]
             if cmd_name in ["AddBoundingBox", "AddPolygon"]:
-                assert "properties" not in cmd[cmd_name] or "annotation_source" not in cmd[cmd_name].get(
-                    "properties", {})
+                assert "properties" not in cmd[cmd_name] or \
+                    "annotation_source" not in cmd[cmd_name].get("properties", {})
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
@@ -132,6 +136,7 @@ def test_image_properties(mock_image_open, mock_get_utils):
     mock_pil = MagicMock()
     mock_pil.width = 800
     mock_pil.height = 600
+    mock_pil.__enter__.return_value = mock_pil
     mock_image_open.return_value = mock_pil
 
     dummy_image_data = b"fake_image_blob_content"
