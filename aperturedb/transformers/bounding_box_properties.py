@@ -24,17 +24,16 @@ class BoundingBoxProperties(Transformer):
         # Iterate over current transaction commands to handle variable annotation counts
         for cmd_dict in x[0]:
             try:
-                cmd_name = None
-                if isinstance(cmd_dict, dict) and len(cmd_dict) > 0:
-                    cmd_name = next(iter(cmd_dict.keys()))
-
-                if cmd_name in ["AddBoundingBox", "AddPolygon"]:
-                    src_properties = cmd_dict[cmd_name].setdefault(
-                        "properties", {})
-                    if self.annotation_source is not None:
-                        src_properties["annotation_source"] = self.annotation_source
-                    if self.annotation_mode is not None:
-                        src_properties["annotation_mode"] = self.annotation_mode
+                if not isinstance(cmd_dict, dict):
+                    continue
+                for cmd_name in ["AddBoundingBox", "AddPolygon"]:
+                    if cmd_name in cmd_dict:
+                        src_properties = cmd_dict[cmd_name].setdefault(
+                            "properties", {})
+                        if self.annotation_source is not None:
+                            src_properties["annotation_source"] = self.annotation_source
+                        if self.annotation_mode is not None:
+                            src_properties["annotation_mode"] = self.annotation_mode
             except Exception:
                 logger.exception(
                     "Error applying bounding box properties", stack_info=True)
