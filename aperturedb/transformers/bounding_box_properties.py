@@ -17,7 +17,7 @@ class BoundingBoxProperties(Transformer):
         self.annotation_mode = kwargs.get("annotation_mode", None)
 
     def getitem(self, subscript):
-        if not (self.annotation_source or self.annotation_mode):
+        if self.annotation_source is None and self.annotation_mode is None:
             return self.data[subscript]
 
         x = self.data[subscript]
@@ -31,9 +31,9 @@ class BoundingBoxProperties(Transformer):
                 if cmd_name in ["AddBoundingBox", "AddPolygon"]:
                     src_properties = cmd_dict[cmd_name].setdefault(
                         "properties", {})
-                    if self.annotation_source:
+                    if self.annotation_source is not None:
                         src_properties["annotation_source"] = self.annotation_source
-                    if self.annotation_mode:
+                    if self.annotation_mode is not None:
                         src_properties["annotation_mode"] = self.annotation_mode
             except Exception:
                 logger.exception(

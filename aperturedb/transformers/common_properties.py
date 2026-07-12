@@ -27,7 +27,7 @@ class CommonProperties(Transformer):
         self.adb_main_object = kwargs.get("adb_main_object", None)
 
     def getitem(self, subscript):
-        if not (self.adb_data_source or self.adb_timestamp or self.adb_main_object):
+        if self.adb_data_source is None and self.adb_timestamp is None and self.adb_main_object is None:
             return self.data[subscript]
 
         x = self.data[subscript]
@@ -40,11 +40,11 @@ class CommonProperties(Transformer):
                 if cmd_name in ["AddImage", "AddVideo", "AddBoundingBox", "AddPolygon"]:
                     src_properties = cmd_dict[cmd_name].setdefault(
                         "properties", {})
-                    if self.adb_data_source:
+                    if self.adb_data_source is not None:
                         src_properties["adb_data_source"] = self.adb_data_source
-                    if self.adb_timestamp:
+                    if self.adb_timestamp is not None:
                         src_properties["adb_timestamp"] = self.adb_timestamp
-                    if self.adb_main_object:
+                    if self.adb_main_object is not None:
                         src_properties["adb_main_object"] = self.adb_main_object
 
             except Exception:
