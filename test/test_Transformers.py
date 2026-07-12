@@ -76,7 +76,8 @@ def test_variable_annotation_counts():
             cmd_name = list(cmd.keys())[0]
             if cmd_name in ["AddBoundingBox", "AddPolygon"]:
                 assert "properties" not in cmd[cmd_name] or \
-                    "annotation_source" not in cmd[cmd_name].get("properties", {})
+                    "annotation_source" not in cmd[cmd_name].get(
+                        "properties", {})
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
