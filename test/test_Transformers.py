@@ -317,6 +317,36 @@ def test_clip_descriptorset_initialization_retry(mock_get_utils):
 
 
 @patch("aperturedb.transformers.transformer.Transformer.get_utils")
+def test_clip_descriptorset_initialization_already_exists(mock_get_utils):
+    try:
+        from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for CLIP")
+
+    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+        dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
+        mock_generate_embedding.return_value = dummy_embedding
+
+        mock_utils = mock_get_utils.return_value
+
+        # add_descriptorset returns False, but get_descriptorset_list shows it already exists
+        mock_utils.add_descriptorset.return_value = False
+        mock_utils.get_descriptorset_list.return_value = ["ViT-B/16"]
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [b"image1"])
+        ]
+
+        dummy_data = DummyData(data)
+        clip = CLIPPyTorchEmbeddings(dummy_data)
+
+        # Should initialize successfully
+        res1 = clip[0]
+        assert clip._descriptorset_initialized
+        assert any("AddDescriptor" in c for c in res1[0])
+
+
+@patch("aperturedb.transformers.transformer.Transformer.get_utils")
 def test_clip_descriptorset_initialization_backend_error(mock_get_utils):
     try:
         from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
@@ -522,6 +552,37 @@ def test_facenet_descriptorset_initialization_retry(mock_get_utils):
 
 
 @patch("aperturedb.transformers.transformer.Transformer.get_utils")
+def test_facenet_descriptorset_initialization_already_exists(mock_get_utils):
+    try:
+        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for Facenet")
+
+    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+        dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
+        mock_get_embedding.return_value = dummy_embedding
+
+        mock_utils = mock_get_utils.return_value
+
+        # add_descriptorset returns False, but get_descriptorset_list shows it already exists
+        mock_utils.add_descriptorset.return_value = False
+        mock_utils.get_descriptorset_list.return_value = [
+            "facenet_pytorch_embeddings"]
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [b"image1"])
+        ]
+
+        dummy_data = DummyData(data)
+        facenet = FacenetPyTorchEmbeddings(dummy_data)
+
+        # Should initialize successfully
+        res1 = facenet[0]
+        assert facenet._descriptorset_initialized
+        assert any("AddDescriptor" in c for c in res1[0])
+
+
+@patch("aperturedb.transformers.transformer.Transformer.get_utils")
 def test_facenet_descriptorset_initialization_backend_error(mock_get_utils):
     try:
         from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
@@ -621,6 +682,42 @@ def test_facenet_descriptorset_initialization_get_utils_error(mock_get_utils):
         res = facenet[0]
         assert not facenet._descriptorset_initialized
         assert not any("AddDescriptor" in c for c in res[0])
+
+
+@patch("aperturedb.transformers.transformer.Transformer.get_utils")
+def test_facenet_embedding_generation_error(mock_get_utils):
+    try:
+        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for Facenet")
+
+    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+        mock_utils = MagicMock()
+        mock_utils.add_descriptorset.return_value = True
+        mock_get_utils.return_value = mock_utils
+
+        # First item fails during embedding generation
+        mock_get_embedding.side_effect = RuntimeError("Bad blob")
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [b"dummy_blob_1"]),
+            ([{"AddImage": {"_ref": 2}}], [b"dummy_blob_2"])
+        ]
+        dummy_data = DummyData(data)
+        facenet = FacenetPyTorchEmbeddings(dummy_data)
+
+        res1 = facenet[0]
+        assert not facenet._descriptorset_initialized
+        assert not any("AddDescriptor" in c for c in res1[0])
+
+        # Second item succeeds
+        mock_get_embedding.side_effect = None
+        dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
+        mock_get_embedding.return_value = dummy_embedding
+
+        res2 = facenet[1]
+        assert facenet._descriptorset_initialized
+        assert "AddDescriptor" in res2[0][-1]
 
 
 @patch("aperturedb.transformers.transformer.Transformer.get_utils")
