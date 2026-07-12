@@ -47,9 +47,9 @@ class ImageProperties(Transformer):
                         blob).hexdigest()
 
                     # Compute the image dimensions.
-                    pil_image = Image.open(io.BytesIO(blob))
-                    src_properties["adb_image_width"] = pil_image.width
-                    src_properties["adb_image_height"] = pil_image.height
+                    with Image.open(io.BytesIO(blob)) as pil_image:
+                        src_properties["adb_image_width"] = pil_image.width
+                        src_properties["adb_image_height"] = pil_image.height
 
             except Exception:
                 # Importantly, do not raise an exception here, since it will kill ingestion.

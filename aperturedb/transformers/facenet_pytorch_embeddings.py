@@ -52,7 +52,6 @@ class FacenetPyTorchEmbeddings(Transformer):
                 except IndexError:
                     logger.warning(
                         f"Missing blob for AddImage at index {blob_index}")
-                    blob_index += 1
                     continue
 
                 if not getattr(self, "_descriptorset_initialized", False):

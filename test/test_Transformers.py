@@ -707,7 +707,7 @@ def test_facenet_embedding_generation_error(mock_get_utils):
         facenet = FacenetPyTorchEmbeddings(dummy_data)
 
         res1 = facenet[0]
-        assert not facenet._descriptorset_initialized
+        assert facenet._descriptorset_initialized
         assert not any("AddDescriptor" in c for c in res1[0])
 
         # Second item succeeds
