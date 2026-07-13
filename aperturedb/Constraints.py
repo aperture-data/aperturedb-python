@@ -47,6 +47,10 @@ class Constraints(object):
         self.constraints[self._conjunction][key] = ["in", val_array]
         return self
 
+    def contains(self, key, value) -> Constraints:
+        self.constraints[self._conjunction][key] = ["contains", value]
+        return self
+
     def check(self, entity):
         for key, op in self.constraints.items():
             if key not in entity:
