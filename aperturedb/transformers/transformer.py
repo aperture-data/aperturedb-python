@@ -62,7 +62,9 @@ class Transformer(Subscriptable):
 
         bc = 0
         for i, c in enumerate(x[0]):
-            command = list(c.keys())[0]
+            command = None
+            if isinstance(c, dict) and len(c) > 0:
+                command = next(iter(c.keys()))
             if command in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
                 self._blob_index.append(i)
                 bc += 1

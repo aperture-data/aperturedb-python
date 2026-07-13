@@ -882,3 +882,43 @@ def test_transformers_init():
 
     with pytest.raises(AttributeError):
         _ = transformers.NonExistentTransformer
+
+
+def test_common_properties_non_dict_command():
+    data = [(["not_a_dict"], [])]
+    dummy_data = DummyData(data)
+    cp = CommonProperties(dummy_data, adb_data_source="test_source")
+    res = cp[0]
+    assert res[0][0] == "not_a_dict"
+
+
+def test_bounding_box_properties_non_dict_command():
+    data = [(["not_a_dict"], [])]
+    dummy_data = DummyData(data)
+    bbp = BoundingBoxProperties(dummy_data, annotation_source="test_anno")
+    res = bbp[0]
+    assert res[0][0] == "not_a_dict"
+
+
+@patch('aperturedb.transformers.image_properties.logger')
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+def test_image_properties_init_exception(mock_get_utils, mock_logger):
+    mock_get_utils.side_effect = Exception("DB Init Error")
+    data = [([{"AddImage": {}}], [b"dummy"])]
+    dummy_data = DummyData(data)
+    ip = ImageProperties(dummy_data)
+    assert mock_logger.exception.called
+    assert "Error checking or creating index for _Image properties" in mock_logger.exception.call_args[
+        0][0]
+
+
+@patch('aperturedb.transformers.video_properties.logger')
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+def test_video_properties_init_exception(mock_get_utils, mock_logger):
+    mock_get_utils.side_effect = Exception("DB Init Error")
+    data = [([{"AddVideo": {}}], [b"dummy"])]
+    dummy_data = DummyData(data)
+    vp = VideoProperties(dummy_data)
+    assert mock_logger.exception.called
+    assert "Error checking or creating index for _Video properties" in mock_logger.exception.call_args[
+        0][0]
