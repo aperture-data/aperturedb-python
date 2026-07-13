@@ -67,6 +67,10 @@ class Constraints(object):
         self.constraints[self._conjunction][key] = ["like", value]
         return self
 
+    def ilike(self, key, value) -> Constraints:
+        self.constraints[self._conjunction][key] = ["ilike", value]
+        return self
+
     def check(self, entity):
         for key, op in self.constraints.items():
             if key not in entity:
