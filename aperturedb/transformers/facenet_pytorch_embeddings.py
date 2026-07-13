@@ -27,10 +27,10 @@ class FacenetPyTorchEmbeddings(Transformer):
         self._descriptorset_initialized = False
 
     def _get_embedding_from_blob(self, image_blob: bytes):
-        pil_image = Image.open(io.BytesIO(image_blob))
-        embedding = generate_embedding(pil_image)
-        serialized = embedding.cpu().detach().numpy().tobytes()
-        return serialized
+        with Image.open(io.BytesIO(image_blob)) as pil_image:
+            embedding = generate_embedding(pil_image)
+            serialized = embedding.cpu().detach().numpy().tobytes()
+            return serialized
 
     def getitem(self, subscript):
         start = time.time()
