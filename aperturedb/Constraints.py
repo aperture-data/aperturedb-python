@@ -59,6 +59,10 @@ class Constraints(object):
         self.constraints[self._conjunction][key] = ["startswith", value]
         return self
 
+    def istartswith(self, key, value) -> Constraints:
+        self.constraints[self._conjunction][key] = ["istartswith", value]
+        return self
+
     def check(self, entity):
         for key, op in self.constraints.items():
             if key not in entity:
