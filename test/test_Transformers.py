@@ -1010,37 +1010,47 @@ def test_facenet_missing_blob(mock_get_utils):
         assert not any("AddDescriptor" in c for c in res[0])
 
 
-@patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding')
-@patch('aperturedb.transformers.clip_pytorch_embeddings.CLIPPyTorchEmbeddings.get_utils')
-def test_clip_embedding_malformed_payload(mock_get_utils, mock_generate_embedding):
-    mock_utils = MagicMock()
-    mock_utils.add_descriptorset.return_value = True
-    mock_get_utils.return_value = mock_utils
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+def test_clip_embedding_malformed_payload(mock_get_utils):
+    try:
+        from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for CLIP")
 
-    # Payload is not a dict
-    data = [([{"AddImage": "invalid"}], [b"dummy"])]
-    dummy_data = DummyData(data)
-    clip = CLIPPyTorchEmbeddings(dummy_data)
-    res = clip[0]
+    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+        mock_utils = MagicMock()
+        mock_utils.add_descriptorset.return_value = True
+        mock_get_utils.return_value = mock_utils
 
-    # Should not crash, AddImage unmodified, no descriptors added
-    assert len(res[0]) == 1
-    assert "AddDescriptor" not in [next(iter(cmd)) for cmd in res[0]]
+        # Payload is not a dict
+        data = [([{"AddImage": "invalid"}], [b"dummy"])]
+        dummy_data = DummyData(data)
+        clip = CLIPPyTorchEmbeddings(dummy_data)
+        res = clip[0]
+
+        # Should not crash, AddImage unmodified, no descriptors added
+        assert len(res[0]) == 1
+        assert "AddDescriptor" not in [next(iter(cmd)) for cmd in res[0]]
 
 
-@patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob')
-@patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings.get_utils')
-def test_facenet_embedding_malformed_payload(mock_get_utils, mock_get_embedding):
-    mock_utils = MagicMock()
-    mock_utils.add_descriptorset.return_value = True
-    mock_get_utils.return_value = mock_utils
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+def test_facenet_embedding_malformed_payload(mock_get_utils):
+    try:
+        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for Facenet")
 
-    # Payload is not a dict
-    data = [([{"AddImage": "invalid"}], [b"dummy"])]
-    dummy_data = DummyData(data)
-    facenet = FacenetPyTorchEmbeddings(dummy_data)
-    res = facenet[0]
+    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+        mock_utils = MagicMock()
+        mock_utils.add_descriptorset.return_value = True
+        mock_get_utils.return_value = mock_utils
 
-    # Should not crash, AddImage unmodified, no descriptors added
-    assert len(res[0]) == 1
-    assert "AddDescriptor" not in [next(iter(cmd)) for cmd in res[0]]
+        # Payload is not a dict
+        data = [([{"AddImage": "invalid"}], [b"dummy"])]
+        dummy_data = DummyData(data)
+        facenet = FacenetPyTorchEmbeddings(dummy_data)
+        res = facenet[0]
+
+        # Should not crash, AddImage unmodified, no descriptors added
+        assert len(res[0]) == 1
+        assert "AddDescriptor" not in [next(iter(cmd)) for cmd in res[0]]
