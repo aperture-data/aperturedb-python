@@ -47,7 +47,7 @@ class CLIPPyTorchEmbeddings(Transformer):
 
                 serialized = None
 
-                if not getattr(self, "_descriptorset_initialized", False):
+                if not getattr(self, "_descriptorset_initialized", False) and "_ref" in cmd_dict["AddImage"]:
                     try:
                         serialized = generate_embedding(blob)
                         dim = len(serialized) // 4
@@ -61,7 +61,7 @@ class CLIPPyTorchEmbeddings(Transformer):
                             f"Failed to initialize descriptorset: {e}", exc_info=True)
 
                 # If the image already has an image_sha256, we use it.
-                if getattr(self, "_descriptorset_initialized", False):
+                if getattr(self, "_descriptorset_initialized", False) and "_ref" in cmd_dict["AddImage"]:
                     try:
                         if serialized is None:
                             serialized = generate_embedding(blob)
@@ -78,13 +78,12 @@ class CLIPPyTorchEmbeddings(Transformer):
                                 },
                                 "if_not_found": {
                                     "image_sha256": ["==", image_sha256],
+                                },
+                                "connect": {
+                                    "ref": cmd_dict["AddImage"]["_ref"]
                                 }
                             }
                         }
-                        if "_ref" in cmd_dict["AddImage"]:
-                            desc_cmd["AddDescriptor"]["connect"] = {
-                                "ref": cmd_dict["AddImage"]["_ref"]
-                            }
                         new_descriptors.append(desc_cmd)
                     except Exception as e:
                         logger.warning(
