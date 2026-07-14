@@ -101,6 +101,7 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
     - name: Build tests on pytorch GPU image
       run: |
+        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb" || true
         rm -rf docker/pytorch-gpu/aperturedata
         mkdir -p docker/pytorch-gpu/aperturedata
         cp -r aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata
