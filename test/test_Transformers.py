@@ -188,7 +188,10 @@ def test_clip_pytorch_embeddings(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_generate_embedding.return_value = dummy_embedding
         mock_utils = mock_get_utils.return_value
@@ -232,7 +235,10 @@ def test_facenet_pytorch_embeddings(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         dummy_embedding = struct.pack('<4f', 0.5, 0.6, 0.7, 0.8)
         mock_get_embedding.return_value = dummy_embedding
         mock_utils = mock_get_utils.return_value
@@ -292,7 +298,10 @@ def test_clip_descriptorset_initialization_retry(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_generate_embedding.return_value = dummy_embedding
 
@@ -329,7 +338,10 @@ def test_clip_descriptorset_initialization_already_exists(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_generate_embedding.return_value = dummy_embedding
 
@@ -359,7 +371,10 @@ def test_clip_descriptorset_initialization_backend_error(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_generate_embedding.return_value = dummy_embedding
 
@@ -397,7 +412,10 @@ def test_clip_descriptorset_initialization_add_backend_error(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_generate_embedding.return_value = dummy_embedding
 
@@ -436,7 +454,10 @@ def test_clip_descriptorset_initialization_get_utils_error(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_generate_embedding.return_value = dummy_embedding
 
@@ -461,7 +482,10 @@ def test_clip_embedding_generation_error(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         mock_utils = MagicMock()
         mock_utils.add_descriptorset.return_value = True
         mock_get_utils.return_value = mock_utils
@@ -497,7 +521,10 @@ def test_clip_embedding_generation_error_after_init(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         mock_utils = MagicMock()
         mock_utils.add_descriptorset.return_value = True
         mock_get_utils.return_value = mock_utils
@@ -528,7 +555,10 @@ def test_facenet_descriptorset_initialization_retry(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_get_embedding.return_value = dummy_embedding
 
@@ -564,7 +594,10 @@ def test_facenet_descriptorset_initialization_already_exists(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_get_embedding.return_value = dummy_embedding
 
@@ -595,7 +628,10 @@ def test_facenet_descriptorset_initialization_backend_error(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_get_embedding.return_value = dummy_embedding
 
@@ -633,7 +669,10 @@ def test_facenet_descriptorset_initialization_add_backend_error(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_get_embedding.return_value = dummy_embedding
 
@@ -672,7 +711,10 @@ def test_facenet_descriptorset_initialization_get_utils_error(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         dummy_embedding = struct.pack('<4f', 0.1, 0.2, 0.3, 0.4)
         mock_get_embedding.return_value = dummy_embedding
 
@@ -697,7 +739,10 @@ def test_facenet_embedding_generation_error(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         mock_utils = MagicMock()
         mock_utils.add_descriptorset.return_value = True
         mock_get_utils.return_value = mock_utils
@@ -733,7 +778,10 @@ def test_facenet_embedding_generation_error_after_init(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         mock_utils = MagicMock()
         mock_utils.add_descriptorset.return_value = True
         mock_get_utils.return_value = mock_utils
@@ -970,7 +1018,10 @@ def test_clip_missing_blob(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         mock_utils = mock_get_utils.return_value
         mock_utils.add_descriptorset.return_value = True
 
@@ -994,7 +1045,10 @@ def test_facenet_missing_blob(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         mock_utils = mock_get_utils.return_value
         mock_utils.add_descriptorset.return_value = True
 
@@ -1017,7 +1071,10 @@ def test_clip_embedding_malformed_payload(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for CLIP")
 
-    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+    with patch(
+        'aperturedb.transformers.clip_pytorch_embeddings'
+        '.generate_embedding'
+    ) as mock_generate_embedding:
         mock_utils = MagicMock()
         mock_utils.add_descriptorset.return_value = True
         mock_get_utils.return_value = mock_utils
@@ -1040,7 +1097,10 @@ def test_facenet_embedding_malformed_payload(mock_get_utils):
     except (ImportError, SystemExit):
         pytest.skip("Missing deps for Facenet")
 
-    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+    with patch(
+        'aperturedb.transformers.facenet_pytorch_embeddings'
+        '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
+    ) as mock_get_embedding:
         mock_utils = MagicMock()
         mock_utils.add_descriptorset.return_value = True
         mock_get_utils.return_value = mock_utils
