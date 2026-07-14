@@ -48,8 +48,8 @@ IP_REGEX='[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
 
 function teardown() {
     echo "Tearing down containers and networks..."
-    $(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* 2>/dev/null || true
-    chmod -R u+rwX,go-rwx "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* 2>/dev/null || true
+    $(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* "$(pwd)/aperturedb/certificate_"* 2>/dev/null || true
+    chmod -R u+rwX,go-rwx "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* "$(pwd)/aperturedb/certificate_"* 2>/dev/null || true
     $(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)"/*_ca 2>/dev/null || true
     chmod -R u+rwX,go-rwx "$(pwd)"/*_ca 2>/dev/null || true
     if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
@@ -71,8 +71,8 @@ TESTING_LOG_PATH="/aperturedb/test/server_logs"
 RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
 
 $(get_sudo) mkdir -p "$RUNNER_INFO_PATH"
-$(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* 2>/dev/null || true
-chmod -R u+rwX,go-rwx "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* 2>/dev/null || true
+$(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* "$(pwd)/aperturedb/certificate_"* 2>/dev/null || true
+chmod -R u+rwX,go-rwx "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* "$(pwd)/aperturedb/certificate_"* 2>/dev/null || true
 $(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)"/*_ca 2>/dev/null || true
 chmod -R u+rwX,go-rwx "$(pwd)"/*_ca 2>/dev/null || true
 

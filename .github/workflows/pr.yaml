@@ -18,7 +18,7 @@ jobs:
 
     - name: Cleanup previous run
       run: |
-        docker ps -q -a --filter "name=db_" | xargs -r docker rm -f || true
+        docker ps -q -a --filter "name=${{ runner.name }}" | xargs -r docker rm -f || true
         docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb" || true
       continue-on-error: true
 
@@ -83,7 +83,7 @@ jobs:
 
     - name: Cleanup previous run
       run: |
-        docker ps -q -a --filter "name=db_" | xargs -r docker rm -f || true
+        docker ps -q -a --filter "name=${{ runner.name }}" | xargs -r docker rm -f || true
         docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb" || true
       continue-on-error: true
 
