@@ -1008,3 +1008,39 @@ def test_facenet_missing_blob(mock_get_utils):
         res = facenet[0]
         assert not facenet._descriptorset_initialized
         assert not any("AddDescriptor" in c for c in res[0])
+
+
+@patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding')
+@patch('aperturedb.transformers.clip_pytorch_embeddings.CLIPPyTorchEmbeddings.get_utils')
+def test_clip_embedding_malformed_payload(mock_get_utils, mock_generate_embedding):
+    mock_utils = MagicMock()
+    mock_utils.add_descriptorset.return_value = True
+    mock_get_utils.return_value = mock_utils
+
+    # Payload is not a dict
+    data = [([{"AddImage": "invalid"}], [b"dummy"])]
+    dummy_data = DummyData(data)
+    clip = CLIPPyTorchEmbeddings(dummy_data)
+    res = clip[0]
+
+    # Should not crash, AddImage unmodified, no descriptors added
+    assert len(res[0]) == 1
+    assert "AddDescriptor" not in [next(iter(cmd)) for cmd in res[0]]
+
+
+@patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob')
+@patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings.get_utils')
+def test_facenet_embedding_malformed_payload(mock_get_utils, mock_get_embedding):
+    mock_utils = MagicMock()
+    mock_utils.add_descriptorset.return_value = True
+    mock_get_utils.return_value = mock_utils
+
+    # Payload is not a dict
+    data = [([{"AddImage": "invalid"}], [b"dummy"])]
+    dummy_data = DummyData(data)
+    facenet = FacenetPyTorchEmbeddings(dummy_data)
+    res = facenet[0]
+
+    # Should not crash, AddImage unmodified, no descriptors added
+    assert len(res[0]) == 1
+    assert "AddDescriptor" not in [next(iter(cmd)) for cmd in res[0]]

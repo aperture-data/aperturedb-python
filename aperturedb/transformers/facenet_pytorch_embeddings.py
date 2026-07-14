@@ -55,7 +55,7 @@ class FacenetPyTorchEmbeddings(Transformer):
                     blob_index += 1
                     continue
 
-                if not getattr(self, "_descriptorset_initialized", False) and "_ref" in cmd_dict["AddImage"]:
+                if not getattr(self, "_descriptorset_initialized", False) and isinstance(cmd_dict["AddImage"], dict) and "_ref" in cmd_dict["AddImage"]:
                     try:
                         utils = self.get_utils()
                         success = utils.add_descriptorset(
@@ -67,7 +67,7 @@ class FacenetPyTorchEmbeddings(Transformer):
                             f"Failed to initialize descriptorset: {e}", exc_info=True)
 
                 # If the image already has an image_sha256, we use it.
-                if getattr(self, "_descriptorset_initialized", False) and "_ref" in cmd_dict["AddImage"]:
+                if getattr(self, "_descriptorset_initialized", False) and isinstance(cmd_dict["AddImage"], dict) and "_ref" in cmd_dict["AddImage"]:
                     try:
                         serialized = self._get_embedding_from_blob(blob)
                         image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
