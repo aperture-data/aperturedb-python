@@ -922,3 +922,89 @@ def test_video_properties_init_exception(mock_get_utils, mock_logger):
     assert mock_logger.exception.called
     assert "Error checking or creating index for _Video properties" in mock_logger.exception.call_args[
         0][0]
+
+
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+@patch('aperturedb.transformers.image_properties.logger')
+def test_image_properties_missing_blob(mock_logger, mock_get_utils):
+    mock_utils = mock_get_utils.return_value
+    mock_utils.get_indexed_props.return_value = []
+
+    # Missing blob for AddImage
+    data = [([{"AddImage": {}}], [])]
+    dummy_data = DummyData(data)
+
+    ip = ImageProperties(dummy_data)
+    res = ip[0]
+
+    assert mock_logger.exception.called
+    assert "Error applying image properties" in mock_logger.exception.call_args[0][0]
+
+    props = res[0][0]["AddImage"]["properties"]
+    assert "adb_image_size" not in props
+
+
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+@patch('aperturedb.transformers.video_properties.logger')
+def test_video_properties_missing_blob(mock_logger, mock_get_utils):
+    mock_utils = mock_get_utils.return_value
+    mock_utils.get_indexed_props.return_value = []
+
+    data = [([{"AddVideo": {}}], [])]
+    dummy_data = DummyData(data)
+
+    vp = VideoProperties(dummy_data)
+    res = vp[0]
+
+    assert mock_logger.exception.called
+    assert "Error applying video properties" in mock_logger.exception.call_args[0][0]
+
+    props = res[0][0]["AddVideo"]["properties"]
+    assert "adb_video_size" not in props
+
+
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+def test_clip_missing_blob(mock_get_utils):
+    try:
+        from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for CLIP")
+
+    with patch('aperturedb.transformers.clip_pytorch_embeddings.generate_embedding') as mock_generate_embedding:
+        mock_utils = mock_get_utils.return_value
+        mock_utils.add_descriptorset.return_value = True
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [])
+        ]
+
+        dummy_data = DummyData(data)
+        clip = CLIPPyTorchEmbeddings(dummy_data)
+
+        # Missing blob causes IndexError, handled gracefully
+        res = clip[0]
+        assert not clip._descriptorset_initialized
+        assert not any("AddDescriptor" in c for c in res[0])
+
+
+@patch('aperturedb.transformers.transformer.Transformer.get_utils')
+def test_facenet_missing_blob(mock_get_utils):
+    try:
+        from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    except (ImportError, SystemExit):
+        pytest.skip("Missing deps for Facenet")
+
+    with patch('aperturedb.transformers.facenet_pytorch_embeddings.FacenetPyTorchEmbeddings._get_embedding_from_blob') as mock_get_embedding:
+        mock_utils = mock_get_utils.return_value
+        mock_utils.add_descriptorset.return_value = True
+
+        data = [
+            ([{"AddImage": {"_ref": 1}}], [])
+        ]
+
+        dummy_data = DummyData(data)
+        facenet = FacenetPyTorchEmbeddings(dummy_data)
+
+        res = facenet[0]
+        assert not facenet._descriptorset_initialized
+        assert not any("AddDescriptor" in c for c in res[0])
