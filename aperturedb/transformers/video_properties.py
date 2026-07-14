@@ -40,7 +40,9 @@ class VideoProperties(Transformer):
                     blob = x[1][blob_index]
                     src_properties["adb_video_size"] = len(blob)
                     src_properties["adb_video_id"] = str(
-                        src_properties["id"] if src_properties.get("id") not in (None, "") else uuid.uuid4().hex)
+                        src_properties["id"] if src_properties.get("id") not in (None, "")
+                        else uuid.uuid4().hex
+                    )
                     src_properties["adb_video_sha256"] = hashlib.sha256(
                         blob).hexdigest()
 
