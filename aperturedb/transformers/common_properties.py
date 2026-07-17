@@ -26,6 +26,14 @@ class CommonProperties(Transformer):
         self.adb_timestamp = kwargs.get("adb_timestamp", None)
         self.adb_main_object = kwargs.get("adb_main_object", None)
 
+    def _apply_common_properties(self, properties: dict):
+        if self.adb_data_source is not None:
+            properties["adb_data_source"] = self.adb_data_source
+        if self.adb_timestamp is not None:
+            properties["adb_timestamp"] = self.adb_timestamp
+        if self.adb_main_object is not None:
+            properties["adb_main_object"] = self.adb_main_object
+
     def getitem(self, subscript):
         if (
             self.adb_data_source is None and
@@ -43,12 +51,7 @@ class CommonProperties(Transformer):
                     if cmd_name in cmd_dict:
                         src_properties = cmd_dict[cmd_name].setdefault(
                             "properties", {})
-                        if self.adb_data_source is not None:
-                            src_properties["adb_data_source"] = self.adb_data_source
-                        if self.adb_timestamp is not None:
-                            src_properties["adb_timestamp"] = self.adb_timestamp
-                        if self.adb_main_object is not None:
-                            src_properties["adb_main_object"] = self.adb_main_object
+                        self._apply_common_properties(src_properties)
             except Exception:
                 logger.exception(
                     "Error applying common properties", stack_info=True)
