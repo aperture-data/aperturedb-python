@@ -868,7 +868,8 @@ def test_bounding_box_properties_exception_handling(mock_logger):
 @patch('aperturedb.transformers.image_properties.logger')
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
 @patch('aperturedb.transformers.image_properties.Image.open')
-def test_image_properties_exception_handling(mock_image_open, mock_get_utils, mock_logger):
+def test_image_properties_exception_handling(
+        mock_image_open, mock_get_utils, mock_logger):
     mock_utils = mock_get_utils.return_value
     mock_utils.get_indexed_props.return_value = []
 
