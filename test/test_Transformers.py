@@ -1117,19 +1117,20 @@ def test_facenet_embedding_malformed_payload(mock_get_utils):
         assert "AddDescriptor" not in [next(iter(cmd)) for cmd in res[0]]
 
 
-import pytest
-from unittest.mock import patch, MagicMock
 try:
     from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
-    from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
-    import_success = True
+    clip_import_success = True
 except ImportError:
-    import_success = False
+    clip_import_success = False
 
-from test.test_Transformers import DummyData
+try:
+    from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    facenet_import_success = True
+except ImportError:
+    facenet_import_success = False
 
 
-@pytest.mark.skipif(not import_success, reason='Missing dependencies for transformers')
+@pytest.mark.skipif(not clip_import_success, reason='Missing dependencies for CLIP transformer')
 def test_clip_init_failure():
     data = DummyData([([{"AddImage": {"_ref": 1}}], [b"dummy"])])
 
@@ -1142,7 +1143,7 @@ def test_clip_init_failure():
         assert transformer._descriptorset_initialized == False
 
 
-@pytest.mark.skipif(not import_success, reason='Missing dependencies for transformers')
+@pytest.mark.skipif(not clip_import_success, reason='Missing dependencies for CLIP transformer')
 def test_clip_init_failure_utils():
     data = DummyData([([{"AddImage": {"_ref": 1}}], [b"dummy"])])
 
@@ -1157,7 +1158,7 @@ def test_clip_init_failure_utils():
             assert transformer._descriptorset_initialized == False
 
 
-@pytest.mark.skipif(not import_success, reason='Missing dependencies for transformers')
+@pytest.mark.skipif(not facenet_import_success, reason='Missing dependencies for Facenet transformer')
 def test_facenet_init_failure():
     data = DummyData([([{"AddImage": {"_ref": 1}}], [b"dummy"])])
 
@@ -1171,7 +1172,7 @@ def test_facenet_init_failure():
         assert transformer._descriptorset_initialized == False
 
 
-@pytest.mark.skipif(not import_success, reason='Missing dependencies for transformers')
+@pytest.mark.skipif(not facenet_import_success, reason='Missing dependencies for Facenet transformer')
 def test_facenet_init_failure_generate():
     data = DummyData([([{"AddImage": {"_ref": 1}}], [b"dummy"])])
 
