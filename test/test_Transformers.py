@@ -99,6 +99,12 @@ def test_video_properties(mock_get_utils):
             {"AddVideo": {}}
         ], [b"image_blob", dummy_video_data]),
         ([
+            {"AddVideo": {"properties": {"id": None}}}
+        ], [dummy_video_data]),
+        ([
+            {"AddVideo": {"properties": {"id": ""}}}
+        ], [dummy_video_data]),
+        ([
             {"AddVideo": {}}
         ], [dummy_video_data]),
     ]
@@ -153,6 +159,12 @@ def test_image_properties(mock_image_open, mock_get_utils):
             {"AddVideo": {}},
             {"AddImage": {"_ref": 2}}
         ], [b"video_blob", dummy_image_data]),
+        ([
+            {"AddImage": {"_ref": 3, "properties": {"id": None}}}
+        ], [dummy_image_data]),
+        ([
+            {"AddImage": {"_ref": 4, "properties": {"id": ""}}}
+        ], [dummy_image_data]),
         ([
             {"AddImage": {"_ref": 3}}
         ], [dummy_image_data]),
