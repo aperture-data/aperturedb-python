@@ -1115,3 +1115,71 @@ def test_facenet_embedding_malformed_payload(mock_get_utils):
         # Should not crash, AddImage unmodified, no descriptors added
         assert len(res[0]) == 1
         assert "AddDescriptor" not in [next(iter(cmd)) for cmd in res[0]]
+
+
+import pytest
+from unittest.mock import patch, MagicMock
+try:
+    from aperturedb.transformers.clip_pytorch_embeddings import CLIPPyTorchEmbeddings
+    from aperturedb.transformers.facenet_pytorch_embeddings import FacenetPyTorchEmbeddings
+    import_success = True
+except ImportError:
+    import_success = False
+
+from test.test_Transformers import DummyData
+
+
+@pytest.mark.skipif(not import_success, reason='Missing dependencies for transformers')
+def test_clip_init_failure():
+    data = DummyData([([{"AddImage": {"_ref": 1}}], [b"dummy"])])
+
+    with patch("aperturedb.transformers.clip_pytorch_embeddings.generate_embedding", side_effect=Exception("Model failure")):
+        transformer = CLIPPyTorchEmbeddings(data)
+        res = transformer[0]
+        # Should catch the exception, log it, and not append new descriptors/blobs since it failed
+        assert len(res[0]) == 1
+        assert len(res[1]) == 1
+        assert transformer._descriptorset_initialized == False
+
+
+@pytest.mark.skipif(not import_success, reason='Missing dependencies for transformers')
+def test_clip_init_failure_utils():
+    data = DummyData([([{"AddImage": {"_ref": 1}}], [b"dummy"])])
+
+    with patch("aperturedb.transformers.clip_pytorch_embeddings.generate_embedding", return_value=b"1234"):
+        transformer = CLIPPyTorchEmbeddings(data)
+        utils_mock = MagicMock()
+        utils_mock.add_descriptorset.side_effect = Exception("Backend error")
+        with patch.object(transformer, "get_utils", return_value=utils_mock):
+            res = transformer[0]
+            assert len(res[0]) == 1
+            assert len(res[1]) == 1
+            assert transformer._descriptorset_initialized == False
+
+
+@pytest.mark.skipif(not import_success, reason='Missing dependencies for transformers')
+def test_facenet_init_failure():
+    data = DummyData([([{"AddImage": {"_ref": 1}}], [b"dummy"])])
+
+    transformer = FacenetPyTorchEmbeddings(data)
+    utils_mock = MagicMock()
+    utils_mock.add_descriptorset.side_effect = Exception("Backend error")
+    with patch.object(transformer, "get_utils", return_value=utils_mock):
+        res = transformer[0]
+        assert len(res[0]) == 1
+        assert len(res[1]) == 1
+        assert transformer._descriptorset_initialized == False
+
+
+@pytest.mark.skipif(not import_success, reason='Missing dependencies for transformers')
+def test_facenet_init_failure_generate():
+    data = DummyData([([{"AddImage": {"_ref": 1}}], [b"dummy"])])
+
+    transformer = FacenetPyTorchEmbeddings(data)
+    utils_mock = MagicMock()
+    utils_mock.add_descriptorset.return_value = True
+    with patch.object(transformer, "get_utils", return_value=utils_mock), patch.object(transformer, "_get_embedding_from_blob", side_effect=Exception("Embedding failed")):
+        res = transformer[0]
+        assert len(res[0]) == 1
+        assert len(res[1]) == 1
+        assert transformer._descriptorset_initialized == True
