@@ -1,3 +1,4 @@
+import pytest
 
 from unittest.mock import patch, MagicMock
 from aperturedb.transformers.common_properties import CommonProperties
