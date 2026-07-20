@@ -1,4 +1,4 @@
-import pytest
+
 from unittest.mock import patch, MagicMock
 from aperturedb.transformers.common_properties import CommonProperties
 from aperturedb.transformers.bounding_box_properties import BoundingBoxProperties
