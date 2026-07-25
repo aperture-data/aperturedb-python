@@ -1061,10 +1061,10 @@ def test_image_properties_missing_blob(mock_logger, mock_get_utils):
     ip = ImageProperties(dummy_data)
     res = ip[0]
 
-    assert mock_logger.exception.called
-    assert "Error applying image properties" in mock_logger.exception.call_args[0][0]
+    assert mock_logger.warning.called
+    assert "Missing blob for command" in mock_logger.warning.call_args[0][0]
 
-    props = res[0][0]["AddImage"]["properties"]
+    props = res[0][0]["AddImage"].get("properties", {})
     assert "adb_image_size" not in props
 
 
@@ -1080,10 +1080,10 @@ def test_video_properties_missing_blob(mock_logger, mock_get_utils):
     vp = VideoProperties(dummy_data)
     res = vp[0]
 
-    assert mock_logger.exception.called
-    assert "Error applying video properties" in mock_logger.exception.call_args[0][0]
+    assert mock_logger.warning.called
+    assert "Missing blob for command" in mock_logger.warning.call_args[0][0]
 
-    props = res[0][0]["AddVideo"]["properties"]
+    props = res[0][0]["AddVideo"].get("properties", {})
     assert "adb_video_size" not in props
 
 

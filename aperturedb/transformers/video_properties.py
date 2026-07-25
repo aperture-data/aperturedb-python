@@ -32,6 +32,13 @@ class VideoProperties(Transformer):
             if isinstance(cmd_dict, dict) and len(cmd_dict) > 0:
                 cmd_name = next(iter(cmd_dict.keys()))
 
+            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+                if blob_index >= len(x[1]):
+                    logger.warning(
+                        "Missing blob for command %s (expected at index %d), stopping property processing for this transaction.",
+                        cmd_name, blob_index)
+                    break
+
             try:
                 if cmd_name == "AddVideo":
                     src_properties = cmd_dict["AddVideo"].setdefault(

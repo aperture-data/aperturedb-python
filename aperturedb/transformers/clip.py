@@ -1,7 +1,5 @@
 
 import logging
-import numpy as np
-from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +11,8 @@ venv as aperturedb.
 """
 
 try:
+    import numpy as np
+    from PIL import Image
     import clip
     import torch
     import cv2
