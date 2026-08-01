@@ -41,9 +41,8 @@ class CLIPPyTorchEmbeddings(Transformer):
                     blob = x[1][blob_index]
                 except IndexError:
                     logger.warning(
-                        f"Missing blob for AddImage at index {blob_index}")
-                    blob_index += 1
-                    continue
+                        f"Missing blob for AddImage at index {blob_index}. Stopping blob processing for this transaction.")
+                    break
 
                 serialized = None
 
