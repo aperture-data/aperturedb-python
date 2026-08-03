@@ -388,7 +388,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         return sum(stat["succeeded_commands"]
                    for stat in self.actual_stats)
 
-    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, max_bytes_per_batch: Optional[int] = None) -> None:
+    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, max_bytes_per_batch: Optional[int] = None, transformers: list = None) -> None:
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)
@@ -396,18 +396,45 @@ class ParallelQuery(Parallelizer.Parallelizer):
             generator (_type_): The class that generates the queries to be executed.
             batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
-            stats (bool, optional): Show statistics at end of ingestion. Defaults to False.
+            stats (bool, optional): Show statistics at end of query execution. Defaults to False.
             max_bytes_per_batch (int, optional): The maximum number of bytes allowed per batch. Acts as an additional cap on batch size; batches will be split if they reach either this byte limit or the `batchsize` item limit. If None or <= 0, dynamic batching is disabled and only `batchsize` is used. Default is None.
+            transformers (list, optional): A Transformer class, a callable, or a list of Transformer classes/callables to apply to the data. Defaults to None.
         """
         self.max_bytes_per_batch = max_bytes_per_batch
 
+        from aperturedb.transformers.transformer import Transformer
+
+        if transformers is not None:
+            if not isinstance(transformers, (list, tuple)):
+                transformers = [transformers]
+            for t in transformers:
+                if not (isinstance(t, type) and issubclass(t, Transformer)) and not callable(t):
+                    raise TypeError(
+                        "Each transformer must be a subclass of Transformer or a callable.")
+
         use_dask = hasattr(generator, "use_dask") and generator.use_dask
         if use_dask:
+            if transformers or isinstance(generator, Transformer):
+                raise ValueError("Transformers cannot be used with Dask mode.")
             self._reset(batchsize=batchsize, numthreads=numthreads)
             self.daskManager = DaskManager(num_workers=numthreads)
 
         if hasattr(self, "query_setup"):
             self.query_setup(generator)
+
+        if transformers and len(generator) > 0:
+            for transformer in transformers:
+                try:
+                    sig = inspect.signature(transformer)
+                    accepts_client = "client" in sig.parameters or any(
+                        p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
+                except (ValueError, TypeError):
+                    accepts_client = False
+
+                if accepts_client:
+                    generator = transformer(generator, client=self.client)
+                else:
+                    generator = transformer(generator)
 
         if use_dask:
             results, self.total_actions_time = self.daskManager.run(

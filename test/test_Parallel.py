@@ -1,11 +1,25 @@
 import logging
 import random
+import pytest
 
 from aperturedb.Connector import Connector
 from aperturedb.ParallelQuery import ParallelQuery
+from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.Subscriptable import Subscriptable
+from aperturedb.transformers.transformer import Transformer
 
 logger = logging.getLogger(__name__)
+
+
+class DummyTransformer(Transformer):
+    def __init__(self, generator, client=None):
+        super().__init__(generator, client=client)
+        if client is None:
+            pytest.fail("Client was not passed to transformer!")
+
+    def getitem(self, idx):
+        query, blobs = self.data[idx]
+        return query, blobs
 
 # Tests for parallel which don't involve data.
 
@@ -24,7 +38,7 @@ class GeneratorWithErrors(Subscriptable):
         query = []
         blobs = []
         for i in range(self.commands_per_query):
-            if random.randint(0, 100) <= (self.error_pct * 100):
+            if random.random() < self.error_pct:
                 query.append({
                     "BadCommand": {
                     }
@@ -113,6 +127,86 @@ class TestParallel():
         except Exception as e:
             print(e)
             raise
+
+    def test_transformers(self, db: Connector):
+        """
+        Verifies that transformers are correctly applied.
+        """
+        elements = 10
+        generator = GeneratorWithErrors(elements=elements, error_pct=0)
+
+        loader = ParallelLoader(db)
+        loader.ingest(generator, batchsize=2, numthreads=2,
+                      stats=False, transformers=[DummyTransformer])
+
+        assert loader.get_succeeded_queries() > 0
+
+    def test_transformers_rejects_dask(self, db: Connector):
+        elements = 10
+        generator = GeneratorWithErrors(elements=elements, error_pct=0)
+        generator.use_dask = True
+
+        loader = ParallelLoader(db)
+        with pytest.raises(ValueError, match="Transformers cannot be used with Dask"):
+            loader.ingest(generator, batchsize=2, numthreads=2,
+                          stats=False, transformers=[DummyTransformer])
+
+        # Test manual wrapping also gets rejected
+        transformer = DummyTransformer(generator, client=db)
+        with pytest.raises(ValueError, match="Transformers cannot be used with Dask"):
+            loader.ingest(transformer, batchsize=2, numthreads=2, stats=False)
+
+    def test_transformers_equivalence(self, db: Connector):
+        """
+        Verifies that using transformers parameter is equivalent to manual wrapping.
+        """
+        elements = 10
+
+        # Manual wrapping
+        generator1 = GeneratorWithErrors(elements=elements, error_pct=0)
+        transformer1 = DummyTransformer(generator1, client=db)
+        loader1 = ParallelLoader(db)
+        loader1.ingest(transformer1, batchsize=2, numthreads=2, stats=False)
+
+        # transformers parameter
+        generator2 = GeneratorWithErrors(elements=elements, error_pct=0)
+        loader2 = ParallelLoader(db)
+        loader2.ingest(generator2, batchsize=2, numthreads=2,
+                       stats=False, transformers=[DummyTransformer])
+
+        assert loader1.get_succeeded_queries() == loader2.get_succeeded_queries()
+        assert loader1.get_succeeded_queries() > 0
+
+    def test_query_transformers(self, db: Connector):
+        """
+        Verifies that transformers are correctly applied when calling ParallelQuery.query().
+        """
+        elements = 10
+        generator = GeneratorWithErrors(elements=elements, error_pct=0)
+
+        querier = ParallelQuery(db)
+        querier.query(generator, batchsize=2, numthreads=2,
+                      stats=False, transformers=[DummyTransformer])
+
+        assert querier.get_succeeded_queries() > 0
+
+    def test_transformers_single_and_invalid(self, db: Connector):
+        """
+        Verifies that passing a single transformer works and invalid inputs raise TypeError.
+        """
+        elements = 10
+        generator = GeneratorWithErrors(elements=elements, error_pct=0)
+        loader = ParallelLoader(db)
+
+        # Single transformer
+        loader.ingest(generator, batchsize=2, numthreads=2,
+                      stats=False, transformers=DummyTransformer)
+        assert loader.get_succeeded_queries() > 0
+
+        # Invalid input
+        with pytest.raises(TypeError, match="must be a subclass of Transformer or a callable"):
+            loader.ingest(generator, batchsize=2, numthreads=2,
+                          stats=False, transformers="invalid_transformer")
 
     def test_parallel_query_worker_closes_connection(self, db, monkeypatch):
         from aperturedb.QueryGenerator import QueryGenerator

@@ -105,8 +105,9 @@ jobs:
     - name: Build tests on pytorch GPU image
       run: |
         rm -rf docker/pytorch-gpu/aperturedata
-        mkdir -p docker/pytorch-gpu/aperturedata
-        cp -r aperturedb pyproject.toml README.md test docker/pytorch-gpu/aperturedata
+        mkdir -p docker/pytorch-gpu/aperturedata/test
+        cp -r aperturedb pyproject.toml README.md docker/pytorch-gpu/aperturedata
+        cp -r test/*.py test/*.sh test/input test/pytest.ini docker/pytorch-gpu/aperturedata/test
         bash docker/pytorch-gpu/build.sh
       shell: bash
 
@@ -117,6 +118,11 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         RUNNER_NAME: ${{ runner.name }}_${{ github.run_id }}
+        ADB_REPO: aperturedata/aperturedb
+        ADB_TAG: dev
+        LENZ_REPO: aperturedata/lenz
+        LENZ_TAG: dev
+        SKIP_SLOW_TESTS: true
       run: |
         cd test
         ./run_test_container.sh aperturedata/aperturedb-pytorch-gpu
