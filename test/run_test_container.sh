@@ -2,6 +2,9 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+cd "${SCRIPT_DIR}"
+
 function check_containers_networks(){
     echo "Running containers and networks cleanup"
     docker ps
@@ -58,6 +61,8 @@ function teardown() {
         docker network rm "${RUNNER_NAME}_non_http_host_default" || true
         docker network rm "${RUNNER_NAME}_non_http_default" || true
     fi
+    echo "Cleaning up generated volumes..."
+    $(get_sudo) rm -rf "${SCRIPT_DIR}/aperturedb"
 }
 trap teardown EXIT
 
