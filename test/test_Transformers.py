@@ -1030,7 +1030,7 @@ def test_image_properties_init_exception(mock_get_utils, mock_logger):
     mock_get_utils.side_effect = Exception("DB Init Error")
     data = [([{"AddImage": {}}], [b"dummy"])]
     dummy_data = DummyData(data)
-    ip = ImageProperties(dummy_data)
+    _ = ImageProperties(dummy_data)
     assert mock_logger.exception.called
     assert "Error checking or creating index for _Image properties" in mock_logger.exception.call_args[
         0][0]
@@ -1042,7 +1042,7 @@ def test_video_properties_init_exception(mock_get_utils, mock_logger):
     mock_get_utils.side_effect = Exception("DB Init Error")
     data = [([{"AddVideo": {}}], [b"dummy"])]
     dummy_data = DummyData(data)
-    vp = VideoProperties(dummy_data)
+    _ = VideoProperties(dummy_data)
     assert mock_logger.exception.called
     assert "Error checking or creating index for _Video properties" in mock_logger.exception.call_args[
         0][0]
@@ -1097,7 +1097,7 @@ def test_clip_missing_blob(mock_get_utils):
     with patch(
         'aperturedb.transformers.clip_pytorch_embeddings'
         '.generate_embedding'
-    ) as mock_generate_embedding:
+    ) as _:
         mock_utils = mock_get_utils.return_value
         mock_utils.add_descriptorset.return_value = True
 
@@ -1124,7 +1124,7 @@ def test_facenet_missing_blob(mock_get_utils):
     with patch(
         'aperturedb.transformers.facenet_pytorch_embeddings'
         '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
-    ) as mock_get_embedding:
+    ) as _:
         mock_utils = mock_get_utils.return_value
         mock_utils.add_descriptorset.return_value = True
 
@@ -1150,7 +1150,7 @@ def test_clip_embedding_malformed_payload(mock_get_utils):
     with patch(
         'aperturedb.transformers.clip_pytorch_embeddings'
         '.generate_embedding'
-    ) as mock_generate_embedding:
+    ) as _:
         mock_utils = MagicMock()
         mock_utils.add_descriptorset.return_value = True
         mock_get_utils.return_value = mock_utils
@@ -1176,7 +1176,7 @@ def test_facenet_embedding_malformed_payload(mock_get_utils):
     with patch(
         'aperturedb.transformers.facenet_pytorch_embeddings'
         '.FacenetPyTorchEmbeddings._get_embedding_from_blob'
-    ) as mock_get_embedding:
+    ) as _:
         mock_utils = MagicMock()
         mock_utils.add_descriptorset.return_value = True
         mock_get_utils.return_value = mock_utils
@@ -1215,7 +1215,7 @@ def test_clip_init_failure():
         # Should catch the exception, log it, and not append new descriptors/blobs since it failed
         assert len(res[0]) == 1
         assert len(res[1]) == 1
-        assert transformer._descriptorset_initialized == False
+        assert transformer._descriptorset_initialized is False
 
 
 @pytest.mark.skipif(not clip_import_success, reason='Missing dependencies for CLIP transformer')
@@ -1230,7 +1230,7 @@ def test_clip_init_failure_utils():
             res = transformer[0]
             assert len(res[0]) == 1
             assert len(res[1]) == 1
-            assert transformer._descriptorset_initialized == False
+            assert transformer._descriptorset_initialized is False
 
 
 @pytest.mark.skipif(not facenet_import_success, reason='Missing dependencies for Facenet transformer')
@@ -1244,7 +1244,7 @@ def test_facenet_init_failure():
         res = transformer[0]
         assert len(res[0]) == 1
         assert len(res[1]) == 1
-        assert transformer._descriptorset_initialized == False
+        assert transformer._descriptorset_initialized is False
 
 
 @pytest.mark.skipif(not facenet_import_success, reason='Missing dependencies for Facenet transformer')
@@ -1258,7 +1258,7 @@ def test_facenet_init_failure_generate():
         res = transformer[0]
         assert len(res[0]) == 1
         assert len(res[1]) == 1
-        assert transformer._descriptorset_initialized == True
+        assert transformer._descriptorset_initialized is True
 
 
 @patch('aperturedb.transformers.transformer.Transformer.get_utils')
