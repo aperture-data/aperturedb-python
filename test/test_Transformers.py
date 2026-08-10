@@ -1373,3 +1373,65 @@ def test_facenet_embedding_generation_fails(mock_get_utils):
         res = facenet[0]
         assert not any("AddDescriptor" in c for c in res[0])
         assert "AddImage" in res[0][0]
+
+def test_transformer_getattr():
+    data = [([{"AddImage": {}}], [b"dummy"])]
+    
+    class DummyDataWithAttr(DummyData):
+        def __init__(self, d):
+            super().__init__(d)
+            self.use_dask = True
+            self.commands_per_query = 10
+            self.other_attr = "should not delegate"
+
+    dummy_data = DummyDataWithAttr(data)
+    transformer = Transformer(dummy_data)
+    
+    assert transformer.use_dask is True
+    assert transformer.commands_per_query == 10
+    
+    with pytest.raises(AttributeError):
+        _ = transformer.other_attr
+
+@patch('aperturedb.transformers.transformer.create_connector')
+def test_transformer_get_client(mock_create_connector):
+    mock_client = MagicMock()
+    mock_create_connector.return_value = mock_client
+    
+    data = [([{"AddImage": {}}], [b"dummy"])]
+    dummy_data = DummyData(data)
+    
+    # Test fallback to create_connector
+    transformer = Transformer(dummy_data)
+    client1 = transformer.get_client()
+    assert client1 is mock_client
+    mock_create_connector.assert_called_once()
+    
+    # Test cloneable client
+    mock_cloneable_client = MagicMock()
+    mock_cloneable_client.clone.return_value = "cloned_client"
+    transformer_clone = Transformer(dummy_data, client=mock_cloneable_client)
+    client2 = transformer_clone.get_client()
+    assert client2 == "cloned_client"
+    mock_cloneable_client.clone.assert_called_once()
+    
+    # Test non-cloneable client
+    mock_fixed_client = object()
+    transformer_fixed = Transformer(dummy_data, client=mock_fixed_client)
+    client3 = transformer_fixed.get_client()
+    assert client3 is mock_fixed_client
+
+@patch('aperturedb.transformers.transformer.Utils')
+def test_transformer_get_utils(mock_utils_class):
+    mock_utils_instance = MagicMock()
+    mock_utils_class.return_value = mock_utils_instance
+    
+    data = [([{"AddImage": {}}], [b"dummy"])]
+    dummy_data = DummyData(data)
+    mock_client = object()
+    
+    transformer = Transformer(dummy_data, client=mock_client)
+    utils = transformer.get_utils()
+    
+    assert utils is mock_utils_instance
+    mock_utils_class.assert_called_once_with(mock_client)
