@@ -1,7 +1,10 @@
 import hashlib
+import logging
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.transformers.transformer import Transformer
 from .clip import generate_embedding, descriptor_set
+
+logger = logging.getLogger(__name__)
 
 
 class CLIPPyTorchEmbeddings(Transformer):
@@ -19,38 +22,82 @@ class CLIPPyTorchEmbeddings(Transformer):
         self.search_set_name = kwargs.pop(
             "search_set_name", descriptor_set)
         super().__init__(data, **kwargs)
-
-        # Let's sample some data to figure out the descriptorset we need.
-        if len(self._add_image_index) > 0:
-            sample = generate_embedding(self.data[0][1][0])
-            utils = self.get_utils()
-            utils.add_descriptorset(
-                self.search_set_name, dim=len(sample) // 4, metric=["CS"])
+        self._descriptorset_initialized = False
 
     def getitem(self, subscript):
         x = self.data[subscript]
 
-        for ic in self._add_image_index:
-            serialized = generate_embedding(x[1][ic])
-            # If the image already has an image_sha256, we use it.
-            image_sha256 = x[0][ic]["AddImage"].get("properties", {}).get(
-                "adb_image_sha256", None)
-            if not image_sha256:
-                image_sha256 = hashlib.sha256(x[1][ic]).hexdigest()
-            x[1].append(serialized)
-            x[0].append(
-                {
-                    "AddDescriptor": {
-                        "set": self.search_set_name,
-                        "properties": {
-                            "image_sha256": image_sha256,
-                        },
-                        "if_not_found": {
-                            "image_sha256": ["==", image_sha256],
-                        },
-                        "connect": {
-                            "ref": x[0][ic]["AddImage"]["_ref"]
+        blob_index = 0
+        new_descriptors = []
+        new_blobs = []
+
+        for cmd_dict in x[0]:
+            cmd_name = None
+            if isinstance(cmd_dict, dict) and len(cmd_dict) > 0:
+                cmd_name = next(iter(cmd_dict.keys()))
+
+            if cmd_name == "AddImage":
+                try:
+                    blob = x[1][blob_index]
+                except IndexError:
+                    logger.warning(
+                        f"Missing blob for AddImage at index {blob_index}. Stopping blob processing for this transaction.")
+                    break
+
+                serialized = None
+
+                if (
+                    not getattr(self, "_descriptorset_initialized", False)
+                    and isinstance(cmd_dict["AddImage"], dict)
+                    and "_ref" in cmd_dict["AddImage"]
+                ):
+                    try:
+                        serialized = generate_embedding(blob)
+                        dim = len(serialized) // 4
+                        utils = self.get_utils()
+                        success = utils.add_descriptorset(
+                            self.search_set_name, dim=dim, metric=["CS"])
+                        if success or self.search_set_name in utils.get_descriptorset_list():
+                            self._descriptorset_initialized = True
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to initialize descriptorset: {e}", exc_info=True)
+
+                # If the image already has an image_sha256, we use it.
+                if (
+                    getattr(self, "_descriptorset_initialized", False)
+                    and isinstance(cmd_dict["AddImage"], dict)
+                    and "_ref" in cmd_dict["AddImage"]
+                ):
+                    try:
+                        if serialized is None:
+                            serialized = generate_embedding(blob)
+                        image_sha256 = cmd_dict["AddImage"].get("properties", {}).get(
+                            "adb_image_sha256", None)
+                        if not image_sha256:
+                            image_sha256 = hashlib.sha256(blob).hexdigest()
+                        new_blobs.append(serialized)
+                        desc_cmd = {
+                            "AddDescriptor": {
+                                "set": self.search_set_name,
+                                "properties": {
+                                    "image_sha256": image_sha256,
+                                },
+                                "if_not_found": {
+                                    "image_sha256": ["==", image_sha256],
+                                },
+                                "connect": {
+                                    "ref": cmd_dict["AddImage"]["_ref"]
+                                }
+                            }
                         }
-                    }
-                })
+                        new_descriptors.append(desc_cmd)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to generate embedding or descriptor: {e}", exc_info=True)
+            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+                blob_index += 1
+
+        x[0].extend(new_descriptors)
+        x[1].extend(new_blobs)
         return x

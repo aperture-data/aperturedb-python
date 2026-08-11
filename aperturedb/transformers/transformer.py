@@ -64,15 +64,17 @@ class Transformer(Subscriptable):
 
         bc = 0
         for i, c in enumerate(x[0]):
-            command = list(c.keys())[0]
+            command = None
+            if isinstance(c, dict) and len(c) > 0:
+                command = next(iter(c.keys()))
             if command in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
                 self._blob_index.append(i)
-                if command == "AddImage":
-                    self._add_image_index.append(i)
                 bc += 1
+            # Kept for backward compatibility
+            if command == "AddImage":
+                self._add_image_index.append(i)
+
         logger.info(f"Found {bc} blobs in the data")
-        logger.info(
-            f"Found {len(self._add_image_index)} AddImage commands in the data")
 
         self.ncalls = 0
         self.cumulative_time = 0

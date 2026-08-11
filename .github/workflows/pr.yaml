@@ -17,7 +17,10 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: sudo rm -rf ${{ github.workspace }}/test/aperturedb
+      run: |
+        docker ps -q -a --filter "name=${{ runner.name }}_pr" | xargs -r docker rm -f || true
+        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb" || true
+        sudo rm -rf ${{ github.workspace }}/test/aperturedb
       continue-on-error: true
 
     - uses: actions/checkout@v3
@@ -80,7 +83,10 @@ jobs:
     steps:
 
     - name: Cleanup previous run
-      run: sudo rm -rf ${{ github.workspace }}/test/aperturedb
+      run: |
+        docker ps -q -a --filter "name=${{ runner.name }}_${{ github.run_id }}" | xargs -r docker rm -f || true
+        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb" || true
+        sudo rm -rf ${{ github.workspace }}/test/aperturedb
       continue-on-error: true
 
     - uses: actions/checkout@v3
@@ -101,6 +107,7 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
     - name: Build tests on pytorch GPU image
       run: |
+        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb" || true
         rm -rf docker/pytorch-gpu/aperturedata
         mkdir -p docker/pytorch-gpu/aperturedata/test
         cp -r aperturedb pyproject.toml README.md docker/pytorch-gpu/aperturedata

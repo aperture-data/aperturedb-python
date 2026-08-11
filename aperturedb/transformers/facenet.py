@@ -12,9 +12,9 @@ venv as aperturedb.
 try:
     from facenet_pytorch import MTCNN, InceptionResnetV1
     import torch
-except ImportError:
+except ImportError as e:
     logger.critical(error_message)
-    exit(1)
+    raise ImportError(error_message) from e
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
