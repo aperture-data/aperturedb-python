@@ -56,6 +56,5 @@ RUN wget -q https://github.com/opencv/opencv/archive/$OPENCV_VERSION.tar.gz && \
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} \
-    pip install "jupyterlab<4.0.0" jupyterlab-dash dash-cytoscape plotly jupyter-dash numpy
-RUN jupyter lab build --dev-build=False --minimize=False
+    pip install jupyterlab jupyterlab-dash dash-cytoscape plotly jupyter-dash
 RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements"
