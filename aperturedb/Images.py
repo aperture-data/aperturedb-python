@@ -1001,3 +1001,7 @@ class Images(Entities):
             print("Cannot retrieved properties")
 
         return return_dictionary
+
+
+# Shim for backward compatibility
+from aperturedb.Frames import Frames  # noqa: F401

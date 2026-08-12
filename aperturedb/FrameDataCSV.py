@@ -2,9 +2,13 @@ from aperturedb.ImageDataCSV import ImageDataCSV
 
 
 class FrameDataCSV(ImageDataCSV):
-    def __init__(self, *args, **kwargs):
-        self.command = "AddFrame"
-        super().__init__(*args, **kwargs)
+    """
+    **Helper class to ingest Frame data from a CSV file.**
+
+    This class extends ImageDataCSV and sets the insertion command to "AddFrame",
+    allowing frame files to be batch ingested from CSVs just like images.
+    """
+    command = "AddFrame"
 
     def get_indices(self):
         return {

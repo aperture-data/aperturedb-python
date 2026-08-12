@@ -1,5 +1,3 @@
-import pytest
-import pandas as pd
 import tempfile
 import os
 from aperturedb.FrameDataCSV import FrameDataCSV
