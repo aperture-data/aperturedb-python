@@ -194,7 +194,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     Ingest data from a pre generated CSV file.
     """
     from aperturedb.ImageDataCSV import ImageDataCSV
-    from aperturedb.BBoxDataCSV import BBoxDataCSV
+    from aperturedb.FrameDataCSV import FrameDataCSV
     from aperturedb.EntityDataCSV import EntityDataCSV
     from aperturedb.BlobDataCSV import BlobDataCSV
     from aperturedb.ConnectionDataCSV import ConnectionDataCSV
@@ -210,6 +210,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         IngestType.DESCRIPTOR: DescriptorDataCSV,
         IngestType.DESCRIPTORSET: DescriptorSetDataCSV,
         IngestType.ENTITY: EntityDataCSV,
+        IngestType.FRAME: FrameDataCSV,
         IngestType.IMAGE: ImageDataCSV,
         IngestType.POLYGON: PolygonDataCSV,
         IngestType.VIDEO: VideoDataCSV
