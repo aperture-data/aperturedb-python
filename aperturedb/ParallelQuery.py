@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from aperturedb import Parallelizer
 import numpy as np
 import logging
@@ -174,7 +174,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
                 parameter_count = len(inspect.signature(
                     response_handler).parameters)
                 if parameter_count < 4 or parameter_count > 5:
-                    raise Exception("Bad Signature for response_handler :"
+                    raise Exception("Bad Signature for response_handler : "
                                     f"expected 6 > args > 3, got {parameter_count}")
                 if parameter_count == 4:
                     indexless_handler = response_handler
@@ -241,35 +241,136 @@ class ParallelQuery(Parallelizer.Parallelizer):
         # A new connection will be created for each thread
         client = self.client.clone()
 
+        max_bytes = getattr(self, "max_bytes_per_batch", None)
+
         try:
-            total_batches = (end - start) // self.batchsize
+            if max_bytes is not None and max_bytes > 0:
+                logger.info(
+                    f"Worker {thid} executing dynamically sized batches (max {max_bytes} bytes), {self.stats=}")
+                current_batch = []
+                current_bytes = 0
+                batch_start = start
+                executed_batches = 0
 
-            if (end - start) % self.batchsize > 0:
-                total_batches += 1
+                for i in range(start, end):
+                    if not run_event.is_set():
+                        break
 
-            logger.info(
-                f"Worker {thid} executing {total_batches} batches, {self.stats=}")
-            executed_batches = 0
-            for i in range(total_batches):
-                if not run_event.is_set():
-                    break
-                batch_start = start + i * self.batchsize
-                batch_end = min(batch_start + self.batchsize, end)
+                    try:
+                        item = generator[i]
 
-                try:
-                    self.do_batch(client, batch_start,
-                                  generator[batch_start:batch_end])
-                except Exception as e:
-                    logger.exception(e)
-                    logger.warning(
-                        f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
-                    with self.error_counter_lock:
-                        self.error_counter += 1
+                        # Estimate item size (mostly blobs + some json overhead)
+                        item_bytes = len(str(item[0]))
+                        for blob in item[1]:
+                            if isinstance(blob, (bytes, bytearray, memoryview)):
+                                item_bytes += len(blob)
+                            else:
+                                item_bytes += 100
+                    except Exception as e:
+                        logger.exception(e)
+                        logger.warning(
+                            f"Worker {thid} failed to retrieve/estimate item {i}")
+                        with self.error_counter_lock:
+                            self.error_counter += 1
+                        if self.stats:
+                            self.pb.update(1)
 
-                executed_batches += 1
-                if self.stats:
-                    self.pb.update(batch_end - batch_start)
-            logger.info(f"Worker {thid} executed {executed_batches} batches")
+                        if len(current_batch) > 0:
+                            try:
+                                self.do_batch(
+                                    client, batch_start, current_batch)
+                                executed_batches += 1
+                            except Exception as e2:
+                                logger.exception(e2)
+                                logger.warning(
+                                    f"Worker {thid} failed to execute dynamic batch starting at {batch_start}")
+                                with self.error_counter_lock:
+                                    self.error_counter += 1
+
+                            if self.stats:
+                                self.pb.update(len(current_batch))
+
+                            current_batch = []
+                            current_bytes = 0
+
+                        continue
+
+                    if len(current_batch) == 0:
+                        batch_start = i
+
+                    if len(current_batch) > 0 and (current_bytes + item_bytes > max_bytes or len(current_batch) >= self.batchsize):
+                        try:
+                            self.do_batch(client, batch_start, current_batch)
+                            executed_batches += 1
+                        except Exception as e:
+                            logger.exception(e)
+                            logger.warning(
+                                f"Worker {thid} failed to execute dynamic batch starting at {batch_start}")
+                            with self.error_counter_lock:
+                                self.error_counter += 1
+
+                        if self.stats:
+                            self.pb.update(len(current_batch))
+
+                        current_batch = []
+                        current_bytes = 0
+                        batch_start = i
+
+                    if len(current_batch) == 0 and item_bytes > max_bytes:
+                        logger.warning(
+                            f"Worker {thid} executing batch starting at {batch_start} that exceeds max_bytes_per_batch: {item_bytes} > {max_bytes}")
+
+                    current_batch.append(item)
+                    current_bytes += item_bytes
+
+                # Remainder
+                if len(current_batch) > 0 and run_event.is_set():
+                    try:
+                        self.do_batch(client, batch_start, current_batch)
+                        executed_batches += 1
+                    except Exception as e:
+                        logger.exception(e)
+                        logger.warning(
+                            f"Worker {thid} failed to execute dynamic batch remainder starting at {batch_start}")
+                        with self.error_counter_lock:
+                            self.error_counter += 1
+
+                    if self.stats:
+                        self.pb.update(len(current_batch))
+
+                logger.info(
+                    f"Worker {thid} finished executing {executed_batches} dynamically sized batches")
+
+            else:
+                total_batches = (end - start) // self.batchsize
+
+                if (end - start) % self.batchsize > 0:
+                    total_batches += 1
+
+                logger.info(
+                    f"Worker {thid} executing {total_batches} batches, {self.stats=}")
+                executed_batches = 0
+                for i in range(total_batches):
+                    if not run_event.is_set():
+                        break
+                    batch_start = start + i * self.batchsize
+                    batch_end = min(batch_start + self.batchsize, end)
+
+                    try:
+                        self.do_batch(client, batch_start,
+                                      generator[batch_start:batch_end])
+                    except Exception as e:
+                        logger.exception(e)
+                        logger.warning(
+                            f"Worker {thid} failed to execute batch {i}: [{batch_start},{batch_end}]")
+                        with self.error_counter_lock:
+                            self.error_counter += 1
+
+                    executed_batches += 1
+                    if self.stats:
+                        self.pb.update(batch_end - batch_start)
+                msg = f"Worker {thid} executed {executed_batches} batches"
+                logger.info(msg)
         finally:
             # Explicitly close the connection to avoid exhausting server connection limits
             if client is not self.client and hasattr(client, 'close') and callable(client.close):
@@ -287,7 +388,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
         return sum(stat["succeeded_commands"]
                    for stat in self.actual_stats)
 
-    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, transformers: list = None) -> None:
+    def query(self, generator, batchsize: int = 1, numthreads: int = 4, stats: bool = False, max_bytes_per_batch: Optional[int] = None, transformers: list = None) -> None:
         """
         This function takes as input the data to be executed in specified number of threads.
         The generator yields a tuple : (array of commands, array of blobs)
@@ -296,8 +397,10 @@ class ParallelQuery(Parallelizer.Parallelizer):
             batchsize (int, optional): Number of queries per transaction. Defaults to 1.
             numthreads (int, optional): Number of parallel workers. Defaults to 4.
             stats (bool, optional): Show statistics at end of query execution. Defaults to False.
+            max_bytes_per_batch (int, optional): The maximum number of bytes allowed per batch. Acts as an additional cap on batch size; batches will be split if they reach either this byte limit or the `batchsize` item limit. If None or <= 0, dynamic batching is disabled and only `batchsize` is used. Default is None.
             transformers (list, optional): A Transformer class, a callable, or a list of Transformer classes/callables to apply to the data. Defaults to None.
         """
+        self.max_bytes_per_batch = max_bytes_per_batch
 
         from aperturedb.transformers.transformer import Transformer
 
@@ -335,7 +438,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
         if use_dask:
             results, self.total_actions_time = self.daskManager.run(
-                self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run)
+                self.__class__, self.client, generator, batchsize, stats=stats, dry_run=self.dry_run, max_bytes_per_batch=self.max_bytes_per_batch)
             self.actual_stats = []
             for result in results:
                 if result is not None:
@@ -366,10 +469,8 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     logger.error(
                         f"Could not determine query structure from:\n{generator[0]}")
                     logger.error(type(generator[0]))
-            logger.info(
-                f"Commands per query = {self.commands_per_query}, "
-                f"Blobs per query = {self.blobs_per_query}"
-            )
+            logger.info(f"Commands per query = {self.commands_per_query}, "
+                        f"Blobs per query = {self.blobs_per_query}")
             self.batched_run(generator, batchsize, numthreads, stats)
 
     def print_stats(self) -> None:
