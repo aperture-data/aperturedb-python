@@ -195,6 +195,7 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     """
     from aperturedb.ImageDataCSV import ImageDataCSV
     from aperturedb.FrameDataCSV import FrameDataCSV
+    from aperturedb.BBoxDataCSV import BBoxDataCSV
     from aperturedb.EntityDataCSV import EntityDataCSV
     from aperturedb.BlobDataCSV import BlobDataCSV
     from aperturedb.ConnectionDataCSV import ConnectionDataCSV

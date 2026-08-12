@@ -278,6 +278,7 @@ class Entities(Subscriptable):
 def load_entities_registry(custom_entities: List[str] = None) -> dict:
     from aperturedb.Polygons import Polygons
     from aperturedb.Images import Images
+    from aperturedb.Frames import Frames
     from aperturedb.Blobs import Blobs
     from aperturedb.BoundingBoxes import BoundingBoxes
     from aperturedb.Videos import Videos
@@ -287,6 +288,7 @@ def load_entities_registry(custom_entities: List[str] = None) -> dict:
     known_entities = {
         ObjectType.POLYGON.value: Polygons,
         ObjectType.IMAGE.value: Images,
+        ObjectType.FRAME.value: Frames,
         ObjectType.VIDEO.value: Videos,
         ObjectType.BOUNDING_BOX.value: BoundingBoxes,
         ObjectType.BLOB.value: Blobs,
