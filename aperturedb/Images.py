@@ -1004,4 +1004,8 @@ class Images(Entities):
 
 
 # Shim for backward compatibility
-from aperturedb.Frames import Frames  # noqa: F401
+def __getattr__(name: str):
+    if name == "Frames":
+        from aperturedb.Frames import Frames
+        return Frames
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
