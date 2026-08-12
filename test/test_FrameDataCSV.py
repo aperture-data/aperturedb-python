@@ -14,8 +14,8 @@ def test_FrameDataCSV_command():
             # We don't actually need the image since check_image=False
             frame_data = FrameDataCSV(f.name, check_image=False)
 
-            assert frame_data.command == "AddFrame", f"Expected AddFrame, got {
-                frame_data.command}"
+            cmd = frame_data.command
+            assert cmd == "AddFrame", f"Expected AddFrame, got {cmd}"
 
             indices = frame_data.get_indices()
             assert "entity" in indices
