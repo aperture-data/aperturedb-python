@@ -4,7 +4,9 @@ from aperturedb.FrameDataCSV import FrameDataCSV
 
 
 def test_FrameDataCSV_command():
-    with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        suffix=".csv", mode="w", delete=False
+    ) as f:
         f.write("url,id\nhttp://example.com/frame.jpg,1\n")
         f.close()
 

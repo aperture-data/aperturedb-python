@@ -18,4 +18,5 @@ class Frames(Images):
     db_object = ObjectType.FRAME
 
     def __init__(self, client, batch_size=100, response=None, **kwargs):
-        super().__init__(client, batch_size=batch_size, response=response, **kwargs)
+        super().__init__(
+            client, batch_size=batch_size, response=response, **kwargs)
