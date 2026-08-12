@@ -19,8 +19,8 @@ jobs:
     - name: Cleanup previous run
       run: |
         docker ps -q -a --filter "name=${{ runner.name }}_pr" | xargs -r docker rm -f || true
-        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb /workspace/test/seattle-* /workspace/test/output /workspace/docker/tests" || true
-        sudo rm -rf ${{ github.workspace }}/test/aperturedb ${{ github.workspace }}/test/seattle-* ${{ github.workspace }}/test/output ${{ github.workspace }}/docker/tests || true
+        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb /workspace/test/output /workspace/docker/tests" || true
+        sudo rm -rf ${{ github.workspace }}/test/aperturedb ${{ github.workspace }}/test/output ${{ github.workspace }}/docker/tests || true
       continue-on-error: true
 
     - uses: actions/checkout@v4
@@ -85,8 +85,8 @@ jobs:
     - name: Cleanup previous run
       run: |
         docker ps -q -a --filter "name=${{ runner.name }}_${{ github.run_id }}" | xargs -r docker rm -f || true
-        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb /workspace/test/seattle-* /workspace/test/output /workspace/docker/tests" || true
-        sudo rm -rf ${{ github.workspace }}/test/aperturedb ${{ github.workspace }}/test/seattle-* ${{ github.workspace }}/test/output ${{ github.workspace }}/docker/tests || true
+        docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb /workspace/test/output /workspace/docker/tests" || true
+        sudo rm -rf ${{ github.workspace }}/test/aperturedb ${{ github.workspace }}/test/output ${{ github.workspace }}/docker/tests || true
       continue-on-error: true
 
     - uses: actions/checkout@v4
