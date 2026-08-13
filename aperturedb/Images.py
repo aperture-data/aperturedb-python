@@ -1009,3 +1009,6 @@ def __getattr__(name: str):
         from aperturedb.Frames import Frames
         return Frames
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+__all__ = [k for k in globals().keys() if not k.startswith('_')] + ['Frames']
