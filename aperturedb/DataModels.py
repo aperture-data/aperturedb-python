@@ -70,7 +70,7 @@ class PolygonDataModel(IdentityDataModel):
     type = ObjectType.POLYGON
 
 
-class FrameDataModel(BlobDataModel):
+class FrameDataModel(IdentityDataModel):
     """Frame data model for ApertureDB.
     """
     type = ObjectType.FRAME
