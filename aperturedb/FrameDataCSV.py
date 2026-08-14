@@ -1,4 +1,5 @@
 from aperturedb.ImageDataCSV import ImageDataCSV
+from aperturedb.Query import ObjectType
 
 
 class FrameDataCSV(ImageDataCSV):
@@ -13,6 +14,6 @@ class FrameDataCSV(ImageDataCSV):
     def get_indices(self):
         return {
             "entity": {
-                "_Frame": self.get_indexed_properties()
+                ObjectType.FRAME.value: self.get_indexed_properties()
             }
         }

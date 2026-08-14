@@ -72,6 +72,7 @@ class PolygonDataModel(IdentityDataModel):
 
 class FrameDataModel(BlobDataModel):
     """Frame data model for ApertureDB.
+    Inherits from BlobDataModel, making the `url` field required for ingestion.
     """
     type = ObjectType.FRAME
 
