@@ -1007,6 +1007,7 @@ class Images(Entities):
 def __getattr__(name: str):
     if name == "Frames":
         from aperturedb.Frames import Frames
+        globals()[name] = Frames
         return Frames
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
