@@ -1,0 +1,21 @@
+import pytest
+from unittest.mock import patch, MagicMock
+from aperturedb.cli.ingest import from_csv, IngestType
+
+
+def test_from_csv_frame_type():
+    import aperturedb.FrameDataCSV
+
+    with patch("aperturedb.cli.ingest._process_data") as mock_process_data:
+        mock_process_data.return_value = None
+
+        with patch.object(aperturedb.FrameDataCSV, "FrameDataCSV") as mock_csv_class:
+            mock_data = MagicMock()
+            mock_data.__len__.return_value = 10
+            mock_csv_class.return_value = mock_data
+
+            from_csv(filepath="dummy.csv",
+                     ingest_type=IngestType.FRAME, sample_count=5)
+
+            mock_csv_class.assert_called_once_with(
+                "dummy.csv", use_dask=False, blobs_relative_to_csv=True)

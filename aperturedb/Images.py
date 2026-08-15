@@ -3,7 +3,10 @@
 """
 
 from __future__ import annotations
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Tuple, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from aperturedb.Frames import Frames
 import cv2
 import math
 import numpy as np
@@ -1010,6 +1013,10 @@ def __getattr__(name: str):
         globals()[name] = Frames
         return Frames
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return __all__
 
 
 __all__ = ["np_arr_img_to_bytes", "image_to_bytes",

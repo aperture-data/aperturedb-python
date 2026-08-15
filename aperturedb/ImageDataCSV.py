@@ -199,7 +199,9 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         self.relative_path_prefix = os.path.dirname(self.filename) \
             if self.source_type == HEADER_PATH and self.blobs_relative_to_csv else ""
 
-        self.command = getattr(self, "command", None) or "AddImage"
+        self.command = getattr(self, "command", None)
+        if self.command is None:
+            self.command = "AddImage"
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
