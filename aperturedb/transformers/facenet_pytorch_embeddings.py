@@ -100,7 +100,7 @@ class FacenetPyTorchEmbeddings(Transformer):
                     except Exception as e:
                         logger.warning(
                             f"Failed to generate embedding or descriptor: {e}", exc_info=True)
-            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob", "AddFrame"]:
                 blob_index += 1
 
         x[0].extend(new_descriptors)

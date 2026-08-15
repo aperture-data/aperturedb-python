@@ -384,7 +384,7 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
             for req, resp in zip(query[start:end], response[start:end]):
                 for k in req:
                     blob_returning_commands = ["FindImage", "FindBlob", "FindVideo",
-                                               "FindDescriptor", "FindBoundingBox"]
+                                               "FindDescriptor", "FindBoundingBox", "FindFrame"]
                     if k in blob_returning_commands and "blobs" in req[k] and req[k]["blobs"]:
                         count = resp[k]["returned"]
                         b_count += count

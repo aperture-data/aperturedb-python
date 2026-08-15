@@ -227,7 +227,7 @@ def generate_add_query(
                 params.pop("properties", None)
                 query.append(
                     QueryBuilder.find_command(obj.type.value, params=params))
-        if obj.type in [ObjectType.IMAGE, ObjectType.VIDEO, ObjectType.BLOB]:
+        if obj.type in [ObjectType.IMAGE, ObjectType.VIDEO, ObjectType.BLOB, ObjectType.FRAME]:
             # Do not send blob, if Node has been added to set of commands.
             if obj.id not in cached:
                 if obj.url:

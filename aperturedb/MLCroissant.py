@@ -273,7 +273,7 @@ class MLCroissantRecordSet(Subscriptable):
         indexes_to_create = []
         for command in q:
             cmd = list(command.keys())[-1]
-            if cmd in ["AddImage", "AddBlob", "AddVideo"]:
+            if cmd in ["AddImage", "AddBlob", "AddVideo", "AddFrame"]:
                 continue
             indexable_entity = command[list(command.keys())[-1]]["class"]
             if indexable_entity not in self.indexed_entities:

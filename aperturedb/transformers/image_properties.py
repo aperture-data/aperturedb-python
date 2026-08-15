@@ -34,7 +34,7 @@ class ImageProperties(Transformer):
             if isinstance(cmd_dict, dict) and len(cmd_dict) > 0:
                 cmd_name = next(iter(cmd_dict.keys()))
 
-            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob", "AddFrame"]:
                 if blob_index >= len(x[1]):
                     logger.warning(
                         "Missing blob for command %s (expected at index %d), stopping property processing for this transaction.",
@@ -66,7 +66,7 @@ class ImageProperties(Transformer):
                 logger.exception(
                     "Error applying image properties", stack_info=True)
 
-            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob", "AddFrame"]:
                 blob_index += 1
 
         return x

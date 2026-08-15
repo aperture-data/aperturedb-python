@@ -49,7 +49,7 @@ class CommonProperties(Transformer):
                 if isinstance(cmd_dict, dict) and len(cmd_dict) > 0:
                     cmd_name = next(iter(cmd_dict.keys()))
 
-                if cmd_name in ["AddImage", "AddVideo", "AddBoundingBox", "AddPolygon"]:
+                if cmd_name in ["AddImage", "AddVideo", "AddBoundingBox", "AddPolygon", "AddFrame"]:
                     src_properties = cmd_dict[cmd_name].setdefault(
                         "properties", {})
                     self._apply_common_properties(src_properties)

@@ -37,7 +37,7 @@ class ApertureDBDataset(data.Dataset):
 
         allowed_find_commands = {
             "FindImage", "FindVideo", "FindBlob",
-            "FindDescriptor", "FindBoundingBox"
+            "FindDescriptor", "FindBoundingBox", "FindFrame"
         }
 
         if self.command_idx is not None:
@@ -61,7 +61,7 @@ class ApertureDBDataset(data.Dataset):
                     self.command_name = name
 
         if self.command_idx is None:
-            msg = "Query error. The query must contain at least one supported blob-returning Find command (e.g., FindImage, FindVideo, FindBlob). The first one encountered will be used."
+            msg = "Query error. The query must contain at least one supported blob-returning Find command (e.g., FindImage, FindVideo, FindBlob, FindFrame). The first one encountered will be used."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -111,7 +111,7 @@ class ApertureDBDataset(data.Dataset):
         blob = self.batch_blobs[idx]
         label = self.batch_labels[idx]
 
-        if self.command_name == "FindImage":
+        if self.command_name in ("FindImage", "FindFrame"):
             nparr = np.frombuffer(blob, dtype=np.uint8)
             blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if blob is None:
