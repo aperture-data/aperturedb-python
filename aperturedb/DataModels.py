@@ -70,11 +70,9 @@ class PolygonDataModel(IdentityDataModel):
     type = ObjectType.POLYGON
 
 
-class FrameDataModel(IdentityDataModel):
+class FrameDataModel(BlobDataModel):
     """Frame data model for ApertureDB.
     """
-    url: Annotated[Optional[str], Field(
-        title="URL", description="URL to file, http, s3 or gs resource")] = None
     type = ObjectType.FRAME
 
 

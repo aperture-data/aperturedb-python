@@ -1,11 +1,13 @@
+from pydantic import ValidationError
 from aperturedb.DataModels import FrameDataModel
 from aperturedb.Query import ObjectType
+import pytest
 
 
 def test_FrameDataModel():
-    # url is optional to avoid breaking existing users
-    frame_no_url = FrameDataModel()
-    assert frame_no_url.url is None
+    # url is required, so instantiating without it should raise a ValidationError
+    with pytest.raises(ValidationError):
+        FrameDataModel()
 
     # Verify that when url is provided, the model instantiates correctly
     frame = FrameDataModel(url="http://example.com/frame.jpg")
