@@ -3,6 +3,7 @@ from aperturedb.Query import ObjectType
 from pydantic import ValidationError
 import pytest
 
+
 def test_FrameDataModel():
     # url is optional to avoid breaking existing users
     frame_no_url = FrameDataModel()

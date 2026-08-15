@@ -173,7 +173,6 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     """
     command = "AddImage"
 
-
     def __init__(self, filename: str, check_image: bool = True, n_download_retries: int = 3, **kwargs):
 
         ImageDataProcessor.__init__(
