@@ -6,7 +6,7 @@ import pytest
 
 def test_FrameDataModel():
     # Verify that url is a required field because it inherits from BlobDataModel
-    with pytest.raises((ValueError, ValidationError)):
+    with pytest.raises(ValidationError):
         # This should fail because url is missing
         FrameDataModel()
 

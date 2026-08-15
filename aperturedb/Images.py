@@ -1020,4 +1020,4 @@ __all__ = ["np_arr_img_to_bytes", "image_to_bytes",
 
 
 def __dir__():
-    return __all__
+    return sorted(set(list(globals().keys()) + __all__))

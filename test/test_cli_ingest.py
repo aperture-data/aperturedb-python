@@ -10,7 +10,6 @@ def test_from_csv_frame_type():
 
         with patch.object(aperturedb.FrameDataCSV, "FrameDataCSV") as mock_csv_class:
             mock_data = MagicMock()
-            mock_data.__len__.return_value = 10
             mock_csv_class.return_value = mock_data
 
             from_csv(filepath="dummy.csv",
