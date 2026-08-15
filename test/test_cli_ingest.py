@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 from aperturedb.cli.ingest import from_csv, IngestType
 
