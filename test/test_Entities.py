@@ -1,7 +1,6 @@
 from aperturedb.Entities import load_entities_registry
 from aperturedb.Query import ObjectType
 from aperturedb.Frames import Frames
-import pytest
 
 
 def test_load_entities_registry_frames():

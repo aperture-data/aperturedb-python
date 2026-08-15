@@ -1,7 +1,5 @@
 from aperturedb.DataModels import FrameDataModel
 from aperturedb.Query import ObjectType
-from pydantic import ValidationError
-import pytest
 
 
 def test_FrameDataModel():

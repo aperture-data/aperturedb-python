@@ -1013,3 +1013,11 @@ def __getattr__(name: str):
         globals()[name] = Frames
         return Frames
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+__all__ = ["np_arr_img_to_bytes", "image_to_bytes",
+           "rotate", "resolve", "Images", "Frames"]
+
+
+def __dir__():
+    return sorted(list(globals().keys()) + ["Frames"])
