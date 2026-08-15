@@ -17,3 +17,4 @@ def test_from_csv_frame_type():
 
             mock_csv_class.assert_called_once_with(
                 "dummy.csv", use_dask=False, blobs_relative_to_csv=True)
+            mock_process_data.assert_called_once()

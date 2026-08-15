@@ -9,9 +9,9 @@ class MockClient:
 
 def test_Frames_init():
     client = MockClient()
-    frame = Frames(client)
-    assert frame.client == client
-    assert frame.db_object == ObjectType.FRAME
+    frames = Frames(client)
+    assert frames.client == client
+    assert frames.db_object == ObjectType.FRAME
 
 
 def test_Frames_backward_compatibility_import():
