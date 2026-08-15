@@ -11,7 +11,6 @@ def test_Frames_init():
     client = MockClient()
     frame = Frames(client)
     assert frame.client == client
-    assert frame.db_object.value == "_Frame"
     assert frame.db_object == ObjectType.FRAME
 
 

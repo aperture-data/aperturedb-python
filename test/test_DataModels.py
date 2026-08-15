@@ -1,11 +1,12 @@
 from aperturedb.DataModels import FrameDataModel
 from aperturedb.Query import ObjectType
+from pydantic import ValidationError
 import pytest
 
 
 def test_FrameDataModel():
     # Verify that url is a required field because it inherits from BlobDataModel
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, ValidationError)):
         # This should fail because url is missing
         FrameDataModel()
 
