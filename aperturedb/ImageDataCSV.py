@@ -119,8 +119,6 @@ class ImageDataProcessor():
 
 
 class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
-    command = "AddImage"
-
     """**ApertureDB Image Data.**
 
     This class loads the Image Data which is present in a CSV file,
@@ -173,6 +171,8 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     id would be only inserted if it does not already exist in the database.
     :::
     """
+    command = "AddImage"
+
 
     def __init__(self, filename: str, check_image: bool = True, n_download_retries: int = 3, **kwargs):
 

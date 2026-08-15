@@ -1015,15 +1015,4 @@ def __getattr__(name: str):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-__all__ = [
-    "Any", "BytesIO", "Constraints", "DataFrame", "Dict", "Entities",
-    "Frames", "HTML", "Image", "Images", "Iterable", "List",
-    "ObjectType", "QueryBuilder", "TYPE_CHECKING", "Tuple", "Union",
-    "Utils", "annotations", "base64", "class_entity", "cv2", "display",
-    "execute_query", "image_to_bytes", "logger", "logging", "math",
-    "np", "np_arr_img_to_bytes", "plt", "resolve", "rotate", "widgets"
-]
 
-
-def __dir__():
-    return sorted(set(list(globals().keys()) + __all__))
