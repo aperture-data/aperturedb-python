@@ -119,6 +119,8 @@ class ImageDataProcessor():
 
 
 class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
+    command = "AddImage"
+
     """**ApertureDB Image Data.**
 
     This class loads the Image Data which is present in a CSV file,
@@ -198,10 +200,6 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
 
         self.relative_path_prefix = os.path.dirname(self.filename) \
             if self.source_type == HEADER_PATH and self.blobs_relative_to_csv else ""
-
-        self.command = getattr(type(self), "command", None)
-        if self.command is None:
-            self.command = "AddImage"
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
