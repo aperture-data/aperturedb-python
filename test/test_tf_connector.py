@@ -199,3 +199,44 @@ class TestTfDatasets():
                 assert label.numpy() == 1
                 count += 1
             assert count == 1
+
+    def test_findFrame_mocked(self):
+        from unittest.mock import patch
+        import tensorflow as tf
+        import numpy as np
+        import cv2
+
+        class DummyClient:
+            def clone(self):
+                return self
+
+            def get_last_response_str(self):
+                return ""
+
+        query = [{"FindFrame": {"results": {"list": ["prop"]}}}]
+
+        with patch('aperturedb.TensorFlowDataset.execute_query') as mock_exec:
+            def side_effect(*args, **kwargs):
+                batch_dict = {"total_elements": 1}
+                entities = [{"prop": 1}]
+                r = [{"FindFrame": {"batch": batch_dict, "entities": entities}}]
+                img = np.zeros((10, 10, 3), dtype=np.uint8)
+                _, b_img = cv2.imencode('.jpg', img)
+                b = [b_img.tobytes()]
+                return None, r, b
+
+            mock_exec.side_effect = side_effect
+            dataset_wrapper = ApertureDBTensorFlowDataset(
+                DummyClient(), query, label_prop="prop")
+            dataset = dataset_wrapper.get_dataset()
+
+            assert dataset.element_spec[1].dtype == tf.int32
+            # Since FindFrame behaves like FindImage, it should decode to a tensor (not string)
+            assert dataset.element_spec[0].dtype == tf.uint8
+
+            count = 0
+            for data, label in dataset:
+                assert data.shape == (10, 10, 3)
+                assert label.numpy() == 1
+                count += 1
+            assert count == 1

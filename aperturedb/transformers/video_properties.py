@@ -1,3 +1,4 @@
+from aperturedb.Constants import BLOB_ADD_COMMANDS
 from aperturedb.transformers.transformer import Transformer
 from aperturedb.Subscriptable import Subscriptable
 
@@ -32,7 +33,7 @@ class VideoProperties(Transformer):
             if isinstance(cmd_dict, dict) and len(cmd_dict) > 0:
                 cmd_name = next(iter(cmd_dict.keys()))
 
-            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob", "AddFrame"]:
+            if cmd_name in BLOB_ADD_COMMANDS:
                 if blob_index >= len(x[1]):
                     logger.warning(
                         "Missing blob for command %s (expected at index %d), stopping property processing for this transaction.",
@@ -59,7 +60,7 @@ class VideoProperties(Transformer):
                 logger.exception(
                     "Error applying video properties", stack_info=True)
 
-            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob", "AddFrame"]:
+            if cmd_name in BLOB_ADD_COMMANDS:
                 blob_index += 1
 
         return x
