@@ -16,6 +16,7 @@ from aperturedb.Connector import Connector
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb.types import Blobs, CommandResponses, Commands
 from aperturedb.LoggingUtils import censor_tokens
+from aperturedb.Constants import BLOB_FIND_COMMANDS
 
 logger = logging.getLogger(__name__)
 
@@ -383,9 +384,7 @@ def map_response_to_handler(handler, query, query_blobs,  response, response_blo
         if is_list:
             for req, resp in zip(query[start:end], response[start:end]):
                 for k in req:
-                    blob_returning_commands = ["FindImage", "FindBlob", "FindVideo",
-                                               "FindDescriptor", "FindBoundingBox", "FindFrame"]
-                    if k in blob_returning_commands and "blobs" in req[k] and req[k]["blobs"]:
+                    if k in BLOB_FIND_COMMANDS and "blobs" in req[k] and req[k]["blobs"]:
                         count = resp[k]["returned"]
                         b_count += count
 

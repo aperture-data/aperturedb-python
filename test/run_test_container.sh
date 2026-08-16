@@ -7,9 +7,9 @@ cd "${SCRIPT_DIR}"
 
 function check_containers_networks(){
     echo "Running containers and networks cleanup"
-    docker ps
+    docker ps || true
     echo "Existing networks"
-    docker network ls
+    docker network ls || true
 }
 
 function get_sudo() {
@@ -216,4 +216,4 @@ fi
 
 echo "Tests completed"
 echo " --- Runner name: ${RUNNER_NAME} ---"
-check_containers_networks || true
+check_containers_networks

@@ -14,7 +14,7 @@ class ApertureDBTensorFlowDataset:
     This class implements a TensorFlow Dataset for ApertureDB.
     It is used to load blobs returned by a `Find*` command from ApertureDB into a TensorFlow model.
     It can be initialized with a query that will be used to retrieve
-    the blobs from ApertureDB. Note that only `FindImage` blobs are decoded via OpenCV.
+    the blobs from ApertureDB. Note that only `FindImage` and `FindFrame` blobs are decoded via OpenCV.
     """
 
     def __init__(self, client: Connector, query, label_prop=None, batch_size=1, command_idx=None):

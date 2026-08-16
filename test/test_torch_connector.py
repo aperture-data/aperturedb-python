@@ -174,3 +174,40 @@ class TestTorchDatasets():
                 assert blob == b"mock_video_bytes"
                 assert label == 1
                 break
+
+    def test_findFrame_mocked(self):
+        from unittest.mock import patch
+        import numpy as np
+        import cv2
+        import torch
+
+        class DummyClient:
+            def clone(self):
+                return self
+
+            def get_last_response_str(self):
+                return ""
+
+        query = [{"FindFrame": {"results": {"list": ["prop"]}}}]
+
+        with patch('aperturedb.PyTorchDataset.execute_query') as mock_exec:
+            def side_effect(*args, **kwargs):
+                batch_dict = {"total_elements": 1}
+                entities = [{"prop": 1}]
+                r = [{"FindFrame": {"batch": batch_dict, "entities": entities}}]
+                img = np.zeros((10, 10, 3), dtype=np.uint8)
+                is_success, buffer = cv2.imencode(".jpg", img)
+                b = [buffer.tobytes()]
+                return None, r, b
+
+            mock_exec.side_effect = side_effect
+            dataset = PyTorchDataset.ApertureDBDataset(
+                DummyClient(), query, label_prop="prop")
+
+            assert len(dataset) == 1
+            for blob, label in dataset:
+                assert isinstance(blob, np.ndarray)
+                assert blob.shape == (10, 10, 3)
+                assert isinstance(label, int)
+                assert label == 1
+                break
