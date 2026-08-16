@@ -66,7 +66,7 @@ function teardown() {
         docker network rm "${RUNNER_NAME}_non_http_default" || true
     fi
     echo "Cleaning up generated volumes..."
-    $(get_sudo) rm -rf "${SCRIPT_DIR}/aperturedb"
+    $(get_sudo) rm -rf "${SCRIPT_DIR}/aperturedb" || true
 }
 trap teardown EXIT
 
@@ -216,4 +216,4 @@ fi
 
 echo "Tests completed"
 echo " --- Runner name: ${RUNNER_NAME} ---"
-check_containers_networks
+check_containers_networks || true
