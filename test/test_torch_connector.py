@@ -175,7 +175,7 @@ class TestTorchDatasets():
                 assert label == 1
                 break
 
-    def test_findFrame_mocked(self):
+    def test_find_frame_mocked(self):
         from unittest.mock import patch
         import numpy as np
         import cv2

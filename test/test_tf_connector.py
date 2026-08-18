@@ -202,7 +202,7 @@ class TestTfDatasets():
                 count += 1
             assert count == 1
 
-    def test_findFrame_mocked(self):
+    def test_find_frame_mocked(self):
         from unittest.mock import patch
         import tensorflow as tf
         import numpy as np

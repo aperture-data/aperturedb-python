@@ -66,7 +66,9 @@ function teardown() {
         docker network rm "${RUNNER_NAME}_non_http_default" || true
     fi
     echo "Cleaning up generated volumes..."
-    $(get_sudo) rm -rf "${SCRIPT_DIR}/aperturedb" || true
+    if [ -d "${SCRIPT_DIR}/aperturedb" ]; then
+        $(get_sudo) rm -rf "${SCRIPT_DIR}/aperturedb" || echo "Warning: Failed to delete ${SCRIPT_DIR}/aperturedb"
+    fi
 }
 trap teardown EXIT
 

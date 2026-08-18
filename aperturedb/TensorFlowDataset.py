@@ -5,6 +5,7 @@ import logging
 
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Connector import Connector
+from aperturedb.Constants import BLOB_FIND_COMMANDS
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +34,7 @@ class ApertureDBTensorFlowDataset:
         self.label_prop = label_prop
         self.label_type = None
 
-        allowed_find_commands = {
-            "FindImage", "FindVideo", "FindBlob",
-            "FindDescriptor", "FindBoundingBox", "FindFrame"
-        }
+        allowed_find_commands = BLOB_FIND_COMMANDS
 
         if self.command_idx is not None:
             if not (0 <= self.command_idx < len(query)):
