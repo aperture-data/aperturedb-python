@@ -17,7 +17,7 @@ class ApertureDBDataset(data.Dataset):
     This class implements a PyTorch Dataset for ApertureDB.
     It is used to load blobs returned by a `Find*` command from ApertureDB into a PyTorch model.
     It can be initialized with a query that will be used to retrieve
-    the blobs from ApertureDB. Note that only `FindImage` blobs are decoded via OpenCV.
+    the blobs from ApertureDB. Note that only `FindImage` and `FindFrame` blobs are decoded via OpenCV.
     """
 
     def __init__(self, client: Connector, query, label_prop=None, batch_size=1, command_idx=None):
@@ -35,24 +35,21 @@ class ApertureDBDataset(data.Dataset):
         self.batch_end = 0
         self.label_prop = label_prop
 
-        allowed_find_commands = {
-            "FindImage", "FindVideo", "FindBlob",
-            "FindDescriptor", "FindBoundingBox", "FindFrame"
-        }
+        from aperturedb.Constants import BLOB_FIND_COMMANDS
 
         if self.command_idx is not None:
             if not (0 <= self.command_idx < len(query)):
                 raise ValueError(
                     f"command_idx {self.command_idx} is out of range.")
             self.command_name = list(query[self.command_idx].keys())[0]
-            if self.command_name not in allowed_find_commands:
+            if self.command_name not in BLOB_FIND_COMMANDS:
                 raise ValueError(
                     f"Command at index {self.command_idx} is "
                     f"{self.command_name}, which is not a supported blob-returning Find* command.")
         else:
             for i in range(len(query)):
                 name = list(query[i].keys())[0]
-                if name in allowed_find_commands:
+                if name in BLOB_FIND_COMMANDS:
                     if self.command_idx is not None:
                         logger.warning(
                             "Multiple Find commands found. Selected %s at index %s.", self.command_name, self.command_idx)
@@ -77,7 +74,7 @@ class ApertureDBDataset(data.Dataset):
 
         for i in range(len(self.query)):
             name = list(self.query[i].keys())[0]
-            if name in allowed_find_commands and i != self.command_idx:
+            if name in BLOB_FIND_COMMANDS and i != self.command_idx:
                 self.query[i][name]["blobs"] = False
 
         self.query[self.command_idx][self.command_name]["batch"] = {}

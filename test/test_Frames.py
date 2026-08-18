@@ -1,14 +1,10 @@
 from aperturedb.Frames import Frames
 from aperturedb.Query import ObjectType
-
-
-class MockClient:
-    def __init__(self):
-        pass
+from unittest.mock import MagicMock
 
 
 def test_Frames_init():
-    client = MockClient()
+    client = MagicMock()
     frames = Frames(client)
     assert frames.client == client
     assert frames.db_object == ObjectType.FRAME
