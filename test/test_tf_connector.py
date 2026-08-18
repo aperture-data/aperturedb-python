@@ -223,7 +223,8 @@ class TestTfDatasets():
                 entities = [{"prop": 1}]
                 r = [{"FindFrame": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
-                is_success, b_img = cv2.imencode('.jpg', img)
+                img[0, 0] = [255, 0, 0]  # BGR format for OpenCV
+                is_success, b_img = cv2.imencode('.png', img)
                 assert is_success, "Failed to encode image"
                 b = [b_img.tobytes()]
                 return None, r, b
@@ -240,6 +241,8 @@ class TestTfDatasets():
             count = 0
             for data, label in dataset:
                 assert data.shape == (10, 10, 3)
+                assert np.array_equal(data[0, 0].numpy(), [
+                                      0, 0, 255]), "Expected RGB color conversion"
                 assert label.numpy() == 1
                 count += 1
             assert count == 1

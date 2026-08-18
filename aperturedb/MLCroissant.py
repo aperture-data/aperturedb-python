@@ -14,6 +14,7 @@ from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Query import QueryBuilder
 from aperturedb.DataModels import IdentityDataModel
 from aperturedb.Query import generate_add_query
+from aperturedb.Constants import BLOB_ADD_COMMANDS
 
 
 logger = logging.getLogger(__name__)
@@ -259,7 +260,6 @@ class MLCroissantRecordSet(Subscriptable):
         self.indexed_entities = set()
 
     def getitem(self, subscript):
-        from aperturedb.Constants import BLOB_ADD_COMMANDS
         row_dict = self.samples[subscript]
 
         find_recordset_query = QueryBuilder.find_command(

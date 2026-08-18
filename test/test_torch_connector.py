@@ -195,7 +195,8 @@ class TestTorchDatasets():
                 entities = [{"prop": 1}]
                 r = [{"FindFrame": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
-                is_success, buffer = cv2.imencode(".jpg", img)
+                img[0, 0] = [255, 0, 0]  # BGR format for OpenCV
+                is_success, buffer = cv2.imencode(".png", img)
                 assert is_success, "Failed to encode image"
                 b = [buffer.tobytes()]
                 return None, r, b
@@ -208,6 +209,8 @@ class TestTorchDatasets():
             for blob, label in dataset:
                 assert isinstance(blob, np.ndarray)
                 assert blob.shape == (10, 10, 3)
+                assert np.array_equal(
+                    blob[0, 0], [0, 0, 255]), "Expected RGB color conversion"
                 assert isinstance(label, int)
                 assert label == 1
                 break
