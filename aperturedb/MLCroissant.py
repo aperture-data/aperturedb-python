@@ -269,12 +269,11 @@ class MLCroissantRecordSet(Subscriptable):
                 }
             })
 
-        from aperturedb.Constants import BLOB_ADD_COMMANDS
         q, blobs = dict_to_query(row_dict, self.name, self.flatten_json)
         indexes_to_create = []
         for command in q:
             cmd = list(command.keys())[-1]
-            if cmd in BLOB_ADD_COMMANDS:
+            if cmd in ["AddImage", "AddBlob", "AddVideo", "AddFrame"]:
                 continue
             indexable_entity = command[list(command.keys())[-1]]["class"]
             if indexable_entity not in self.indexed_entities:

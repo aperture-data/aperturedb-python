@@ -1,13 +1,13 @@
 import math
 import numpy as np
 import cv2
+from aperturedb.Constants import BLOB_FIND_COMMANDS
 import logging
 
 from torch.utils import data
 
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Connector import Connector
-
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,6 @@ class ApertureDBDataset(data.Dataset):
         self.batch_start = 0
         self.batch_end = 0
         self.label_prop = label_prop
-
-        from aperturedb.Constants import BLOB_FIND_COMMANDS
 
         if self.command_idx is not None:
             if not (0 <= self.command_idx < len(query)):
