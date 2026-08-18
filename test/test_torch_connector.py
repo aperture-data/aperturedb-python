@@ -179,7 +179,6 @@ class TestTorchDatasets():
         from unittest.mock import patch
         import numpy as np
         import cv2
-        import torch
 
         class DummyClient:
             def clone(self):
@@ -197,6 +196,7 @@ class TestTorchDatasets():
                 r = [{"FindFrame": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
                 is_success, buffer = cv2.imencode(".jpg", img)
+                assert is_success, "Failed to encode image"
                 b = [buffer.tobytes()]
                 return None, r, b
 

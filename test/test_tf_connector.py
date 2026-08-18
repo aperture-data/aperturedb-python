@@ -117,7 +117,8 @@ class TestTfDatasets():
                 entities = [{"prop": 42}]  # int
                 r = [{"FindImage": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
-                _, b_img = cv2.imencode('.jpg', img)
+                is_success, b_img = cv2.imencode('.jpg', img)
+                assert is_success, "Failed to encode image"
                 b = [b_img.tobytes()]
                 return None, r, b
 
@@ -132,7 +133,8 @@ class TestTfDatasets():
                 entities = [{"prop": 3.14}]  # float
                 r = [{"FindImage": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
-                _, b_img = cv2.imencode('.jpg', img)
+                is_success, b_img = cv2.imencode('.jpg', img)
+                assert is_success, "Failed to encode image"
                 b = [b_img.tobytes()]
                 return None, r, b
 
@@ -221,7 +223,8 @@ class TestTfDatasets():
                 entities = [{"prop": 1}]
                 r = [{"FindFrame": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
-                _, b_img = cv2.imencode('.jpg', img)
+                is_success, b_img = cv2.imencode('.jpg', img)
+                assert is_success, "Failed to encode image"
                 b = [b_img.tobytes()]
                 return None, r, b
 

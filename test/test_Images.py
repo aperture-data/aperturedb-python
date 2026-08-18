@@ -133,7 +133,8 @@ def test_Images_get_np_image_by_index():
         # Create a small valid jpeg or png mock blob
         import cv2
         fake_np = np.zeros((10, 10, 3), dtype=np.uint8)
-        _, fake_blob = cv2.imencode('.jpg', fake_np)
+        is_success, fake_blob = cv2.imencode('.jpg', fake_np)
+        assert is_success, "Failed to encode image"
 
         mock_execute.return_value = (0, [], [fake_blob.tobytes()])
         client.last_query_ok = lambda: True
