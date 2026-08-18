@@ -7,6 +7,10 @@ cd "${SCRIPT_DIR}"
 
 function check_containers_networks(){
     echo "Running containers and networks cleanup"
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Warning: docker command not found. Skipping docker cleanup steps."
+        return 0
+    fi
     docker ps || true
     echo "Existing networks"
     docker network ls || true

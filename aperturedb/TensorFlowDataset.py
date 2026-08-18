@@ -5,7 +5,7 @@ import logging
 
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Connector import Connector
-from aperturedb.Constants import BLOB_FIND_COMMANDS
+from aperturedb.Constants import BLOB_FIND_COMMANDS, OPENCV_DECODE_FIND_COMMANDS
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +175,7 @@ class ApertureDBTensorFlowDataset:
             blob = self.batch_blobs[idx]
             label = self.batch_labels[idx]
 
-            if self.command_name in ("FindImage", "FindFrame"):
+            if self.command_name in OPENCV_DECODE_FIND_COMMANDS:
                 nparr = np.frombuffer(blob, dtype=np.uint8)
                 blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 if blob is None:
@@ -224,7 +224,7 @@ class ApertureDBTensorFlowDataset:
             else:
                 self.label_type = tf.string
 
-        if self.command_name in ("FindImage", "FindFrame"):
+        if self.command_name in OPENCV_DECODE_FIND_COMMANDS:
             tensor_shape = (None, None, 3)
             tensor_dtype = tf.uint8
         else:

@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import cv2
-from aperturedb.Constants import BLOB_FIND_COMMANDS
+from aperturedb.Constants import BLOB_FIND_COMMANDS, OPENCV_DECODE_FIND_COMMANDS
 import logging
 
 from torch.utils import data
@@ -106,7 +106,7 @@ class ApertureDBDataset(data.Dataset):
         blob = self.batch_blobs[idx]
         label = self.batch_labels[idx]
 
-        if self.command_name in ("FindImage", "FindFrame"):
+        if self.command_name in OPENCV_DECODE_FIND_COMMANDS:
             nparr = np.frombuffer(blob, dtype=np.uint8)
             blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if blob is None:
