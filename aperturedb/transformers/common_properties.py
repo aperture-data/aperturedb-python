@@ -1,5 +1,6 @@
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.transformers.transformer import Transformer
+from aperturedb.Constants import PROPERTY_ADD_COMMANDS
 import logging
 
 
@@ -49,7 +50,7 @@ class CommonProperties(Transformer):
                 if isinstance(cmd_dict, dict) and len(cmd_dict) > 0:
                     cmd_name = next(iter(cmd_dict.keys()))
 
-                if cmd_name in ["AddImage", "AddVideo", "AddBoundingBox", "AddPolygon", "AddFrame"]:
+                if cmd_name in PROPERTY_ADD_COMMANDS:
                     src_properties = cmd_dict[cmd_name].setdefault(
                         "properties", {})
                     self._apply_common_properties(src_properties)

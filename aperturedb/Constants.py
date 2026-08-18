@@ -23,3 +23,11 @@ OPENCV_DECODE_FIND_COMMANDS = frozenset({
     "FindImage",
     "FindFrame"
 })
+
+PROPERTY_ADD_COMMANDS = frozenset({
+    "AddImage",
+    "AddVideo",
+    "AddBoundingBox",
+    "AddPolygon",
+    "AddFrame"
+})

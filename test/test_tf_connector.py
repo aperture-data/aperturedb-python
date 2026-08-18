@@ -179,14 +179,14 @@ class TestTfDatasets():
         query = [{"FindVideo": {"results": {"list": ["prop"]}}}]
 
         with patch('aperturedb.TensorFlowDataset.execute_query') as mock_exec:
-            def side_effect(*args, **kwargs):
+            def execute_query_side_effect(*args, **kwargs):
                 batch_dict = {"total_elements": 1}
                 entities = [{"prop": 1}]
                 r = [{"FindVideo": {"batch": batch_dict, "entities": entities}}]
                 b = [b"mock_video_bytes"]
                 return None, r, b
 
-            mock_exec.side_effect = side_effect
+            mock_exec.side_effect = execute_query_side_effect
             dataset_wrapper = ApertureDBTensorFlowDataset(
                 DummyClient(), query, label_prop="prop")
             dataset = dataset_wrapper.get_dataset()
@@ -218,7 +218,7 @@ class TestTfDatasets():
         query = [{"FindFrame": {"results": {"list": ["prop"]}}}]
 
         with patch('aperturedb.TensorFlowDataset.execute_query') as mock_exec:
-            def side_effect(*args, **kwargs):
+            def execute_query_side_effect(*args, **kwargs):
                 batch_dict = {"total_elements": 1}
                 entities = [{"prop": 1}]
                 r = [{"FindFrame": {"batch": batch_dict, "entities": entities}}]
@@ -228,7 +228,7 @@ class TestTfDatasets():
                 b = [b_img.tobytes()]
                 return None, r, b
 
-            mock_exec.side_effect = side_effect
+            mock_exec.side_effect = execute_query_side_effect
             dataset_wrapper = ApertureDBTensorFlowDataset(
                 DummyClient(), query, label_prop="prop")
             dataset = dataset_wrapper.get_dataset()

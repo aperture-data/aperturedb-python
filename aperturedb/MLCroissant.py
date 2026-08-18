@@ -259,6 +259,7 @@ class MLCroissantRecordSet(Subscriptable):
         self.indexed_entities = set()
 
     def getitem(self, subscript):
+        from aperturedb.Constants import BLOB_ADD_COMMANDS
         row_dict = self.samples[subscript]
 
         find_recordset_query = QueryBuilder.find_command(
@@ -273,7 +274,7 @@ class MLCroissantRecordSet(Subscriptable):
         indexes_to_create = []
         for command in q:
             cmd = list(command.keys())[-1]
-            if cmd in ["AddImage", "AddBlob", "AddVideo", "AddFrame"]:
+            if cmd in BLOB_ADD_COMMANDS:
                 continue
             indexable_entity = command[list(command.keys())[-1]]["class"]
             if indexable_entity not in self.indexed_entities:
