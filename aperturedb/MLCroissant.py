@@ -14,8 +14,14 @@ from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Query import QueryBuilder
 from aperturedb.DataModels import IdentityDataModel
 from aperturedb.Query import generate_add_query
-from aperturedb.Constants import BLOB_ADD_COMMANDS
 
+# Commands for which we do not want to automatically create entity indices
+_CROISSANT_SKIP_INDEX_COMMANDS = frozenset([
+    "AddImage",
+    "AddBlob",
+    "AddVideo",
+    "AddFrame"
+])
 
 logger = logging.getLogger(__name__)
 
@@ -274,7 +280,7 @@ class MLCroissantRecordSet(Subscriptable):
         indexes_to_create = []
         for command in q:
             cmd = list(command.keys())[-1]
-            if cmd in BLOB_ADD_COMMANDS:
+            if cmd in _CROISSANT_SKIP_INDEX_COMMANDS:
                 continue
             indexable_entity = command[list(command.keys())[-1]]["class"]
             if indexable_entity not in self.indexed_entities:
