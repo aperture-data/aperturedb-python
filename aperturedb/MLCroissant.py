@@ -14,14 +14,14 @@ from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Query import QueryBuilder
 from aperturedb.DataModels import IdentityDataModel
 from aperturedb.Query import generate_add_query
+from aperturedb.Constants import BLOB_ADD_COMMANDS
 
-# Commands for which we do not want to automatically create entity indices
-_CROISSANT_SKIP_INDEX_COMMANDS = frozenset([
-    "AddImage",
-    "AddBlob",
-    "AddVideo",
-    "AddFrame"
-])
+# Commands for which we do not want to automatically create entity indices.
+# AddDescriptor is intentionally excluded from this skip list because descriptor
+# indices are explicitly required for similarity search and must be created.
+_CROISSANT_SKIP_INDEX_COMMANDS = frozenset(
+    cmd for cmd in BLOB_ADD_COMMANDS if cmd != "AddDescriptor"
+)
 
 logger = logging.getLogger(__name__)
 
