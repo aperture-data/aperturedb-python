@@ -1006,14 +1006,6 @@ class Images(Entities):
         return return_dictionary
 
 
-# Shim for backward compatibility
-def __getattr__(name: str):
-    if name == "Frames":
-        from aperturedb.Frames import Frames
-        globals()[name] = Frames
-        return Frames
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def __dir__():
-    return sorted(set(list(globals().keys()) + ["Frames"]))
+# Eager import at the end of the module avoids circular import issues
+# while preserving 'from aperturedb.Images import *' backward compatibility
+from aperturedb.Frames import Frames

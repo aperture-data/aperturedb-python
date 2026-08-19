@@ -240,7 +240,7 @@ class TestTfDatasets():
 
             count = 0
             for data, label in dataset:
-                assert data.shape == (10, 10, 3)
+                assert tuple(data.shape) == (10, 10, 3)
                 assert np.array_equal(data[0, 0].numpy(), [
                                       0, 0, 255]), "Expected RGB color conversion"
                 assert label.numpy() == 1
