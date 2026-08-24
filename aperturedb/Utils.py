@@ -914,6 +914,7 @@ class Utils(object):
         transaction = [
             {"DeleteImage": cmd},
             {"DeleteVideo": cmd},
+            {"DeleteFrame": cmd},
             {"DeleteBlob": cmd},
             {"DeleteClip": cmd},
             # DeleteDescriptorSet also deletes the descriptors

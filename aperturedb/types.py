@@ -10,4 +10,5 @@ CommandResponses = List[Dict]
 
 Image = bytes
 Video = bytes
+Frame = bytes
 Descriptor = bytes
