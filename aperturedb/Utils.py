@@ -925,7 +925,6 @@ class Utils(object):
             # We keep them here until ApertureDB fully implements this.
             {"DeleteBoundingBox": cmd},
             {"DeletePolygon": cmd},
-            {"DeleteFrame": cmd},
             {"DeleteEntity": cmd},
             {"GetSchema": {"refresh": True}}
         ]
