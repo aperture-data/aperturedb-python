@@ -1,3 +1,4 @@
+from aperturedb.Constants import BLOB_ADD_COMMANDS
 import hashlib
 import logging
 from aperturedb.Subscriptable import Subscriptable
@@ -95,7 +96,7 @@ class CLIPPyTorchEmbeddings(Transformer):
                     except Exception as e:
                         logger.warning(
                             f"Failed to generate embedding or descriptor: {e}", exc_info=True)
-            if cmd_name in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+            if cmd_name in BLOB_ADD_COMMANDS:
                 blob_index += 1
 
         x[0].extend(new_descriptors)

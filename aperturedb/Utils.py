@@ -914,6 +914,7 @@ class Utils(object):
         transaction = [
             {"DeleteImage": cmd},
             {"DeleteVideo": cmd},
+            {"DeleteFrame": cmd},
             {"DeleteBlob": cmd},
             {"DeleteClip": cmd},
             # DeleteDescriptorSet also deletes the descriptors
@@ -924,7 +925,6 @@ class Utils(object):
             # We keep them here until ApertureDB fully implements this.
             {"DeleteBoundingBox": cmd},
             {"DeletePolygon": cmd},
-            {"DeleteFrame": cmd},
             {"DeleteEntity": cmd},
             {"GetSchema": {"refresh": True}}
         ]

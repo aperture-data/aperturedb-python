@@ -117,7 +117,8 @@ class TestTfDatasets():
                 entities = [{"prop": 42}]  # int
                 r = [{"FindImage": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
-                _, b_img = cv2.imencode('.jpg', img)
+                is_success, b_img = cv2.imencode('.jpg', img)
+                assert is_success, "Failed to encode image"
                 b = [b_img.tobytes()]
                 return None, r, b
 
@@ -132,7 +133,8 @@ class TestTfDatasets():
                 entities = [{"prop": 3.14}]  # float
                 r = [{"FindImage": {"batch": batch_dict, "entities": entities}}]
                 img = np.zeros((10, 10, 3), dtype=np.uint8)
-                _, b_img = cv2.imencode('.jpg', img)
+                is_success, b_img = cv2.imencode('.jpg', img)
+                assert is_success, "Failed to encode image"
                 b = [b_img.tobytes()]
                 return None, r, b
 
@@ -177,14 +179,14 @@ class TestTfDatasets():
         query = [{"FindVideo": {"results": {"list": ["prop"]}}}]
 
         with patch('aperturedb.TensorFlowDataset.execute_query') as mock_exec:
-            def side_effect(*args, **kwargs):
+            def execute_query_side_effect(*args, **kwargs):
                 batch_dict = {"total_elements": 1}
                 entities = [{"prop": 1}]
                 r = [{"FindVideo": {"batch": batch_dict, "entities": entities}}]
                 b = [b"mock_video_bytes"]
                 return None, r, b
 
-            mock_exec.side_effect = side_effect
+            mock_exec.side_effect = execute_query_side_effect
             dataset_wrapper = ApertureDBTensorFlowDataset(
                 DummyClient(), query, label_prop="prop")
             dataset = dataset_wrapper.get_dataset()
@@ -196,6 +198,51 @@ class TestTfDatasets():
             for data, label in dataset:
                 assert isinstance(data.numpy(), bytes)
                 assert data.numpy() == b"mock_video_bytes"
+                assert label.numpy() == 1
+                count += 1
+            assert count == 1
+
+    def test_find_frame_mocked(self):
+        from unittest.mock import patch
+        import tensorflow as tf
+        import numpy as np
+        import cv2
+
+        class DummyClient:
+            def clone(self):
+                return self
+
+            def get_last_response_str(self):
+                return ""
+
+        query = [{"FindFrame": {"results": {"list": ["prop"]}}}]
+
+        with patch('aperturedb.TensorFlowDataset.execute_query') as mock_exec:
+            def execute_query_side_effect(*args, **kwargs):
+                batch_dict = {"total_elements": 1}
+                entities = [{"prop": 1}]
+                r = [{"FindFrame": {"batch": batch_dict, "entities": entities}}]
+                img = np.zeros((10, 10, 3), dtype=np.uint8)
+                img[0, 0] = [255, 0, 0]  # BGR format for OpenCV
+                is_success, b_img = cv2.imencode('.png', img)
+                assert is_success, "Failed to encode image"
+                b = [b_img.tobytes()]
+                return None, r, b
+
+            mock_exec.side_effect = execute_query_side_effect
+            dataset_wrapper = ApertureDBTensorFlowDataset(
+                DummyClient(), query, label_prop="prop")
+            dataset = dataset_wrapper.get_dataset()
+
+            assert dataset.element_spec[1].dtype == tf.int32
+            # Since FindFrame behaves like FindImage, it should decode to a tensor (not string)
+            assert dataset.element_spec[0].dtype == tf.uint8
+
+            count = 0
+            for data, label in dataset:
+                assert tuple(data.shape) == (10, 10, 3)
+                assert np.array_equal(data[0, 0].numpy(), [
+                                      0, 0, 255]), "Expected RGB color conversion"
                 assert label.numpy() == 1
                 count += 1
             assert count == 1

@@ -3,7 +3,10 @@
 """
 
 from __future__ import annotations
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Tuple, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from aperturedb.Frames import Frames
 import cv2
 import math
 import numpy as np
@@ -1003,18 +1006,13 @@ class Images(Entities):
         return return_dictionary
 
 
-class Frames(Images):
-    """
-    **The python wrapper of frame images in ApertureDB.**
+def __getattr__(name: str):
+    if name == "Frames":
+        from aperturedb.Frames import Frames
+        globals()[name] = Frames
+        return Frames
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-    Frames in ApertureDB are quite similar to images and so
-    are modeled in python as a subclass.
 
-
-    Args:
-        client: The database connector, perhaps as returned by `CommonLibrary.create_connector`
-    """
-    db_object = ObjectType.FRAME
-
-    def __init__(self, client, batch_size=100, response=None, **kwargs):
-        super().__init__(client, batch_size=batch_size, response=response, **kwargs)
+def __dir__():
+    return sorted(set(list(globals().keys()) + ["Frames"]))
