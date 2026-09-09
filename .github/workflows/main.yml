@@ -23,8 +23,8 @@ jobs:
     - name: Login to DockerHub
       uses: docker/login-action@v2
       with:
-        username: ${{ secrets.DOCKER_USER }}
-        password: ${{ secrets.DOCKER_PASS }}
+        username: ${{ fromJson(secrets.DOCKERHUB).username }}
+        password: ${{ fromJson(secrets.DOCKERHUB).password }}
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
@@ -69,8 +69,8 @@ jobs:
     - name: Login to DockerHub
       uses: docker/login-action@v2
       with:
-        username: ${{ secrets.DOCKER_USER }}
-        password: ${{ secrets.DOCKER_PASS }}
+        username: ${{ fromJson(secrets.DOCKERHUB).username }}
+        password: ${{ fromJson(secrets.DOCKERHUB).password }}
 
     - name: Build Notebook
       env:
@@ -102,6 +102,32 @@ jobs:
       run: 'TOKEN=${{ secrets.GITHUBPAT }} ./github-release.sh'
       shell: bash
 
+    - name: Publish docs content image
+      run: |
+        source version.sh
+        read_version
+        docker build -f docs-content/Dockerfile -t "aperturedata/aperturedb-python-docs:v$BUILD_VERSION" .
+        docker push "aperturedata/aperturedb-python-docs:v$BUILD_VERSION"
+      shell: bash
+
+    - name: Update docs provider version in infra
+      env:
+        GH_TOKEN: ${{ secrets.PAT_INFRA }}
+      run: |
+        source version.sh
+        read_version
+        jq -n --arg tag "v$BUILD_VERSION" \
+          '{event_type:"update-tag",client_payload:{environment:"develop",component:"python-client",tag:$tag}}' \
+          | curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              --header "Content-Type: application/json" \
+              --data-binary @- \
+              https://api.github.com/repos/aperture-data/infra/dispatches
+      shell: bash
+
   trigger_demos_buils:
     runs-on: ubuntu-latest
     needs:
@@ -111,22 +137,6 @@ jobs:
     - name: repository dispatch
       run: |
         curl -X POST https://api.github.com/repos/aperture-data/demos/actions/workflows/13727133/dispatches \
-        -H "Accept: application/vnd.github+json" \
-        -H "Authorization: Bearer ${{ secrets.GITHUBPAT }}" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        -d '{"ref":"master","inputs":{}}'
-
-      shell: bash
-
-  trigger_docs_deploy:
-    runs-on: ubuntu-latest
-    needs:
-      - build_notebooks_and_publish_pypi
-    steps:
-    - uses: actions/checkout@v3
-    - name: repository dispatch
-      run: |
-        curl -X POST https://api.github.com/repos/aperture-data/docs/actions/workflows/64451786/dispatches \
         -H "Accept: application/vnd.github+json" \
         -H "Authorization: Bearer ${{ secrets.GITHUBPAT }}" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
