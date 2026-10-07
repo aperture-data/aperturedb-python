@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Tuple, Union
 
-from aperturedb.Constraints import Constraints
+from aperturedb.Constraints import Constraints, predicate
 from aperturedb.Operations import Operations
 from aperturedb.Sort import Sort
 from pydantic import BaseModel
@@ -206,9 +206,8 @@ def generate_add_query(
         "properties": props if "id" in props else {},
     }
     if obj.type != ObjectType.DESCRIPTORSET:
-        params["if_not_found"] = {
-            "id": ["==", props["id"] if "id" in props else obj.id]
-        }
+        params["if_not_found"] = predicate(
+            "id", "==", props["id"] if "id" in props else obj.id)
     for k, v in specific_params.items():
         params[k] = v
     blobs.extend(specific_blobs)
@@ -366,7 +365,6 @@ class Query():
         return chain
 
     @classmethod
-    @classmethod
     def spec(cls,
              constraints: Constraints = None,
              operations: Operations = None,
@@ -438,16 +436,16 @@ class Query():
         results_section = "results"
         cmd_params = {results_section: {}, "_ref": self.adj_to}
         if self.limit != -1:
-            cmd_params[results_section]["limit"] = self.limit
+            cmd_params["limit"] = self.limit
         if self.sort:
-            cmd_params[results_section]["sort"] = self.sort._sort
+            cmd_params["sort"] = self.sort._sort
         if self.list is not None and len(self.list) > 0:
             cmd_params[results_section]["list"] = self.list
         else:
             cmd_params[results_section]["all_properties"] = True
-        cmd_params[results_section]["group_by_source"] = self.group_by_src
+        cmd_params["group_by_source"] = self.group_by_src
 
-        if self.constraints:
+        if self.constraints and self.constraints.constraints:
             cmd_params["constraints"] = self.constraints.constraints
         if self.operations:
             cmd_params["operations"] = self.operations.operations_arr

@@ -73,9 +73,7 @@ class QGPersons(Subscriptable):
                         "results": {
                             "all_properties": True
                         },
-                        "constraints": {
-                            "age": [">=", (subscript * self.cpq + i) * 10, "<", (subscript * self.cpq + 1 + i) * 10]
-                        }
+                        "constraints": ["all", ["$age", ">=", (subscript * self.cpq + i) * 10], ["$age", "<", (subscript * self.cpq + 1 + i) * 10]]
                     }
                 }
             )
@@ -295,7 +293,7 @@ class TestResponseHandler():
             assert len(req) in [cpq, 10 % cpq]
             for rq, rr in zip(req, resp):
                 for key in rq:
-                    age_group = rq[key]["constraints"]["age"][1]
+                    age_group = rq[key]["constraints"][1][2]
                     count = rr[key]["returned"]
                     dist_by_ages[age_group] = count
         logger.debug(dist_by_ages)
@@ -379,7 +377,7 @@ class TestResponseHandler():
         # req and resp are dict mapping index number to query.
         for reqk, respk in zip(self.requests.keys(), self.responses.keys()):
             req = self.requests[reqk]
-            age_group = req[0]["FindEntity"]["constraints"]["age"][1]
+            age_group = req[0]["FindEntity"]["constraints"][1][2]
             # in QGPersonIndex, age_group[1] is created by taking index
             # and multiplying it by cqp and 10.
             assert reqk == (age_group // cpq // 10)
@@ -420,10 +418,7 @@ class TestResponseHandler():
                 q = [{
                     "FindImage": {
                         "blobs": False,
-                        "constraints": {
-                            "image_id": ["==", image_id],
-                            self.field: ["!=", label]
-                        },
+                        "constraints": ["all", ["$image_id", "==", image_id], ["$" + self.field, "!=", label]],
                         "results": {
                             "count": True,
                             "list": ["image_id"]

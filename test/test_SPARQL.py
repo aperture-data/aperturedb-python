@@ -1,9 +1,11 @@
 from pathlib import Path
 import os
+import re
 import runpy
 import requests
 import pytest
 import numpy as np
+import pandas as pd
 
 pytestmark = pytest.mark.external_network
 
@@ -43,6 +45,13 @@ def load_cookbook(utils: Utils, db):
         file_path.write_text(response.text)
 
         runpy.run_path(str(file_path), run_name="__main__")
+
+        # The Cookbook sheet has columns like "Recipe URL", but property
+        # names must match [A-Za-z][A-Za-z0-9_-]{0,63}.
+        dishes = pd.read_csv("dishes.adb.csv")
+        dishes.columns = [re.sub(r"[^A-Za-z0-9_-]", "_", c)
+                          for c in dishes.columns]
+        dishes.to_csv("dishes.adb.csv", index=False)
 
         data = ImageDataCSV("dishes.adb.csv")
         data = CLIPPyTorchEmbeddings(data, client=db)

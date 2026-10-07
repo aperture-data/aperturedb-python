@@ -93,7 +93,7 @@ def test_Images_search():
         query_passed = mock_execute.call_args[1][
             "query"] if "query" in mock_execute.call_args[1] else mock_execute.call_args[0][1]
         assert "FindImage" in query_passed[0]
-        assert query_passed[0]["FindImage"]["results"]["limit"] == 2
+        assert query_passed[0]["FindImage"]["limit"] == 2
 
 
 def test_Images_search_by_property():

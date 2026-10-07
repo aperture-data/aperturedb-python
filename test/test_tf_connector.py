@@ -36,9 +36,7 @@ class TestTfDatasets():
         dim = 224 if isinstance(db, ConnectorRest) else 225
         query = [{
             "FindImage": {
-                "constraints": {
-                    "age": [">=", 0]
-                },
+                "constraints": ["$age", ">=", 0],
                 "operations": [
                     {
                         "type": "resize",
@@ -64,9 +62,7 @@ class TestTfDatasets():
         dim = 224 if isinstance(db, ConnectorRest) else 225
         query = [{
             "FindImage": {
-                "constraints": {
-                    "age": [">=", 0]
-                },
+                "constraints": ["$age", ">=", 0],
                 "operations": [
                     {
                         "type": "resize",
@@ -74,9 +70,9 @@ class TestTfDatasets():
                         "height": dim
                     }
                 ],
+                "limit": len_limit,
                 "results": {
-                    "list": ["license"],
-                    "limit": len_limit
+                    "list": ["license"]
                 }
             }
         }]

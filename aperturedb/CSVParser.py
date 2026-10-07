@@ -2,6 +2,7 @@ from typing import Set
 import pandas as pd
 import logging
 from aperturedb.Subscriptable import Subscriptable
+from aperturedb.Constraints import to_expression
 from dask import dataframe
 import os
 import multiprocessing as mp
@@ -168,7 +169,8 @@ class CSVParser(Subscriptable):
             query[self.command][PROPERTIES] = properties
 
         if constraints:
-            query[self.command][self.constraint_keyword] = constraints
+            query[self.command][self.constraint_keyword] = to_expression(
+                constraints)
 
         return query
 

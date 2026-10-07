@@ -50,7 +50,7 @@ class Descriptors(Entities):
             }
         }
 
-        if constraints is not None:
+        if constraints is not None and constraints.constraints:
             command["FindDescriptor"]["constraints"] = constraints.constraints
 
         query = [command]

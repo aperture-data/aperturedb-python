@@ -1,6 +1,7 @@
 import json
 
 from aperturedb import CSVParser
+from aperturedb.Constraints import predicate
 
 HEADER_POLYGONS = "polygons"
 IMG_KEY_PROP = "img_key_prop"
@@ -87,9 +88,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
         fi = {
             "FindImage": {
                 "_ref": 1,
-                "constraints": {
-                    self.img_key: ["==", img_id],
-                },
+                "constraints": predicate(self.img_key, "==", img_id),
                 "blobs": False,
             },
         }

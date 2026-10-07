@@ -1,6 +1,7 @@
 from __future__ import annotations
 from aperturedb.Entities import Entities
 from aperturedb.CommonLibrary import execute_query
+from aperturedb.Constraints import predicate
 
 
 class Polygons(Entities):
@@ -27,17 +28,13 @@ class Polygons(Entities):
                         "FindEntity": {
                             "_ref": 1,
                             "unique": True,
-                            "constraints": {
-                                "_uniqueid": ["==", p1["_uniqueid"]]
-                            }
+                            "constraints": predicate("_uniqueid", "==", p1["_uniqueid"])
                         }
                     }, {
                         "FindEntity": {
                             "_ref": 2,
                             "unique": True,
-                            "constraints": {
-                                "_uniqueid": ["==", p2["_uniqueid"]]
-                            }
+                            "constraints": predicate("_uniqueid", "==", p2["_uniqueid"])
                         }
                     }, {
                         "RegionIoU": {

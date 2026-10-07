@@ -1,4 +1,5 @@
 from aperturedb import CSVParser
+from aperturedb.Constraints import predicate
 
 HEADER_X_POS = "x_pos"
 HEADER_Y_POS = "y_pos"
@@ -81,9 +82,7 @@ class BBoxDataCSV(CSVParser.CSVParser):
             "FindImage": {
                 "_ref": 1,
                 "unique": True,
-                "constraints": {
-                    self.img_key: ["==", img_id],
-                },
+                "constraints": predicate(self.img_key, "==", img_id),
                 "blobs": False,
             },
         }

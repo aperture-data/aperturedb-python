@@ -3,12 +3,13 @@ Miscellaneous utility functions for ApertureDB.
 This class contains a collection of helper functions to interact with the database.
 """
 from aperturedb.Query import QueryBuilder
+from aperturedb.Constraints import predicate, to_expression
 from aperturedb.CommonLibrary import execute_query
 from tqdm import tqdm
 from aperturedb.Connector import Connector
 import logging
 import json
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Set, Tuple
 from aperturedb.LoggingUtils import censor_tokens
 
 HAS_GRAPHVIZ = True
@@ -26,9 +27,18 @@ except:
 
 logger = logging.getLogger(__name__)
 
+# Indexes the server creates itself and does not allow removing.
+BUILTIN_INDEXES = {("entity", "_DescriptorSet", "_name", "ordered"),
+                   ("entity", "_Descriptor", "_set_name", "ordered"),
+                   ("entity", "_Descriptor", "_create_txn", "ordered")}
+
 DESCRIPTOR_CLASS = "_Descriptor"
 DESCRIPTOR_CONNECTION_CLASS = "_DescriptorSetToDescriptor"
 DEFAULT_METADATA_BATCH_SIZE = 100_000
+
+
+def _is_builtin_index(index: dict) -> bool:
+    return (index["target"], index["class"], index["property"], index["kind"]) in BUILTIN_INDEXES
 
 
 class Utils(object):
@@ -174,15 +184,19 @@ class Utils(object):
         entities = r['entities']['classes']
         connections = r['connections']['classes']
 
+        indexed_lookup = self._indexed_lookup()
+
         for entity, data in entities.items():
             matched = data["matched"]
-            # dictionary from name to (matched, indexed, type)
-            properties = data["properties"]
+            properties = data["properties"] or {}
             table = f'''<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
             <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity}</B> ({matched:,})</FONT></TD></TR>
             '''
-            for prop, (matched, indexed, typ) in properties.items():
+            for prop, value in properties.items():
+                matched, indexed, typ = self._property_info(value)
+                if indexed is None:
+                    indexed = indexed_lookup("entity", entity, prop)
                 bg = colors["property_background"]
                 fg = colors["property_foreground"]
                 idx_str = "Indexed" if indexed else "Unindexed"
@@ -199,7 +213,6 @@ class Utils(object):
                 for data in data_list:
                     if data['src'] == entity:
                         matched = data["matched"]
-                        # dictionary from name to (matched, indexed, type)
                         properties = data["properties"]
                         c_bg = colors["connection_background"]
                         c_fg = colors["connection_foreground"]
@@ -209,7 +222,12 @@ class Utils(object):
                             '<B>{}</B> ({:,})</FONT></TD></TR>'
                         ).format(c_bg, connection, c_fg, connection, matched)
                         if properties:
-                            for prop, (matched, indexed, typ) in properties.items():
+                            for prop, value in properties.items():
+                                matched, indexed, typ = self._property_info(
+                                    value)
+                                if indexed is None:
+                                    indexed = indexed_lookup(
+                                        "connection", connection, prop)
                                 cp_bg = colors["connection_property_background"]
                                 cp_fg = colors["connection_property_foreground"]
                                 idx_str = "Indexed" if indexed else "Unindexed"
@@ -240,7 +258,40 @@ class Utils(object):
 
         return s
 
-    def _object_summary(self, name, object):
+    @staticmethod
+    def _property_info(value) -> Tuple[int, Optional[bool], str]:
+        """
+        Normalize one property entry returned from GetSchema.
+
+        Servers return either an array ``[matched, indexed, type]`` or an
+        object such as ``{"count": 123, "type": "string"}``.
+
+        Returns:
+            (matched, indexed, type): ``indexed`` is None when the server does not report it.
+        """
+        if isinstance(value, dict):
+            return (value.get("count", value.get("matched", 0)),
+                    value.get("indexed"), value.get("type", ""))
+        matched, indexed, typ = value
+        return matched, indexed, typ
+
+    def _indexed_lookup(self):
+        """
+        Returns a function ``(target, class, property) -> bool`` backed by
+        GetIndexes, which is only queried the first time it is needed.
+        """
+        indexed = None
+
+        def lookup(target: str, class_name: str, property_key: str) -> bool:
+            nonlocal indexed
+            if indexed is None:
+                indexed = {(i["target"], i["class"], i["property"])
+                           for i in self.get_indexes()}
+            return (target, class_name, property_key) in indexed
+
+        return lookup
+
+    def _object_summary(self, name, object, target="entity", indexed_lookup=None):
 
         total_elements = object["matched"]
 
@@ -260,17 +311,23 @@ class Utils(object):
             max = len(k) if max < len(k) else max
         max += 1
 
+        if indexed_lookup is None:
+            indexed_lookup = self._indexed_lookup()
+
         for k in p:
+            matched, indexed, typ = self._property_info(p[k])
+            if indexed is None:
+                indexed = indexed_lookup(target, name, k)
             i = w = " "
-            i = "I" if p[k][1] else i
+            i = "I" if indexed else i
 
             # Warning if there are some properties not present in all elements
-            w = "!" if p[k][0] != total_elements else w
+            w = "!" if matched != total_elements else w
             # Warning if there is a property with "id" in the name not indexes
-            w = "!" if "id" in k and not p[k][1] else w
-            print(f"{i} {w} {p[k][2].ljust(8)} |"
-                  f" {k.ljust(max)} | {str(p[k][0]).rjust(9)} "
-                  f"({int(p[k][0] / total_elements * 100.0)}%)")
+            w = "!" if "id" in k and not indexed else w
+            print(f"{i} {w} {typ.ljust(8)} |"
+                  f" {k.ljust(max)} | {str(matched).rjust(9)} "
+                  f"({int(matched / total_elements * 100.0)}%)")
 
         return total_elements
 
@@ -322,9 +379,11 @@ class Utils(object):
         print(f"Info:    {info}")
         print(f"------------------ Entities -----------------")
         print(f"Total entities types:    {total_entities}")
+        indexed_lookup = self._indexed_lookup()
         total_nodes = 0
         for c in entities_classes:
-            total_nodes += self._object_summary(c, r["entities"]["classes"][c])
+            total_nodes += self._object_summary(
+                c, r["entities"]["classes"][c], "entity", indexed_lookup)
 
         print(f"---------------- Connections ----------------")
         print(f"Total connections types: {total_connections}")
@@ -335,20 +394,22 @@ class Utils(object):
             connections_list = self._normalize_class_data(connections)
 
             for connection in connections_list:
-                total_edges += self._object_summary(c, connection)
+                total_edges += self._object_summary(
+                    c, connection, "connection", indexed_lookup)
 
         print(f"------------------ Totals -------------------")
         print(f"Total nodes: {total_nodes}")
         print(f"Total edges: {total_edges}")
         print(f"=============================================")
 
-    def _create_index(self, index_type, class_name, property_key):
+    def _create_index(self, target, class_name, property_key, kind="ordered"):
 
         q = [{
             "CreateIndex": {
-                "index_type":    index_type,
-                "class":         class_name,
-                "property_key":  property_key,
+                "target":   target,
+                "class":    class_name,
+                "property": property_key,
+                "kind":     kind,
             }
         }]
 
@@ -359,13 +420,14 @@ class Utils(object):
 
         return True
 
-    def _remove_index(self, index_type, class_name, property_key):
+    def _remove_index(self, target, class_name, property_key, kind="ordered"):
 
         q = [{
             "RemoveIndex": {
-                "index_type":   index_type,
-                "class":        class_name,
-                "property_key": property_key,
+                "target":   target,
+                "class":    class_name,
+                "property": property_key,
+                "kind":     kind,
             }
         }]
 
@@ -438,7 +500,7 @@ class Utils(object):
         }]
 
         if constraints:
-            q[0]["FindImage"]["constraints"] = constraints
+            q[0]["FindImage"]["constraints"] = to_expression(constraints)
 
         res, _ = self.execute(q)
         total_images = res[0]["FindImage"]["count"]
@@ -469,7 +531,7 @@ class Utils(object):
         }]
 
         if constraints:
-            q[0]["FindBoundingBox"]["constraints"] = constraints
+            q[0]["FindBoundingBox"]["constraints"] = to_expression(constraints)
 
         res, _ = self.execute(q)
         total_connections = res[0]["FindBoundingBox"]["count"]
@@ -489,7 +551,7 @@ class Utils(object):
         """
         params = {"results": {"count": True}}
         if constraints:
-            params["constraints"] = constraints
+            params["constraints"] = to_expression(constraints)
         q = QueryBuilder.find_command(entity_class, params=params)
         res, _ = self.execute(query=[q])
         total_entities = res[0][list(q.keys())[0]]["count"]
@@ -518,7 +580,7 @@ class Utils(object):
         }]
 
         if constraints:
-            q[0]["FindConnection"]["constraints"] = constraints
+            q[0]["FindConnection"]["constraints"] = to_expression(constraints)
 
         res, _ = self.execute(q)
         total_connections = res[0]["FindConnection"]["count"]
@@ -660,9 +722,7 @@ class Utils(object):
                     find: {
                         "_ref": 1,
                         "with_class": class_name,
-                        "results": {
-                            "limit": batch_size
-                        }
+                        "limit": batch_size
                     }
                 }, {
                     dele: {
@@ -772,10 +832,16 @@ class Utils(object):
         """
         self.print("Removing indexes...")
 
-        idx_props = self.get_indexed_props(DESCRIPTOR_CLASS)
+        try:
+            indexes = self.get_indexes(
+                target="entity", class_name=DESCRIPTOR_CLASS)
+        except:
+            indexes = []
 
-        for idx in idx_props:
-            self.remove_entity_index(DESCRIPTOR_CLASS, idx)
+        for index in indexes:
+            if not _is_builtin_index(index):
+                self._remove_index("entity", DESCRIPTOR_CLASS,
+                                   index["property"], index["kind"])
 
         self.print("Done removing indexes.")
 
@@ -815,14 +881,16 @@ class Utils(object):
         if type not in ["entities", "connections"]:
             raise ValueError("Type must be either 'entities' or 'connections'")
 
-        schema = self.get_schema()
-
+        target = "entity" if type == "entities" else "connection"
         try:
-            indexed_props = schema[type]["classes"][class_name]["properties"]
-            indexed_props = [
-                k for k in indexed_props.keys() if indexed_props[k][1]]
+            indexes = self.get_indexes(target=target, class_name=class_name)
         except:
-            indexed_props = []
+            return []
+
+        indexed_props = []
+        for index in indexes:
+            if index["property"] not in indexed_props:
+                indexed_props.append(index["property"])
 
         return indexed_props
 
@@ -861,38 +929,81 @@ class Utils(object):
 
         return total
 
+    def get_indexes(self, target: Optional[str] = None, class_name: Optional[str] = None,
+                    property_key: Optional[str] = None, kind: Optional[str] = None) -> List[dict]:
+        """
+        List index definitions, optionally filtered.
+        See :ref:`GetIndexes <GetIndexes>`_ in the ApertureDB documentation for more information.
+
+        Args:
+            target (str, optional): "entity" or "connection". Defaults to both.
+            class_name (str, optional): Entity or connection class.
+            property_key (str, optional): Indexed property.
+            kind (str, optional): Index kind, such as "ordered". Defaults to all kinds.
+
+        Returns:
+            indexes (List[dict]): One dict per index with "target", "class", "property", "kind" and "params".
+        """
+        params = {"target": target, "class": class_name,
+                  "property": property_key, "kind": kind}
+        q = [{"GetIndexes": {k: v for k, v in params.items() if v is not None}}]
+        res, _ = self.execute(q)
+        return self._parse_indexes(res[0]["GetIndexes"].get("indexes"))
+
+    @staticmethod
+    def _parse_indexes(indexes) -> List[dict]:
+        """
+        Flatten the "indexes" value of a GetIndexes response.
+
+        Current servers group definitions as
+        ``{target: {class: {property: [definition, ...]}}}``.
+        Older servers return a flat list of definitions.
+        """
+        if not indexes:
+            return []
+        if isinstance(indexes, list):
+            return [{
+                "target": index.get("target", index.get("index_type")),
+                "class": index["class"],
+                "property": index.get("property", index.get("property_key")),
+                "kind": index["kind"],
+                "params": index.get("params", {}),
+            } for index in indexes]
+        return [{
+            "target": target,
+            "class": class_name,
+            "property": property_key,
+            "kind": definition["kind"],
+            "params": definition.get("params", {}),
+        }
+            for target, classes in indexes.items()
+            for class_name, properties in classes.items()
+            for property_key, definitions in properties.items()
+            for definition in definitions]
+
     def remove_all_indexes(self) -> bool:
         """Remove all indexes from the database.
 
         This may improve the performance of remove_all_objects.
         It may improve or degrade the performance of other operations.
 
-        Note that this only removes populated indexes.
+        Built-in indexes, which the server does not allow removing, are kept.
 
         Returns:
             success (bool): True if the operation was successful, False otherwise.
         """
-        def find_indexes(schema):
-            typemap = dict(entities="entity", connections="connection")
-            for typ, data in schema['GetSchema'].items():
-                if typ in typemap and type(data) == dict and 'classes' in data:
-                    for clas, classdata in data['classes'].items():
-                        if 'properties' in classdata and classdata['properties']:
-                            for property_key, (_, indexed, _) in classdata['properties'].items():
-                                if indexed:
-                                    yield {"index_type": typemap[typ], "class": clas, "property_key": property_key}
+        def removable():
+            for index in self.get_indexes():
+                if not _is_builtin_index(index):
+                    yield {key: index[key] for key in ("target", "class", "property", "kind")}
 
         try:
-            r, _ = self.execute([{"GetSchema": {}}])
-            schema = r[0]
-            indexes = list(find_indexes(schema))
-            query = [{"RemoveIndex": index} for index in indexes]
-            query.append({"GetSchema": {}})
-            r2, _ = self.execute(query)
-            schema2 = r2[-1]
-            indexes2 = list(find_indexes(schema2))
-            if indexes2:
-                logger.error(f"Failed to remove all indexes: {indexes2}")
+            query = [{"RemoveIndex": index} for index in removable()]
+            if query:
+                self.execute(query)
+            remaining = list(removable())
+            if remaining:
+                logger.error(f"Failed to remove all indexes: {remaining}")
                 return False
         except BaseException as e:
             logger.exception(e)
@@ -909,7 +1020,7 @@ class Utils(object):
         Returns:
             success (bool): True if the operation was successful, False otherwise.
         """
-        cmd = {"constraints": {"_uniqueid": ["!=", "0.0.0"]}}
+        cmd = {"constraints": predicate("_uniqueid", "!=", "0.0.0")}
 
         transaction = [
             {"DeleteImage": cmd},

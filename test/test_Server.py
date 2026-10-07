@@ -91,9 +91,8 @@ class TestBadResponses():
                 use_ssl = True)
             db.query([{
                 "FindImage": {
-                    "results": {
-                        "limit": 5
-                    }
+                    "limit": 5,
+                    "results": {"count": True}
                 }
             }])
 

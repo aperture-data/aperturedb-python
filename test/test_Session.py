@@ -33,9 +33,8 @@ class TestSession():
         time.sleep(2)
         query = [{
             "FindImage": {
-                "results": {
-                    "limit": 5
-                }
+                "limit": 5,
+                "results": {"count": True}
             }
         }]
         responses, blobs = db.query(query)
@@ -53,7 +52,7 @@ class TestSession():
             ca_cert=dbinfo.CA_CERT,
             retry_max_attempts=3,
             retry_interval_seconds=0)
-        db.query([{"FindImage": {"results": {"limit": 5}}}])
+        db.query([{"FindImage": {"limit": 5, "results": {"count": True}}}])
         original_send_msg = db._send_msg
         count = 0
 
@@ -79,9 +78,8 @@ class TestSession():
         time.sleep(2)
         query = [{
             "FindImage": {
-                "results": {
-                    "limit": 5
-                }
+                "limit": 5,
+                "results": {"count": True}
             }
         }]
         responses, blobs = db.query(query)
@@ -109,7 +107,8 @@ class TestSession():
             retry_max_attempts=3,
             retry_interval_seconds=0)
         try:
-            new_db.query([{"FindImage": {"results": {"limit": 5}}}])
+            new_db.query(
+                [{"FindImage": {"limit": 5, "results": {"count": True}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
@@ -135,7 +134,8 @@ class TestSession():
             retry_max_attempts=3,
             retry_interval_seconds=0)
         try:
-            new_db.query([{"FindImage": {"results": {"limit": 5}}}])
+            new_db.query(
+                [{"FindImage": {"limit": 5, "results": {"count": True}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
@@ -164,7 +164,8 @@ class TestSession():
             retry_max_attempts=3,
             retry_interval_seconds=0)
         try:
-            new_db.query([{"FindImage": {"results": {"limit": 5}}}])
+            new_db.query(
+                [{"FindImage": {"limit": 5, "results": {"count": True}}}])
         except Exception as e:
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
@@ -194,9 +195,8 @@ class TestSession():
 
             query = [{
                 "FindImage": {
-                    "results": {
-                        "limit": 5
-                    }
+                    "limit": 5,
+                    "results": {"count": True}
                 }
             }]
             response, blobs = db.query(query)
@@ -226,9 +226,8 @@ class TestSession():
 
             query = [{
                 "FindImage": {
-                    "results": {
-                        "limit": 5
-                    }
+                    "limit": 5,
+                    "results": {"count": True}
                 }
             }]
             response, blobs = db.query(query)

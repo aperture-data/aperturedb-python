@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from aperturedb import Utils
 from aperturedb.Entities import Entities
-from aperturedb.Constraints import Constraints
+from aperturedb.Constraints import Constraints, predicate
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Query import QueryBuilder, ObjectType, class_entity
 from ipywidgets import widgets
@@ -265,9 +265,7 @@ class Images(Entities):
         for idx in range(start, end):
 
             find_params = {
-                "constraints": {
-                    self.img_id_prop: ["==", self.images_ids[idx]]
-                },
+                "constraints": predicate(self.img_id_prop, "==", self.images_ids[idx]),
                 "blobs": True
             }
 
@@ -303,9 +301,7 @@ class Images(Entities):
 
         find_image_params = {
             "_ref": 1,
-            "constraints": {
-                self.img_id_prop: ["==", uniqueid]
-            },
+            "constraints": predicate(self.img_id_prop, "==", uniqueid),
             "blobs": False,
             "results": {
                 "list": ["adb_image_width", "adb_image_height"]
@@ -413,9 +409,7 @@ class Images(Entities):
 
         find_image_params = {
             "_ref": 1,
-            "constraints": {
-                self.img_id_prop: ["==", uniqueid]
-            },
+            "constraints": predicate(self.img_id_prop, "==", uniqueid),
             "results": {
                 "list": ["adb_image_width", "adb_image_height"]
             },
@@ -584,10 +578,10 @@ class Images(Entities):
         find_image_params["results"] = {}
 
         if limit:
-            find_image_params["results"]["limit"] = limit
+            find_image_params["limit"] = limit
 
         if sort:
-            find_image_params["results"]["sort"] = sort
+            find_image_params["sort"] = sort
 
         find_image_params["results"]["list"] = []
         find_image_params["results"]["list"].append(self.img_id_prop)
@@ -666,9 +660,7 @@ class Images(Entities):
 
             find_image_params = {
                 "_ref": 1,
-                "constraints": {
-                    self.img_id_prop:  ["==", uniqueid]
-                },
+                "constraints": predicate(self.img_id_prop, "==", uniqueid),
                 "blobs": False,
             }
             find_descriptor_params = {
@@ -982,9 +974,7 @@ class Images(Entities):
 
                 find_image_params = {
                     "_ref": 1,
-                    "constraints": {
-                        self.img_id_prop: ["==", uniqueid]
-                    },
+                    "constraints": predicate(self.img_id_prop, "==", uniqueid),
                     "blobs": False,
                     "results": {
                         "list": prop_list

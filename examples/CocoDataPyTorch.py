@@ -64,9 +64,7 @@ class CocoDataPyTorch(PyTorchData):
                 "AddEntity": {
                     "_ref": 1,
                     "class": "SuperCategory",
-                    "if_not_found": {
-                        "name": ["==", category_info["supercategory"]]
-                    },
+                    "if_not_found": ["$name", "==", category_info["supercategory"]],
                     "properties": {
                         "name": category_info["supercategory"]
                     }

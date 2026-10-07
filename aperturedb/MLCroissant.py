@@ -11,6 +11,7 @@ import pandas as pd
 from typing import Any, List, Tuple
 
 from aperturedb.Subscriptable import Subscriptable
+from aperturedb.Constraints import predicate
 from aperturedb.Query import QueryBuilder
 from aperturedb.DataModels import IdentityDataModel
 from aperturedb.Query import generate_add_query
@@ -185,9 +186,8 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
         }
     })
     if flatten_json:
-        q[list(q.keys())[-1]]["if_not_found"] = {
-            "adb_uuid": ["==", literals["adb_uuid"]]
-        }
+        q[list(q.keys())[-1]]["if_not_found"] = predicate("adb_uuid",
+                                                          "==", literals["adb_uuid"])
 
     dependents = []
     if len(subitems) > 0 or len(known_image_blobs) > 0 or len(unknown_blobs) > 0:
@@ -264,9 +264,7 @@ class MLCroissantRecordSet(Subscriptable):
         find_recordset_query = QueryBuilder.find_command(
             "RecordSetModel", {
                 "_ref": MAX_REF_VALUE,
-                "constraints": {
-                    "uuid": ["==", self.uuid]
-                }
+                "constraints": predicate("uuid", "==", self.uuid)
             })
 
         q, blobs = dict_to_query(row_dict, self.name, self.flatten_json)
@@ -280,8 +278,9 @@ class MLCroissantRecordSet(Subscriptable):
                 index_command = {
                     "CreateIndex": {
                         "class": indexable_entity,
-                        "index_type": "entity",
-                        "property_key": "adb_uuid",
+                        "target": "entity",
+                        "property": "adb_uuid",
+                        "kind": "ordered",
                     }
                 }
                 indexes_to_create.append(index_command)

@@ -1,6 +1,7 @@
 import hashlib
 import logging
 from aperturedb.Subscriptable import Subscriptable
+from aperturedb.Constraints import predicate
 from aperturedb.transformers.transformer import Transformer
 from .clip import generate_embedding, descriptor_set
 
@@ -83,9 +84,7 @@ class CLIPPyTorchEmbeddings(Transformer):
                                 "properties": {
                                     "image_sha256": image_sha256,
                                 },
-                                "if_not_found": {
-                                    "image_sha256": ["==", image_sha256],
-                                },
+                                "if_not_found": predicate("image_sha256", "==", image_sha256),
                                 "connect": {
                                     "ref": cmd_dict["AddImage"]["_ref"]
                                 }

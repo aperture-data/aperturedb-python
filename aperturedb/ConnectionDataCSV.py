@@ -1,6 +1,7 @@
 import logging
 from aperturedb.CSVParser import CSVParser, CONSTRAINTS_PREFIX
 from aperturedb.Query import QueryBuilder
+from aperturedb.Constraints import predicate
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +88,7 @@ class ConnectionDataCSV(CSVParser):
             cmd_params = {
                 "_ref": ref_src,
                 "unique": True,
-                "constraints": {
-                    self.src_key: ["==", src_value]
-                }
+                "constraints": predicate(self.src_key, "==", src_value)
             }
             q.append(QueryBuilder.find_command(self.src_class, cmd_params))
 
@@ -97,9 +96,7 @@ class ConnectionDataCSV(CSVParser):
             cmd_params = {
                 "_ref": ref_dst,
                 "unique": True,
-                "constraints": {
-                    self.dst_key: ["==", dst_value]
-                }
+                "constraints": predicate(self.dst_key, "==", dst_value)
             }
             q.append(QueryBuilder.find_command(self.dst_class, cmd_params))
 

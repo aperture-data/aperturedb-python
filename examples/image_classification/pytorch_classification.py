@@ -8,9 +8,7 @@ client = create_connector()
 out_file_name = "classification.txt"
 query = [{
     "FindImage": {
-        "constraints": {
-            "dataset_name": ["==", "prepare_aperturedb"]
-        },
+        "constraints": ["$dataset_name", "==", "prepare_aperturedb"],
         "operations": [
             {
                 "type": "resize",

@@ -1,26 +1,18 @@
 [
     { "FindImage" : {
         "blobs": false,
-        "constraints": {
-            "any": {
-                "Bald": ["!=", null]
-            }
-        },
+        "constraints": ["any", ["$Bald", "!=", null]],
+        "limit": 10,
         "results" : {
-            "list": ["_uniqueid"],
-            "limit": 10
+            "list": ["_uniqueid"]
         }
     }},
     { "FindImage" : {
         "blobs": false,
-        "constraints": {
-            "any": {
-                "Bald": ["==", null]
-            }
-        },
+        "constraints": ["any", ["$Bald", "==", null]],
+        "limit": 10,
         "results" : {
-            "list": ["_uniqueid"],
-            "limit": 10
+            "list": ["_uniqueid"]
         }
     }}
 ]

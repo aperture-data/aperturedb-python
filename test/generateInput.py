@@ -604,7 +604,6 @@ def generate_sparse_add(multiplier):
     df["date:date_captured"] = date_cap
     df["constraint_id"] = ids
     df["version_id"] = version_id
-    df["updateif_<version_id"] = version_id
     # create load with first half
     half = len(df) / 2
     # won't work with uneven, since we are going to expect to be able to double number to check.

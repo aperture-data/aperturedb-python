@@ -56,9 +56,7 @@ run_requests = () => {
             "FindImage": {
                 "blobs": false,
                 "uniqueids": true,
-                "results" : {
-                    "limit": 10
-                }
+                "limit": 10
             }
         }]
         request(query = listQuery, blobs = [], handler = (data) => {
@@ -68,9 +66,7 @@ run_requests = () => {
             //Find an image
             findQuery = [{
                 "FindImage": {
-                    "constraints": {
-                        "_uniqueid": ["==", response[0].FindImage.entities[0]._uniqueid]
-                    },
+                    "constraints": ["$_uniqueid", "==", response[0].FindImage.entities[0]._uniqueid],
                     "results": {
                         "all_properties": true
                     }

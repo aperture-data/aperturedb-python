@@ -12,6 +12,7 @@ import logging
 
 from aperturedb.CommonLibrary import create_connector, execute_query
 from aperturedb.Utils import Utils
+from aperturedb.Constraints import Conjunction, predicate
 
 SAFE_PREFIX = "adb_"
 
@@ -197,10 +198,9 @@ class SPARQL:
             ns, prop = self._parse_uri(p)
             assert ns in ["p", "knn"], (ns, p)
             if "constraints" not in command:
-                command["constraints"] = {}
-            if prop not in command["constraints"]:
-                command["constraints"][prop] = []
-            command["constraints"][prop].extend(["==", o.toPython()])
+                command["constraints"] = [Conjunction.AND.value]
+            command["constraints"].append(
+                predicate(prop, "==", o.toPython()))
 
         def add_binding(s, p, o):
             """Associates a return binding variable with a specific property in the ApertureDB response"""
@@ -526,9 +526,7 @@ class SPARQL:
         command_name = self._make_command_name(type)
         query = [
             {command_name: {
-                "constraints": {
-                    "_uniqueid": ["==", uniqueid],
-                },
+                "constraints": predicate("_uniqueid", "==", uniqueid),
                 "blobs": True,
             }},
         ]
@@ -558,9 +556,7 @@ class SPARQL:
         query = [
             {command_name: {
                 "results": {"list": ["_uniqueid"]},
-                "constraints": {
-                    "_uniqueid": ["in", uniqueids],
-                },
+                "constraints": predicate("_uniqueid", "in", uniqueids),
                 "blobs": True,
             }},
         ]

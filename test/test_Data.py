@@ -88,9 +88,9 @@ class TestEntityLoader():
         query = [{
             "FindBlob": {
                 "blobs": True,
+                "limit": 1,
                 "results": {
-                    "list": ["license"],
-                    "limit": 1
+                    "list": ["license"]
                 }
             }
         }]

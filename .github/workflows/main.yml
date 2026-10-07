@@ -14,7 +14,8 @@ concurrency:
 jobs:
   build_and_test:
     runs-on:
-    - benchmark
+    - self-hosted
+    - X64
 
     steps:
 
@@ -60,7 +61,8 @@ jobs:
     - build_and_test
 
     runs-on:
-    - benchmark
+    - self-hosted
+    - X64
 
     steps:
 

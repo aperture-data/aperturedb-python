@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Union
 from aperturedb.Query import Query, ObjectType
 
 from aperturedb.Subscriptable import Subscriptable
-from aperturedb.Constraints import Constraints
+from aperturedb.Constraints import Constraints, predicate
 from aperturedb.Connector import Connector
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Query import QueryBuilder
@@ -70,9 +70,9 @@ class Entities(Subscriptable):
             custom_entities=spec.command_properties(prop="with_class"))
         cls.client = client
 
-        query = spec.query()
+        query, blobs_in = spec.query()
         logger.debug(f"query={query}")
-        res, r, b = execute_query(client, query, [])
+        res, r, b = execute_query(client, query, blobs_in)
         if res > 0:
             logger.warning(f"resp={r}")
         results = []
@@ -189,9 +189,7 @@ class Entities(Subscriptable):
             query = [
                 {
                     self.update_command: {
-                        "constraints": {
-                            "_uniqueid": ["==", entity["_uniqueid"]]
-                        },
+                        "constraints": predicate("_uniqueid", "==", entity["_uniqueid"]),
                         "properties": properties
                     }
                 }
@@ -216,9 +214,7 @@ class Entities(Subscriptable):
             params_src = {
                 "_ref": 1,
                 "unique": False,
-                "constraints": {
-                    "_uniqueid": ["==", entity["_uniqueid"]]
-                }
+                "constraints": predicate("_uniqueid", "==", entity["_uniqueid"])
             }
             params_dst = {
                 "is_connected_to": {
@@ -228,7 +224,7 @@ class Entities(Subscriptable):
                     "all_properties": True
                 }
             }
-            if constraints:
+            if constraints and constraints.constraints:
                 params_dst["constraints"] = constraints.constraints
 
             query = [
@@ -255,9 +251,7 @@ class Entities(Subscriptable):
         Helper to get blobs for FindImage, FindVideo and FindBlob commands.
         """
         cmd_params = {
-            "constraints": {
-                "_uniqueid": ["==", entity["_uniqueid"]]
-            },
+            "constraints": predicate("_uniqueid", "==", entity["_uniqueid"]),
             "blobs": True,
             "uniqueids": True,
             "results": {

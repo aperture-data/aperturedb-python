@@ -99,9 +99,7 @@ def get_image_by_id(st, id):
 
     query = [{
         "FindImage": {
-            "constraints": {
-                "_uniqueid": ["==", id]
-            },
+            "constraints": ["$_uniqueid", "==", id],
             "results": {
                 "all_properties": True
             }
