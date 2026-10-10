@@ -37,6 +37,7 @@ function run_aperturedb_instance(){
     docker network create ${TAG}_host_default
     GATEWAY=$(docker network inspect ${TAG}_host_default | jq -r .[0].IPAM.Config[0].Gateway)
     GATEWAY=$GATEWAY RUNNER_NAME=$TAG docker compose -f docker-compose.yml up -d
+
     if [[ "$TAG" == *_non_http ]]; then
         PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port lenz 55551 | awk -F: '{print $NF}')
     elif [[ "$TAG" == *_http ]]; then
@@ -113,17 +114,21 @@ wait_for_stack() {
         local lenz_ready=0
         local nginx_ready=0
 
-        if docker run --rm --network=${network} curlimages/curl:latest \
-                nc -z -w 2 lenz 58085 >/dev/null 2>&1; then
+        if docker run --rm --network=${network} --entrypoint nc curlimages/curl:latest \
+                -z -w 2 lenz 58085 >/dev/null 2>&1; then
             lenz_ready=1
         fi
 
-        if [[ "$tag" == *"_http" ]]; then
+        if [[ "$tag" == *"_non_http" ]]; then
+            if [ "$lenz_ready" -eq 1 ]; then
+                echo "Stack ${tag} is ready after ${elapsed}s"
+                return 0
+            fi
+        elif [[ "$tag" == *"_http" ]]; then
             if docker run --rm --network=${network} curlimages/curl:latest \
-                    -sS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
+                    -fsS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
                 nginx_ready=1
             fi
-
             if [ "$lenz_ready" -eq 1 ] && [ "$nginx_ready" -eq 1 ]; then
                 echo "Stack ${tag} is ready after ${elapsed}s"
                 return 0
