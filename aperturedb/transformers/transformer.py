@@ -1,3 +1,4 @@
+from aperturedb.Constants import BLOB_ADD_COMMANDS
 from aperturedb.Subscriptable import Subscriptable
 from aperturedb.CommonLibrary import create_connector
 from aperturedb.Utils import Utils
@@ -67,7 +68,7 @@ class Transformer(Subscriptable):
             command = None
             if isinstance(c, dict) and len(c) > 0:
                 command = next(iter(c.keys()))
-            if command in ["AddImage", "AddDescriptor", "AddVideo", "AddBlob"]:
+            if command in BLOB_ADD_COMMANDS:
                 self._blob_index.append(i)
                 bc += 1
             # Kept for backward compatibility

@@ -171,6 +171,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
     id would be only inserted if it does not already exist in the database.
     :::
     """
+    command = "AddImage"
 
     def __init__(self, filename: str, check_image: bool = True, n_download_retries: int = 3, **kwargs):
 
@@ -198,8 +199,6 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
 
         self.relative_path_prefix = os.path.dirname(self.filename) \
             if self.source_type == HEADER_PATH and self.blobs_relative_to_csv else ""
-
-        self.command = "AddImage"
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
