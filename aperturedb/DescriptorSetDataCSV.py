@@ -23,9 +23,9 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
     Example CSV file::
 
         name,dimensions,engine,metric
-        dining_chairs,2048,FaissIVFFlat,L2
-        chandeliers,2048,FaissIVFFlat,L2
-        console_tables,2048,FaissIVFFlat,L2
+        dining_chairs,2048,IVF,L2
+        chandeliers,2048,IVF,L2
+        console_tables,2048,IVF,L2
         ...
 
     Example code to create an instance:
@@ -41,7 +41,7 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
     !!! info
         In the above example, the first row implies to create a Descriptor set called dining_chairs.
         The Descriptors in that set would be expected to be an array of float64, of length 2048.
-        When performing a search on this set, FaissIVFFlat engine would be used and the metric to compute
+        When performing a search on this set, IVF engine would be used and the metric to compute
         the distance would be L2.
     """
 

@@ -244,7 +244,7 @@ def generate_descriptors(images, setname, dims):
 def generate_descriptorset(names, dims):
 
     metrics = ["L2", "IP", "CS", ["CS", "IP"], ["L2", "CS", "IP"]]
-    engines = ["FaissIVFFlat", "FaissFlat", ["FaissIVFFlat", "FaissFlat"]]
+    engines = ["IVF", "Flat", ["IVF", "Flat"]]
 
     df = pd.DataFrame()
 
