@@ -112,24 +112,23 @@ class Connector(object):
     It lets the client execute any JSON query based on the [ApertureDB query language specification](/query_language/Overview/API%20Description)
     It manages the TCP connection to the database.
 
-    :::note
-    - The connection is established only when a query is run.
-    - A new connection is established for each instance that runs a query, and gets closed explicitly by calling `close()` or at destruction.
-    :::
+    !!! note
+        - The connection is established only when a query is run.
+        - A new connection is established for each instance that runs a query, and gets closed explicitly by calling `close()` or at destruction.
 
     Args:
-        str (host): Address of the host to connect to.
-        int (port): Port to connect to.
-        str (user): Username to specify while establishing a connection.
-        str (password): Password to specify while connecting to ApertureDB.
-        str (token): Token to use while connecting to the database.
-        bool (use_ssl): Use SSL to encrypt communication with the database.
-        bool (use_keepalive): Set keepalive on the connection with the database.
+        host (str): Address of the host to connect to.
+        port (int): Port to connect to.
+        user (str): Username to specify while establishing a connection.
+        password (str): Password to specify while connecting to ApertureDB.
+        token (str): Token to use while connecting to the database.
+        use_ssl (bool): Use SSL to encrypt communication with the database.
+        use_keepalive (bool): Set keepalive on the connection with the database.
             This has two benefits: It reduces the chance of disconnection for a long-running query,
             and it means that disconnections are detected sooner.
             Turn this off to reduce traffic on high-cost network connections.
-        Configuration (config): Configuration object to use for connection.
-        str (key): Apeture Key, configuration as a deflated compressed string
+        config (Configuration): Configuration object to use for connection.
+        key (str): Aperture Key, configuration as a deflated compressed string
 
     The Configuration class options:
     host,port,user,password,token,use_ssl,use_keepalive,retry_interval_seconds,retrun_max_attempts

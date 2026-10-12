@@ -88,7 +88,7 @@ def resolve(points: np.array, image_meta, operations) -> np.array:
 
     Args:
         points (NumPy array): The coordinates of the bounding box; shape (...,2)
-        image (dict): The image properties
+        image_meta (dict): The image properties
         operations (list): The operations applied to the image
 
     Returns:
@@ -961,8 +961,8 @@ class Images(Entities):
         Args:
             prop_list (List[str], optional): The list of properties to retrieve. Defaults to [].
 
-            Returns:
-                property_values Dict[str, Any]: The properties of the images
+        Returns:
+            property_values (Dict[str, Any]): The properties of the images
         """
         if len(prop_list) == 0:
             return {}

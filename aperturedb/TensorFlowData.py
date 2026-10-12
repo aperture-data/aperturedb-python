@@ -11,10 +11,9 @@ class TensorFlowData(Subscriptable):
     So the only thing that needs to be implemented is __init__ and generate_query,
     which takes an index and returns a query.
 
-    :::note
-    This class should be subclassed with a specific (custom) implementation of generate_query(),
-    and __init__ should be called with the dataset to be wrapped.
-    :::
+    !!! note
+        This class should be subclassed with a specific (custom) implementation of generate_query(),
+        and __init__ should be called with the dataset to be wrapped.
 
     Example subclass: [Cifar10DataTensorflow](https://github.com/aperture-data/aperturedb-python/blob/develop/examples/Cifar10DataTensorflow.py)
 

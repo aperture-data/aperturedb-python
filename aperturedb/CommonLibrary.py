@@ -187,7 +187,7 @@ def create_connector(
 
     If there are both global and local configurations with the same name, the global configuration is preferred.
 
-    See :ref:`adb config <adb_config>`_ command-line tool for more information.
+    See [adb config](/python_sdk/cli/reference#adb-config) command-line tool for more information.
 
     Arguments:
         name (str, optional): The name of the configuration to use. Default is None.

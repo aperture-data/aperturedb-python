@@ -26,7 +26,7 @@ class ParallelQuery(Parallelizer.Parallelizer):
 
     By using `ParallelQuery`, users can fully utilize their CPU cores and
     network bandwidth to communicate with ApertureDB in parallel.
-    For information on JSON queries and batching, see the [ApertureDB JSON API documentation](/query_language/Overview/Transactions).
+    For information on JSON queries and batching, see the [ApertureDB JSON API documentation](/query_language/Overview/API%20Description).
 
     Args:
         client (Connector): The database connector.

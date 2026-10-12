@@ -13,9 +13,10 @@ class EntityDataCSV(CSVParser.CSVParser):
     This class loads the Entity Data which is present in a CSV file,
     and converts it into a series of ApertureDB queries.
 
-    :::note Is backed by a CSV file with the following columns:
-    ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
-    :::
+    !!! note
+        Is backed by a CSV file with the following columns:
+
+        ``EntityClass``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``
 
     Example CSV file::
 
@@ -34,10 +35,9 @@ class EntityDataCSV(CSVParser.CSVParser):
     ```
 
 
-    :::info
-    In the above example, the constraint_id ensures that a Entity with the specified
-    id would be only inserted if it does not already exist in the database.
-    :::
+    !!! info
+        In the above example, the constraint_id ensures that a Entity with the specified
+        id would be only inserted if it does not already exist in the database.
 
     """
 
@@ -82,11 +82,10 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
     This class loads the Entity Data which is present in a CSV file,
     and converts it into a series of ApertureDB deletes.
 
-    :::note
-    Expects a CSV file with the following columns:
+    !!! note
+        Expects a CSV file with the following columns:
 
-        ``constraint_PROP1``
-    :::
+            ``constraint_PROP1``
 
     Example CSV file::
 
@@ -105,13 +104,12 @@ class EntityDeleteDataCSV(CSVParser.CSVParser):
     ```
 
 
-    :::info
-    In the above example, the constraint_id ensures that a Entity with the specified
-    id would be only deleted.
+    !!! info
+        In the above example, the constraint_id ensures that a Entity with the specified
+        id would be only deleted.
 
-    Note that you can take a csv with normal prop data and this will ignore it, so you
-    could use input to a loader to this.
-    :::
+        Note that you can take a csv with normal prop data and this will ignore it, so you
+        could use input to a loader to this.
 
 
     """

@@ -33,7 +33,7 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
          to determine if a update or an delete/add is appropriate
 
        Generated fields
-        Format is: gen_<type>_name
+        Format is: `gen_<type>_name`
 
         type:
         - blobsha1 - the sha1 for the blob is calculated
@@ -49,24 +49,23 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
           to be able to detect if the blob matches. It will ensure only one entity exists with
           the constraints and matching the managed blob constraints.
 
-    :::note
-    Is backed by a CSV file with the following columns (format optional):
+    !!! note
+        Is backed by a CSV file with the following columns (format optional):
 
-        ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+            ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-        OR
+            OR
 
-        ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+            ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-        OR
+            OR
 
-        ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+            ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-        OR
+            OR
 
-        ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
-        ...
-    :::
+            ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+            ...
 
     Example CSV file::
 
@@ -84,10 +83,9 @@ class BlobNewestDataCSV(CSVParser.CSVParser):
         loader.ingest(data)
     ```
 
-    :::info
-    In the above example, the constraint_id ensures that an Image with the specified
-    id would be only inserted if it does not already exist in the database.
-    :::
+    !!! info
+        In the above example, the constraint_id ensures that an Image with the specified
+        id would be only inserted if it does not already exist in the database.
     """
     UPDATE_CONSTRAINT_PREFIX = "updateif_"
     GENERATE_PROP_PREFIX = "gen_"

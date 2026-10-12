@@ -15,9 +15,8 @@ class KaggleData(Subscriptable):
     This class intends to provide an abstraction like that of a pytorch dataset
     where the iteration over Dataset elements yields an atomic record.
 
-    :::note
-    This class should be subclassed with specific implementations of generate_index and generate_query.
-    :::
+    !!! note
+        This class should be subclassed with specific implementations of generate_index and generate_query.
 
     Example subclass: [CelebADataKaggle](https://github.com/aperture-data/aperturedb-python/blob/develop/examples/CelebADataKaggle.py)
 

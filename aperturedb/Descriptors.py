@@ -34,7 +34,7 @@ class Descriptors(Entities):
             constraints (aperturedb.Constraints.Constraints, optional): Constraints for the search. Defaults to None.
             distances (bool, optional): Return similarity metric values. Defaults to False.
             blobs (bool, optional): Return vectors of the neighbors. Defaults to False.
-            results (dict, optional): Dictionary with the results format. Defaults to {"all_properties": True}.
+            results (dict, optional): Dictionary with the results format. Defaults to `{"all_properties": True}`.
 
         Returns:
             None: Populates self.response with the parsed JSON response from the database.

@@ -45,6 +45,9 @@ def write_entity_csv(filename: str, input, **kwargs):
         filename: The name of the file to write to.
             Recommended to end in ".entity.csv".
         input: Anything that can be used as input to a pandas DataFrame, including a pandas DataFrame
+        **kwargs: Options forwarded to the corresponding conversion function.
+
+    Keyword Args:
         entity_class: The entity class to write to the CSV file as the first column
         unique_key: (optional) An existing key to call out as a constraint
     """
@@ -110,6 +113,9 @@ def write_image_csv(filename: str, input, **kwargs):
         filename: The name of the file to write to.
             Recommended to end in ".image.csv".
         input: Anything that can be used as input to a pandas DataFrame, including a pandas DataFrame
+        **kwargs: Options forwarded to the corresponding conversion function.
+
+    Keyword Args:
         source_column: The name of the column that contains the image data
         source_type: (optional) The type the source column.  If not specified, the source column will be used.  Should be one of "filename", "url", "gsurl", or "s3url".
         format: (optional) The format of the image data.  If not provided, there should be a column called "format" in the input data.
@@ -178,6 +184,9 @@ def write_connection_csv(filename: str, input, **kwargs):
         filename: The name of the file to write to.
             Recommended to end in ".connection.csv".
         input: Anything that can be used as input to a pandas DataFrame, including a pandas DataFrame
+        **kwargs: Options forwarded to the corresponding conversion function.
+
+    Keyword Args:
         connection_class: The connection class to write to the CSV file as the first column
         source_class: The source entity class
         source_property: The property containing the source key in ApertureDB

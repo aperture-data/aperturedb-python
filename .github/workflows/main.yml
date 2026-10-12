@@ -108,7 +108,7 @@ jobs:
       run: |
         source version.sh
         read_version
-        docker build -f docs-content/Dockerfile -t "aperturedata/aperturedb-python-docs:v$BUILD_VERSION" .
+        docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" -f docs-content/Dockerfile -t "aperturedata/aperturedb-python-docs:v$BUILD_VERSION" .
         docker push "aperturedata/aperturedb-python-docs:v$BUILD_VERSION"
       shell: bash
 

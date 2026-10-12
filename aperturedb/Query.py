@@ -352,7 +352,7 @@ class Query():
         Helper function to get the properties of all commands the query.
 
         Args:
-            v (str, optional): _description_. Defaults to "".
+            prop (str): Name of the query attribute to retrieve from each command.
 
         Returns:
             List[str]: Properties from commands in the order they should be executed.

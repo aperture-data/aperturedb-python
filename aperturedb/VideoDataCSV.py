@@ -24,22 +24,23 @@ class VideoDataCSV(CSVParser.CSVParser):
     and converts it into a series of ApertureDB queries.
 
 
-    :::note Is backed by a CSV file with the following columns:
+    !!! note
+        Is backed by a CSV file with the following columns:
 
-    ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-    OR
+        ``filename``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-    ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        OR
 
-    OR
+        ``url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-    ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
+        OR
 
-    OR
+        ``s3_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
-    ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
-    :::
+        OR
+
+        ``gs_url``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP1``, ``format``
 
     Example CSV file::
 
@@ -65,10 +66,9 @@ class VideoDataCSV(CSVParser.CSVParser):
     ```
 
 
-    :::info
-    In the above example, the constraint_id ensures that an Video with the specified
-    id would be only inserted if it does not already exist in the database.
-    :::
+    !!! info
+        In the above example, the constraint_id ensures that an Video with the specified
+        id would be only inserted if it does not already exist in the database.
     """
 
     def __init__(self, filename: str, check_video: bool = True, **kwargs):

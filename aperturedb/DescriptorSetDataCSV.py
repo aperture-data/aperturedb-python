@@ -15,9 +15,10 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
     This class loads the Descriptor Set Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
-    :::note Is backed by a CSV file with the following columns:
-    ``name``, ``dimensions``, ``engine``, ``metric``, ``PROP_NAME_N``, ``constraint_PROP1``
-    :::
+    !!! note
+        Is backed by a CSV file with the following columns:
+
+        ``name``, ``dimensions``, ``engine``, ``metric``, ``PROP_NAME_N``, ``constraint_PROP1``
 
     Example CSV file::
 
@@ -37,12 +38,11 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
     ```
 
 
-    :::info
-    In the above example, the first row implies to create a Descriptor set called dining_chairs.
-    The Descriptors in that set would be expected to be an array of float64, of length 2048.
-    When performing a search on this set, FaissIVFFlat engine would be used and the metric to compute
-    the distance would be L2.
-    :::
+    !!! info
+        In the above example, the first row implies to create a Descriptor set called dining_chairs.
+        The Descriptors in that set would be expected to be an array of float64, of length 2048.
+        When performing a search on this set, FaissIVFFlat engine would be used and the metric to compute
+        the distance would be L2.
     """
 
     def __init__(self, filename: str, **kwargs):

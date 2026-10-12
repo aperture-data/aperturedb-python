@@ -75,13 +75,13 @@ class ConnectorRest(Connector):
     This class is used to connect to ApertureDB using the REST interface.
 
     Args:
-        str (host): Address of the host to connect to.
-        int (port): Port to connect to.
-        str (user): Username to specify while establishing a connection.
-        str (password): Password to specify while connecting to ApertureDB.
-        str (token): Token to use while connecting to the database.
-        bool (use_ssl): Use SSL to encrypt communication with the database.
-        str (key): Apeture Key, configuration as a deflated compressed string
+        host (str): Address of the host to connect to.
+        port (int): Port to connect to.
+        user (str): Username to specify while establishing a connection.
+        password (str): Password to specify while connecting to ApertureDB.
+        token (str): Token to use while connecting to the database.
+        use_ssl (bool): Use SSL to encrypt communication with the database.
+        key (str): Aperture Key, configuration as a deflated compressed string
     """
 
     def __init__(self, host="localhost", port=None,

@@ -44,7 +44,7 @@ class Entities(Subscriptable):
             e: _description_
 
         Returns:
-            List[Entities]: _description_
+            List[Entities]: One collection of connected entities for each entity in this collection.
         """
 
         # Since adjacent items are usually a way to filter the results,
@@ -201,12 +201,11 @@ class Entities(Subscriptable):
         Gets all entities adjacent to and clustered around items of the collection
 
         Args:
-            pk (str): _description_
-            type (ObjectType): _description_
-            constraints (Constraints, optional): _description_. Defaults to None.
+            etype (ObjectType or str): Type or class of the connected entities to retrieve.
+            constraints (Constraints, optional): Filter applied to the connected entities. Defaults to None.
 
         Returns:
-            List[Entities]: _description_
+            List[Entities]: One collection of connected entities for each entity in this collection.
         """
         result = []
         entity_class = etype.value if isinstance(etype, ObjectType) else etype

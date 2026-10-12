@@ -20,9 +20,10 @@ class DescriptorDataCSV(CSVParser.CSVParser):
     This class loads the Descriptor Data which is present in a CSV file,
     and converts it into a series of ApertureDB queries.
 
-    :::note Is backed by a CSV file with the following columns, and a NumPy array file "npz" for the descriptors:
-    ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
-    :::
+    !!! note
+        Is backed by a CSV file with the following columns, and a NumPy array file "npz" for the descriptors:
+
+        ``filename``, ``index``, ``set``, ``label``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_N``
 
     **filename**: Path to a npz file which comprises of np arrays.
 
@@ -55,16 +56,15 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
 
 
-    :::info
-    In the above example, the index uniquely identifies the actual np array from the many arrays in the npz file
-    which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
+    !!! info
+        In the above example, the index uniquely identifies the actual np array from the many arrays in the npz file
+        which is same for line 1 and line 2. The UUID and constraint_UUID ensure that a Descriptor is inserted only once in the DB.
 
-    Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
-    using [ConnectionDataCSV](/python_sdk/data_loaders/csv_wrappers/ConnectionDataCSV)
+        Association of an entity to a Descriptor can be specified by first ingesting other Objects, then Descriptors and finally by
+        using [ConnectionDataCSV](/python_sdk/data_loaders/csv_wrappers/ConnectionDataCSV)
 
-    In the above example, the constraint_UUID ensures that a connection with the specified
-    UUID would be only inserted if it does not already exist in the database.
-    :::
+        In the above example, the constraint_UUID ensures that a connection with the specified
+        UUID would be only inserted if it does not already exist in the database.
 
     """
 

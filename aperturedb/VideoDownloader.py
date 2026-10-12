@@ -16,11 +16,10 @@ class VideoDownloaderCSV(CSVParser.CSVParser):
     """
         **ApertureDB Video Downloader.**
 
-    :::info
-    Expects a CSV file with AT LEAST a ``url`` column, and
-    optionally a ``filename`` field.
-    If ``filename`` is not present, it is taken from the URL.
-    :::
+    !!! info
+        Expects a CSV file with AT LEAST a ``url`` column, and
+        optionally a ``filename`` field.
+        If ``filename`` is not present, it is taken from the URL.
     """
 
     def __init__(self, filename, check_video=True):

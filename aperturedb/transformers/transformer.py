@@ -12,12 +12,11 @@ class Transformer(Subscriptable):
     Transformer is an abstract class that can be used to transform
     data before ingestion into aperturedb.
 
-    :::info
-    **Some build in transformers:**
-        - CommonProperties: Add common properties to the data
-        - ImageProperties: Add image properties to the data
-        - Facenet: Add facenet embeddings to the data
-    :::
+    !!! info
+        **Some build in transformers:**
+            - CommonProperties: Add common properties to the data
+            - ImageProperties: Add image properties to the data
+            - Facenet: Add facenet embeddings to the data
 
 
     [Example](https://github.com/aperture-data/aperturedb-python/blob/develop/examples/similarity_search/add_faces.py) of how to use transformers:

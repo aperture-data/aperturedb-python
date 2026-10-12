@@ -16,9 +16,10 @@ class ConnectionDataCSV(CSVParser):
     This class loads the Connection Data which is present in a CSV file,
     and converts it into a series of aperturedb queries.
 
-    :::note Is backed by a CSV file with the following columns:
-    ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
-    :::
+    !!! note
+        Is backed by a CSV file with the following columns:
+
+        ``ConnectionClass``, ``Class1@PROP_NAME``, ``Class2@PROP_NAME`` ... ``PROP_NAME_N``, ``constraint_PROP1``
 
     Example CSV file::
 
@@ -45,13 +46,12 @@ class ConnectionDataCSV(CSVParser):
     ```
 
 
-    :::info
-    This example CSV's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
-    It also connects the images and descriptors in the subsequent rows.
+    !!! info
+        This example CSV's first row creates connection between an Image(id=321423532) and a descriptor(UUID=AID-0X3E)
+        It also connects the images and descriptors in the subsequent rows.
 
-    In the above example, the constraint_id ensures that a connection with the specified
-    id would be only inserted if it does not already exist in the database.
-    :::
+        In the above example, the constraint_id ensures that a connection with the specified
+        id would be only inserted if it does not already exist in the database.
     """
 
     def __init__(self, filename: str, **kwargs):

@@ -15,9 +15,10 @@ class BlobDataCSV(CSVParser.CSVParser):
     This class loads the Blob Data which is present in a CSV file,
     and converts it into a series of ApertureDB queries.
 
-    :::note Is backed by a CSV file with the following columns:
-    ``FILENAME``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_1``
-    :::
+    !!! note
+        Is backed by a CSV file with the following columns:
+
+        ``FILENAME``, ``PROP_NAME_1``, ... ``PROP_NAME_N``, ``constraint_PROP_NAME_1``
 
     **FILENAME**: The path of the blob object on the file system.
 
@@ -42,10 +43,9 @@ class BlobDataCSV(CSVParser.CSVParser):
     ```
 
 
-    :::info
-    In the above example, the constraint_id ensures that a blob with the specified
-    id would be only inserted if it does not already exist in the database.
-    :::
+    !!! info
+        In the above example, the constraint_id ensures that a blob with the specified
+        id would be only inserted if it does not already exist in the database.
     """
 
     def __init__(self, filename: str, **kwargs):

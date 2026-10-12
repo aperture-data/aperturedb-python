@@ -60,12 +60,12 @@ def check_folder(folder):
 def display(images_array, save=False):
     """
     Show images with matplotlib
-    :::note
-    This method was used by ApertureDB to display images, but it is not recommended anymore.
-    It will not draw annotation.
 
-    Instead, when using with JSON queries, make a instance of the Images class and call the display method.
-    :
+    !!! note
+        This method was used by ApertureDB to display images, but it is not recommended anymore.
+        It will not draw annotation.
+
+        Instead, when using with JSON queries, make a instance of the Images class and call the display method.
 
     ```python
     from aperturedb.Images import Images
