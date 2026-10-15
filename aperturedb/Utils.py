@@ -956,9 +956,9 @@ class Utils(object):
         """
         Flatten the "indexes" value of a GetIndexes response.
 
-        Current servers group definitions as
-        ``{target: {class: {property: [definition, ...]}}}``.
-        Older servers return a flat list of definitions.
+        Accepts grouped definitions in the form
+        ``{target: {class: {property: [definition, ...]}}}``
+        or a flat list of definitions.
         """
         if not indexes:
             return []
