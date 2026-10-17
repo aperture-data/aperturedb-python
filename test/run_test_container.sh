@@ -7,9 +7,13 @@ cd "${SCRIPT_DIR}"
 
 function check_containers_networks(){
     echo "Running containers and networks cleanup"
-    docker ps
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Warning: docker command not found. Skipping docker cleanup steps."
+        return 0
+    fi
+    docker ps || true
     echo "Existing networks"
-    docker network ls
+    docker network ls || true
 }
 
 function get_sudo() {
@@ -66,7 +70,9 @@ function teardown() {
         docker network rm "${RUNNER_NAME}_non_http_default" || true
     fi
     echo "Cleaning up generated volumes..."
-    $(get_sudo) rm -rf "${SCRIPT_DIR}/aperturedb"
+    if [ -d "${SCRIPT_DIR}/aperturedb" ]; then
+        $(get_sudo) rm -rf "${SCRIPT_DIR}/aperturedb" || echo "Warning: Failed to delete ${SCRIPT_DIR}/aperturedb"
+    fi
 }
 trap teardown EXIT
 

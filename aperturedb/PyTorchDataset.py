@@ -1,13 +1,13 @@
 import math
 import numpy as np
 import cv2
+from aperturedb.Constants import BLOB_FIND_COMMANDS, OPENCV_DECODE_FIND_COMMANDS
 import logging
 
 from torch.utils import data
 
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Connector import Connector
-
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class ApertureDBDataset(data.Dataset):
     This class implements a PyTorch Dataset for ApertureDB.
     It is used to load blobs returned by a `Find*` command from ApertureDB into a PyTorch model.
     It can be initialized with a query that will be used to retrieve
-    the blobs from ApertureDB. Note that only `FindImage` blobs are decoded via OpenCV.
+    the blobs from ApertureDB. Note that only `FindImage` and `FindFrame` blobs are decoded via OpenCV.
     """
 
     def __init__(self, client: Connector, query, label_prop=None, batch_size=1, command_idx=None):
@@ -35,24 +35,19 @@ class ApertureDBDataset(data.Dataset):
         self.batch_end = 0
         self.label_prop = label_prop
 
-        allowed_find_commands = {
-            "FindImage", "FindVideo", "FindBlob",
-            "FindDescriptor", "FindBoundingBox"
-        }
-
         if self.command_idx is not None:
             if not (0 <= self.command_idx < len(query)):
                 raise ValueError(
                     f"command_idx {self.command_idx} is out of range.")
             self.command_name = list(query[self.command_idx].keys())[0]
-            if self.command_name not in allowed_find_commands:
+            if self.command_name not in BLOB_FIND_COMMANDS:
                 raise ValueError(
                     f"Command at index {self.command_idx} is "
                     f"{self.command_name}, which is not a supported blob-returning Find* command.")
         else:
             for i in range(len(query)):
                 name = list(query[i].keys())[0]
-                if name in allowed_find_commands:
+                if name in BLOB_FIND_COMMANDS:
                     if self.command_idx is not None:
                         logger.warning(
                             "Multiple Find commands found. Selected %s at index %s.", self.command_name, self.command_idx)
@@ -61,7 +56,7 @@ class ApertureDBDataset(data.Dataset):
                     self.command_name = name
 
         if self.command_idx is None:
-            msg = "Query error. The query must contain at least one supported blob-returning Find command (e.g., FindImage, FindVideo, FindBlob). The first one encountered will be used."
+            msg = "Query error. The query must contain at least one supported blob-returning Find command (e.g., FindImage, FindVideo, FindBlob, FindFrame). The first one encountered will be used."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -77,7 +72,7 @@ class ApertureDBDataset(data.Dataset):
 
         for i in range(len(self.query)):
             name = list(self.query[i].keys())[0]
-            if name in allowed_find_commands and i != self.command_idx:
+            if name in BLOB_FIND_COMMANDS and i != self.command_idx:
                 self.query[i][name]["blobs"] = False
 
         self.query[self.command_idx][self.command_name]["batch"] = {}
@@ -111,7 +106,7 @@ class ApertureDBDataset(data.Dataset):
         blob = self.batch_blobs[idx]
         label = self.batch_labels[idx]
 
-        if self.command_name == "FindImage":
+        if self.command_name in OPENCV_DECODE_FIND_COMMANDS:
             nparr = np.frombuffer(blob, dtype=np.uint8)
             blob = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if blob is None:
