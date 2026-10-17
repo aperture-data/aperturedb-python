@@ -258,6 +258,155 @@ class TestParallel():
         assert closed_count[0] == 1
 
 
+class GeneratorWithLargeBlobs(Subscriptable):
+    def __init__(self, elements=10, blob_size=100) -> None:
+        super().__init__()
+        self.elements = elements
+        self.blob_size = blob_size
+
+    def __len__(self):
+        return self.elements
+
+    def getitem(self, subscript):
+        query = [{"FindBlob": {}}]
+        blobs = [b"0" * self.blob_size]
+        return query, blobs
+
+
+class GeneratorWithSmallImages(Subscriptable):
+    def __init__(self, elements=10, blob_size=10) -> None:
+        super().__init__()
+        self.elements = elements
+        self.blob_size = blob_size
+
+    def __len__(self):
+        return self.elements
+
+    def getitem(self, subscript):
+        query = [{"AddImage": {}}]
+        blobs = [b"0" * self.blob_size]
+        return query, blobs
+
+
+class MockClient:
+    def __init__(self):
+        from types import SimpleNamespace
+        self.config = SimpleNamespace(host="localhost", port=55555, use_ssl=False,
+                                      verify_hostname=False, username="admin", password="password")
+
+    def clone(self):
+        return self
+
+    def query(self, q, b):
+        self.queries.append(q)
+        return ([{"FindBlob": {"status": 0}} for _ in range(len(q))], [])
+
+    def last_query_ok(self):
+        return True
+
+    def get_last_query_time(self):
+        return 0
+
+
+def test_dynamic_batching():
+    db = MockClient()
+    db.queries = []
+
+    # 10 elements, 100 bytes each
+    generator = GeneratorWithLargeBlobs(10, 100)
+    querier = ParallelQuery(db)
+    db.queries = []
+
+    # limit to 150 bytes -> should process 1 element per batch despite batchsize=5
+    querier.query(generator, batchsize=5, numthreads=1,
+                  max_bytes_per_batch=150)
+
+    # It should have succeeded in processing all queries
+    assert querier.get_succeeded_queries() == 10
+    assert len(db.queries) == 10
+    for q in db.queries:
+        assert len(q) == 1
+
+
+def test_dynamic_batching_oversized_item():
+    db = MockClient()
+    db.queries = []
+
+    # 10 elements, 100 bytes each
+    generator = GeneratorWithLargeBlobs(10, 100)
+    querier = ParallelQuery(db)
+    db.queries = []
+
+    # limit to 50 bytes -> item size (100) > max_bytes (50). Should log warning and process 1 per batch.
+    querier.query(generator, batchsize=5, numthreads=1, max_bytes_per_batch=50)
+
+    # It should have succeeded in processing all queries
+    assert querier.get_succeeded_queries() == 10
+    assert len(db.queries) == 10
+    for q in db.queries:
+        assert len(q) == 1
+
+
+def test_dynamic_batching_add_image():
+    db = MockClient()
+    db.queries = []
+
+    # 10 elements, 10 bytes each
+    generator = GeneratorWithSmallImages(10, 10)
+    querier = ParallelQuery(db)
+    db.queries = []
+
+    # Expected item size: len(str([{"AddImage": {}}])) -> 18 + 10 bytes blob = 28 bytes.
+    # With a limit of 100 bytes, we should be able to fit 3 items per batch (3 * 28 = 84 bytes).
+    # Since batchsize=5 is larger than 3, the max_bytes_per_batch limit will be the bottleneck,
+    # producing 3, 3, 3, 1 item batches.
+    querier.query(generator, batchsize=5, numthreads=1,
+                  max_bytes_per_batch=100)
+
+    # It should have succeeded in processing all queries
+    assert querier.get_succeeded_queries() == 10
+    assert len(db.queries) == 4
+    for q in db.queries[:-1]:
+        assert len(q) == 3
+    assert len(db.queries[-1]) == 1
+
+
+def test_dynamic_batching_add_image_variable_sizes():
+    db = MockClient()
+    db.queries = []
+
+    # 1. Smaller images (2 bytes each) -> larger batches
+    generator_small = GeneratorWithSmallImages(10, 2)
+    querier_small = ParallelQuery(db)
+    db.queries = []
+
+    # Expected item size: 18 + 2 = 20 bytes.
+    # Max bytes = 100 -> 100 // 20 = 5 items per batch.
+    querier_small.query(generator_small, batchsize=10,
+                        numthreads=1, max_bytes_per_batch=100)
+
+    assert querier_small.get_succeeded_queries() == 10
+    assert len(db.queries) == 2
+    for q in db.queries:
+        assert len(q) == 5
+
+    # 2. Larger images (32 bytes each) -> smaller batches
+    generator_large = GeneratorWithSmallImages(10, 32)
+    db.queries = []
+    querier_large = ParallelQuery(db)
+    db.queries = []
+
+    # Expected item size: 18 + 32 = 50 bytes.
+    # Max bytes = 100 -> 100 // 50 = 2 items per batch.
+    querier_large.query(generator_large, batchsize=10,
+                        numthreads=1, max_bytes_per_batch=100)
+
+    assert querier_large.get_succeeded_queries() == 10
+    assert len(db.queries) == 5
+    for q in db.queries:
+        assert len(q) == 2
+
+
 def test_dask_dry_run(db: Connector):
     from aperturedb.ParallelLoader import ParallelLoader
     from aperturedb.EntityDataCSV import EntityDataCSV
