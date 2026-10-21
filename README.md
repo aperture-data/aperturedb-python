@@ -33,6 +33,26 @@ To install just the base client without optional deep learning extras:
 pip install aperturedb
 ```
 
+## Authentication and shared sessions
+
+The SDK signs in when you first run a query and renews the session as needed.
+If the server rejects a session before running a query, the SDK renews it and
+retries that query once. When the refresh token is no longer accepted, it signs
+in again using the password or personal token configured on the connector.
+If those credentials are also rejected, the query raises an exception.
+
+Use a separate `Connector` for each thread, created with `db.clone()`. Clones
+share a session, so concurrent requests reuse the same login and coordinate
+session renewal. Dask tasks create independent sessions using the same configured
+credentials, allowing each process to renew its own session.
+
+On servers that apply security changes immediately, existing connectors observe
+updated permissions on subsequent queries. Removing a user's access or revoking
+their configured credentials can cause those queries to fail. Queries sent to
+replicas may briefly observe earlier permissions while replication catches up.
+Permission errors are returned to the caller. Explicit `Authenticate` and
+`RefreshToken` queries also return their errors without automatic session recovery.
+
 ## 📚 Documentation & Examples
 
 *   [Getting Started Guide](https://docs.aperturedata.io/Setup/QuickStart)

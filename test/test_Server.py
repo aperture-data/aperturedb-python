@@ -15,11 +15,11 @@ class TestBadResponses():
         count = 0
         original_q = db._query
 
-        def test_response_half_exist(a: Connector, query, blobs):
+        def test_response_half_exist(a: Connector, query, blobs=None, try_resume=True):
             nonlocal count
             if "AddImage" not in query[0]:
                 count += 1
-                resp = original_q(query, blobs)
+                resp = original_q(query, blobs, try_resume=try_resume)
                 return resp
             response = []
             for i in range(len(query)):
@@ -41,11 +41,11 @@ class TestBadResponses():
         count = 0
         original_q = db._query
 
-        def test_response_half_non_unique(a: Connector, query, blobs):
+        def test_response_half_non_unique(a: Connector, query, blobs=None, try_resume=True):
             nonlocal count
             if "AddImage" not in query[0]:
                 count += 1
-                resp = original_q(query, blobs)
+                resp = original_q(query, blobs, try_resume=try_resume)
                 return resp
             response = None
             for i in range(len(query)):
@@ -75,7 +75,7 @@ class TestBadResponses():
 
     def test_AuthFailure(self, monkeypatch):
 
-        def failed_auth_query(conn_obj, ignored_query):
+        def failed_auth_query(conn_obj, ignored_query, blobs=None, try_resume=True):
             # generate a response from the server which is not the expected Auth result.
             # _query returns the server response json and an array of blobs.
             return ({"info": "Internal Server Error 42", "status": -1, "ignored": ignored_query}, [])

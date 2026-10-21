@@ -163,10 +163,9 @@ class ConnectorRest(Connector):
         for blob in blob_array:
             files.append(('blobs', blob))
 
-        # Set Auth token, only when not authenticated before
-        if self.shared_data.session and self.shared_data.session.valid():
-            headers = {'Authorization': "Bearer " +
-                       self.shared_data.session.session_token}
+        session = self.shared_data.session
+        if session is not None:
+            headers = {'Authorization': "Bearer " + session.session_token}
         else:
             headers = None
         tries = 0

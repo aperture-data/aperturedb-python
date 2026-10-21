@@ -215,17 +215,15 @@ class Connector(object):
 
     def authenticate(self, shared_data, user, password, token):
         """
-        Authenticate with the database. This will be called automatically from query.
-        This is separate from session refresh mechanism, and is set to be called only once per session.
-        If a Refresh token also fails, this will be called again.
+        Authenticate if this connector and its clones have no shared session.
+        Called automatically by query().
         """
-        if not self.authenticated:
+        self.shared_data = shared_data
+        with shared_data.lock:
             if shared_data.session is None:
-                self.shared_data.lock = Lock()
                 self._authenticate(user, password, token)
-            else:
-                self.shared_data = shared_data
             self.authenticated = True
+            return shared_data.session
 
     def close(self):
         if getattr(self, 'conn', None) is not None:
@@ -282,10 +280,12 @@ class Connector(object):
             raise Exception(
                 "Either password or token must be specified for authentication")
 
-        response, _ = self._query(query)
+        # Authentication runs under the shared session lock. A transport
+        # reconnect must not try to renew the session and acquire it again.
+        response, _ = self._query(query, try_resume=False)
 
-        if not isinstance(response, (list, tuple)
-                          ) or "Authenticate" not in response[0]:
+        if not isinstance(response, (list, tuple)) or not response or \
+                "Authenticate" not in response[0]:
             raise Exception(
                 "Unexpected response from server upon authenticate request: " +
                 str(response))
@@ -300,12 +300,36 @@ class Connector(object):
             session_info["refresh_token_expires_in"],
             time.time())
 
-    def _check_session_status(self):
-        if not self.shared_data.session:
-            return
+    @staticmethod
+    def _is_session_rejected(response):
+        # This transaction-level rejection guarantees commands did not run.
+        # Command errors, including permission errors, must not be retried.
+        if not isinstance(response, dict) or response.get("status") != -1:
+            return False
+        if "code" in response:
+            return response["code"] == "unauthenticated"
+        return response.get("info") == "Not Authenticated!"
 
-        if not self.shared_data.session.valid():
-            with self.shared_data.lock:
+    @staticmethod
+    def _is_authentication_query(query):
+        # A rejected explicit login or refresh is a credential failure. Those
+        # commands do not use the request's current session for authorization.
+        if isinstance(query, str):
+            try:
+                query = json.loads(query)
+            except (TypeError, ValueError):
+                return False
+        return isinstance(query, (list, tuple)) and len(query) == 1 and \
+            isinstance(query[0], dict) and \
+            any(name in query[0] for name in ("Authenticate", "RefreshToken"))
+
+    def _check_session_status(self, rejected_session=None):
+        with self.shared_data.lock:
+            session = self.shared_data.session
+            if session is not None and (session is rejected_session or
+                                        not session.valid()):
+                # Another connector may have renewed this shared session while
+                # we waited for the lock or for a rejected query's response.
                 self._refresh_token()
 
     def _refresh_token(self):
@@ -320,29 +344,36 @@ class Connector(object):
         if logger.isEnabledFor(logging.INFO):
             logger.info(
                 f"Refresh token response: \r\n{censor_tokens(response)}")
-        if isinstance(response, list):
-            session_info = response[0]["RefreshToken"]
-            if session_info["status"] != STATUS_OK:
-                # Refresh token failed, we need to re-authenticate
-                # This is possible with a long lived connector, where
-                # the session token and the refresh token have expired.
-                self.authenticated = False
-                self.should_authenticate = True
-                self.shared_data.session = None
-                self.authenticate(self.shared_data,
-                                  self.config.username,
-                                  self.config.password,
-                                  self.token)
-                raise UnauthorizedException(censor_tokens(response))
+        session_info = None
+        if isinstance(response, (list, tuple)) and len(response) == 1 and \
+                isinstance(response[0], dict):
+            session_info = response[0].get("RefreshToken")
 
-            self.shared_data.session = Session(
-                session_info["session_token"],
-                session_info["refresh_token"],
-                session_info["session_token_expires_in"],
-                session_info["refresh_token_expires_in"],
-                time.time())
-        else:
-            raise UnauthorizedException(response)
+        if self._is_session_rejected(response) or (
+                isinstance(session_info, dict) and
+                session_info.get("status") is not None and
+                session_info["status"] != STATUS_OK):
+            # Revocation and session rotation can invalidate refresh tokens before
+            # their TTL expires. Both transaction and command rejection formats
+            # require login with the configured password or personal token.
+            self.authenticated = False
+            self.shared_data.session = None
+            # The caller already holds the shared lock.
+            self._authenticate(self.config.username,
+                               self.config.password, self.token)
+            self.authenticated = True
+            return
+
+        if not isinstance(session_info, dict) or \
+                session_info.get("status") != STATUS_OK:
+            raise UnauthorizedException(censor_tokens(response))
+
+        self.shared_data.session = Session(
+            session_info["session_token"],
+            session_info["refresh_token"],
+            session_info["session_token_expires_in"],
+            session_info["refresh_token_expires_in"],
+            time.time())
 
     def _build_ssl_context(self):
         """
@@ -477,9 +508,9 @@ class Connector(object):
         # query has .json and .blobs
         query_msg.json = query_str
 
-        # Set Auth token, only when not authenticated before
-        if self.shared_data.session:
-            query_msg.token = self.shared_data.session.session_token
+        session = self.shared_data.session
+        if session is not None:
+            query_msg.token = session.session_token
 
         for blob in blob_array:
             query_msg.blobs.append(blob)
@@ -566,9 +597,13 @@ class Connector(object):
 
     def query(self, q, blobs=[]):
         """
-        Query the database with a query string or a json object.
-        First it checks if the session is valid, if not, it refreshes the token.
-        Then it sends the query to the server and returns the response.
+        Execute a query, authenticating or refreshing the shared session as needed.
+
+        If the server rejects the session before executing the query, renew the
+        session and retry the query once. If refresh is rejected, log in again
+        with the configured password or personal token. Permission errors and
+        failures of explicit Authenticate or RefreshToken queries are returned
+        without this automatic retry.
 
         Args:
             q (json): native query to be sent
@@ -580,9 +615,12 @@ class Connector(object):
         Returns:
             _type_: _description_
         """
-        self._renew_session()
-        if self.should_authenticate:
-            self.authenticate(
+        manage_session = self.should_authenticate and not self._is_authentication_query(
+            q)
+        query_session = None
+        if manage_session:
+            self._renew_session()
+            query_session = self.authenticate(
                 shared_data=self.shared_data,
                 user=self.config.username,
                 password=self.config.password,
@@ -590,16 +628,13 @@ class Connector(object):
 
         try:
             start = time.time()
-            self.response, self.blobs = self._query(q, blobs)
-            if not isinstance(
-                    self.response,
-                    list) and self.response["info"] == "Not Authenticated!":
-                # The case where session is valid, but expires while query is sent.
-                # Hope is that the query send won't be longer than the session
-                # ttl.
+            self.response, self.blobs = self._query(
+                q, blobs, try_resume=manage_session)
+            if manage_session and query_session is not None and \
+                    self._is_session_rejected(self.response):
                 logger.warning(
-                    f"Session expired while query was sent. Retrying... {self.config}")
-                self._renew_session()
+                    "Session rejected by server. Renewing and retrying query.")
+                self._renew_session(rejected_session=query_session)
                 start = time.time()
                 self.response, self.blobs = self._query(q, blobs)
             self.last_query_time = time.time() - start
@@ -610,11 +645,11 @@ class Connector(object):
                             exc_info=True, stack_info=True)
             raise
 
-    def _renew_session(self):
+    def _renew_session(self, rejected_session=None):
         count = 0
         while count < RENEW_SESSION_MAX_ATTEMPTS:
             try:
-                self._check_session_status()
+                self._check_session_status(rejected_session)
                 break
             except UnauthorizedException as e:
                 logger.warning(
@@ -623,8 +658,10 @@ class Connector(object):
                     "Failed to refresh token.",
                     exc_info=True,
                     stack_info=True)
-                time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)
                 count += 1
+                if count == RENEW_SESSION_MAX_ATTEMPTS:
+                    raise
+                time.sleep(RENEW_SESSION_RETRY_INTERVAL_SEC)
 
     def clone(self) -> Connector:
         """
