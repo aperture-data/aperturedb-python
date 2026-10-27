@@ -8,7 +8,7 @@ ENV OPENCV_VERSION=4.12.0
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \
-       python3-venv
+    python3-venv
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV VIRTUAL_ENV=/opt/venv
@@ -41,20 +41,20 @@ RUN wget -q https://github.com/opencv/opencv/archive/$OPENCV_VERSION.tar.gz && \
     tar xf $OPENCV_VERSION.tar.gz && rm $OPENCV_VERSION.tar.gz && \
     cd opencv-$OPENCV_VERSION && mkdir build && cd build && \
     cmake                                               \
-        -D CMAKE_BUILD_TYPE=Release                     \
-        -D WITH_TBB=OFF -D WITH_OPENMP=ON -D WITH_IPP=ON \
-        -D CPU_DISPATCH=SSE4_2,AVX,AVX2                 \
-        -D BUILD_EXAMPLES=OFF                           \
-        -D BUILD_DOCS=OFF                               \
-        -D BUILD_PERF_TESTS=OFF                         \
-        -D BUILD_TESTS=OFF                              \
-        -D BUILD_opencv_apps=OFF                        \
-        -D WITH_FFMPEG=ON                               \
-        -D CMAKE_INSTALL_PREFIX=/usr/local              \
-        -D OPENCV_PYTHON3_INSTALL_PATH=/opt/venv/lib/python3.10/site-packages .. && \
+    -D CMAKE_BUILD_TYPE=Release                     \
+    -D WITH_TBB=OFF -D WITH_OPENMP=ON -D WITH_IPP=ON \
+    -D CPU_DISPATCH=SSE4_2,AVX,AVX2                 \
+    -D BUILD_EXAMPLES=OFF                           \
+    -D BUILD_DOCS=OFF                               \
+    -D BUILD_PERF_TESTS=OFF                         \
+    -D BUILD_TESTS=OFF                              \
+    -D BUILD_opencv_apps=OFF                        \
+    -D WITH_FFMPEG=ON                               \
+    -D CMAKE_INSTALL_PREFIX=/usr/local              \
+    -D OPENCV_PYTHON3_INSTALL_PATH=/opt/venv/lib/python3.10/site-packages .. && \
     make -j6 && make install
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} PIP_INDEX_URL=${PIP_INDEX_URL} \
-    pip install jupyterlab jupyterlab-dash dash-cytoscape plotly jupyter-dash
+    pip install jupyterlab plotly
 RUN jupyter labextension disable "@jupyterlab/apputils-extension:announcements"
