@@ -111,6 +111,7 @@ SELECT ?i ?distance ?d ?caption WHERE {{
 ?d knn:similarTo [
     knn:set 'ViT-B/16' ;
     knn:k_neighbors 20 ;
+    knn:engine 'HNSW' ;
     knn:vector "{SPARQL.encode_descriptor(np.random.rand(512))}" ;
     knn:distance ?distance
 ] ;

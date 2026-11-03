@@ -26,10 +26,28 @@ class TestOperations:
         assert op.get_operations_arr() == [
             {"type": "rotate", "angle": 90, "resize": True}]
 
-    def test_flip(self):
+    @pytest.mark.parametrize("mode", ["horizontal", "vertical", "both"])
+    def test_flip(self, mode):
+        op = Operations().flip(mode)
+        assert op.get_operations_arr() == [{"type": "flip", "mode": mode}]
+
+    @pytest.mark.parametrize("code, mode", [
+        (0, "vertical"), (1, "horizontal"), ("1", "horizontal"), (-1, "both")])
+    def test_flip_legacy_code(self, code, mode):
+        expected = [{"type": "flip", "mode": mode}]
+        assert Operations().flip(code).get_operations_arr() == expected
+        assert Operations().flip(code=code).get_operations_arr() == expected
+
+    def test_flip_code_keyword_accepts_mode(self):
         op = Operations().flip(code="horizontal")
         assert op.get_operations_arr() == [
-            {"type": "flip", "code": "horizontal"}]
+            {"type": "flip", "mode": "horizontal"}]
+
+    @pytest.mark.parametrize("kwargs", [
+        {}, {"mode": "sideways"}, {"mode": "horizontal", "code": 1}])
+    def test_flip_rejects_invalid_arguments(self, kwargs):
+        with pytest.raises(ValueError):
+            Operations().flip(**kwargs)
 
     def test_crop(self):
         op = Operations().crop(x=10, y=20, width=100, height=200)

@@ -48,7 +48,7 @@ def test_resolve_ignored_operations():
     points = np.array([[10, 10], [20, 20]], dtype=float)
     meta = {"adb_image_width": 100, "adb_image_height": 100}
     operations = [
-        {"type": "flip", "code": "horizontal"},
+        {"type": "flip", "mode": "horizontal"},
         {"type": "crop", "x": 10, "y": 10, "width": 50, "height": 50},
         {"type": "interval", "start": 0, "stop": 10, "step": 1},
         {"type": "threshold", "value": 128},

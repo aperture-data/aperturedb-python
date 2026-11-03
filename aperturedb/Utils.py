@@ -181,9 +181,10 @@ class Utils(object):
         dot = Digraph(comment='ApertureDB Schema Diagram', node_attr={
                       'shape': 'none'}, graph_attr={'rankdir': 'LR'}, edge_attr={'color': colors['edge']})
 
-        # Add entities as nodes and connections as edges
-        entities = r['entities']['classes']
-        connections = r['connections']['classes']
+        # Add entities as nodes and connections as edges. A schema without classes
+        # of a kind reports that section as null.
+        entities = (r.get('entities') or {}).get('classes') or {}
+        connections = (r.get('connections') or {}).get('classes') or {}
 
         indexed_lookup = self._indexed_lookup()
 
@@ -403,7 +404,18 @@ class Utils(object):
         print(f"Total edges: {total_edges}")
         print(f"=============================================")
 
+    def _has_index(self, target, class_name, property_key, kind) -> bool:
+        try:
+            return bool(self.get_indexes(target, class_name, property_key, kind))
+        except Exception:
+            return False
+
     def _create_index(self, target, class_name, property_key, kind="ordered"):
+
+        # Servers from 0.19.13 reject creating an existing index instead of returning
+        # status 2, so an index that is already in place counts as created.
+        if self._has_index(target, class_name, property_key, kind):
+            return True
 
         q = [{
             "CreateIndex": {
@@ -417,7 +429,8 @@ class Utils(object):
         try:
             self.execute(q, success_statuses=[0, 2])
         except:
-            return False
+            # Another client may have created it since the check above.
+            return self._has_index(target, class_name, property_key, kind)
 
         return True
 

@@ -1,5 +1,25 @@
 from __future__ import annotations
-from typing import Optional
+import logging
+from typing import Optional, Union
+
+logger = logging.getLogger(__name__)
+
+FLIP_MODES = ("horizontal", "vertical", "both")
+
+
+def _flip_mode(value: Union[str, int, None]) -> str:
+    """Return the flip mode for a mode name or a legacy OpenCV flip code."""
+    if value in FLIP_MODES:
+        return value
+    try:
+        code = int(value)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"Unknown flip mode {value!r}; use one of {', '.join(FLIP_MODES)}.") from None
+    mode = "vertical" if code == 0 else "horizontal" if code > 0 else "both"
+    logger.warning(
+        f"Flip code {value!r} is deprecated; use mode={mode!r} instead.")
+    return mode
 
 
 class Operations(object):
@@ -50,11 +70,25 @@ class Operations(object):
         self.operations_arr.append(op)
         return self
 
-    def flip(self, code: str) -> Operations:
+    def flip(self, mode: Union[str, int, None] = None,
+             code: Union[str, int, None] = None) -> Operations:
+        """
+        Mirror the image or frames.
+
+        Args:
+            mode (str): "horizontal" mirrors left to right, "vertical" top to bottom,
+                and "both" along both axes.
+            code (int, optional): Deprecated OpenCV flip code, as accepted by servers
+                before 0.19.13: 0 is vertical, positive is horizontal, and negative is both.
+        """
+        if code is not None:
+            if mode is not None:
+                raise ValueError("Provide either 'mode' or 'code', not both.")
+            mode = code
 
         op = {
             "type": "flip",
-            "code": code,
+            "mode": _flip_mode(mode),
         }
 
         self.operations_arr.append(op)

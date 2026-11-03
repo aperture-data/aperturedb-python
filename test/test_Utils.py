@@ -334,11 +334,60 @@ def test_index_requests_use_current_selectors_and_explicit_kind(target):
     utils = Utils(MagicMock())
     params = {"target": target, "class": "Person",
               "property": "name", "kind": "ordered"}
-    with patch.object(utils, 'execute', return_value=([], [])) as execute:
+    with patch.object(utils, 'get_indexes', return_value=[]), \
+            patch.object(utils, 'execute', return_value=([], [])) as execute:
         assert getattr(utils, f"create_{target}_index")("Person", "name")
         assert getattr(utils, f"remove_{target}_index")("Person", "name")
     assert [call.args[0] for call in execute.call_args_list] == [
         [{"CreateIndex": params}], [{"RemoveIndex": params}]]
+
+
+@pytest.mark.parametrize("target", ["entity", "connection"])
+def test_create_index_accepts_an_existing_index(target):
+    utils = Utils(MagicMock())
+    existing = [{"target": target, "class": "Person", "property": "name",
+                 "kind": "ordered", "params": {}}]
+    with patch.object(utils, 'get_indexes', return_value=existing) as get_indexes, \
+            patch.object(utils, 'execute') as execute:
+        assert getattr(utils, f"create_{target}_index")("Person", "name")
+    get_indexes.assert_called_once_with(target, "Person", "name", "ordered")
+    execute.assert_not_called()
+
+
+def test_create_index_accepts_an_index_created_concurrently():
+    utils = Utils(MagicMock())
+    with patch.object(utils, 'get_indexes', side_effect=[[], [{"kind": "ordered"}]]), \
+            patch.object(utils, 'execute', side_effect=Exception("query failed with result -1")):
+        assert utils.create_entity_index("Person", "name")
+
+
+def test_create_index_reports_other_failures():
+    utils = Utils(MagicMock())
+    with patch.object(utils, 'get_indexes', return_value=[]), \
+            patch.object(utils, 'execute', side_effect=Exception("query failed with result -1")):
+        assert not utils.create_entity_index("Person", "name")
+
+
+@pytest.mark.parametrize("schema", [
+    {"entities": {"returned": 1, "classes": {"Person": {"matched": 1, "properties": None}}},
+     "connections": None},
+    {"entities": None, "connections": None},
+], ids=["no connections", "no classes"])
+def test_visualize_schema_without_classes_of_a_kind(schema):
+    pytest.importorskip("graphviz")
+    utils = Utils(MagicMock())
+
+    def execute(query):
+        if query == [{"GetSchema": {}}]:
+            return [{"GetSchema": schema}], []
+        return [{"GetIndexes": {"indexes": {}}}], []
+
+    status = json.dumps([{"GetStatus": {
+        "version": "0.20.0", "status": 0, "info": ""}}])
+    with patch.object(utils, 'execute', side_effect=execute), \
+            patch.object(utils, 'status', return_value=status):
+        result = utils.visualize_schema()
+    assert ("Person" in result.source) == (schema["entities"] is not None)
 
 
 @pytest.mark.parametrize("method, command", [
