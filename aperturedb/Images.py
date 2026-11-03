@@ -14,6 +14,7 @@ from aperturedb import Utils
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints, predicate
 from aperturedb.CommonLibrary import execute_query
+from aperturedb.DescriptorEngines import descriptorset_engine
 from aperturedb.Query import QueryBuilder, ObjectType, class_entity
 from ipywidgets import widgets
 from IPython.display import display, HTML
@@ -655,6 +656,7 @@ class Images(Entities):
     def get_similar_images(self, set_name, n_neighbors):
 
         imgs_return = Images(self.client)
+        engine = descriptorset_engine(self.client, set_name)
 
         for uniqueid in self.images_ids:
 
@@ -684,6 +686,7 @@ class Images(Entities):
                 "set": set_name,
                 "k_neighbors": n_neighbors + 1,
                 "blobs":     False,
+                **({"engine": engine} if engine else {}),
                 "distances": True,
                 "uniqueids": True,
             }

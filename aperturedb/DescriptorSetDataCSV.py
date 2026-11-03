@@ -1,9 +1,11 @@
 import ast
+import json
 from aperturedb import CSVParser
 
 HEADER_NAME = "name"
 HEADER_DIM = "dimensions"
 HEADER_ENGINE = "engine"
+HEADER_ENGINES = "engines"
 HEADER_METRIC = "metric"
 PROPERTIES = "properties"
 CONSTRAINTS = "constraints"
@@ -27,6 +29,10 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
         chandeliers,2048,IVF,L2
         console_tables,2048,IVF,L2
         ...
+
+    The third column can instead be ``engines``, holding the JSON ``engines``
+    configuration object that servers from the updated 0.20.0 and 1.0.0
+    accept, for example ``"{""hnsw"": {""M"": 16}}"``.
 
     Example code to create an instance:
 
@@ -70,15 +76,17 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
         idx = self.df.index.start + idx
         metrics = self.df.loc[idx, HEADER_METRIC]
         metrics = metrics if "[" not in metrics else ast.literal_eval(metrics)
-        engines = self.df.loc[idx, HEADER_ENGINE]
-        engines = engines if "[" not in engines else ast.literal_eval(engines)
-
         data = {
             "name":       self.df.loc[idx, HEADER_NAME],
             "dimensions": self.df.loc[idx, HEADER_DIM],
-            "engine":     engines,
             "metric":     metrics,
         }
+        if self.header[2] == HEADER_ENGINES:
+            data["engines"] = json.loads(self.df.loc[idx, HEADER_ENGINES])
+        else:
+            engines = self.df.loc[idx, HEADER_ENGINE]
+            data["engine"] = engines if "[" not in engines else ast.literal_eval(
+                engines)
 
         q = []
         ads = self._basic_command(idx, custom_fields=data)
@@ -94,7 +102,7 @@ class DescriptorSetDataCSV(CSVParser.CSVParser):
             raise Exception("Error with CSV file field: " + HEADER_NAME)
         if self.header[1] != HEADER_DIM:
             raise Exception("Error with CSV file field: " + HEADER_DIM)
-        if self.header[2] != HEADER_ENGINE:
+        if self.header[2] not in (HEADER_ENGINE, HEADER_ENGINES):
             raise Exception("Error with CSV file field: " + HEADER_ENGINE)
         if self.header[3] != HEADER_METRIC:
             raise Exception("Error with CSV file field: " + HEADER_METRIC)

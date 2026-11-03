@@ -1,9 +1,11 @@
 import logging
+from typing import Optional
 
 import numpy as np
 
 from aperturedb.Entities import Entities
 from aperturedb.CommonLibrary import execute_query
+from aperturedb.DescriptorEngines import descriptorset_engine
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class Descriptors(Entities):
         distances: bool = False,
         blobs: bool = False,
         results={"all_properties": True},
+        engine: Optional[str] = None,
     ):
         """
         Find similar descriptors to the input descriptor.
@@ -35,6 +38,8 @@ class Descriptors(Entities):
             distances (bool, optional): Return similarity metric values. Defaults to False.
             blobs (bool, optional): Return vectors of the neighbors. Defaults to False.
             results (dict, optional): Dictionary with the results format. Defaults to `{"all_properties": True}`.
+            engine (str, optional): Search engine. Defaults to the set's first configured
+                engine in the order Flat, IVF, HNSW, which the server uses when none is named.
 
         Returns:
             None: Populates self.response with the parsed JSON response from the database.
@@ -49,6 +54,9 @@ class Descriptors(Entities):
                 "k_neighbors": k_neighbors,
             }
         }
+        engine = engine or descriptorset_engine(self.client, set)
+        if engine:
+            command["FindDescriptor"]["engine"] = engine
 
         if constraints is not None and constraints.constraints:
             command["FindDescriptor"]["constraints"] = constraints.constraints

@@ -11,6 +11,7 @@ import math
 import logging
 
 from aperturedb.CommonLibrary import create_connector, execute_query
+from aperturedb.DescriptorEngines import descriptorset_engine
 from aperturedb.Utils import Utils
 from aperturedb.Constraints import Conjunction, predicate
 
@@ -357,6 +358,15 @@ class SPARQL:
                 raise SPARQLError(
                     f"Unknown property or connection: {p}: valid connections are {self.connections.keys()}, valid properties are {self.properties.keys()}")
 
+        # Name the engine a search would use implicitly; newer servers count
+        # implicit search engines as deprecated usage.
+        for cmd in query:
+            params = cmd.get("FindDescriptor")
+            if params and "k_neighbors" in params and "set" in params \
+                    and "engine" not in params:
+                engine = descriptorset_engine(self._client, params["set"])
+                if engine:
+                    params["engine"] = engine
         result, output, _ = execute_query(self._client, query, blobs)
         solutions = set()  # process_bindings uses this to avoid yielding duplicate solutions
         yield from process_bindings(output)
