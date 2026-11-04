@@ -376,7 +376,8 @@ class Query():
              blobs: bool = False,
              set: str = None,
              vector: List[float] = None,
-             k_neighbors: int = 0
+             k_neighbors: int = 0,
+             engine: str = None
              ) -> Query:
         """
         The [specification](/query_language/Overview/API%20Description) for a command to be used in a query.
@@ -387,6 +388,8 @@ class Query():
             limit (int, optional): _description_. Defaults to -1.
             sort (Sort, optional): _description_. Defaults to None.
             list (List[str], optional): _description_. Defaults to None.
+            engine (str, optional): Descriptor search engine for k_neighbors searches.
+                Defaults to None, which uses the set's first configured engine.
 
         Returns:
             Query: The query object.
@@ -402,7 +405,8 @@ class Query():
             group_by_src=group_by_src,
             set=set,
             vector=vector,
-            k_neighbors=k_neighbors
+            k_neighbors=k_neighbors,
+            engine=engine
         )
 
     def __init__(self,
@@ -417,7 +421,8 @@ class Query():
                  adj_to: int = 0,
                  set: str = None,
                  vector: List[float] = None,
-                 k_neighbors: int = 0
+                 k_neighbors: int = 0,
+                 engine: str = None
                  ):
         self.constraints = constraints
         self.operations = operations
@@ -431,6 +436,7 @@ class Query():
         self.set = set
         self.vector = vector
         self.k_neighbors = k_neighbors
+        self.engine = engine
 
     def query(self) -> List[dict]:
         results_section = "results"
@@ -453,6 +459,8 @@ class Query():
             cmd_params["set"] = self.set
         if self.k_neighbors > 0:
             cmd_params["k_neighbors"] = self.k_neighbors
+            if self.engine:
+                cmd_params["engine"] = self.engine
 
         self.blob = None
         if self.vector:

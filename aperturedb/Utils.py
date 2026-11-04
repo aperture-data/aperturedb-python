@@ -5,6 +5,7 @@ This class contains a collection of helper functions to interact with the databa
 from aperturedb.Query import QueryBuilder
 from aperturedb.Constraints import predicate, to_expression
 from aperturedb.CommonLibrary import execute_query
+from aperturedb.DescriptorEngines import engines_object
 from tqdm import tqdm
 from aperturedb.Connector import Connector
 import logging
@@ -611,7 +612,8 @@ class Utils(object):
             name (str): The name of the descriptor set.
             dim (int): The dimension of the descriptors.
             metric (str, optional): The metric to use for the descriptors.
-            engine (str, optional): The engine to use for the descriptors.
+            engine (str, optional): The engine to use for the descriptors,
+                sent as the ``engines`` object with default settings.
             properties (dict, optional): The properties of the descriptor set.
 
         Returns:
@@ -622,7 +624,7 @@ class Utils(object):
                 "name":       name,
                 "dimensions": dim,
                 "metric":     metric,
-                "engine":     engine
+                "engines":    engines_object(engine),
             }
         }]
 
