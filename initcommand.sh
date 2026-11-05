@@ -1,13 +1,8 @@
 #!/bin/bash
+set -e
 
-docker compose -f .devcontainer/docker-compose.yml down --remove-orphans
-docker compose -f .devcontainer/docker-compose.yml pull
+# The database stack comes from the published Compose artifact; see
+# test/stack.sh. The ports match the earlier devcontainer stack.
+ADB_TCP_PORT=${ADB_TCP_PORT:-55556} HTTP_PORT=${HTTP_PORT:-8087} \
+    HTTPS_PORT=${HTTPS_PORT:-8443} test/stack.sh up aperturedb-python-dev
 docker build -t aperturedata/aperturedb-notebook:dependencies docker/dependencies
-echo RUNNER_NAME=devcontainer > ./.devcontainer/.env
-echo ADB_REPO=aperturedata/aperturedb-community >> ./.devcontainer/.env
-echo ADB_TAG=latest >> ./.devcontainer/.env
-echo LENZ_REPO=aperturedata/lenz >> ./.devcontainer/.env
-echo LENZ_TAG=latest >> ./.devcontainer/.env
-echo GATEWAY=0.0.0.0 >> ./.devcontainer/.env
-echo DB_TCP_CN=lenz >> ./.devcontainer/.env
-echo DB_HTTP_CN=nginx >> ./.devcontainer/.env

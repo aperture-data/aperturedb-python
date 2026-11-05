@@ -36,6 +36,12 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
+    - name: Set up Docker Compose
+      # Starting a stack from a Compose artifact (oci://) needs a recent Compose.
+      uses: docker/setup-compose-action@v1
+      with:
+        version: v2.40.3
+
     - name: Build and Run Tests
       env:
         # Single job runs both protocols in parallel via run_test_container.sh
@@ -49,10 +55,7 @@ jobs:
         RUNNER_NAME: ${{ runner.name }}_main
         DOCKER_BUILDKIT: 1
         COMPOSE_DOCKER_CLI_BUILD: 1
-        ADB_REPO: aperturedata/aperturedb
-        ADB_TAG: dev
-        LENZ_REPO: aperturedata/lenz
-        LENZ_TAG: dev
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
       run: RUN_TESTS=true ./ci.sh
       shell: bash
 
@@ -82,10 +85,6 @@ jobs:
         RUNNER_NAME: ${{ runner.name }}
         DOCKER_BUILDKIT: 1
         COMPOSE_DOCKER_CLI_BUILD: 1
-        ADB_REPO: aperturedata/aperturedb
-        ADB_TAG: dev
-        LENZ_REPO: aperturedata/lenz
-        LENZ_TAG: dev
       run: BUILD_COMPLETE=true ./ci.sh
       shell: bash
 

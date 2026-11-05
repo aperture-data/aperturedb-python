@@ -73,23 +73,25 @@ pip install -e '.[dev]'
 
 ## 🧪 Running Tests
 
-The tests are located inside the `test/` directory. They are designed to run within an isolated Linux container network composed of `aperturedb`, `lenz`, `nginx`, `ca`, and `webui`.
+The tests are located inside the `test/` directory. They run against an ApertureDB stack (`aperturedb`, `lenz`, `http-proxy` and `webui`) started from the published Docker Compose artifact `aperturedata/aperturedb-compose-single-node`. `ADB_COMPOSE` selects the artifact; the default is the latest release.
 
 If you'd like to bring up the environment manually, ensure your working directory is `test/` and run:
 
 ```bash
-docker compose up -d
+./stack.sh up local
 ```
+
+It publishes the native protocol on `localhost:55555` and HTTPS on `localhost:443`; set `ADB_TCP_PORT` and `HTTPS_PORT` to use other ports. `./stack.sh down local` stops it and deletes its files.
 
 ### Development Environment Adjustments
 
-To connect to the local test environment natively from your host, edit `test/dbinfo.py` to match the exposed ports (you can find the ephemeral ports by running `docker compose port lenz 55551` and `docker compose port nginx 443`):
+To connect to the local test environment natively from your host, edit `test/dbinfo.py` to match the published ports and the stack's CA:
 ```python
 DB_TCP_HOST = 'localhost'
 DB_REST_HOST = 'localhost'
-DB_TCP_PORT  = 0  # Replace with the mapped host port for lenz
-DB_REST_PORT = 0  # Replace with the mapped host port for nginx 443
-# VERIFY_HOSTNAME = False # Optional: Only required if connecting via IP instead of localhost
+DB_TCP_PORT  = 55555  # ADB_TCP_PORT
+DB_REST_PORT = 443    # HTTPS_PORT
+CA_CERT      = 'aperturedb/local/ca/ca.crt'
 ```
 
 ### Executing Tests

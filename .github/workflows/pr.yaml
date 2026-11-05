@@ -41,6 +41,12 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
 
+    - name: Set up Docker Compose
+      # Starting a stack from a Compose artifact (oci://) needs a recent Compose.
+      uses: docker/setup-compose-action@v1
+      with:
+        version: v2.40.3
+
     - name: Build and Run Tests
       env:
         # Run both protocols inside a single job. run_test_container.sh starts
@@ -67,10 +73,7 @@ jobs:
         COMPOSE_DOCKER_CLI_BUILD: 1
         BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         TARGET_BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
-        ADB_REPO: aperturedata/aperturedb
-        ADB_TAG: dev
-        LENZ_REPO: aperturedata/lenz
-        LENZ_TAG: dev
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
         SKIP_SLOW_TESTS: true
       run: ./ci.sh
       shell: bash
@@ -116,6 +119,12 @@ jobs:
         bash docker/pytorch-gpu/build.sh
       shell: bash
 
+    - name: Set up Docker Compose
+      # Starting a stack from a Compose artifact (oci://) needs a recent Compose.
+      uses: docker/setup-compose-action@v1
+      with:
+        version: v2.40.3
+
     - name: Run Tests
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -123,10 +132,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         RUNNER_NAME: ${{ runner.name }}_${{ github.run_id }}
-        ADB_REPO: aperturedata/aperturedb
-        ADB_TAG: dev
-        LENZ_REPO: aperturedata/lenz
-        LENZ_TAG: dev
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
         SKIP_SLOW_TESTS: true
       run: |
         cd test

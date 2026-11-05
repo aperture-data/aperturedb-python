@@ -16,7 +16,7 @@ This guide provides high-signal context for AI agents working in this repository
 The test suite is located in `test/` and heavily relies on a local isolated container environment. It is NOT a standard simple pytest suite.
 
 ### Running Containerized Tests
-1. The full suite orchestrates `aperturedb`, `lenz`, and `nginx` containers using Docker Compose.
+1. The full suite starts one stack per protocol (`aperturedb`, `lenz`, `http-proxy`, `webui`) from the Docker Compose artifact named by `ADB_COMPOSE`, using `test/stack.sh`.
 2. **Crucial for Agents**: To run tests without AWS/GCP credentials (which agents typically lack), you **must** use `SKIP_SLOW_TESTS=true`.
 3. To build the test image and run the full suite:
    ```bash
@@ -37,9 +37,9 @@ If you only need to run a single test file (e.g. `test_Session.py`) and don't wa
 1. Bring up the environment in the background:
    ```bash
    cd test
-   docker compose up -d
+   ./stack.sh up local
    ```
-2. Update `test/dbinfo.py` to map the local exposed ports (find them via `docker compose port lenz 55551` and `docker compose port nginx 443`).
+2. Update `test/dbinfo.py`: both hosts `localhost`, `DB_TCP_PORT = 55555`, `DB_REST_PORT = 443` (or the `ADB_TCP_PORT` and `HTTPS_PORT` you set), and `CA_CERT = 'aperturedb/local/ca/ca.crt'`. Run `./stack.sh down local` when done.
 3. Execute the single test:
    ```bash
    PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest test_Session.py -v -s --log-cli-level=DEBUG

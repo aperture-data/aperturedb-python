@@ -135,7 +135,6 @@ dmypy.json
 *.adb.csv
 *.jpg
 *.npy
-test/aperturedb/db*/
 test/input/blobs/
 docs/examples/
 examples/*/coco
@@ -143,7 +142,6 @@ examples/*/classification.txt
 kaggleds/
 examples/*/kaggleds/
 docs/*/*.svg
-test/aperturedb/log*
 adb-python/*
 docker/notebook/aperturedata/*
 docker/tests/aperturedata/*
@@ -153,7 +151,5 @@ docker/pytorch-gpu/aperturedata/*
 
 .aperturedb
 test/data/
-test/aperturedb/certificate/
-.devcontainer/aperturedb/
-.devcontainer/ca/
-test/*_ca/
+# Test stacks (test/stack.sh)
+test/aperturedb/

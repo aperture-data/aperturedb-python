@@ -42,7 +42,7 @@ bash run_test_container.sh
 ```
 
 This script:
-1. Orchestrates spinning up `aperturedb`, `nginx`, `lenz` containers using `docker-compose.yml` on temporary networking bridges.
+1. Starts an `aperturedb`, `lenz`, `http-proxy` and `webui` stack for each protocol from the Docker Compose artifact named by `ADB_COMPOSE` (`stack.sh`). The stacks publish no host ports.
 2. Starts two parallel test suites (HTTP and non-HTTP modes), each in its own isolated network.
 3. Mounts the local `test/run_test.sh` into each test container so changes to it take effect without rebuilding the image.
 4. Checks exit codes for successes or failures and cleans up.
@@ -83,8 +83,7 @@ These warnings appear during a successful local run and can be ignored:
 
 | Aspect | Local | CI (GitHub Actions) |
 |--------|-------|---------------------|
-| **DB image** | `aperturedata/aperturedb-community:latest` | `aperturedata/aperturedb:dev` |
-| **Lenz tag** | `latest` | `dev` |
+| **DB stack** | `aperturedb-compose-single-node:latest` (from `test/.env`) | `aperturedb-compose-single-node:dev` |
 | **Test filtering** | Skips `remote_credentials`, `external_network`, S3/GCS loaders | Runs all tests including cloud-dependent ones |
 | **AWS/GCP credentials** | Not present — use `SKIP_SLOW_TESTS=true` | Present as GitHub secrets |
 | **Log upload on failure** | Skipped (no AWS creds) | Uploads to S3 bucket `python-ci-runs` |

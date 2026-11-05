@@ -1,0 +1,8 @@
+# stack.sh adds this file when PUBLISH_PORTS=false. Clients then reach the
+# stack only through its project network, so stacks running side by side on
+# one host never compete for host ports.
+services:
+  lenz:
+    ports: !reset []
+  http-proxy:
+    ports: !reset []

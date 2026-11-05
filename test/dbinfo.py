@@ -3,9 +3,9 @@
 
 
 DB_TCP_HOST  = "lenz"
-DB_REST_HOST = "nginx"
+DB_REST_HOST = "http-proxy"
 DB_TCP_PORT  = 55551
-DB_REST_PORT = 443
+DB_REST_PORT = 8443
 DB_USER      = "admin"
 DB_PASSWORD  = "admin"
 CA_CERT      = "/ca/ca.crt"

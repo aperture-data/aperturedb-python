@@ -20,79 +20,44 @@ function get_sudo() {
     fi
 }
 
-function run_aperturedb_instance(){
-    set -e
-    TAG=$1
-    #Ensure clean environment (as much as possible)
-    RUNNER_NAME=$TAG docker compose -f docker-compose.yml down --remove-orphans
-    docker network rm ${TAG}_host_default || true
-    docker network rm ${TAG}_default || true
-
-    # ensure latest db
-    docker compose pull
-
-    $(get_sudo) rm -rf output
-    mkdir -m 777 output
-
-    docker network create ${TAG}_host_default
-    GATEWAY=$(docker network inspect ${TAG}_host_default | jq -r .[0].IPAM.Config[0].Gateway)
-    GATEWAY=$GATEWAY RUNNER_NAME=$TAG docker compose -f docker-compose.yml up -d
-    if [[ "$TAG" == *_non_http ]]; then
-        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port lenz 55551 | awk -F: '{print $NF}')
-    elif [[ "$TAG" == *_http ]]; then
-        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port nginx 80 | awk -F: '{print $NF}')
-    else
-        PORT=$(RUNNER_NAME=$TAG docker compose -f docker-compose.yml port lenz 55551 | awk -F: '{print $NF}')
+# Each protocol runs against its own stack from the Compose artifact named by
+# ADB_COMPOSE; see stack.sh. The stacks publish no host ports: test
+# containers join the <stack>_default network.
+function stacks() {
+    if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+        echo "${RUNNER_NAME}_http"
     fi
-    echo "$GATEWAY:$PORT"
+    if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+        echo "${RUNNER_NAME}_non_http"
+    fi
 }
-
-IP_REGEX='[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}'
 
 function teardown() {
     echo "Tearing down containers and networks..."
-    $(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* "$(pwd)/aperturedb/certificate_"* 2>/dev/null || true
-    $(get_sudo) chmod -R u+rwX,go-rwx "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* "$(pwd)/aperturedb/certificate_"* 2>/dev/null || true
-    $(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)"/*_ca 2>/dev/null || true
-    $(get_sudo) chmod -R u+rwX,go-rwx "$(pwd)"/*_ca 2>/dev/null || true
-    if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
-        RUNNER_NAME="${RUNNER_NAME}_http" docker compose -f docker-compose.yml down --remove-orphans || true
-        docker network rm "${RUNNER_NAME}_http_host_default" || true
-        docker network rm "${RUNNER_NAME}_http_default" || true
-    fi
-    if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
-        RUNNER_NAME="${RUNNER_NAME}_non_http" docker compose -f docker-compose.yml down --remove-orphans || true
-        docker network rm "${RUNNER_NAME}_non_http_host_default" || true
-        docker network rm "${RUNNER_NAME}_non_http_default" || true
-    fi
-    echo "Cleaning up generated volumes..."
-    $(get_sudo) rm -rf "${SCRIPT_DIR}/aperturedb"
+    for stack in $(stacks); do
+        PUBLISH_PORTS=false ./stack.sh down "$stack" || true
+    done
 }
 trap teardown EXIT
 
-# The LOG_PATH and RUNNER_INFO_PATH are set to the current working directory
-LOG_PATH="$(pwd)/aperturedb/logs"
 TESTING_LOG_PATH="/aperturedb/test/server_logs"
-RUNNER_INFO_PATH="$(pwd)/aperturedb/logs/runner_state"
-
-$(get_sudo) mkdir -p "$RUNNER_INFO_PATH"
-$(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* "$(pwd)/aperturedb/certificate_"* 2>/dev/null || true
-$(get_sudo) chmod -R u+rwX,go-rwx "$(pwd)/aperturedb/logs" "$(pwd)/aperturedb/db_"* "$(pwd)/aperturedb/certificate_"* 2>/dev/null || true
-$(get_sudo) chown -R $(id -u):$(id -g) "$(pwd)"/*_ca 2>/dev/null || true
-$(get_sudo) chmod -R u+rwX,go-rwx "$(pwd)"/*_ca 2>/dev/null || true
 
 # Check if TEST_PROTOCOL is set, otherwise default to both
 TEST_PROTOCOL=${TEST_PROTOCOL:-"both"}
 
-if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
-    GATEWAY_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_http" | grep $IP_REGEX )
-fi
+$(get_sudo) rm -rf output
+mkdir -m 777 output
 
-if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
-    GATEWAY_NON_HTTP=$(run_aperturedb_instance "${RUNNER_NAME}_non_http" | grep $IP_REGEX )
-fi
+for stack in $(stacks); do
+    PUBLISH_PORTS=false ./stack.sh up "$stack"
+done
 
-check_containers_networks | tee "$RUNNER_INFO_PATH"/runner_state.log
+# Server logs, and this runner state, are archived with failed test logs.
+for stack in $(stacks); do
+    mkdir -p "aperturedb/${stack}/data/aperturedb_logs/runner_state"
+    check_containers_networks > "aperturedb/${stack}/data/aperturedb_logs/runner_state/runner_state.log"
+done
+check_containers_networks
 
 REPOSITORY="aperturedata/aperturedb-python-tests"
 if ! [ -z ${1+x} ]
@@ -102,7 +67,7 @@ fi
 
 # Wait for the stack(s) to be ready instead of blindly sleeping. Each lenz
 # instance exposes a health port (58085) that becomes reachable once the
-# service is up; nginx is ready as soon as port 80 accepts connections.
+# service is up; the HTTP proxy is ready once port 8081 answers.
 wait_for_stack() {
     local tag=$1
     local network=${tag}_default
@@ -111,7 +76,7 @@ wait_for_stack() {
     echo "Waiting for stack ${tag} to become ready (timeout ${timeout}s)..."
     while [ $elapsed -lt $timeout ]; do
         local lenz_ready=0
-        local nginx_ready=0
+        local proxy_ready=0
 
         if docker run --rm --network=${network} curlimages/curl:latest \
                 nc -z -w 2 lenz 58085 >/dev/null 2>&1; then
@@ -120,11 +85,11 @@ wait_for_stack() {
 
         if [[ "$tag" == *"_http" ]]; then
             if docker run --rm --network=${network} curlimages/curl:latest \
-                    -sS -o /dev/null -m 2 http://nginx:80/ >/dev/null 2>&1; then
-                nginx_ready=1
+                    -sS -o /dev/null -m 2 http://http-proxy:8081/ >/dev/null 2>&1; then
+                proxy_ready=1
             fi
 
-            if [ "$lenz_ready" -eq 1 ] && [ "$nginx_ready" -eq 1 ]; then
+            if [ "$lenz_ready" -eq 1 ] && [ "$proxy_ready" -eq 1 ]; then
                 echo "Stack ${tag} is ready after ${elapsed}s"
                 return 0
             fi
@@ -153,19 +118,18 @@ pid1=0
 pid2=0
 
 if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
-    echo "running tests on docker image $REPOSITORY with $GATEWAY_HTTP"
+    echo "running tests on docker image $REPOSITORY against ${RUNNER_NAME}_http"
     docker run --rm \
         -v $(pwd)/output:/aperturedata/test/output \
-        -v $(pwd)/${RUNNER_NAME}_http_ca:/ca \
+        -v "$(pwd)/aperturedb/${RUNNER_NAME}_http/ca:/ca" \
         --network=${RUNNER_NAME}_http_default \
-        -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
+        -v "$(pwd)/aperturedb/${RUNNER_NAME}_http/data/aperturedb_logs":"${TESTING_LOG_PATH}" \
         -v $(pwd)/run_test.sh:/aperturedata/test/run_test.sh \
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
         -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
         -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
         -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
-        -e GATEWAY="nginx" \
         -e FILTER="http" \
         -e SKIP_SLOW_TESTS="${SKIP_SLOW_TESTS:-false}" \
         $REPOSITORY &
@@ -173,19 +137,18 @@ if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
 fi
 
 if [ "$TEST_PROTOCOL" == "non_http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
-    echo "running tests on docker image $REPOSITORY with $GATEWAY_NON_HTTP"
+    echo "running tests on docker image $REPOSITORY against ${RUNNER_NAME}_non_http"
     docker run --rm \
         -v $(pwd)/output:/aperturedata/test/output \
-        -v $(pwd)/${RUNNER_NAME}_non_http_ca:/ca \
+        -v "$(pwd)/aperturedb/${RUNNER_NAME}_non_http/ca:/ca" \
         --network=${RUNNER_NAME}_non_http_default \
-        -v "$LOG_PATH":"${TESTING_LOG_PATH}" \
+        -v "$(pwd)/aperturedb/${RUNNER_NAME}_non_http/data/aperturedb_logs":"${TESTING_LOG_PATH}" \
         -v $(pwd)/run_test.sh:/aperturedata/test/run_test.sh \
         -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
         -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
         -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
         -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
-        -e GATEWAY="lenz" \
         -e FILTER="not http" \
         -e SKIP_SLOW_TESTS="${SKIP_SLOW_TESTS:-false}" \
         $REPOSITORY &
