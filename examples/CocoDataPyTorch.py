@@ -1,3 +1,4 @@
+from aperturedb.ServerCompatibility import hello_version as negotiated_hello_version
 from aperturedb.PyTorchData import PyTorchData
 from torchvision.datasets import CocoDetection
 from aperturedb.Images import image_to_bytes
@@ -29,16 +30,33 @@ class CocoDataPyTorch(PyTorchData):
     def __init__(self,
                  dataset_name: str = "coco_validation_with_annotations",
                  root: str = "coco/val2017",
-                 annotationsFile: str = "coco/annotations/instances_val2017.json") -> None:
+                 annotationsFile: str = "coco/annotations/instances_val2017.json",
+                 client=None, hello_version=None) -> None:
         """
         COCO dataset loads as an iterable with Tuple (X, [y1, y2 .... yn])
         where X is the image (PIL.Image) and y's are multiple dicts with properties like:
         area, bbox, category_id, image_id, id, iscrowd, keypoints, num_keypoints, segmentation
         """
+        self.configure_server(client, hello_version)
         coco_detection = CocoDetection(root=root, annFile=annotationsFile)
         self.coco_detection = coco_detection
         self.dataset_name = dataset_name
         super().__init__(coco_detection)
+
+    def configure_server(self, client=None, hello_version=None):
+        """Configure the generated commands for the connected server."""
+        version = hello_version
+        if version is None:
+            version = client if type(
+                client) is int else negotiated_hello_version(client)
+        if type(version) is not int or version not in (1, 2):
+            raise ValueError("hello_version must be 1 or 2")
+        self.hello_version = version
+        return self
+
+    def set_hello_version(self, version):
+        # ParallelLoader calls this before generating or resampling commands.
+        return self.configure_server(hello_version=version)
 
     def generate_query(self, idx: int):
         item = self.loaded_dataset[idx]
@@ -127,4 +145,11 @@ class CocoDataPyTorch(PyTorchData):
                         }
                     })
 
+        if self.hello_version >= 2:
+            classes = {"AddImage": "CocoImage", "AddBoundingBox": "CocoBoundingBox",
+                       "AddPolygon": "CocoPolygon"}
+            for command in q:
+                for operation, class_name in classes.items():
+                    if operation in command:
+                        command[operation]["class"] = class_name
         return q, [blob]

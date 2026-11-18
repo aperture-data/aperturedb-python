@@ -67,10 +67,13 @@ class DaskManager:
                 for i in range(0, len(df), batchsize):
                     end = min(i + batchsize, len(df))
                     slice = df[i:end]
-                    data = generator.__class__(
-                        filename=generator.filename,
-                        df=slice,
-                        blobs_relative_to_csv=generator.blobs_relative_to_csv)
+                    options = dict(getattr(generator, "_csv_options", {}))
+                    options["blobs_relative_to_csv"] = generator.blobs_relative_to_csv
+                    for option in ("class_name", "image_class", "hello_version"):
+                        if hasattr(generator, option):
+                            options[option] = getattr(generator, option)
+                    data = generator.__class__(filename=generator.filename,
+                                               df=slice, **options)
 
                     loader.query(generator=data, batchsize=len(
                         slice), numthreads=1, stats=False)

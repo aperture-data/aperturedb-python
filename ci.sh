@@ -109,7 +109,7 @@ build_tests(){
     mkdir -p docker/tests/aperturedata
     # test/stack.sh creates each test stack's files; clear any left by earlier runs.
     sudo rm -rf test/aperturedb
-    cp -r aperturedb pyproject.toml README.md docker/tests/aperturedata
+    cp -r aperturedb examples pyproject.toml README.md docker/tests/aperturedata
     mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
 
@@ -176,7 +176,9 @@ build_notebook_image(){
     docker build -t ${CPU_IMAGE} -f docker/notebook/Dockerfile.cpu .
     if [ "${NO_PUSH}" != "true" ]
     then
-        docker push --all-tags ${DOCKER_REPOSITORY}/aperturedb-notebook
+        docker push "$NOTEBOOK_IMAGE"
+        docker push "$LATEST_IMAGE"
+        docker push "$CPU_IMAGE"
     fi
 }
 

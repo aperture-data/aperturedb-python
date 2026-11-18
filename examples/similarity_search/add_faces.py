@@ -11,10 +11,11 @@ search_set_name = "similar_celebreties"
 
 
 def main(params):
-    utils = Utils(create_connector())
+    client = create_connector()
+    utils = Utils(client)
     utils.remove_descriptorset(search_set_name)
 
-    dataset = CelebADataKaggle()
+    dataset = CelebADataKaggle(client=client)
 
     # Here's a pipeline that adds extra properties to the celebA dataset
     dataset = CommonProperties(
@@ -32,7 +33,7 @@ def main(params):
     dataset = dataset[:params.images_count]
     print(len(dataset))
 
-    loader = ParallelLoader(create_connector())
+    loader = ParallelLoader(client)
     loader.ingest(dataset, stats=True)
 
 

@@ -1,32 +1,22 @@
-import io
-
 from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.CommonLibrary import create_connector
-from PIL import Image
 from CocoDataPyTorch import CocoDataPyTorch
 import argparse
 
 
 def main(params):
-    # Define a helper function to convert PIL.image to a bytes array.
-    def image_to_byte_array(image: Image) -> bytes:
-        imgByteArr = io.BytesIO()
-        image.save(imgByteArr, format="JPEG")
-        imgByteArr = imgByteArr.getvalue()
-        return imgByteArr
-
-    coco_detection = CocoDataPyTorch("prepare_aperturedb")
+    client = create_connector()
+    coco_detection = CocoDataPyTorch("prepare_aperturedb", client=client)
 
     # Lets use some images from the coco which are annotated for the purpose of the demo
     images = []
-    for t in coco_detection:
-        X, y = t
-        if len(y) > 0:
-            images.append(t)
+    for index, (_, annotations) in enumerate(coco_detection.loaded_dataset):
+        if annotations:
+            images.append(coco_detection[index])
             if len(images) == params.images_count:
                 break
 
-    loader = ParallelLoader(create_connector())
+    loader = ParallelLoader(client)
     loader.ingest(generator = images, stats=True)
     print(f"Inserted {params.images_count} images to aperturedb")
 

@@ -11,9 +11,10 @@ import math
 import logging
 
 from aperturedb.CommonLibrary import create_connector, execute_query
-from aperturedb.DescriptorEngines import descriptorset_engine
+from aperturedb.DescriptorEngines import descriptor_search
 from aperturedb.Utils import Utils
 from aperturedb.Constraints import Conjunction, predicate
+from aperturedb.ServerCompatibility import OBJECT_TYPES, schema_for_display, typed_server
 
 SAFE_PREFIX = "adb_"
 
@@ -26,6 +27,12 @@ class SPARQL:
             client: ApertureDB client. If not supplied, then `create_connector()` is used to create a new client.
             debug: bool. If True, then certain intermediate results are stored in the object.
             log_level: int. The logging level to use for the ApertureDB client.
+
+        !!! note
+            ApertureDB distinguishes object types sharing a class name. For
+            explicit selection, use a type URI such as
+            `<http://aperturedb.io/type/image%3APhotos>`. Unqualified
+            `t:Person` continues to select the ordinary entity class.
         """
         self.debug = debug
         self.logger = logging.getLogger(__name__)
@@ -44,6 +51,9 @@ class SPARQL:
             client = create_connector()
         self._client = client
         self._utils = Utils(client)
+        self._modern = typed_server(client)
+        self._typed_categories = {}
+        self._typed_names = {}
         namespace = rdflib.Namespace("http://aperturedb.io/")
         self.namespaces = {
             "t": namespace["type/"],
@@ -98,14 +108,79 @@ class SPARQL:
         return " .\n".join([self._format_triple(triple) for triple in triples])
 
     def _make_safe_prefix(self, suffix):
+        if self._modern and ":" in suffix:
+            target, name = suffix.split(":", 1)
+            if target in OBJECT_TYPES.values() and target != "connection":
+                key = target, name.casefold()
+                if key not in self._typed_names:
+                    # QName prefixes cannot contain ':' or arbitrary class
+                    # punctuation. Escaping every non-ASCII-alphanumeric byte
+                    # (including '_') is reversible and avoids slug collisions.
+                    escaped = "".join(c if c.isascii() and c.isalnum() else
+                                      "_" + c.encode("utf-8").hex() + "_"
+                                      for c in name)
+                    prefix = f"{SAFE_PREFIX}{target}_{escaped}"
+                    self._typed_names[key] = prefix
+                    self._typed_categories[prefix] = target, name
+                return self._typed_names[key]
         return f"{SAFE_PREFIX}{suffix[1:]}" if suffix.startswith("_") else suffix
 
     def _make_command_name(self, t):
+        if t in self._typed_categories:
+            target, _ = self._typed_categories[t]
+            return "Find" + next(name for name, value in OBJECT_TYPES.items()
+                                 if value == target)
         return "Find" + t[len(SAFE_PREFIX):] if t.startswith(f"{SAFE_PREFIX}") else "FindEntity"
 
+    def _class_selector(self, t):
+        if t in self._typed_categories:
+            return {"with_class": self._typed_categories[t][1]}
+        return {"with_class": t} if self._make_command_name(t) == "FindEntity" else {}
+
+    def _type_candidates(self, name):
+        if not self._modern:
+            return {self._make_safe_prefix(name)}
+        if name in self._typed_categories:
+            return {name}
+        if ":" in name and name.split(":", 1)[0] in OBJECT_TYPES.values():
+            return {self._make_safe_prefix(name)}
+        legacy = self._make_safe_prefix(name)
+        if legacy.startswith(SAFE_PREFIX):
+            target = OBJECT_TYPES.get(legacy[len(SAFE_PREFIX):])
+            if target and target not in ("entity", "connection"):
+                candidates = {key for key, value in self._typed_categories.items()
+                              if value[0] == target}
+                return candidates or {legacy}
+        # Unqualified application classes have always denoted ordinary
+        # entities. Keep existing `a t:Person` queries valid on server 1.0.
+        return {self._make_safe_prefix("entity:" + name)}
+
+    def _type_matches(self, expected, actual):
+        if expected == actual or self._make_safe_prefix(expected) == actual:
+            return True
+        # get_image(s) uses the legacy media type as a family selector. On a
+        # typed server the URI additionally carries its application class.
+        return (actual in self._typed_categories and expected.startswith(SAFE_PREFIX)
+                and self._make_command_name(expected) == self._make_command_name(actual))
+
+    def _object_uri(self, value):
+        from rdflib.term import URIRef
+        if isinstance(value, URIRef) or value.startswith(str(self.namespaces["o"])):
+            return URIRef(value)
+        return self.graph.namespace_manager.expand_curie(value)
+
+    def _blob_command(self, object_type):
+        command = self._make_command_name(object_type)
+        blob_commands = {"Find" + name for name in OBJECT_TYPES
+                         if name not in ("Entity", "Connection")}
+        assert command in blob_commands, (
+            f"Cannot get blob for type {object_type}")
+        return command
+
     def _load_schema(self):
-        self.schema = self._utils.get_schema()
-        self.connections = {}
+        schema = self._utils.get_schema()
+        self.schema = schema_for_display(
+            schema) if schema is not None else None
         self.connections = {}
         if self.schema is None:
             self.logger.warning("No schema found in ApertureDB")
@@ -130,7 +205,7 @@ class SPARQL:
         if "entities" in self.schema and self.schema["entities"] is not None and "classes" in self.schema["entities"]:
             for e, d in self.schema["entities"]["classes"].items():
                 e = self._make_safe_prefix(e)
-                for p in d["properties"]:
+                for p in d["properties"] or {}:
                     uri = self._make_uri("p", p)
                     if uri not in self.properties:
                         self.properties[uri] = set()
@@ -179,10 +254,8 @@ class SPARQL:
         def add_find(v, t):
             """Create new Find* command for variable v with type t"""
             from rdflib.term import Variable
-            body = {}
+            body = self._class_selector(t)
             command_name = self._make_command_name(t)
-            if command_name == "FindEntity":
-                body["with_class"] = t
             body["_ref"] = len(query) + 1
             body["uniqueids"] = True
             commands[v] = body
@@ -362,11 +435,15 @@ class SPARQL:
         # implicit search engines as deprecated usage.
         for cmd in query:
             params = cmd.get("FindDescriptor")
-            if params and "k_neighbors" in params and "set" in params \
-                    and "engine" not in params:
-                engine = descriptorset_engine(self._client, params["set"])
-                if engine:
-                    params["engine"] = engine
+            if params and "set" in params:
+                name = params.pop("set")
+                if "k_neighbors" in params:
+                    params.update(descriptor_search(self._client, name,
+                                                    params.get("engine"),
+                                                    params.get("metric")))
+                else:
+                    from aperturedb.ServerCompatibility import descriptor_selector
+                    params.update(descriptor_selector(self._client, name))
         result, output, _ = execute_query(self._client, query, blobs)
         solutions = set()  # process_bindings uses this to avoid yielding duplicate solutions
         yield from process_bindings(output)
@@ -436,6 +513,7 @@ class SPARQL:
         Deduce the type of each subject and connection object in the query
         """
         def add_types(k, tt):
+            tt = set(tt)
             if k not in types:
                 types[k] = tt
             else:
@@ -448,6 +526,14 @@ class SPARQL:
         from rdflib import RDF
         from rdflib.plugins.sparql.sparql import SPARQLError
         types = {}
+        descriptor_classes = {}
+        if self._modern:
+            for subject, relation, options in triples:
+                if relation == self.namespaces["knn"] + "similarTo":
+                    for node, prop, value in triples:
+                        if node == options and prop == self.namespaces["knn"] + "set":
+                            descriptor_classes[subject] = self._make_safe_prefix(
+                                "descriptor:" + str(value.toPython()))
         for s, p, o in triples:
             s_type = self._deduce_type(s)
             if s_type:
@@ -463,10 +549,15 @@ class SPARQL:
                 add_types(s, src)
                 add_types(o, dst)
             elif p == RDF.type:
-                add_types(s, [self._parse_uri_with_ns('t', o)])
+                add_types(s, self._type_candidates(
+                    self._parse_uri_with_ns('t', o)))
             elif p in self.knn_properties:
                 if p == self.namespaces["knn"] + "similarTo":
-                    add_types(s, {self._make_safe_prefix("_Descriptor")})
+                    if self._modern and s not in descriptor_classes:
+                        raise SPARQLError(
+                            "A descriptor search requires knn:set naming its descriptor class")
+                    add_types(s, {descriptor_classes[s] if self._modern else
+                                  self._make_safe_prefix("_Descriptor")})
             elif p == self.namespaces["c"] + "ANY":
                 pass
             else:
@@ -521,24 +612,21 @@ class SPARQL:
         """
         Get the blob associated with a URI or QName.
         """
-        if isinstance(uri, str):
-            uri = self.graph.namespace_manager.expand_curie(uri)
+        uri = self._object_uri(uri)
 
-        if type is None:
-            type = self._deduce_type(uri)
-        else:
-            assert type == self._deduce_type(
-                uri), f"Type {type} does not match deduced type {self._deduce_type(uri)}"
+        actual_type = self._deduce_type(uri)
+        if type is not None:
+            assert self._type_matches(
+                type, actual_type), f"Type {type} does not match deduced type {actual_type}"
+        type = actual_type
         assert type is not None, f"Cannot get blob for entity URI: {uri}"
-        assert type.startswith(
-            f"{SAFE_PREFIX}"), f"Cannot get blob for entity URI: {uri} with type {type}"
         uniqueid = self._deduce_uniqueid(uri)
-        command_name = self._make_command_name(type)
+        command_name = self._blob_command(type)
         query = [
-            {command_name: {
-                "constraints": predicate("_uniqueid", "==", uniqueid),
-                "blobs": True,
-            }},
+            {command_name: {**self._class_selector(type),
+                            "constraints": predicate("_uniqueid", "==", uniqueid),
+                            "blobs": True,
+                            }},
         ]
         _, blobs = self._client.query(query)
         return blobs[0]
@@ -547,28 +635,26 @@ class SPARQL:
         """
         Get the blobs associated with a list of URI or QName.
         """
-        uris = [self.graph.namespace_manager.expand_curie(uri)
-                if isinstance(uri, str) else uri for uri in uris]
+        uris = [self._object_uri(uri) for uri in uris]
+        if not uris:
+            return []
         types = [self._deduce_type(uri) for uri in uris]
         if type is not None:
             assert all(
-                t == type for t in types), f"Type {type} does not match deduced types {types}"
-        else:
-            type = types[0]
-            assert all(
-                t == type for t in types), f"Types do not match: {types}"
+                self._type_matches(type, t) for t in types), f"Type {type} does not match deduced types {types}"
+        type = types[0]
+        assert all(self._make_command_name(t) == self._make_command_name(type)
+                   for t in types), f"Types do not match: {types}"
 
         assert type is not None, f"Cannot get blob for entity URI: {uri}"
-        assert type.startswith(
-            f"{SAFE_PREFIX}"), f"Cannot get blob for entity URI: {uri} with type {type}"
         uniqueids = [self._deduce_uniqueid(uri) for uri in uris]
-        command_name = self._make_command_name(type)
+        command_name = self._blob_command(type)
         query = [
-            {command_name: {
-                "results": {"list": ["_uniqueid"]},
-                "constraints": predicate("_uniqueid", "in", uniqueids),
-                "blobs": True,
-            }},
+            {command_name: {**(self._class_selector(type) if len(set(types)) == 1 else {}),
+                            "results": {"list": ["_uniqueid"]},
+                            "constraints": predicate("_uniqueid", "in", uniqueids),
+                            "blobs": True,
+                            }},
         ]
         res, blobs = self._client.query(query)
         # Put blobs in a dictionary for faster lookup
@@ -588,7 +674,7 @@ class SPARQL:
         import cv2
 
         blob = self.get_blob(uri, type=self._make_safe_prefix("_Image"))
-        nparr = np.fromstring(blob, np.uint8)
+        nparr = np.frombuffer(blob, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
@@ -604,7 +690,7 @@ class SPARQL:
         images = []
         for blob in blobs:
             if blob is not None:
-                nparr = np.fromstring(blob, np.uint8)
+                nparr = np.frombuffer(blob, np.uint8)
                 image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 images.append(image)

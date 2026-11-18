@@ -76,6 +76,7 @@ class VideoDataCSV(CSVParser.CSVParser):
                              HEADER_URL, HEADER_S3_URL, HEADER_GS_URL]
         super().__init__(filename, **kwargs)
         self.check_video = check_video
+        self._csv_options["check_video"] = check_video
 
         self.props_keys = [x for x in self.header[1:]
                            if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
@@ -96,17 +97,14 @@ class VideoDataCSV(CSVParser.CSVParser):
             self.sources = Sources(3)
 
     def get_indices(self):
-        return {
-            "entity": {
-                "_Video": self.get_indexed_properties()
-            }
-        }
+        return self._media_indices("Video")
 
     def check_video_buf(self, video) -> bool:
         # check if video is valid current does not check anything
         return True
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         self.relative_path_prefix = os.path.dirname(self.filename) \
             if self.source_type == HEADER_PATH and self.blobs_relative_to_csv else ""
         uri = os.path.join(self.relative_path_prefix,

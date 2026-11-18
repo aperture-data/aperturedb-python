@@ -1,3 +1,4 @@
+from aperturedb.ServerCompatibility import hello_version as negotiated_hello_version
 from typing import List, Tuple
 from aperturedb.KaggleData import KaggleData
 import pandas as pd
@@ -14,6 +15,8 @@ class CelebADataKaggle(KaggleData):
     """
 
     def __init__(self, **kwargs) -> None:
+        self.configure_server(kwargs.get("client"),
+                              kwargs.get("hello_version"))
         self.records_count = -1
         super().__init__(dataset_ref="jessicali9530/celeba-dataset",
                          records_count=self.records_count)
@@ -37,6 +40,21 @@ class CelebADataKaggle(KaggleData):
         logger.info(
             f"Created {len(rows)} items from {original_size} in the original dataset.")
         return rows
+
+    def configure_server(self, client=None, hello_version=None):
+        """Configure the generated commands for the connected server."""
+        version = hello_version
+        if version is None:
+            version = client if type(
+                client) is int else negotiated_hello_version(client)
+        if type(version) is not int or version not in (1, 2):
+            raise ValueError("hello_version must be 1 or 2")
+        self.hello_version = version
+        return self
+
+    def set_hello_version(self, version):
+        # ParallelLoader calls this before generating or resampling commands.
+        return self.configure_server(hello_version=version)
 
     def generate_query(self, idx: int) -> Tuple[List[dict], List[bytes]]:
         record = self.collection[idx]
@@ -74,5 +92,9 @@ class CelebADataKaggle(KaggleData):
             self.workdir,
             'img_align_celeba/img_align_celeba',
             p["image_id"])
-        blob = open(image_file_name, "rb").read()
+        with open(image_file_name, "rb") as image:
+            blob = image.read()
+        if self.hello_version >= 2:
+            q[0]["AddImage"]["class"] = "CelebAImage"
+            q[1]["AddBoundingBox"]["class"] = "CelebAFace"
         return q, [blob]

@@ -29,7 +29,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
     **index**: The 0 based index of a np array in the npz file.
 
-    **set**: The search space to restrict the knn search queries to.
+    **set**: The name of the descriptor class for this vector.
 
     **label**: Arbitrary name given to the label associated with this descriptor.
 
@@ -72,7 +72,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
         super().__init__(filename, **kwargs)
         self.npy_arrays = {}
-        self.has_label = False
+        self.has_label = HEADER_LABEL in self.header
 
         self.props_keys = [x for x in self.header[3:]
                            if not x.startswith(CSVParser.CONSTRAINTS_PREFIX)]
@@ -81,6 +81,12 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         self.command = "AddDescriptor"
 
     def get_indices(self):
+        if self.hello_version >= 2:
+            classes = self.df[HEADER_SET].unique()
+            if hasattr(classes, "compute"):
+                classes = classes.compute()
+            return {"entity": {"descriptor:" + self._descriptor_class(value): self.get_indexed_properties()
+                               for value in classes}}
         return {
             "entity": {
                 "_Descriptor": self.get_indexed_properties()
@@ -104,7 +110,8 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         q = []
         blobs = []
         # for data in image_data:
-        custom_fields = {"set": desc_set}
+        custom_fields = {"class": self._descriptor_class(
+            desc_set)} if self.hello_version >= 2 else {"set": desc_set}
         if self.has_label:
             custom_fields["label"] = self.df.loc[idx, HEADER_LABEL]
 
@@ -114,6 +121,13 @@ class DescriptorDataCSV(CSVParser.CSVParser):
         q.append(ad)
 
         return q, blobs
+
+    @staticmethod
+    def _descriptor_class(value):
+        if not isinstance(value, str) or not value or value.startswith("_"):
+            raise ValueError(
+                "Descriptor CSV rows require a nonempty descriptor class in the set column")
+        return value
 
     # This function can be re-defined by user when they have
     # app-specific structure on the npz file.
@@ -147,7 +161,7 @@ class DescriptorDataCSV(CSVParser.CSVParser):
 
         self.header = list(self.df.columns.values)
 
-        if self.header[3] == HEADER_LABEL:
+        if len(self.header) > 3 and self.header[3] == HEADER_LABEL:
             self.has_label = True
 
         if self.header[0] != HEADER_PATH:

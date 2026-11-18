@@ -35,8 +35,8 @@ def load_cookbook(utils: Utils, db):
     original_dir = os.getcwd()
     os.chdir(temp_dir)
 
-    # Define the URL and file path for the script
-    file_url = "https://raw.githubusercontent.com/aperture-data/Cookbook/refs/heads/main/scripts/convert_ingredients_adb_csv.py"
+    # Keep the legacy-server fixture stable as Cookbook migrates to native classes.
+    file_url = "https://raw.githubusercontent.com/aperture-data/Cookbook/9be3b1123c60f4251572511c405692d626b7e8e2/scripts/convert_ingredients_adb_csv.py"
     file_path = Path("convert_ingredients_adb_csv.py")
 
     try:

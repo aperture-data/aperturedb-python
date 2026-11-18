@@ -42,14 +42,19 @@ import keepalive
 from threading import Lock
 from types import SimpleNamespace
 from dataclasses import dataclass
+from contextlib import contextmanager
+
+from aperturedb._query_wire import (
+    BufferedInput, ProtocolError, QueryResponse, HELLO_VERSION,
+    LEGACY_HELLO_VERSION, MAX_BLOBS, buffered_response, native_response)
 from aperturedb.Configuration import Configuration
 from aperturedb.LoggingUtils import censor_tokens
 
 logger = logging.getLogger(__name__)
 
 
-PROTOCOL_VERSION = 1
-MESSAGE_LENGTH_FORMAT = '@I'
+PROTOCOL_VERSION = HELLO_VERSION
+MESSAGE_LENGTH_FORMAT = '<I'
 MESSAGE_LENGTH_SIZE = struct.calcsize(MESSAGE_LENGTH_FORMAT)
 
 # Protocol types
@@ -197,6 +202,11 @@ class Connector(object):
         self.use_keepalive = self.config.use_keepalive
         self.token = self.config.token
         self.conn = None
+        self._hello_version = None
+        self._wire_input = None
+        self._query_lock = Lock()
+        self._query_lease = None
+        self._active_response = None
 
         if shared_data is None:
             self.shared_data = SimpleNamespace()
@@ -225,42 +235,62 @@ class Connector(object):
             self.authenticated = True
             return shared_data.session
 
-    def close(self):
-        if getattr(self, 'conn', None) is not None:
-            self.conn.close()
-            self.conn = None
+    @property
+    def hello_version(self):
+        self._ensure_connection()
+        return self._hello_version
+
+    def _close_transport(self):
+        connection, self.conn = getattr(self, 'conn', None), None
+        if connection is not None:
+            try:
+                connection.close()
+            except OSError:
+                pass
         self.connected = False
+        self._hello_version = None
+        self._wire_input = None
+
+    def close(self):
+        response = getattr(self, '_active_response', None)
+        if response is not None and not response.closed:
+            response.abort()
+        self._close_transport()
 
     def __del__(self):
         self.close()
 
-    def _send_msg(self, data):
-        if len(data) > (DEFAULT_MAX_MESSAGE_SIZE_MB * 2**20):
-            logger.warning(
-                "Message sent is larger than default for ApertureDB Server. Server may disconnect.")
+    @staticmethod
+    def _message_limit():
+        limit = int(os.getenv("MAX_MESSAGE_SIZE_MB",
+                    DEFAULT_MAX_MESSAGE_SIZE_MB))
+        if limit <= 0:
+            raise ValueError("MAX_MESSAGE_SIZE_MB must be positive")
+        return limit << 20
 
-        sent_len = struct.pack(MESSAGE_LENGTH_FORMAT,
-                               len(data))  # send size first
-        self.conn.sendall(sent_len + data)
+    @staticmethod
+    def _receive_exact(connection, size):
+        result = bytearray()
+        while len(result) < size:
+            packet = connection.recv(size - len(result))
+            if not packet:
+                raise ProtocolError("Incomplete hello message")
+            result.extend(packet)
+        return bytes(result)
+
+    def _send_msg(self, data):
+        if len(data) > self._message_limit() or len(data) >= 1 << 32:
+            raise ValueError("Query exceeds the configured message size limit")
+        self.conn.sendall(struct.pack(MESSAGE_LENGTH_FORMAT, len(data)))
+        self.conn.sendall(data)
 
     def _recv_msg(self):
-        recv_len = self.conn.recv(MESSAGE_LENGTH_SIZE)  # get message size
-        if recv_len == b'':
-            return None
-        recv_len = struct.unpack(MESSAGE_LENGTH_FORMAT, recv_len)[0]
-        response = bytearray(recv_len)
-        read = 0
-        while read < recv_len:
-            packet = self.conn.recv(recv_len - read)
-            if recv_len == b'':
-                return None
-            if not packet:
-                logger.error("Error receiving")
-                return None
-            response[read:] = packet
-            read += len(packet)
-
-        return response
+        size = struct.unpack(MESSAGE_LENGTH_FORMAT,
+                             self._wire_input.exact(MESSAGE_LENGTH_SIZE))[0]
+        if size > self._message_limit():
+            raise ProtocolError(
+                "Response exceeds the configured message size limit")
+        return self._wire_input.exact(size)
 
     def _authenticate(self, user, password="", token=""):
 
@@ -396,204 +426,242 @@ class Connector(object):
         return self.context
 
     def _connect(self):
-        self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.conn.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-        if self.use_keepalive:
-            keepalive.set(self.conn)
+        protocol = PROTOCOL_SSL if self.use_ssl else PROTOCOL_TCP
+        # Start one version behind: 0.20 accepts this, and 1.0 deliberately
+        # returns a v2 hint without blacklisting the connecting client.
+        version = LEGACY_HELLO_VERSION
+        for attempt in range(2):
+            connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.conn = connection
+            try:
+                connection.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+                if self.use_keepalive:
+                    keepalive.set(connection)
+                if sys.platform.startswith('linux'):
+                    connection.setsockopt(
+                        socket.SOL_TCP, socket.TCP_QUICKACK, 1)
+                connection.settimeout(10)
+                connection.connect((self.host, self.port))
+                connection.sendall(struct.pack('<III', 8, version, protocol))
+                size, supported, selected = struct.unpack(
+                    '<III', self._receive_exact(connection, 12))
+                if size != 8 or supported not in (1, 2) or selected not in (0, 1, 2):
+                    raise ProtocolError("Unsupported or invalid server hello")
+                if supported == HELLO_VERSION and version == LEGACY_HELLO_VERSION:
+                    if selected != 0:
+                        raise ProtocolError(
+                            "Invalid server version-discovery reply")
+                    connection.close()
+                    self.conn = None
+                    version = HELLO_VERSION
+                    continue
+                if supported != version or selected != protocol:
+                    raise ProtocolError(
+                        "Server did not accept the requested transport")
+                if self.use_ssl:
+                    context = self._build_ssl_context()
+                    connection = context.wrap_socket(
+                        connection,
+                        server_hostname=self.host if self.config.verify_hostname else None)
+                    self.conn = connection
+                connection.settimeout(None)
+                self._hello_version = supported
+                self._wire_input = BufferedInput(connection.recv)
+                self.connected = True
+                self._ever_connected = True
+                return
+            except BaseException:
+                self._close_transport()
+                raise
+        raise ProtocolError("Server hello negotiation did not complete")
 
-        # TCP_QUICKACK only supported in Linux 2.4.4+.
-        # We use startswith for checking the platform following Python's
-        # documentation:
-        # https://docs.python.org/dev/library/sys.html#sys.platform
-        if sys.platform.startswith('linux'):
-            self.conn.setsockopt(socket.SOL_TCP, socket.TCP_QUICKACK, 1)
-
-        try:
-            self.conn.connect((self.host, self.port))
-
-            # Handshake with server to negotiate protocol
-
-            protocol = PROTOCOL_SSL if self.use_ssl else PROTOCOL_TCP
-
-            hello_msg = struct.pack('@II', PROTOCOL_VERSION, protocol)
-
-            # Send desire protocol
-            self._send_msg(hello_msg)
-
-            # Receive response from server
-            response = self._recv_msg()
-
-            version, server_protocol = struct.unpack('@II', response)
-
-            if version != PROTOCOL_VERSION:
-                logger.warning("Protocol version differ from server")
-
-            if server_protocol != protocol:
-                self.conn.close()
-                self.connected = False
-                raise Exception(
-                    "Server did not accept protocol. Aborting Connection.")
-
-            if self.use_ssl:
-
-                self.context = self._build_ssl_context()
-
-                # TODO, we need to add support for local certificates
-                # For now, we let the server send us the certificate
-                try:
-                    if self.config.verify_hostname:
-                        self.conn = self.context.wrap_socket(
-                            self.conn, server_hostname=self.host)
-                    else:
-                        self.conn = self.context.wrap_socket(
-                            self.conn)
-                except ssl.SSLCertVerificationError as e:
-                    logger.exception(
-                        f"You can use the ca_cert parameter to specify a custom CA certificate")
-                    assert False, "Certificate verification failed" + os.linesep + \
-                        f"The host name must match the certificate: {self.host} " + os.linesep + \
-                        f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
-                        f"Refer to the documentation for more information: {SETUP_URL}" + os.linesep + \
-                        f"Alternatively, SSL can be disabled by setting verify_hostname=False or use_ssl=False (not recommended)" + \
-                        os.linesep
-                except ssl.SSLError:
-                    logger.exception(f"Error wrapping socket.")
-                    raise
-
-        except FileNotFoundError as e:
-            logger.exception(
-                f"The certificate file does not exist: {self.config.ca_cert}\n"
-                f"You can use the ca_cert parameter to specify a custom CA certificate")
-            assert False, "Certificate verification failed" + os.linesep + \
-                f"The ca certificate file does not exist: {self.config.ca_cert} " + os.linesep + \
-                f"You can use the ca_cert parameter to specify a custom CA certificate " + os.linesep + \
-                f"Refer to the documentation for more information: {SETUP_URL} " + os.linesep + \
-                f"Alternatively, SSL can be disabled by setting verify_hostname=False or use_ssl=False (not recommended)" + \
-                os.linesep
-        except BaseException as e:
-            self.conn.close()
-            self.connected = False
-            self.authenticated = False
-            raise
-
-        self.connected = True
-
-    def connect(self, details: str = None):
-        self.connected = False
-        if not self.connected:
-            # Connection is not established, keep trying.
-            # nothing else will work until this is done.
-            # This can help to get going amidst server restarts.
+    def _ensure_connection(self, details=None):
+        if self.connected:
+            return
+        attempts = 0
+        maximum = self.config.retry_max_attempts
+        if not isinstance(maximum, int) or maximum < 0:
+            raise ValueError(
+                "retry_max_attempts must be a nonnegative integer")
+        while not maximum or attempts < maximum:
+            attempts += 1
             try:
                 self._connect()
-            except socket.error as e:
-                details_str = f" \r\n{details}." if details else ""
-                logger.error(
-                    f"Error connecting to server: "
-                    f"{self.config}{details_str}",
-                    exc_info=True,
-                    stack_info=True)
+                return
+            except (ProtocolError, ssl.SSLCertVerificationError, FileNotFoundError):
+                raise
+            except OSError as error:
+                self._close_transport()
+                if maximum and attempts >= maximum:
+                    raise ConnectionError(
+                        f"Could not connect to ApertureDB {self.config}; "
+                        f"self.connected=False, attempts={attempts}") from error
+                logger.warning("Connection attempt failed for %s%s", self.config,
+                               f" ({details})" if details else "")
+                time.sleep(self.config.retry_interval_seconds)
+
+    def connect(self, details: str = None):
+        if getattr(self, '_active_response', None) is not None:
+            raise RuntimeError(
+                "Finish or close the active query stream before reconnecting")
+        self._close_transport()
+        self._ensure_connection(details)
+
+    def _prepare_query(self, query):
+        # Helpers choose version-aware command forms before reaching transport.
+        # Explicit user queries are never silently rewritten.
+        return query
+
+    def _start_query_response(self, query_str, blobs, release):
+        session = self.shared_data.session
+        token = "" if session is None else session.session_token
+        limit = self._message_limit()
+        if self._hello_version == LEGACY_HELLO_VERSION:
+            request = queryMessage.queryMessage()
+            request.json = query_str
+            request.token = token
+            request.blobs.extend(blobs)
+            self._send_msg(request.SerializeToString())
+            message = queryMessage.queryMessage()
+            data = self._recv_msg()
+            try:
+                queryMessage.ParseFromString(message, data)
+                metadata = json.loads(message.json)
+                if not isinstance(metadata, (dict, list)):
+                    raise ValueError("Expected a response array or object")
+            except Exception as error:
+                raise ProtocolError("Invalid legacy query response") from error
+            return buffered_response(metadata, list(message.blobs), release)
+
+        token_json = json.dumps(token, ensure_ascii=False).encode('utf-8')
+        query_json = query_str.encode('utf-8')
+        size = len(token_json) + 1 + len(query_json) + 4
+        size += sum(8 + len(blob) for blob in blobs)
+        if len(blobs) > MAX_BLOBS or size > limit:
+            raise ValueError("Query exceeds the configured message size limit")
+        self.conn.sendall(token_json + b' ' + query_json)
+        self.conn.sendall(struct.pack('!I', len(blobs)))
+        for blob in blobs:
+            self.conn.sendall(struct.pack('!Q', len(blob)))
+            self.conn.sendall(blob)
+        return native_response(self._wire_input, limit, release)
+
+    def _open_query_stream(self, query, blob_array=None):
+        if not self._query_lock.acquire(blocking=False):
+            raise RuntimeError(
+                "Finish or close the active query stream before another query")
+        lease = object()
+        self._query_lease = lease
+        state = {'ready': False, 'outcome': None}
+
+        def release(success):
+            if not state['ready']:
+                state['outcome'] = success
+                return
+            if self._query_lease is lease:
+                self._active_response = None
+                try:
+                    if not success:
+                        self._close_transport()
+                finally:
+                    self._query_lease = None
+                    self._query_lock.release()
+
+        try:
+            self._ensure_connection("Initial connection from query")
+            query = self._prepare_query(query)
+            query_str = query if isinstance(
+                query, str) else json.dumps(query, default=str)
+            blobs = [] if blob_array is None else [
+                bytes(blob) for blob in blob_array]
+            try:
+                response = self._start_query_response(
+                    query_str, blobs, release)
+            except OSError as error:
+                if isinstance(error, ConnectionError):
+                    raise
+                raise ConnectionError(
+                    "Query transport failed; the request was not replayed") from error
+            self.last_response = response.json
+            self._active_response = None if response.closed else response
+            state['ready'] = True
+            if state['outcome'] is not None:
+                release(state['outcome'])
+            return response
+        except BaseException:
+            state['ready'] = True
+            release(False)
+            raise
 
     def _query(self, query, blob_array=None, try_resume=True):
-        if blob_array is None:
-            blob_array = []
-        response_blob_array = []
-        # Check the query type
-        if not isinstance(query, str):  # assumes json
-            query_str = json.dumps(query, default=str)
-        else:
-            query_str = query
+        # Session rejection can be retried by query(); uncertain transport
+        # failures cannot. Even sendall() may have delivered a committed write.
+        del try_resume
+        with self._open_query_stream(query, blob_array) as response:
+            return response.json, [blob.read() for blob in response.blobs]
 
-        query_msg = queryMessage.queryMessage()
-        # query has .json and .blobs
-        query_msg.json = query_str
+    @contextmanager
+    def query_stream(self, q, blobs=None):
+        """Execute a query with JSON metadata and lazy ordered output blobs.
 
-        session = self.shared_data.session
-        if session is not None:
-            query_msg.token = session.session_token
+        Args:
+            q (list | str): Command array or its JSON representation.
+            blobs (list[bytes], optional): Ordered input blobs.
 
-        for blob in blob_array:
-            query_msg.blobs.append(blob)
+        Yields:
+            QueryResponse: JSON metadata and ordered ``ResponseBlob`` objects.
 
-        # Serialize with protobuf and send
-        data = query_msg.SerializeToString()
+        Example:
+            ```python
+            with db.query_stream(query) as result:
+                print(result.json)
+                for blob in result.blobs:
+                    for chunk in blob.iter_chunks():
+                        output.write(chunk)
+            ```
 
-        if self.conn is None:
-            self.connect(details="Initial connect from _query")
+        Consume each blob before advancing to the next. Exiting with unread
+        bytes closes the connection. A late storage or network error raises
+        ``ConnectionError``; valid JSON alone does not mean the response is
+        complete. Exhaust ``result.blobs`` even when no blobs are expected,
+        so the response terminator is checked. Another query is rejected while a stream
+        remains active. Clone the connector for concurrent work.
 
-        # this is for session refresh attempts
-        tries = 0
-        while tries < self.config.retry_max_attempts:
-            try:
-                self._send_msg(data)
-                response = self._recv_msg()
-                if response is not None:
-                    querRes = queryMessage.queryMessage()
-                    queryMessage.ParseFromString(querRes, response)
-                    response_blob_array = [b for b in querRes.blobs]
-                    self.last_response = json.loads(querRes.json)
-                    break
-            except ssl.SSLEOFError as ssle:
-                # this can happen when working in a notebook.
-                # we log if this isn't the first try, or if
-                # it has happened sooner than we expect a connection to be
-                # dropped.
-                now = datetime.now()
-                if tries != 0 or (self.last_query_timestamp is not None and
-                                  (now - self.last_query_timestamp) <
-                                  self.query_connection_error_suppression_delta):
-                    logger.warning(
-                        f"SSL connection error on process {os.getpid()}",
-                        exc_info=True)
-            except ssl.SSLError as ssle:
-                # This can happen in a scenario where multiple
-                # processes might be accessing a single connection.
-                # The copy does not make usable connections.
-                logger.warning(
-                    f"SSL error on process {os.getpid()}", exc_info=True)
-            except OSError as ose:
-                logger.warning(
-                    f"OS error on process {os.getpid()}", exc_info=True)
-            except AttributeError as ae:
-                if self.connected:
-                    # Only log if we got this while connected.
-                    # else it is expected after unification of query/connect
-                    logger.warning(
-                        f"Attribute error on process {os.getpid()}", exc_info=True)
-
-            tries += 1
-            # Do not log when trying for the first time.
-            if self._ever_connected:
-                logger.warning(
-                    f"Connection broken. Reconnecting attempt [{tries}/{self.config.retry_max_attempts}] .. PID = {os.getpid()}")
-
-            if self.connected:
-                self.conn.close()
-                self.connected = False
-
-            self.authenticated = False
-
-            self.connect(
-                details=f"Will retry in {self.config.retry_interval_seconds} seconds")
-            if not self._ever_connected:
-                self._ever_connected = True
-            time.sleep(self.config.retry_interval_seconds)
-
-            # Try to resume the session, in cases where the connection is severed.
-            # For example aperturedb server is restarted, or network is lost.
-            # While this is useful bit of code, when executed in a refresh token
-            # path, this can cause a deadlock. Hence the try_resume flag.
-            if try_resume and self.connected:
-                self._renew_session()
-        if tries == self.config.retry_max_attempts:
-            # We have tried enough times, and failed. Log some state info.
-            raise Exception(
-                f"Could not query ApertureDB using TCP. \r\n\
-                {self.connected=}\r\n \
-                {self.authenticated=} \r\n \
-                attempts={tries}/{self.config.retry_max_attempts} \r\n \
-                {self.config=}")
-        return (self.last_response, response_blob_array)
+        Queries are never replayed after uncertain transport failures.
+        """
+        manage_session = self.should_authenticate and not self._is_authentication_query(
+            q)
+        query_session = None
+        if manage_session:
+            self._renew_session()
+            query_session = self.authenticate(
+                shared_data=self.shared_data, user=self.config.username,
+                password=self.config.password, token=self.token)
+        started = time.time()
+        response = self._open_query_stream(q, blobs)
+        try:
+            if manage_session and query_session is not None and self._is_session_rejected(response.json):
+                # An authorization rejection guarantees no commands ran. It
+                # must have no blobs and be complete before retrying safely.
+                if not response.complete:
+                    try:
+                        next(response.blobs)
+                    except StopIteration:
+                        pass
+                    else:
+                        self.close()
+                        raise ProtocolError(
+                            "Session rejection included unexpected output blobs")
+                self._renew_session(rejected_session=query_session)
+                started = time.time()
+                response = self._open_query_stream(q, blobs)
+            self.response = response.json
+            yield response
+        finally:
+            response.close()
+            if response.complete:
+                self.last_query_time = time.time() - started
+                self.last_query_timestamp = datetime.now()
 
     def query(self, q, blobs=[]):
         """
@@ -632,6 +700,10 @@ class Connector(object):
                 q, blobs, try_resume=manage_session)
             if manage_session and query_session is not None and \
                     self._is_session_rejected(self.response):
+                if self.blobs:
+                    self.close()
+                    raise ProtocolError(
+                        "Session rejection included unexpected output blobs")
                 logger.warning(
                     "Session rejected by server. Renewing and retrying query.")
                 self._renew_session(rejected_session=query_session)
@@ -675,7 +747,8 @@ class Connector(object):
         """
         return type(self)(
             shared_data=self.shared_data,
-            config=self.config)
+            config=self.config,
+            authenticate=self.should_authenticate)
 
     def create_new_connection(self):
         from aperturedb.CommonLibrary import issue_deprecation_warning

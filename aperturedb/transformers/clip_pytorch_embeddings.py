@@ -4,6 +4,7 @@ from aperturedb.Subscriptable import Subscriptable
 from aperturedb.Constraints import predicate
 from aperturedb.transformers.transformer import Transformer
 from .clip import generate_embedding, descriptor_set
+from aperturedb.ServerCompatibility import hello_version
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,8 @@ class CLIPPyTorchEmbeddings(Transformer):
                         serialized = generate_embedding(blob)
                         dim = len(serialized) // 4
                         utils = self.get_utils()
+                        self.hello_version = getattr(
+                            self, "hello_version", hello_version(getattr(utils, "client", None)))
                         success = utils.add_descriptorset(
                             self.search_set_name, dim=dim, metric=["CS"])
                         if success or self.search_set_name in utils.get_descriptorset_list():
@@ -80,13 +83,14 @@ class CLIPPyTorchEmbeddings(Transformer):
                         new_blobs.append(serialized)
                         desc_cmd = {
                             "AddDescriptor": {
-                                "set": self.search_set_name,
+                                "class" if getattr(self, "hello_version", 1) >= 2 else "set": self.search_set_name,
                                 "properties": {
                                     "image_sha256": image_sha256,
                                 },
                                 "if_not_found": predicate("image_sha256", "==", image_sha256),
                                 "connect": {
-                                    "ref": cmd_dict["AddImage"]["_ref"]
+                                    "ref": cmd_dict["AddImage"]["_ref"],
+                                    **({"class": "has_descriptor"} if getattr(self, "hello_version", 1) >= 2 else {})
                                 }
                             }
                         }

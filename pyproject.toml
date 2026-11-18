@@ -19,7 +19,7 @@ dependencies = [
     'protobuf >=3.20.3,<7.0.0',
     #Folllowing is needed parallel loaders, and basic things for
     # making the notebooks.
-    'requests', 'boto3',
+    'requests', 'boto3', 'packaging>=21',
     # https://github.com/Kaggle/kaggle-api/issues/611
     'numpy<2; python_version<"3.9.0"', 'numpy', 'distributed',
     'matplotlib', 'pandas', 'kaggle!=1.6.15', 'google-cloud-storage',
@@ -40,6 +40,7 @@ aperturedb = "aperturedb"
 "Bug Reports" = "https://github.com/aperture-data/aperturedb-python/issues"
 
 [project.optional-dependencies]
+langchain = ["langchain-core>=0.3,<2"]
 speedups = [
     "pybase64",
 ]
@@ -71,6 +72,7 @@ dev = [
     "build",
     "fuse-python ; platform_system == 'Linux'",
     "rdflib",
+    "langchain-core>=0.3,<2",
 ]
 
 # The following would provide a command line executable called `sample`

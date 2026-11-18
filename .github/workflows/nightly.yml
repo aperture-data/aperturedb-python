@@ -55,7 +55,9 @@ jobs:
         # pulled via --cache-from in ci.sh.
         DOCKER_BUILDKIT: 1
         COMPOSE_DOCKER_CLI_BUILD: 1
-        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
+        # Preserve the complete historical suite on its supported command API.
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:0.20.0
+        SDK_COMPAT_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:1.0.0
       run: RUN_TESTS=true ./ci.sh
       shell: bash
 

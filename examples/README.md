@@ -53,9 +53,9 @@ The following files are under *rest_api*
 
 | File | Description | instructions |
 | -----| ------------| -----|
-| rest_api.py | Interactions with aperturedb using python's requests | ``python rest_api.py``|
-| rest_api.js | Interactions with aperturedb using javascript with axios | Is included in index.html |
-| index.html | A web page that renders from responses from aperturedb | Tested on chrome |
+| rest_api.py | Dual-version HTTP access with ConnectorRest and streamed raw image responses | ``python rest_api.py``|
+| rest_api.js | Dual-version HTTP access using fetch and raw multipart responses | Is included in index.html |
+| index.html | A web page that renders from responses from aperturedb | Serve with the API on the same origin, then enter the endpoint and credentials |
 
 ## Example 5: Adding Data to aperturedb with User defined models
 
@@ -64,3 +64,32 @@ The following files are under *loading_with_models*
 | File | Description | instructions |
 | -----| ------------| -----|
 | models.ipynb | A notebook with some sample code to add data using models | Also available to read at [Aperturedb model example](https://docs.aperturedata.io/HowToGuides/Ingestion/DataModels)|
+
+## Server compatibility
+
+SDK 1.0.1 supports server 0.20.0 and 1.0. Generators in this folder can bind to a
+client with `dataset.configure_server(client)`. `ParallelLoader` configures the
+generators before producing commands. Bind the generator before materializing
+a dataset into a plain list.
+Custom raw query generators keep their own command language.
+
+The Python REST example uses the normal SDK connection profile and HTTP(S)
+port. To upload and retrieve a local image, run:
+
+```bash
+python rest_api/rest_api.py --image songbird.jpg --output-dir rest-api-output
+# For a local HTTP gateway, add --no-ssl --port <http-port>.
+```
+
+The browser REST example buffers previews up to 64 MiB. Serve `rest_api/` through
+the same origin as `/api/`. It negotiates the connection and checks response
+framing before exposing the downloaded files. For large downloads, use the Python
+`query_stream()` example, which writes chunks and publishes PNG files only after
+the response completes.
+
+Focused example checks run without fetching datasets or model weights:
+
+```bash
+python -m unittest discover -s test -p test_ExampleCompatibility.py
+node --test examples/rest_api/rest_api.test.cjs
+```

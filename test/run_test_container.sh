@@ -177,6 +177,12 @@ if [ $exit_code2 -ne 0 ]; then
     exit $exit_code2
 fi
 
+# A separate stack exercises the modern command API without hiding legacy
+# integration tests behind version-based skips.
+if [ -n "${SDK_COMPAT_COMPOSE:-}" ]; then
+    ./run_compatibility_container.sh "$REPOSITORY"
+fi
+
 echo "Tests completed"
 echo " --- Runner name: ${RUNNER_NAME} ---"
 check_containers_networks

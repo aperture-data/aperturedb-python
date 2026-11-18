@@ -71,6 +71,18 @@ class ConnectionDataCSV(CSVParser):
         self.command = "AddConnection"
 
     def get_indices(self):
+        if self.hello_version >= 2:
+            src_type, src_class = self._endpoint(self.src_class)
+            dst_type, dst_class = self._endpoint(self.dst_class)
+            names = self.df[CONNECTION_CLASS].unique()
+            if hasattr(names, "compute"):
+                names = names.compute()
+            return {"commands": [{"CreateIndex": {
+                "target": {"src_type": src_type, "dst_type": dst_type}, "class": name,
+                "src_class": src_class, "dst_class": dst_class,
+                "property": property_name, "kind": "ordered",
+            }} for name in names
+                for property_name in self.get_indexed_properties()]}
         return {
             "connection": {
                 cls: self.get_indexed_properties() for cls in self.df[CONNECTION_CLASS].unique()
@@ -78,10 +90,14 @@ class ConnectionDataCSV(CSVParser):
         }
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         src_value = self.df.loc[idx, self.header[1]]
         dst_value = self.df.loc[idx, self.header[2]]
         connection_class = self.df.loc[idx, CONNECTION_CLASS]
         q = []
+        if self.hello_version >= 2:
+            self._endpoint(self.src_class)
+            self._endpoint(self.dst_class)
 
         try:
             ref_src = 1
@@ -114,6 +130,19 @@ class ConnectionDataCSV(CSVParser):
             logger.error(error_str)
 
         return q, []
+
+    @staticmethod
+    def _endpoint(selector):
+        target, class_name = QueryBuilder.split_type_selector(selector)
+        if target is not None:
+            if target == "connection":
+                raise ValueError(
+                    "Connection endpoints must select object classes")
+            return target, class_name
+        if selector.startswith("_"):
+            raise ValueError(
+                "Server 1.0 connection CSV headers require explicit typed classes, for example image:Assets@id")
+        return "entity", selector
 
     def validate(self):
 

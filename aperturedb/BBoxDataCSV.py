@@ -69,13 +69,10 @@ class BBoxDataCSV(CSVParser.CSVParser):
         self.command = "AddBoundingBox"
 
     def get_indices(self):
-        return {
-            "entity": {
-                "_BoundingBox": self.get_indexed_properties()
-            }
-        }
+        return self._media_indices("BoundingBox")
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         q = []
         img_id = self.df.loc[idx, self.img_key]
         fi = {
@@ -87,6 +84,8 @@ class BBoxDataCSV(CSVParser.CSVParser):
             },
         }
         q.append(fi)
+        if self.hello_version >= 2 and self.image_class:
+            fi["FindImage"]["with_class"] = self.image_class
 
         box_data_headers = [HEADER_X_POS,
                             HEADER_Y_POS, HEADER_WIDTH, HEADER_HEIGHT]

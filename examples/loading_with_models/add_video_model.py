@@ -57,12 +57,12 @@ client = create_connector()
 # https://docs.aperturedata.io/HowToGuides/Applications/similarity_search#descriptorsets-and-descriptors
 collection = DescriptorSetDataModel(
     name="marengo26", dimensions=len(clips[0]['embedding']))
-q, blobs, c = generate_add_query(collection)
+q, blobs, c = generate_add_query(collection, client=client)
 result, response, blobs = execute_query(query=q, blobs=blobs, client=client)
 print(f"{result=}, {response=}")
 
 # Create a video object, with clips, and embeddings
 video = save_video_details_to_aperturedb(video_url, clips, collection)
-q, blobs, c = generate_add_query(video)
+q, blobs, c = generate_add_query(video, client=client)
 result, response, blobs = execute_query(query=q, blobs=blobs, client=client)
 print(f"{result=}, {response=}")

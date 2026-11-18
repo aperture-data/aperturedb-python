@@ -1,181 +1,110 @@
-import requests
+"""Use the SDK's dual-version HTTP connector and raw blob streaming.
+
+Credentials come from the normal SDK profile/environment. A native profile
+uses the usual HTTP(S) port unless --port is supplied. Run with --image to
+upload a local image and stream its PNG response to --output-dir.
+"""
+
 import argparse
 import json
-import os
+from pathlib import Path
+import tempfile
+import uuid
+
 from aperturedb.CommonLibrary import create_connector
-from aperturedb.Connector import Connector
-
-client: Connector = create_connector()
-
-URL = "https://" + client.config.host  + '/api'
-
-VERIFY_SSL = True
+from aperturedb.ConnectorRest import ConnectorRest
 
 
-def parse_auth(res):
-
-    res = json.loads(res)["json"]
-    print(json.dumps(res, indent=4, sort_keys=False))
-
-    session_token = res[0]["Authenticate"]["session_token"]
-    refresh_token = res[0]["Authenticate"]["refresh_token"]
-    return session_token, refresh_token
-
-
-def auth():
-
-    query = [{
-        "Authenticate": {
-            "username": client.config.username,
-            "password": client.config.password,
-        }
-    }]
-
-    # Authenticate
-    response = requests.post(URL,
-                             files = [('query', (None, json.dumps(query)))],
-                             verify = VERIFY_SSL)
-
-    # print(response.status_code)
-    # print(response.text)
-
-    return parse_auth(response.text)
-
-
-def query_api(query, st, files_upload=[]):
-
-    files = [
-        ('query', (None, json.dumps(query))),
-    ]
-
-    for file in files_upload:
-        instream = open(file, 'rb')
-        files.append(
-            ('blobs', (os.path.basename(file), instream, 'image/jpeg')))
-
-    response = requests.post(URL,
-                             headers = {'Authorization': "Bearer " + st},
-                             files   = files,
-                             verify  = VERIFY_SSL)
-
-    # Parse response:
+def create_http_connector(params):
+    configured = create_connector()
     try:
-        json_response = json.loads(response.text)
-        response      = json_response["json"]
-        blobs         = json_response["blobs"]
-    except:
-        print("Error with response:")
-        print(response.status_code)
-        print(response.text)
-        response = "error!"
-        blobs = []
-
-    return response, blobs
-
-
-def get_status(st):
-
-    query = [{
-        "GetStatus": {}
-    }]
-
-    return query_api(query, st)
+        config = configured.config
+        return ConnectorRest(
+            host=config.host,
+            port=params.port if params.port is not None else (
+                config.port if config.use_rest else None),
+            user=config.username, password=config.password, token=config.token,
+            use_ssl=False if params.no_ssl else config.use_ssl,
+            ca_cert=config.ca_cert,
+            verify_hostname=False if params.no_verify_ssl else config.verify_hostname)
+    finally:
+        configured.close()
 
 
-def add_image_by_id(st, id):
-
-    query = [{
-        "AddImage": {
-            "properties": {
-                "rest_api_example_id": id
-            }
-        }
-    }]
-
-    return query_api(query, st, files_upload=["songbird.jpg"])
+def add_image(client, image_path, identifier, class_name):
+    command = {"properties": {"rest_api_example_id": identifier}}
+    if client.hello_version >= 2:
+        command["class"] = class_name
+    with Path(image_path).open("rb") as source:
+        response, _ = client.query([{"AddImage": command}], [source.read()])
+    if client.check_status(response) < 0:
+        raise RuntimeError(json.dumps(response))
+    return response
 
 
-def get_image_by_id(st, id):
-
-    query = [{
-        "FindImage": {
-            "constraints": ["$_uniqueid", "==", id],
-            "results": {
-                "all_properties": True
-            }
-        }
-    }]
-
-    return query_api(query, st)
-
-
-def list_images(st):
-
-    query = [{
-        "FindImage": {
-            "blobs": False,
-            "uniqueids": True
-        }
-    }]
-
-    return query_api(query, st)
+def download_image(client, identifier, class_name, output_dir):
+    command = {"blobs": True, "as_format": "png",
+               "results": {"all_properties": True}}
+    if client.hello_version >= 2:
+        command.update(with_class=class_name,
+                       constraints=["$rest_api_example_id", "==", identifier])
+    else:
+        command["constraints"] = {"rest_api_example_id": ["==", identifier]}
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    pending = []
+    try:
+        with client.query_stream([{"FindImage": command}]) as response:
+            if client.check_status(response.json) < 0:
+                raise RuntimeError(json.dumps(response.json))
+            print(json.dumps(response.json, indent=2))
+            # Exhaust the iterator to validate MIME and HTTP completion before
+            # publishing the downloaded files under their final names.
+            for index, blob in enumerate(response.blobs):
+                path = output_dir / f"image-{index}.png"
+                with tempfile.NamedTemporaryFile(dir=output_dir, suffix=".part",
+                                                 delete=False) as destination:
+                    temporary = Path(destination.name)
+                    pending.append((temporary, path))
+                    for chunk in blob.iter_chunks():
+                        destination.write(chunk)
+        for temporary, path in pending:
+            temporary.replace(path)
+        return [path for _, path in pending]
+    finally:
+        for temporary, _ in pending:
+            temporary.unlink(missing_ok=True)
 
 
 def main(params):
-
-    VERIFY_SSL = params.verify_ssl
-
-    print("-" * 80)
-    print("Authentication:")
-    session_token, refresh_token = auth()
-
-    # Print DB Status
-    # get_status(session_token)
-
-    # ----------------------
-    print("-" * 80)
-    print("List Images:")
-    r, blobs = list_images(session_token)
-    print("Response:")
-    print(json.dumps(r, indent=4, sort_keys=False))
-    img_id = r[0]["FindImage"]["entities"][0]["_uniqueid"]
-
-    # ----------------------
-    print("-" * 80)
-    print("Find image by id:")
-    r, blobs = get_image_by_id(session_token, img_id)
-
-    print("Response:")
-    print(json.dumps(r, indent=4, sort_keys=False))
-
-    print("Returned images: {}".format(len(blobs)))
-
-    # Base 64 encoded images
-    for img in blobs:
-
-        print("Image size (base64 enconded): {}".format(len(img)))
-
-    # ----------------------
-    print("-" * 80)
-    print("Add image by id:")
-    r, blobs = add_image_by_id(session_token, 123456789)
-
-    print("Response:")
-    print(json.dumps(r, indent=4, sort_keys=False))
-
-    # ----------------------
+    client = create_http_connector(params)
+    try:
+        response, _ = client.query([{"GetStatus": {}}])
+        print(json.dumps(response, indent=2))
+        if params.image:
+            identifier = uuid.uuid4().hex
+            print(json.dumps(add_image(client, params.image, identifier,
+                                       params.class_name), indent=2))
+            for path in download_image(client, identifier, params.class_name,
+                                       params.output_dir):
+                print(f"Wrote {path}: {path.stat().st_size} raw bytes")
+    finally:
+        client.close()
 
 
 def get_args():
-    obj = argparse.ArgumentParser()
-
-    obj.add_argument('-verify_ssl',  type=bool, default=True)
-
-    params = obj.parse_args()
-
-    return params
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--port", type=int, help="HTTP(S) port override")
+    parser.add_argument("--no-ssl", action="store_true", help="Use HTTP")
+    parser.add_argument("--no-verify-ssl", action="store_true",
+                        help="Disable TLS certificate/hostname verification for local testing")
+    parser.add_argument("--image", type=Path,
+                        help="Local image to upload and retrieve")
+    parser.add_argument("--class-name", default="RestExampleImage")
+    parser.add_argument("--output-dir", type=Path,
+                        default=Path("rest-api-output"))
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    args = get_args()
-    main(args)
+    main(get_args())

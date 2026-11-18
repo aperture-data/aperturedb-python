@@ -2,6 +2,7 @@ import socket
 import time
 import logging
 import ssl
+import pytest
 import dbinfo
 
 from aperturedb.Connector import Connector
@@ -45,46 +46,34 @@ class TestSession():
 
     def test_SSL_error_on_query(self, monkeypatch):
         db = Connector(
-            dbinfo.DB_TCP_HOST,
-            dbinfo.DB_TCP_PORT,
-            dbinfo.DB_USER,
-            dbinfo.DB_PASSWORD,
-            ca_cert=dbinfo.CA_CERT,
-            retry_max_attempts=3,
-            retry_interval_seconds=0)
-        db.query([{"FindImage": {"limit": 5, "results": {"count": True}}}])
-        original_send_msg = db._send_msg
-        count = 0
+            dbinfo.DB_TCP_HOST, dbinfo.DB_TCP_PORT,
+            dbinfo.DB_USER, dbinfo.DB_PASSWORD, ca_cert=dbinfo.CA_CERT,
+            retry_max_attempts=3, retry_interval_seconds=0)
+        try:
+            db.query([{"GetStatus": {}}])
+            original = db._start_query_response
+            count = 0
 
-        # This will raise an SSL error on the first call to _send_msg (which is an refresh token)
-        # The later calls will succeed.
-        # When we try to renew the session, that attempts to take a lock on the session.
-        # And this is the hang.
-        def mock_send_msg(msg):
-            nonlocal count
-            count += 1
-            logger.debug(count)
-            if count == 1:
-                raise ssl.SSLError("SSL Error")
+            def interrupted(query, blobs, release):
+                nonlocal count
+                count += 1
+                if count == 1:
+                    raise ssl.SSLError("SSL Error")
+                return original(query, blobs, release)
 
-            result  = original_send_msg(msg)
-            logger.debug(result)
-            return result
-
-        monkeypatch.setattr(db, "_send_msg", lambda x: mock_send_msg(x))
-
-        # force session token expiry
-        db.shared_data.session.session_token_ttl = 1
-        time.sleep(2)
-        query = [{
-            "FindImage": {
-                "limit": 5,
-                "results": {"count": True}
-            }
-        }]
-        responses, blobs = db.query(query)
-        logging.debug(responses)
-        assert db.shared_data.session.valid() == True
+            monkeypatch.setattr(db, "_start_query_response", interrupted)
+            db.shared_data.session.session_token_ttl = 0
+            with pytest.raises(ConnectionError):
+                db.query([{"GetStatus": {}}])
+            # A refresh transport failure cannot replay a potentially received
+            # request, and must release the shared session lock without hanging.
+            assert count == 1
+            assert not db.connected
+            response, _ = db.query([{"GetStatus": {}}])
+            assert response[0]["GetStatus"]["status"] == 0
+            assert db.shared_data.session.valid()
+        finally:
+            db.close()
 
     def test_socket_connect_error_initial(self, monkeypatch):
         connect_attempts = 0
@@ -113,7 +102,7 @@ class TestSession():
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
 
-        assert connect_attempts == 4
+        assert connect_attempts == 3
 
     def test_socket_send_error_initial(self, monkeypatch):
         send_attempts = 0
@@ -140,8 +129,8 @@ class TestSession():
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
 
-        # Should be exactly 7 attempts (1 initial + 3 retries, each doing query send + reconnect send)
-        assert send_attempts == 7
+        # Only initial hello negotiation is retried; no query was sent.
+        assert send_attempts == 3
 
     def test_socket_recv_error_initial(self, monkeypatch):
         connect_attempts = 0
@@ -170,69 +159,63 @@ class TestSession():
             # Check the exception is not an obscure one.
             assert "self.connected=False" in e.args[0]
 
-        assert connect_attempts == 4
+        assert connect_attempts == 3
 
     def test_con_close_on_send_query(self, db: Connector, monkeypatch):
-        if not isinstance(db, ConnectorRest):
-            if db.conn is None:
-                db.connect()
-            original_send_msg = db._send_msg
-            count = 0
+        if isinstance(db, ConnectorRest):
+            return
+        db.query([{"GetStatus": {}}])
+        original = db._start_query_response
+        count = 0
 
-            def mock_send_msg(msg):
-                nonlocal count
-                count += 1
-                logger.debug(count)
-                if count < 2:
-                    # Fail for the firs 2 attempts
-                    db.conn.close()
+        def interrupted(query, blobs, release):
+            nonlocal count
+            count += 1
+            db.conn.close()
+            return original(query, blobs, release)
 
-                result  = original_send_msg(msg)
-                logger.debug(result)
-                return result
-
-            monkeypatch.setattr(db, "_send_msg", mock_send_msg)
-
-            query = [{
-                "FindImage": {
-                    "limit": 5,
-                    "results": {"count": True}
-                }
-            }]
-            response, blobs = db.query(query)
-            assert(response[0]["FindImage"]["status"] == 0)
-            assert count == 3
+        monkeypatch.setattr(db, "_start_query_response", interrupted)
+        with pytest.raises(ConnectionError):
+            db.query([{"GetStatus": {}}])
+        assert count == 1
+        assert not db.connected
 
     def test_con_close_on_recv_query(self, db: Connector, monkeypatch):
-        if not isinstance(db, ConnectorRest):
-            if db.conn is None:
-                db.connect()
-            original_recv_msg = db._recv_msg
-            count = 0
+        if isinstance(db, ConnectorRest):
+            return
+        db.query([{"GetStatus": {}}])
+        original = db._start_query_response
+        count = 0
 
-            def mock_recv_msg():
-                nonlocal count
-                count += 1
-                logger.debug(count)
-                if count < 2:
-                    # Fail for the firs 2 attempts
+        def interrupted(query, blobs, release):
+            nonlocal count
+            count += 1
+            if db.hello_version == 1:
+                original_recv = db._recv_msg
+
+                def failed_recv():
                     db.conn.close()
+                    return original_recv()
 
-                result  = original_recv_msg()
-                logger.debug(result)
-                return result
+                with monkeypatch.context() as local:
+                    local.setattr(db, "_recv_msg", failed_recv)
+                    return original(query, blobs, release)
+            original_receive = db._wire_input.receive
 
-            monkeypatch.setattr(db, "_recv_msg", mock_recv_msg)
+            def failed_receive(size):
+                db.conn.close()
+                return original_receive(size)
 
-            query = [{
-                "FindImage": {
-                    "limit": 5,
-                    "results": {"count": True}
-                }
-            }]
-            response, blobs = db.query(query)
-            assert(response[0]["FindImage"]["status"] == 0)
-            assert count == 3
+            with monkeypatch.context() as local:
+                local.setattr(db._wire_input, "receive", failed_receive)
+                return original(query, blobs, release)
+
+        monkeypatch.setattr(db, "_start_query_response", interrupted)
+        with pytest.raises(ConnectionError):
+            db.query([{"GetStatus": {}}])
+        # The server may already have executed this query. No implicit replay.
+        assert count == 1
+        assert not db.connected
 
     def test_invalid_session_recovery(self, db: Connector, monkeypatch):
         # simulate session invalidation

@@ -45,13 +45,21 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
 
         Returns:
             dict: A dictionary of the form ``{"entity": {"class_name": {"property_name"}}}``,
-            with a ``"connection"`` key for connection indexes.
+            with a ``"connection"`` key for connection indexes. Its keys are ``(class, src_type, src_class, dst_type, dst_class)``
+            tuples, so categories with different endpoints stay distinct.
         """
 
         indexes = {}
         for index in self.utils.get_indexes(kind="ordered"):
-            indexes.setdefault(index["target"], {}).setdefault(
-                index["class"], set()).add(index["property"])
+            target = index["target"]
+            if isinstance(target, dict):
+                identity = (index["class"], target["src_type"], index["src_class"],
+                            target["dst_type"], index["dst_class"])
+                indexes.setdefault("connection", {}).setdefault(
+                    identity, set()).add(index["property"])
+            else:
+                indexes.setdefault(target, {}).setdefault(
+                    index["class"], set()).add(index["property"])
 
         return indexes
 
@@ -84,6 +92,11 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         """
         if hasattr(generator, "get_indices"):
             indices_needed = generator.get_indices()
+            # Typed connection indexes include both endpoint classes. They
+            # cannot be represented by a legacy, globally scoped class key.
+            commands = indices_needed.get("commands", [])
+            if commands:
+                self.utils.execute(commands)
 
             # Create indexes for entities
             for entity_class in indices_needed.get("entity", {}):

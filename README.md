@@ -9,6 +9,19 @@ The **ApertureDB Python SDK** provides a seamless interface for interacting with
 
 This SDK includes comprehensive utilities to efficiently ingest and retrieve data, manage graph-based metadata, perform similarity searches on embeddings, and seamlessly integrate with the broader ML/AI ecosystem.
 
+## SDK 1.0.1 server compatibility
+
+SDK 1.0.1 supports server **0.20.0 and 1.0.0** over TCP/TLS and HTTP. The connector selects
+the transport and helper commands automatically. Existing
+`query()` calls retain their buffered return shape; `query_stream()` provides
+JSON metadata followed by lazy blobs/chunks on server 1.0. Queries are never
+replayed automatically after uncertain transport failures.
+
+Server 1.0 custom queries require explicit application classes and native vector
+indexes, and no longer accept cached `batch` paging. SDK helpers and loaders
+handle both supported APIs; custom query generators must use the selected
+server's command language. See the [SDK 1.0.1 migration and streaming guide](docs/SDK1Migration.md).
+
 ## 🚀 Integrations & Capabilities
 
 The SDK is designed for modern ML workflows and offers seamless integrations with (some require additional dependencies):
