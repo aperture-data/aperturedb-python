@@ -17,5 +17,5 @@ echo "Build version: $BUILD_VERSION"
 
 git config --local user.name "github-actions[bot]"
 git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-git tag "v$BUILD_VERSION" $TAG_BASE
+git tag -f "v$BUILD_VERSION" "$(git rev-parse HEAD)"
 git push origin "v$BUILD_VERSION"

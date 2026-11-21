@@ -56,7 +56,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
 
     def __init__(self, filename: str, **kwargs):
 
-        super().__init__(filename, kwargs=kwargs)
+        super().__init__(filename, **kwargs)
 
         self.props_keys = []
         self.constraints_keys = []
@@ -73,11 +73,7 @@ class PolygonDataCSV(CSVParser.CSVParser):
         self.command = "AddPolygon"
 
     def get_indices(self):
-        return {
-            "entity": {
-                "_Polygon": self.get_indexed_properties()
-            }
-        }
+        return self._media_indices("Polygon")
 
     def getitem(self, idx):
         idx = self.df.index.start + idx
@@ -94,6 +90,8 @@ class PolygonDataCSV(CSVParser.CSVParser):
             },
         }
         q.append(fi)
+        if self.hello_version >= 2 and self.image_class:
+            fi["FindImage"]["with_class"] = self.image_class
 
         polygon_fields = {
             "image_ref": 1,

@@ -7,6 +7,7 @@ from PIL import Image
 import io
 import time
 from .facenet import generate_embedding
+from aperturedb.ServerCompatibility import hello_version
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,8 @@ class FacenetPyTorchEmbeddings(Transformer):
                 ):
                     try:
                         utils = self.get_utils()
+                        self.hello_version = getattr(
+                            self, "hello_version", hello_version(getattr(utils, "client", None)))
                         success = utils.add_descriptorset(
                             self.search_set_name, dim=512)
                         if success or self.search_set_name in utils.get_descriptorset_list():
@@ -85,13 +88,14 @@ class FacenetPyTorchEmbeddings(Transformer):
                         new_blobs.append(serialized)
                         desc_cmd = {
                             "AddDescriptor": {
-                                "set": self.search_set_name,
+                                "class" if getattr(self, "hello_version", 1) >= 2 else "set": self.search_set_name,
                                 "properties": {
                                     "image_sha256": image_sha256,
                                 },
                                 "if_not_found": predicate("image_sha256", "==", image_sha256),
                                 "connect": {
-                                    "ref": cmd_dict["AddImage"]["_ref"]
+                                    "ref": cmd_dict["AddImage"]["_ref"],
+                                    **({"class": "has_descriptor"} if getattr(self, "hello_version", 1) >= 2 else {})
                                 }
                             }
                         }

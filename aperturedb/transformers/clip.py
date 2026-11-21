@@ -28,7 +28,7 @@ model, preprocess = clip.load(descriptor_set, device=device)
 def generate_embedding(blob):
     global errors
 
-    nparr = np.fromstring(blob, np.uint8)
+    nparr = np.frombuffer(blob, np.uint8)
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = preprocess(Image.fromarray(image)).unsqueeze(0).to(device)

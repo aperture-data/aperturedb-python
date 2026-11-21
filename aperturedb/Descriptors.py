@@ -5,7 +5,8 @@ import numpy as np
 
 from aperturedb.Entities import Entities
 from aperturedb.CommonLibrary import execute_query
-from aperturedb.DescriptorEngines import descriptorset_engine
+from aperturedb.DescriptorEngines import descriptor_search
+from aperturedb.ServerCompatibility import typed_server, vector_index
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class Descriptors(Entities):
         blobs: bool = False,
         results={"all_properties": True},
         engine: Optional[str] = None,
+        metric: Optional[str] = None,
     ):
         """
         Find similar descriptors to the input descriptor.
@@ -39,7 +41,9 @@ class Descriptors(Entities):
             blobs (bool, optional): Return vectors of the neighbors. Defaults to False.
             results (dict, optional): Dictionary with the results format. Defaults to `{"all_properties": True}`.
             engine (str, optional): Search engine. Defaults to the set's first configured
-                engine in the order Flat, IVF, HNSW, which the server uses when none is named.
+                engine in the order Flat, IVF, HNSW, ACORN.
+            metric (str, optional): Metric to search. Defaults to the first configured metric.
+                ``set`` names the descriptor class.
 
         Returns:
             None: Populates self.response with the parsed JSON response from the database.
@@ -47,17 +51,13 @@ class Descriptors(Entities):
 
         command = {
             "FindDescriptor": {
-                "set": set,
+                **descriptor_search(self.client, set, engine, metric),
                 "distances": distances,
                 "blobs": blobs,
                 "results": results,
                 "k_neighbors": k_neighbors,
             }
         }
-        engine = engine or descriptorset_engine(self.client, set)
-        if engine:
-            command["FindDescriptor"]["engine"] = engine
-
         if constraints is not None and constraints.constraints:
             command["FindDescriptor"]["constraints"] = constraints.constraints
 
@@ -72,8 +72,12 @@ class Descriptors(Entities):
                 entity["vector"] = np.frombuffer(
                     blobs_out[i], dtype=np.float32)
 
-    def _descriptorset_metric(self, set: str):
+    def _descriptorset_metric(self, set: str, engine=None):
         """Find default metric for descriptor set"""
+        if typed_server(self.client):
+            metrics = vector_index(self.client, set, engine)[
+                "params"]["metric"]
+            return metrics if isinstance(metrics, str) else metrics[0]
         command = {"FindDescriptorSet": {"with_name": set, "metrics": True}}
         query = [command]
         _, response, _ = execute_query(self.client, query, [])
@@ -114,7 +118,8 @@ class Descriptors(Entities):
             lambda_mult (float): Lambda multiplier for the MMR algorithm.
                 Defaults to 0.5.  1.0 means no diversity.
         """
-        self.metric = self._descriptorset_metric(set)
+        self.metric = kwargs.get("metric") or self._descriptorset_metric(
+            set, kwargs.get("engine"))
         vector = np.array(vector, dtype=np.float32)
 
         kwargs["blobs"] = True  # force vector return
@@ -151,9 +156,9 @@ class Descriptors(Entities):
                     selected_unselected_similarity, axis=0)
                 relevance_scores = np.array(
                     [query_similarity[i] for i in unselected])
-                scores = (
+                scores = lambda_mult * relevance_scores - (
                     1 - lambda_mult
-                ) * worst_similarity + lambda_mult * relevance_scores
+                ) * worst_similarity
                 max_index = unselected[np.argmax(scores)]
                 selected.append(max_index)
                 unselected.remove(max_index)

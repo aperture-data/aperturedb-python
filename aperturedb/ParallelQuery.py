@@ -11,6 +11,7 @@ from aperturedb.DaskManager import DaskManager
 from aperturedb.Connector import Connector
 from aperturedb.types import Commands, Blobs, CommandResponses
 from aperturedb.CommonLibrary import execute_query
+from aperturedb.ServerCompatibility import hello_version
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,14 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
         def update_refs(batched_commands):
             updates = {}
+
+            def update_condition(condition):
+                if "ref" in condition:
+                    condition["ref"] = updates[condition["ref"]]
+                for operation in ("any", "all"):
+                    for child in condition.get(operation, []):
+                        update_condition(child)
+
             for i, cmd in enumerate(batched_commands):
                 if isinstance(cmd, list):
                     # Only parallel queries will work.
@@ -92,20 +101,17 @@ class ParallelQuery(Parallelizer.Parallelizer):
                     updates[values["_ref"]] = i + 1
                     values["_ref"] = i + 1
                     assert values["_ref"] < 100000
-                if "image_ref" in values:
-                    values["image_ref"] = updates[values["image_ref"]]
-                if "video_ref" in values:
-                    values["video_ref"] = updates[values["video_ref"]]
-                if "is_connected_to" in values:
-                    if "ref" in values["is_connected_to"]:
-                        values["is_connected_to"]["ref"] = updates[values["is_connected_to"]["ref"]]
-                    for op in ["any", "all"]:
-                        if op in values["is_connected_to"]:
-                            for idx in range(len(values["is_connected_to"][op])):
-                                if "ref" in values["is_connected_to"][op][idx]:
-                                    values["is_connected_to"][op][idx]["ref"] = updates[values["is_connected_to"][op][idx]["ref"]]
-                if "connect" in values and "ref" in values["connect"]:
-                    values["connect"]["ref"] = updates[values["connect"]["ref"]]
+                for field in ("image_ref", "video_ref", "bounding_box_ref", "polygon_ref",
+                              "clip_ref", "frame_ref", "roi_1", "roi_2"):
+                    if field in values:
+                        values[field] = updates[values[field]]
+                for field in ("is_connected_to", "is_endpoint_of"):
+                    if field in values:
+                        update_condition(values[field])
+                if "connect" in values:
+                    connections = values["connect"]
+                    for connection in connections if isinstance(connections, list) else [connections]:
+                        connection["ref"] = updates[connection["ref"]]
                 if "src" in values:
                     values["src"] = updates[values["src"]]
                 if "dst" in values:
@@ -300,6 +306,20 @@ class ParallelQuery(Parallelizer.Parallelizer):
         """
 
         from aperturedb.transformers.transformer import Transformer
+
+        # Bind built-in generators before index setup or a transformer samples
+        # its first item. Raw lists/custom query generators are never rewritten.
+        version = hello_version(self.client)
+        current = generator
+        seen = set()
+        while id(current) not in seen:
+            seen.add(id(current))
+            if hasattr(current, "set_hello_version"):
+                current.set_hello_version(version)
+            if not isinstance(current, Transformer):
+                break
+            current.hello_version = version
+            current = current.data
 
         if transformers is not None:
             if not isinstance(transformers, (list, tuple)):

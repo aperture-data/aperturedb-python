@@ -1,4 +1,5 @@
 import math
+import os
 import numpy as np
 import cv2
 import logging
@@ -7,6 +8,7 @@ from torch.utils import data
 
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.Connector import Connector
+from aperturedb._dataset_paging import DatasetPaging
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +20,8 @@ class ApertureDBDataset(data.Dataset):
     It is used to load blobs returned by a `Find*` command from ApertureDB into a PyTorch model.
     It can be initialized with a query that will be used to retrieve
     the blobs from ApertureDB. Note that only `FindImage` blobs are decoded via OpenCV.
+    The dataset uses offset/limit paging. Keep its contents fixed while iterating
+    because each page reads the current data.
     """
 
     def __init__(self, client: Connector, query, label_prop=None, batch_size=1, command_idx=None):
@@ -25,6 +29,7 @@ class ApertureDBDataset(data.Dataset):
         import copy
 
         self.client = client.clone()
+        self._owner_pid = os.getpid()
         self.query = copy.deepcopy(query)
         self.command_idx = command_idx
         self.command_name = None
@@ -80,18 +85,18 @@ class ApertureDBDataset(data.Dataset):
             if name in allowed_find_commands and i != self.command_idx:
                 self.query[i][name]["blobs"] = False
 
-        self.query[self.command_idx][self.command_name]["batch"] = {}
+        self._paging = DatasetPaging(self.client, self.query, self.command_idx,
+                                     self.command_name, self.batch_size)
         self.query[self.command_idx][self.command_name]["blobs"] = False
 
         try:
             _, r, b = execute_query(
-                client=self.client, query=self.query, blobs=[])
+                client=self.client, query=self._paging.count_query(), blobs=[])
             resp = r[self.command_idx][self.command_name]
             if resp.get("status", 0) != 0:
                 raise Exception(
                     f"Query Error: {resp.get('status')} {resp.get('info', '')}")
-            self.total_elements = resp.get("batch", {}).get(
-                "total_elements", resp.get("returned", 0))
+            self.total_elements = self._paging.total(resp)
         except:
             logger.error(
                 f"Query error: {self.query} {self.client.get_last_response_str()}")
@@ -131,38 +136,34 @@ class ApertureDBDataset(data.Dataset):
 
         return False
 
+    def _ensure_process_client(self):
+        if self._owner_pid != os.getpid():
+            # A fork must not inherit the parent's session-refresh lock or
+            # refresh token. Authenticate independently in the child process.
+            self.client = type(self.client)(
+                config=self.client.config,
+                authenticate=self.client.should_authenticate)
+            self._owner_pid = os.getpid()
+
     def get_batch(self, index):
 
         total_batches = math.ceil(self.total_elements / self.batch_size)
+        if index < 0 or index >= self.total_elements:
+            raise IndexError("Dataset index out of range")
         batch_idx     = math.floor(index / self.batch_size)
 
         if batch_idx >= total_batches:
             raise Exception("Index out of range")
 
-        query = self.query
-        qbatch = query[self.command_idx][self.command_name]["batch"]
-        qbatch["batch_size"] = self.batch_size
-        qbatch["batch_id"] = batch_idx
-
-        query[self.command_idx][self.command_name]["batch"] = qbatch
+        self._paging.page(batch_idx, self.total_elements)
 
         try:
 
-            # This is to handle potential issues with
-            # disconnection/timeout and SSL context on multiprocessing
-            connection_ok = False
-            try:
-                _, r, b = execute_query(
-                    query=self.query, blobs=[], client=self.client)
-                connection_ok = True
-            except:
-                # Connection failed, we retry just once to re-connect
-                self.client = self.client.clone()
-
-            if not connection_ok:
-                # Connection failed, we have reconnected, we try again.
-                _, r, b = execute_query(
-                    query=self.query, blobs=[], client=self.client)
+            # Forked data-loader workers acquire their own connection before
+            # sending bytes. A failed query is never automatically replayed.
+            self._ensure_process_client()
+            _, r, b = execute_query(
+                query=self.query, blobs=[], client=self.client)
 
             resp = r[self.command_idx][self.command_name]
             if resp.get("status", 0) != 0:

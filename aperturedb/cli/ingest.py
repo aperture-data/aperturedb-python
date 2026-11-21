@@ -133,7 +133,7 @@ def from_generator(filepath: Annotated[str, typer.Argument(
     module = import_module_by_path(filepath)
 
     # The assumption is that the class name is same as that of the module name
-    module_name  = os.path.basename(filepath)[:-3]
+    module_name = os.path.basename(filepath)[:-3]
     mclass = getattr(module, module_name)
 
     # This is the dynamically loaded data generator.
@@ -189,6 +189,9 @@ def from_csv(filepath: Annotated[str, typer.Argument(
         help="Number of samples to ingest (-1 for all)")] = -1,
     debug: Annotated[bool, typer.Option(
         help="Debug mode")] = False,
+    class_name: Annotated[Optional[str], typer.Option(
+        help="Application class for media rows")] = None,
+    hello_version: Annotated[int, typer.Option(hidden=True)] = 1,
 ):
     """
     Ingest data from a pre generated CSV file.
@@ -216,7 +219,8 @@ def from_csv(filepath: Annotated[str, typer.Argument(
     }
 
     data = ingest_types[ingest_type](filepath, use_dask=use_dask,
-                                     blobs_relative_to_csv=blobs_relative_to_csv)
+                                     blobs_relative_to_csv=blobs_relative_to_csv,
+                                     class_name=class_name, hello_version=hello_version)
     data.sample_count = len(data) if sample_count == -1 else sample_count
     if transformer or user_transformer:
         transformer = transformer or []
@@ -252,6 +256,7 @@ def from_croissant(
         help="Size of the batch")] = 1,
     num_workers: Annotated[int, typer.Option(
         help="Number of workers for ingestion")] = 1,
+    hello_version: Annotated[int, typer.Option(hidden=True)] = 1,
 ):
     """
     Ingest data from MLCroissant dataset.
@@ -261,12 +266,22 @@ def from_croissant(
     except ImportError:
         console.log(
             "mlcroissant is not installed. Please install it with `pip install -U mlcroissant`.")
-        typer.Abort()
+        raise typer.Abort()
 
     from aperturedb.MLCroissant import MLCroissantRecordSet, persist_metadata
 
     croissant_dataset = mlc.Dataset(url)
-    metadata = persist_metadata(croissant_dataset, url)
+    if debug:
+        generation_version = hello_version
+    else:
+        from aperturedb.CommonLibrary import create_connector
+        client = create_connector()
+        try:
+            generation_version = client.hello_version
+        finally:
+            client.close()
+    metadata = persist_metadata(
+        croissant_dataset, url, hello_version=generation_version)
     _process_data(
         [metadata],
         sample_count=1,
@@ -285,7 +300,8 @@ def from_croissant(
             name=record_set.name or record_set.uuid,
             flatten_json=flatten_json,
             sample_count=sample_count,
-            uuid=record_set.uuid
+            uuid=record_set.uuid,
+            hello_version=generation_version
         )
         actual_sample_count = len(data)
         _process_data(
@@ -311,6 +327,9 @@ def generate_embedding_csv_from_image_csv(
         help="Apply user transformer to the pipeline as path to file [Can be specified multiple times.]")] = None,
     sample_count: Annotated[int, typer.Option(
         help="Number of samples to ingest (-1 for all)")] = -1,
+    class_name: Annotated[Optional[str], typer.Option(
+        help="Application image class for generated queries and CSV files")] = None,
+    hello_version: Annotated[int, typer.Option(hidden=True)] = 1,
 ):
     """
     Create a DescriptorDataCSV from an ImageDataCSV, using the specified transformer.
@@ -324,7 +343,14 @@ def generate_embedding_csv_from_image_csv(
     from aperturedb.ImageDataCSV import ImageDataCSV
     import numpy as np
 
-    data = ImageDataCSV(input_file)
+    if hello_version not in (1, 2):
+        raise ValueError("Generated CSVs support hello versions 1 and 2")
+    if hello_version == 2 and not class_name:
+        raise ValueError("Native CSV generation requires --class-name")
+    if not transformer and not user_transformer:
+        raise ValueError("An embedding transformer is required")
+    data = ImageDataCSV(input_file, class_name=class_name,
+                        hello_version=hello_version)
     data.sample_count = len(data) if sample_count == -1 else sample_count
     if transformer or user_transformer:
         transformer = transformer or []
@@ -335,8 +361,16 @@ def generate_embedding_csv_from_image_csv(
                 "No transformer specified . Generating embeddings from raw images requires a transformer.")
             typer.Abort()
         all_transformers.insert(0, "image_properties")
-        data = _apply_pipeline(data, all_transformers,
-                               adb_data_source=f"{os.path.basename(input_file)}")
+        # CSV generation is offline: initialize the vector index when these
+        # files are ingested, rather than opening a database during extraction.
+        for stage in _create_pipeline(all_transformers):
+            previous = data
+            data = stage(data, search_set_name=set_name,
+                         adb_data_source=os.path.basename(input_file))
+            data.sample_count = previous.sample_count
+            data.hello_version = hello_version
+            if hasattr(data, "_descriptorset_initialized"):
+                data._descriptorset_initialized = True
     filename = f"{os.path.basename(input_file)}_{all_transformers[-1]}"
     metadata = []
     connection = []
@@ -360,8 +394,8 @@ def generate_embedding_csv_from_image_csv(
         })
         connection.append({
             "ConnectionClass": "image_descriptor",
-            "_Image@adb_image_sha256": d[0][0]["AddImage"]["properties"]["adb_image_sha256"],
-            "_Descriptor@id": descriptor_id,
+            (f"image:{class_name}@adb_image_sha256" if hello_version == 2 else "_Image@adb_image_sha256"): d[0][0]["AddImage"]["properties"]["adb_image_sha256"],
+            (f"descriptor:{set_name}@id" if hello_version == 2 else "_Descriptor@id"): descriptor_id,
         })
 
     with open(f"{filename}.npy", "wb") as f:
@@ -370,6 +404,6 @@ def generate_embedding_csv_from_image_csv(
         f"{filename}_metadata.adb.csv", index=False)
     pd.json_normalize(connection).to_csv(
         f"{filename}_connection.adb.csv", index=False)
-    if(len(errored) > 0):
+    if (len(errored) > 0):
         pd.json_normalize(errored).to_csv(
             f"{filename}_errored.csv", index=False)

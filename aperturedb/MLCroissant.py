@@ -80,7 +80,7 @@ def deserialize_record(record):
     return deserialized
 
 
-def persist_metadata(dataset: mlc.Dataset, url: str) -> Tuple[List[dict], List[bytes]]:
+def persist_metadata(dataset: mlc.Dataset, url: str, client=None, hello_version=None) -> Tuple[List[dict], List[bytes]]:
     """
     Persist the metadata of a croissant dataset into ApertureDB.
     """
@@ -95,7 +95,8 @@ def persist_metadata(dataset: mlc.Dataset, url: str) -> Tuple[List[dict], List[b
             uuid=rs.uuid,
         ) for rs in dataset.metadata.record_sets]
     )
-    q, b, _ = generate_add_query(ds)
+    q, b, _ = generate_add_query(
+        ds, client=client, hello_version=hello_version)
 
     return q, b
 
@@ -116,7 +117,7 @@ def try_parse(value: str) -> Any:
     return parsed
 
 
-def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
+def dict_to_query(row_dict, name: str, flatten_json: bool, hello_version: int = 1) -> Any:
     literals = {}
     subitems = {}
     known_image_blobs = {}
@@ -197,7 +198,7 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     for key in subitems:
         for item in subitems[key]:
             subitem_query, blobs = dict_to_query(
-                item, f"{name}.{key}", flatten_json)
+                item, f"{name}.{key}", flatten_json, hello_version)
             subitem_query[0][list(subitem_query[0].keys())[-1]]["connect"] = {
                 "ref": 1,
                 "class": key,
@@ -209,6 +210,7 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
     blobs = []
     for blob in known_image_blobs:
         image_query = QueryBuilder.add_command(ObjectType.IMAGE, {
+            **({"class": name + ".image"} if hello_version >= 2 else {}),
             "properties": {CLASS_PROPERTY_NAME: literals[CLASS_PROPERTY_NAME] + "." + "image"},
             "connect": {
                 "ref": 1,
@@ -221,6 +223,7 @@ def dict_to_query(row_dict, name: str, flatten_json: bool) -> Any:
 
     for blob in unknown_blobs:
         blob_query = QueryBuilder.add_command(ObjectType.BLOB, {
+            **({"class": name + ".blob"} if hello_version >= 2 else {}),
             "properties": {CLASS_PROPERTY_NAME: literals[CLASS_PROPERTY_NAME] + "." + "blob"},
             "connect": {
                 "ref": 1,
@@ -241,7 +244,9 @@ class MLCroissantRecordSet(Subscriptable):
             name: str,
             flatten_json: bool,
             sample_count: int = 0,
-            uuid: str = None):
+            uuid: str = None,
+            hello_version: int = 1):
+        self.hello_version = hello_version
         self.record_set = record_set
         self.uuid = uuid
         samples = []
@@ -267,7 +272,8 @@ class MLCroissantRecordSet(Subscriptable):
                 "constraints": predicate("uuid", "==", self.uuid)
             })
 
-        q, blobs = dict_to_query(row_dict, self.name, self.flatten_json)
+        q, blobs = dict_to_query(
+            row_dict, self.name, self.flatten_json, self.hello_version)
         indexes_to_create = []
         for command in q:
             cmd = list(command.keys())[-1]
@@ -288,3 +294,6 @@ class MLCroissantRecordSet(Subscriptable):
 
     def __len__(self):
         return len(self.samples)
+
+    def set_hello_version(self, version):
+        self.hello_version = version

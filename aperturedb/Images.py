@@ -14,7 +14,8 @@ from aperturedb import Utils
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints, predicate
 from aperturedb.CommonLibrary import execute_query
-from aperturedb.DescriptorEngines import descriptorset_engine
+from aperturedb.DescriptorEngines import descriptor_search
+from aperturedb.ServerCompatibility import descriptor_selector, OBJECT_TYPES
 from aperturedb.Query import QueryBuilder, ObjectType, class_entity
 from ipywidgets import widgets
 from IPython.display import display, HTML
@@ -656,7 +657,7 @@ class Images(Entities):
     def get_similar_images(self, set_name, n_neighbors):
 
         imgs_return = Images(self.client)
-        engine = descriptorset_engine(self.client, set_name)
+        search = descriptor_search(self.client, set_name)
 
         for uniqueid in self.images_ids:
 
@@ -666,7 +667,7 @@ class Images(Entities):
                 "blobs": False,
             }
             find_descriptor_params = {
-                "set": set_name,
+                **descriptor_selector(self.client, set_name),
                 "is_connected_to": {
                     "ref": 1,
                 },
@@ -683,10 +684,9 @@ class Images(Entities):
 
             find_descriptor_params = {
                 "_ref": 1,
-                "set": set_name,
+                **search,
                 "k_neighbors": n_neighbors + 1,
                 "blobs":     False,
-                **({"engine": engine} if engine else {}),
                 "distances": True,
                 "uniqueids": True,
             }
@@ -947,6 +947,12 @@ class Images(Entities):
         """
         dbutils = Utils.Utils(self.client)
         schema = dbutils.get_schema()
+        if isinstance(schema.get("nodes"), list):
+            name = getattr(self.db_object, "value", self.db_object).lstrip("_")
+            target = OBJECT_TYPES.get(name)
+            return sorted({key for entry in schema["nodes"]
+                           if entry["type"] == target
+                           for key in entry.get("properties", {})})
 
         try:
             dictio = schema["entities"]["classes"][self.db_object.value]["properties"]

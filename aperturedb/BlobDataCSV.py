@@ -59,13 +59,10 @@ class BlobDataCSV(CSVParser.CSVParser):
         self.command = "AddBlob"
 
     def get_indices(self):
-        return {
-            "entity": {
-                "_Blob": self.get_indexed_properties()
-            }
-        }
+        return self._media_indices("Blob")
 
     def getitem(self, idx):
+        idx = self.df.index.start + idx
         filename = os.path.join(self.relative_path_prefix,
                                 self.df.loc[idx, BLOB_PATH])
         blob_ok, blob = self.load_blob(filename)

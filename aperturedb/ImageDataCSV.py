@@ -48,11 +48,7 @@ class ImageDataProcessor():
             self.sources = Sources(self.n_download_retries)
 
     def get_indices(self):
-        return {
-            "entity": {
-                "_Image": self.get_indexed_properties()
-            }
-        }
+        return self._media_indices("Image")
 
     def load_image(self, filename):
 
@@ -177,6 +173,8 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         ImageDataProcessor.__init__(
             self, check_image, n_download_retries)
         CSVParser.CSVParser.__init__(self, filename, **kwargs)
+        self._csv_options.update(
+            check_image=check_image, n_download_retries=n_download_retries)
 
         source_type = self.header[0]
         self.set_processor(self.use_dask, source_type)
@@ -229,11 +227,7 @@ class ImageDataCSV(CSVParser.CSVParser, ImageDataProcessor):
         return q, blobs
 
     def get_indices(self):
-        return {
-            "entity": {
-                "_Image": self.get_indexed_properties()
-            }
-        }
+        return self._media_indices("Image")
 
     def validate(self):
 

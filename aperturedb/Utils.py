@@ -6,10 +6,13 @@ from aperturedb.Query import QueryBuilder
 from aperturedb.Constraints import predicate, to_expression
 from aperturedb.CommonLibrary import execute_query
 from aperturedb.DescriptorEngines import engines_object
+from aperturedb.ServerCompatibility import (OBJECT_TYPES, VECTOR_KINDS, connection_selector, hello_version,
+                                            schema_for_display, typed_server, vector_index_commands)
 from tqdm import tqdm
 from aperturedb.Connector import Connector
 import logging
 import json
+from html import escape
 from typing import List, Optional, Dict, Set, Tuple
 from aperturedb.LoggingUtils import censor_tokens
 
@@ -39,7 +42,15 @@ DEFAULT_METADATA_BATCH_SIZE = 100_000
 
 
 def _is_builtin_index(index: dict) -> bool:
+    if isinstance(index["target"], dict):
+        return False
     return (index["target"], index["class"], index["property"], index["kind"]) in BUILTIN_INDEXES
+
+
+def _index_command_selector(index):
+    return {name: index[name] for name in
+            ("target", "class", "property", "kind")
+            if name in index}
 
 
 class Utils(object):
@@ -165,7 +176,7 @@ class Utils(object):
         """
         if not HAS_GRAPHVIZ:
             raise Exception("graphviz not installed.")
-        r = self.get_schema()
+        r = schema_for_display(self.get_schema())
 
         colors = dict(
             edge="#3A3B9C",
@@ -186,6 +197,13 @@ class Utils(object):
         # of a kind reports that section as null.
         entities = (r.get('entities') or {}).get('classes') or {}
         connections = (r.get('connections') or {}).get('classes') or {}
+        typed_graph = isinstance(r.get("nodes"), list)
+        node_ids = {name: f"node{index}" if typed_graph else name
+                    for index, name in enumerate(entities)}
+        rows = [(name, row) for name, records in connections.items()
+                for row in self._normalize_class_data(records)]
+        ports = {id(row): f"connection{index}" if typed_graph else name
+                 for index, (name, row) in enumerate(rows)}
 
         indexed_lookup = self._indexed_lookup()
 
@@ -194,12 +212,13 @@ class Utils(object):
             properties = data["properties"] or {}
             table = f'''<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-            <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{entity}</B> ({matched:,})</FONT></TD></TR>
+            <TR><TD BGCOLOR="{colors["entity_background"]}" COLSPAN="3"><FONT COLOR="{colors["entity_foreground"]}"><B>{escape(entity)}</B> ({matched:,})</FONT></TD></TR>
             '''
             for prop, value in properties.items():
                 matched, indexed, typ = self._property_info(value)
                 if indexed is None:
-                    indexed = indexed_lookup("entity", entity, prop)
+                    indexed = indexed_lookup(data.get("_target", "entity"),
+                                             data.get("_class", entity), prop)
                 bg = colors["property_background"]
                 fg = colors["property_foreground"]
                 idx_str = "Indexed" if indexed else "Unindexed"
@@ -223,14 +242,14 @@ class Utils(object):
                             '<TR><TD BGCOLOR="{}" COLSPAN="3" '
                             'PORT="{}"><FONT COLOR="{}">'
                             '<B>{}</B> ({:,})</FONT></TD></TR>'
-                        ).format(c_bg, connection, c_fg, connection, matched)
+                        ).format(c_bg, ports[id(data)], c_fg, escape(connection), matched)
                         if properties:
                             for prop, value in properties.items():
                                 matched, indexed, typ = self._property_info(
                                     value)
                                 if indexed is None:
                                     indexed = indexed_lookup(
-                                        "connection", connection, prop)
+                                        data.get("target", "connection"), data.get("class", connection), prop)
                                 cp_bg = colors["connection_property_background"]
                                 cp_fg = colors["connection_property_foreground"]
                                 idx_str = "Indexed" if indexed else "Unindexed"
@@ -244,17 +263,18 @@ class Utils(object):
                                 ).format(cp_bg, cp_fg, prop.strip(), cp_bg, cp_fg, f"{matched:,}", cp_bg, cp_fg, idx_str, typ)
 
             table += '</TABLE>>'
-            dot.node(entity, label=table)
+            dot.node(node_ids[entity], label=table)
 
         if isinstance(connections, dict):
             for connection, data in connections.items():
                 data_list = self._normalize_class_data(data)
                 for data in data_list:
-                    dot.edge(f'{data["src"]}:{connection}',
-                             f'{data["dst"]}')
+                    dot.edge(f'{node_ids[data["src"]]}:{ports[id(data)]}',
+                             node_ids[data["dst"]])
 
         # Render the diagram inline
-        s = Source(dot.source, filename="schema_diagram.gv", format="png")
+        s = Source(source=dot.source,
+                   filename="schema_diagram.gv", format="png")
 
         if filename is not None:
             s.render(filename, format=format)
@@ -285,12 +305,18 @@ class Utils(object):
         """
         indexed = None
 
-        def lookup(target: str, class_name: str, property_key: str) -> bool:
+        def identity(target, class_name, prop):
+            if isinstance(target, dict):
+                return ("connection", class_name["connection"], prop, target["src"],
+                        class_name["src"], target["dst"], class_name["dst"])
+            return (target, class_name, prop)
+
+        def lookup(target, class_name, property_key):
             nonlocal indexed
             if indexed is None:
-                indexed = {(i["target"], i["class"], i["property"])
-                           for i in self.get_indexes()}
-            return (target, class_name, property_key) in indexed
+                indexed = {identity(index["target"], index["class"], index["property"])
+                           for index in self.get_indexes()}
+            return identity(target, class_name, property_key) in indexed
 
         return lookup
 
@@ -320,7 +346,8 @@ class Utils(object):
         for k in p:
             matched, indexed, typ = self._property_info(p[k])
             if indexed is None:
-                indexed = indexed_lookup(target, name, k)
+                indexed = indexed_lookup(object.get("target", object.get("_target", target)),
+                                         object.get("class", object.get("_class", name)), k)
             i = w = " "
             i = "I" if indexed else i
 
@@ -355,7 +382,7 @@ class Utils(object):
 
         This is essentially a call to [GetSchema](/query_language/Reference/db_commands/GetSchema), with the results formatted in a more human-readable way.
         """
-        r = self.get_schema()
+        r = schema_for_display(self.get_schema())
         s = json.loads(self.status())[0]["GetStatus"]
         version = s["version"]
         status = s["status"]
@@ -405,6 +432,18 @@ class Utils(object):
         print(f"Total edges: {total_edges}")
         print(f"=============================================")
 
+    def _index_selector(self, target, class_name):
+        if (isinstance(class_name, str) and ":" in class_name and
+                not isinstance(target, dict) and target != "connection" and typed_server(self.client)):
+            object_type, application_class = class_name.split(":", 1)
+            targets = set(OBJECT_TYPES.values()) - {"connection"}
+            if object_type in targets:
+                if not application_class:
+                    raise ValueError(
+                        "Expected a typed class such as image:Assets")
+                target, class_name = object_type, application_class
+        return target, class_name
+
     def _has_index(self, target, class_name, property_key, kind) -> bool:
         try:
             return bool(self.get_indexes(target, class_name, property_key, kind))
@@ -412,6 +451,7 @@ class Utils(object):
             return False
 
     def _create_index(self, target, class_name, property_key, kind="ordered"):
+        target, class_name = self._index_selector(target, class_name)
 
         # Servers from 0.19.13 reject creating an existing index instead of returning
         # status 2, so an index that is already in place counts as created.
@@ -436,6 +476,7 @@ class Utils(object):
         return True
 
     def _remove_index(self, target, class_name, property_key, kind="ordered"):
+        target, class_name = self._index_selector(target, class_name)
 
         q = [{
             "RemoveIndex": {
@@ -466,9 +507,12 @@ class Utils(object):
 
         return self._create_index("entity", class_name, property_key)
 
-    def create_connection_index(self, class_name, property_key, property_type=None):
+    def create_connection_index(self, class_name: str | dict, property_key, property_type=None,
+                                *, target: dict | None = None):
         """
-        Create an index for a connection class.
+        Create an index for a connection class. On server 1.0, pass a class_name
+        dictionary with src, connection and dst names and a target dictionary
+        with src and dst types. On server 0.20, pass the connection class name.
         See [CreateIndex](/query_language/Reference/db_commands/CreateIndex) in the ApertureDB documentation for more information.
         """
 
@@ -477,6 +521,16 @@ class Utils(object):
             logger.warning(f"'property_type' will be deprecated in the future")
             logger.warning(f"Please remove 'property_type' parameter")
 
+        if typed_server(self.client):
+            selector = connection_selector(class_name, target)
+            try:
+                self.execute([{"CreateIndex": {**selector, "property": property_key,
+                                               "kind": "ordered"}}], success_statuses=[0, 2])
+                return True
+            except Exception:
+                return bool(self.get_indexes(selector["target"], selector["class"], property_key, "ordered"))
+        if target is not None or not isinstance(class_name, str):
+            raise ValueError("Server 0.20 requires a connection class name")
         return self._create_index("connection", class_name, property_key)
 
     def remove_entity_index(self, class_name, property_key):
@@ -487,11 +541,22 @@ class Utils(object):
 
         return self._remove_index("entity", class_name, property_key)
 
-    def remove_connection_index(self, class_name, property_key):
+    def remove_connection_index(self, class_name: str | dict, property_key, *, target: dict | None = None):
         """
-        Remove an index for a connection class.
+        Remove an index for a connection class. Use the class_name and target
+        supplied to create_connection_index.
         See [RemoveIndex](/query_language/Reference/db_commands/RemoveIndex) in the ApertureDB documentation for more information.
         """
+        if typed_server(self.client):
+            selector = connection_selector(class_name, target)
+            try:
+                self.execute([{"RemoveIndex": {**selector, "property": property_key,
+                                               "kind": "ordered"}}], success_statuses=[0, 2])
+                return True
+            except Exception:
+                return False
+        if target is not None or not isinstance(class_name, str):
+            raise ValueError("Server 0.20 requires a connection class name")
         return self._remove_index("connection", class_name, property_key)
 
     def count_images(self, constraints={}) -> int:
@@ -602,23 +667,53 @@ class Utils(object):
 
         return total_connections
 
+    def create_vector_index(self, class_name: str, dimensions: int,
+                            metric="CS", engines=None, metadata=None, *,
+                            kind=None, params=None) -> bool:
+        """Create a vector index on a descriptor class.
+
+        Set `kind` to `flat`, `ivf`, `hnsw` (default), or `acorn`.
+        Pass engine settings directly in `params`, such as `{"nlist": 64}`
+        for IVF. Use `metadata` for application fields such as the model name.
+        """
+        if kind is not None or params is not None:
+            if engines is not None:
+                raise ValueError("Choose either kind and params or engines")
+            configured = {kind if kind is not None else "hnsw": {}
+                          if params is None else params}
+        else:
+            configured = engines if isinstance(engines, dict) else engines_object(
+                engines or ["HNSW"])
+        try:
+            query = vector_index_commands(hello_version(self.client), class_name,
+                                          dimensions, metric, configured, metadata)
+            self.execute(query, success_statuses=[0, 2])
+        except Exception:
+            return False
+        return True
+
     def add_descriptorset(self, name: str, dim: int, metric=["CS"],
                           engine=["HNSW"],
                           properties: Optional[Dict] = None) -> bool:
         """
-        Add a descriptor set to the database.
+        Create a descriptor search space on either supported server.
+
+        Each engine gets an index on the named descriptor class, with
+        ``properties`` as index metadata.
 
         Args:
             name (str): The name of the descriptor set.
             dim (int): The dimension of the descriptors.
             metric (str, optional): The metric to use for the descriptors.
             engine (str, optional): The engine to use for the descriptors,
-                sent as the ``engines`` object with default settings.
+                using default engine parameters.
             properties (dict, optional): The properties of the descriptor set.
 
         Returns:
             success (bool): True if the operation was successful, False otherwise.
         """
+        if typed_server(self.client):
+            return self.create_vector_index(name, dim, metric, engine, properties)
         query = [{
             "AddDescriptorSet": {
                 "name":       name,
@@ -638,13 +733,21 @@ class Utils(object):
 
         return True
 
+    def get_vector_indexes(self, class_name: Optional[str] = None) -> List[dict]:
+        """Read the vector indexes on descriptor classes, one entry per index kind."""
+        return [index for index in self.get_indexes(target="descriptor", class_name=class_name,
+                                                    property_key="_blob")
+                if index["kind"] in VECTOR_KINDS]
+
     def count_descriptorsets(self) -> int:
         """
-        Count the number of descriptor sets in the database.
+        Count distinct indexed descriptor classes.
 
         Returns:
             count: The number of descriptor sets in the database.
         """
+        if typed_server(self.client):
+            return len(self.get_descriptorset_list())
         q = [{
             "FindDescriptorSet": {
                 "results": {
@@ -660,11 +763,13 @@ class Utils(object):
 
     def get_descriptorset_list(self) -> List[str]:
         """
-        Get the list of descriptor sets in the database.
+        List the names of indexed descriptor classes.
 
         Returns:
             sets (list of str): The list of descriptor sets in the database.
         """
+        if typed_server(self.client):
+            return list(dict.fromkeys(index["class"] for index in self.get_vector_indexes()))
         q = [{
             "FindDescriptorSet": {
                 "results": {
@@ -684,9 +789,10 @@ class Utils(object):
 
     def remove_descriptorset(self, set_name: str) -> bool:
         """
-        Remove a descriptor set from the database.
+        Remove a descriptor search space and its descriptors.
 
-        See [DeleteDescriptorSet](/query_language/Reference/descriptor_commands/desc_set_commands/DeleteDescriptorSet) in the ApertureDB documentation for more information.
+        Atomically remove the descriptors, their class and indexes, and dependent connection
+        classes and indexes. See [descriptor indexes](/query_language/Overview/DescriptorIndexes).
 
         Args:
             set_name (str): The name of the descriptor set.
@@ -694,6 +800,43 @@ class Utils(object):
         Returns:
             success (bool): True if the operation was successful, False otherwise.
         """
+        if typed_server(self.client):
+            try:
+                # Categories and their indexes survive deletion of their last
+                # object. Remove the dependent connection categories explicitly
+                # in the same transaction, including their scoped indexes.
+                schema = self.get_schema()
+                key = set_name.casefold()
+                if not any(node["type"] == "descriptor" and node["class"].casefold() == key
+                           for node in schema.get("nodes") or []):
+                    return True
+
+                def selected(kind, name):
+                    return kind == "descriptor" and name.casefold() == key
+
+                def touches_class(record):
+                    return any(selected(record["target"][end], record["class"][end])
+                               for end in ("src", "dst"))
+
+                edges = [edge for edge in schema.get(
+                    "edges") or [] if touches_class(edge)]
+                query = [{"DeleteDescriptor": {"with_class": set_name}}]
+                for index in self.get_indexes():
+                    node_match = isinstance(index["target"], str) and selected(
+                        index["target"], index["class"])
+                    edge_match = isinstance(
+                        index["target"], dict) and touches_class(index)
+                    if node_match or edge_match:
+                        query.append(
+                            {"RemoveIndex": _index_command_selector(index)})
+                query.extend({"RemoveClass": {"target": edge["target"], "class": edge["class"]}}
+                             for edge in edges)
+                query.append(
+                    {"RemoveClass": {"target": "descriptor", "class": set_name}})
+                self.execute(query, success_statuses=[0, 2])
+            except Exception:
+                return False
+            return True
         q = [{
             "FindDescriptorSet": {
                 "_ref": 1,
@@ -846,6 +989,10 @@ class Utils(object):
         Returns:
             success (bool): True if the operation was successful, False otherwise.
         """
+        if typed_server(self.client):
+            return all(self.remove_descriptorset(name)
+                       for name in self.get_descriptorset_list())
+
         self.print("Removing indexes...")
 
         try:
@@ -922,6 +1069,10 @@ class Utils(object):
         """
         total = -1
 
+        if typed_server(self.client):
+            response, _ = self.execute([{"FindDescriptor": {
+                "with_class": set_name, "results": {"count": True}}}])
+            return response[0]["FindDescriptor"]["count"]
         q = [{
             "FindDescriptorSet": {
                 "_ref": 1,
@@ -945,21 +1096,28 @@ class Utils(object):
 
         return total
 
-    def get_indexes(self, target: Optional[str] = None, class_name: Optional[str] = None,
+    def get_indexes(self, target: str | dict | None = None, class_name: str | dict | None = None,
                     property_key: Optional[str] = None, kind: Optional[str] = None) -> List[dict]:
         """
         List index definitions, optionally filtered.
         See [GetIndexes](/query_language/Reference/db_commands/GetIndexes) in the ApertureDB documentation for more information.
 
         Args:
-            target (str, optional): "entity" or "connection". Defaults to both.
-            class_name (str, optional): Entity or connection class.
+            target (str or dict, optional): Object type or a connection endpoint filter
+                with src and/or dst types. Omit to search all targets.
+            class_name (str or dict, optional): A class name or a connection filter
+                with any of src, connection and dst class names.
             property_key (str, optional): Indexed property.
             kind (str, optional): Index kind, such as "ordered". Defaults to all kinds.
 
         Returns:
             indexes (List[dict]): One dict per index with "target", "class", "property", "kind" and "params".
         """
+        target, class_name = self._index_selector(target, class_name)
+        if target == "connection" and typed_server(self.client):
+            target = {}
+        if isinstance(target, dict) and isinstance(class_name, str):
+            class_name = {"connection": class_name}
         params = {"target": target, "class": class_name,
                   "property": property_key, "kind": kind}
         q = [{"GetIndexes": {k: v for k, v in params.items() if v is not None}}]
@@ -984,6 +1142,8 @@ class Utils(object):
                 "property": index.get("property", index.get("property_key")),
                 "kind": index["kind"],
                 "params": index.get("params", {}),
+                **{key: index[key] for key in ("metadata", "progress")
+                   if key in index},
             } for index in indexes]
         return [{
             "target": target,
@@ -1011,7 +1171,7 @@ class Utils(object):
         def removable():
             for index in self.get_indexes():
                 if not _is_builtin_index(index):
-                    yield {key: index[key] for key in ("target", "class", "property", "kind")}
+                    yield _index_command_selector(index)
 
         try:
             query = [{"RemoveIndex": index} for index in removable()]
@@ -1036,6 +1196,29 @@ class Utils(object):
         Returns:
             success (bool): True if the operation was successful, False otherwise.
         """
+        if typed_server(self.client):
+            try:
+                indexes = self.get_vector_indexes()
+                query = [{"DeleteConnection": {}}]
+                # Several native Delete commands require an explicit selector.
+                # This reserved ID cannot identify a stored object.
+                query.extend({"Delete" + name: {
+                    "constraints": predicate("_uniqueid", "!=", "0.0.0")
+                }} for name in (
+                    "Image", "Video", "Blob", "Clip", "BoundingBox",
+                    "Polygon", "Frame", "Descriptor", "Entity"))
+                query.extend({"RemoveIndex": {
+                    key: index[key] for key in ("target", "class", "property", "kind")
+                }} for index in indexes)
+                self.execute(query, success_statuses=[0, 2])
+                schema = self.get_schema()
+                return all(entry.get("matched", 0) == 0
+                           for section in ("nodes", "edges")
+                           for entry in schema.get(section) or [])
+            except Exception:
+                logger.exception("Could not remove all objects")
+                return False
+
         cmd = {"constraints": predicate("_uniqueid", "!=", "0.0.0")}
 
         transaction = [

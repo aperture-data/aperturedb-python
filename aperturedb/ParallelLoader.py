@@ -44,14 +44,24 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         Returns the existing ordered indexes, as used for constraint lookups.
 
         Returns:
-            dict: A dictionary of the form ``{"entity": {"class_name": {"property_name"}}}``,
-            with a ``"connection"`` key for connection indexes.
+            dict: A dictionary of the form ``{"entity": {"class_name": {"property_name"}}}``.
+            For connection indexes on server 1.0, the keys under ``"connection"`` are tuples
+            containing the connection class, source type and class, and destination type
+            and class, in that order. On server 0.20, the key is the connection class name.
         """
 
         indexes = {}
         for index in self.utils.get_indexes(kind="ordered"):
-            indexes.setdefault(index["target"], {}).setdefault(
-                index["class"], set()).add(index["property"])
+            target = index["target"]
+            if isinstance(target, dict):
+                classes = index["class"]
+                identity = (classes["connection"], target["src"], classes["src"],
+                            target["dst"], classes["dst"])
+                indexes.setdefault("connection", {}).setdefault(
+                    identity, set()).add(index["property"])
+            else:
+                indexes.setdefault(target, {}).setdefault(
+                    index["class"], set()).add(index["property"])
 
         return indexes
 
@@ -84,6 +94,11 @@ class ParallelLoader(ParallelQuery.ParallelQuery):
         """
         if hasattr(generator, "get_indices"):
             indices_needed = generator.get_indices()
+            # Typed connection indexes include both endpoint classes. They
+            # cannot be represented by a legacy, globally scoped class key.
+            commands = indices_needed.get("commands", [])
+            if commands:
+                self.utils.execute(commands)
 
             # Create indexes for entities
             for entity_class in indices_needed.get("entity", {}):

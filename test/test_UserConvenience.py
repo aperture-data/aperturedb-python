@@ -1,4 +1,6 @@
 import json
+import pytest
+from aperturedb.Configuration import Configuration
 from types import SimpleNamespace
 from aperturedb.ConnectorRest import ConnectorRest
 from requests.sessions import Session
@@ -11,18 +13,29 @@ class TestUserConvenience():
     arguments.
     """
 
-    def test_ConnectorRest_handlesNonePort(self):
+    @pytest.mark.parametrize("use_ssl, expected_port", [(True, 443), (False, 80)])
+    def test_ConnectorRest_handlesNonePort(self, monkeypatch, use_ssl, expected_port):
         """
         Test that ConnectorRest can handle a None port,
         and will default to the correct port.
         """
-        client = ConnectorRest(host="dummy", user="admin", password="password")
-        assert "443" in client.url
+        client = ConnectorRest(host="dummy", user="admin",
+                               password="password", use_ssl=use_ssl)
+        assert client.port == expected_port
+        assert client.config.port == expected_port
+        assert client.config.use_rest is True
+        reconstructed = ConnectorRest(config=client.config)
+        assert reconstructed.url == client.url
+        assert reconstructed.port == expected_port
+        assert reconstructed.config.use_rest is True
+        reconstructed.close()
         posts = 0
 
-        def mock_post(self, url, headers, files, verify):
+        def mock_post(self, url, headers, files, verify, stream, allow_redirects):
             nonlocal posts
-            assert "443" in url
+            assert stream is True
+            assert allow_redirects is False
+            assert str(expected_port) in url
             response1 = {
                 "json": [{"Authenticate": {
                     "status": 0,
@@ -34,26 +47,45 @@ class TestUserConvenience():
                 "blobs": []
             }
 
-            r = SimpleNamespace(status_code=200, text=json.dumps(response1))
+            body = json.dumps(response1).encode()
+            r = SimpleNamespace(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                iter_content=lambda chunk_size: iter([body]),
+                close=lambda: None)
             posts += 1
             return r
-        old_post = Session.post
-        Session.post = mock_post
+        monkeypatch.setattr(Session, "post", mock_post)
         client.query("[{\"FindEntity\": {\"_ref\": 1}}]")
-        # Ensure that the mock post was called, 1 time to authenticate, 1 time to query
-        assert posts == 2
-        Session.post = old_post
+        # One discovery request, one authentication, and one query.
+        assert posts == 3
+        client.close()
 
-    def test_ConnectorRest_close_and_recreate_session(self):
+    def test_ConnectorRest_close_and_recreate_session(self, monkeypatch):
         """
         Test that ConnectorRest can be closed, clearing its http_session,
         and that a subsequent call to query() will transparently recreate it.
         """
-        client = ConnectorRest(host="dummy", user="admin", password="password")
+        configuration = Configuration(
+            host="configured", port=8081, username="admin", password="password",
+            name="explicit-config", use_ssl=False)
+        client = ConnectorRest(host="ignored", port=9999,
+                               use_ssl=True, config=configuration)
+        assert client.url == "http://configured:8081/api/"
+        assert client.config.port == 8081
+        assert client.config.use_rest is True
+        assert configuration.use_rest is False
+        reconstructed = ConnectorRest(config=client.config)
+        assert reconstructed.url == client.url
+        assert reconstructed.port == 8081
+        assert reconstructed.config.use_rest is True
+        reconstructed.close()
         posts = 0
 
-        def mock_post(self, url, headers, files, verify):
+        def mock_post(self, url, headers, files, verify, stream, allow_redirects):
             nonlocal posts
+            assert stream is True
+            assert allow_redirects is False
             response1 = {
                 "json": [{"Authenticate": {
                     "status": 0,
@@ -65,17 +97,21 @@ class TestUserConvenience():
                 "blobs": []
             }
 
-            r = SimpleNamespace(status_code=200, text=json.dumps(response1))
+            body = json.dumps(response1).encode()
+            r = SimpleNamespace(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                iter_content=lambda chunk_size: iter([body]),
+                close=lambda: None)
             posts += 1
             return r
 
-        old_post = Session.post
-        Session.post = mock_post
+        monkeypatch.setattr(Session, "post", mock_post)
 
         try:
             # Query 1: Initialize normally
             client.query("[{\"FindEntity\": {\"_ref\": 1}}]")
-            assert posts == 2  # 1 auth, 1 query
+            assert posts == 3  # 1 discovery, 1 auth, 1 query
             assert client.http_session is not None
             old_session = client.http_session
 
@@ -85,8 +121,8 @@ class TestUserConvenience():
 
             # Query 2: Should transparently recreate the session
             client.query("[{\"FindEntity\": {\"_ref\": 2}}]")
-            assert posts == 3
+            assert posts == 5  # Rediscovery and query reuse the valid session.
             assert client.http_session is not None
             assert client.http_session is not old_session
         finally:
-            Session.post = old_post
+            client.close()

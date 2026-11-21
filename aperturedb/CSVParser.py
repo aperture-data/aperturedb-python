@@ -38,6 +38,10 @@ class CSVParser(Subscriptable):
     Typically, the response_handler is application specific, and loading does not break
     on errors in response_handlers, so the default behavior is to log the error and continue.
     If you want to break on errors, set strict_response_validation to True.
+
+    Media loaders require an explicit ``class_name="Assets"``.
+    ParallelLoader selects the command format for the connected server.
+    Descriptor CSV rows use their ``set`` column as the descriptor class.
     """
 
     def __init__(self,
@@ -48,6 +52,17 @@ class CSVParser(Subscriptable):
         self.filename = filename
         self.strict_response_validation = strict_response_validation
         self.constraint_keyword = "if_not_found"
+        self.class_name = kwargs.get("class_name")
+        self.image_class = kwargs.get("image_class")
+        self.hello_version = kwargs.get("hello_version", 1)
+        if type(self.hello_version) is not int or self.hello_version not in (1, 2):
+            raise ValueError("CSV generators support hello versions 1 and 2")
+        self._csv_options = {key: value for key, value in kwargs.items()
+                             if key not in {"df", "use_dask", "client"}}
+        self._csv_options["strict_response_validation"] = strict_response_validation
+        for option in ("check_image", "n_download_retries"):
+            if hasattr(self, option):
+                self._csv_options[option] = getattr(self, option)
 
         # The following are extracted from the kwargs.
         self.blobs_relative_to_csv = "blobs_relative_to_csv" in kwargs and kwargs[
@@ -106,6 +121,26 @@ class CSVParser(Subscriptable):
     def get_indices(self):
         raise NotImplementedError
 
+    def set_hello_version(self, version):
+        """Bind generated commands to the connected server before setup/iteration."""
+        if type(version) is not int or version not in (1, 2):
+            raise ValueError("CSV generators support hello versions 1 and 2")
+        self.hello_version = version
+        self._csv_options["hello_version"] = version
+
+    def _media_class(self, object_type):
+        if not isinstance(self.class_name, str) or not self.class_name or self.class_name.startswith("_"):
+            raise ValueError(
+                f"{object_type} CSV ingestion on server 1.0 requires class_name= an application class")
+        return self.class_name
+
+    def _media_indices(self, object_type):
+        if self.hello_version < 2:
+            return {"entity": {"_" + object_type: self.get_indexed_properties()}}
+        from aperturedb.ServerCompatibility import OBJECT_TYPES
+        return {"entity": {OBJECT_TYPES[object_type] + ":" + self._media_class(object_type):
+                           self.get_indexed_properties()}}
+
     def _parse_prop(self, key, val=None):
         if key.startswith(CONSTRAINTS_PREFIX):
             key = key[len(CONSTRAINTS_PREFIX):]
@@ -162,6 +197,15 @@ class CSVParser(Subscriptable):
     def _parsed_command(self, idx, custom_fields: dict = None, constraints: dict = None, properties: dict = None):
         if custom_fields == None:
             custom_fields = {}
+        else:
+            custom_fields = dict(custom_fields)
+        if self.hello_version >= 2:
+            operation = next((value for value in ("Add", "Find", "Update", "Delete")
+                              if self.command.startswith(value)), None)
+            object_type = self.command[len(operation):] if operation else None
+            if object_type in {"Image", "Video", "Blob", "Frame", "Clip", "BoundingBox", "Polygon"}:
+                custom_fields["class" if operation ==
+                              "Add" else "with_class"] = self._media_class(object_type)
         query = {
             self.command: custom_fields
         }

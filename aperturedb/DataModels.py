@@ -4,7 +4,7 @@
 from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated, List
-from typing import ClassVar
+from typing import ClassVar, Optional
 from uuid import uuid4
 from aperturedb.Query import ObjectType, PropertyType, RangeType
 
@@ -18,6 +18,9 @@ class IdentityDataModel(BaseModel):
     # Change as per the docs for the error
     # https://docs.pydantic.dev/dev-v2/usage/errors/#model-field-overridden
     type: ClassVar[ObjectType] = ObjectType.ENTITY
+    # Explicit override for the application class of a model on server 1.0.
+    # Without an override the Python model class name is used.
+    class_name: ClassVar[Optional[str]] = None
 
 
 class BlobDataModel(IdentityDataModel):

@@ -25,13 +25,13 @@
 # THE SOFTWARE.
 #
 from __future__ import annotations
+from dataclasses import replace
 import os
 import requests
 import time
 import json
 import logging
 
-from types import SimpleNamespace
 from typing import Optional
 try:
     import pybase64 as base64
@@ -40,12 +40,15 @@ except ImportError:
 
 from aperturedb.Connector import Connector
 from aperturedb.Configuration import Configuration
+from aperturedb._query_wire import (
+    BufferedInput, ProtocolError, HELLO_VERSION, HELLO_HEADER,
+    LEGACY_HELLO_VERSION, CHUNK_SIZE, buffered_response, multipart_response)
 from requests.adapters import HTTPAdapter
 import ssl
 
 logger = logging.getLogger(__name__)
 
-PROTOCOL_VERSION = 1
+PROTOCOL_VERSION = HELLO_VERSION
 
 
 class CustomHTTPAdapter(HTTPAdapter):
@@ -88,7 +91,8 @@ class ConnectorRest(Connector):
                  user="", password="", token="",
                  use_ssl=True, ca_cert=None, verify_hostname=True, shared_data=None,
                  config: Optional[Configuration] = None,
-                 key: Optional[str] = None):
+                 key: Optional[str] = None,
+                 authenticate: bool = True):
         self.use_keepalive = False
         super().__init__(
             host=host,
@@ -100,18 +104,15 @@ class ConnectorRest(Connector):
             ca_cert=ca_cert,
             verify_hostname=verify_hostname,
             shared_data=shared_data,
+            authenticate=authenticate,
             config=config,
             key=key)
 
-        # A Convenience feature to not require the port
-        # Relies on common ports for http and https, but can be overriden
-        if port is None:
-            if config is None:
-                self.port = 443 if use_ssl else 80
-            else:
-                self.port = config.port
-        else:
-            self.port = port
+        # Resolve HTTP defaults after key/config precedence has been applied.
+        if self.port is None:
+            self.port = Configuration.config_default_port(
+                use_rest=True, use_ssl=self.use_ssl)
+        self.config = replace(self.config, port=self.port, use_rest=True)
 
         self.connected = False
         # Session is useful because it does not add "Connection: close header"
@@ -144,69 +145,96 @@ class ConnectorRest(Connector):
     def __del__(self):
         self.close()
 
-    def _query(self, query, blob_array=None, try_resume=True):
-        if blob_array is None:
-            blob_array = []
+    def _http_input(self, response):
+        chunks = iter(response.iter_content(chunk_size=CHUNK_SIZE))
+
+        def receive(_):
+            for chunk in chunks:
+                if chunk:
+                    return chunk
+            return b''
+
+        return BufferedInput(receive)
+
+    def _post(self, query_str, blobs, version, authenticate=True):
         if getattr(self, 'http_session', None) is None:
             self._init_session()
-        response_blob_array = []
-        # Check the query type
-        if not isinstance(query, str):  # assumes json
-            query_str = json.dumps(query)
-        else:
-            query_str = query
-
-        files = [
-            ('query', (None, query_str)),
-        ]
-
-        for blob in blob_array:
-            files.append(('blobs', blob))
-
+        headers = {HELLO_HEADER: str(version)}
         session = self.shared_data.session
-        if session is not None:
-            headers = {'Authorization': "Bearer " + session.session_token}
-        else:
-            headers = None
-        tries = 0
-        response = SimpleNamespace()
-        response.status_code = 0
-        while tries < self.config.retry_max_attempts:
-            tries += 1
+        if authenticate and session is not None:
+            headers['Authorization'] = "Bearer " + session.session_token
+        files = [('query', (None, query_str, 'application/json'))]
+        files.extend(('blobs', ('blobs', blob, 'application/octet-stream'))
+                     for blob in blobs)
+        return self.http_session.post(
+            self.url, headers=headers, files=files, stream=True,
+            allow_redirects=False,
+            verify=self.config.use_ssl and self.config.verify_hostname)
+
+    def _read_http_response(self, response, release):
+        def finished(success):
             try:
-                # URL takes care of the scheme
-                response = self.http_session.post(self.url,
-                                                  headers = headers,
-                                                  files   = files,
-                                                  verify  = self.config.use_ssl and self.config.verify_hostname)
-                if response.status_code == 200:
-                    # Parse response:
-                    if hasattr(response, "json"):
-                        json_response = response.json()
-                    else:
-                        json_response = json.loads(response.text)
-                    response_blob_array = [base64.b64decode(
-                        b) for b in json_response['blobs']]
-                    self.last_response  = json_response["json"]
-                    break
-                logger.error(
-                    f"Response not OK = {response.status_code} {response.text[:1000]}\n\
-                        attempt [{tries}/3] .. PID = {os.getpid()}")
-            except Exception as e:
-                logger.error(f"Exception during http.post = {e}\n\
-                        attempt [{tries}/3] .. PID = {os.getpid()}")
+                response.close()
+            except BaseException:
+                release(False)
+                raise
+            else:
+                release(success)
 
-            time.sleep(self.config.retry_interval_seconds)
+        if response.status_code != 200:
+            raise ProtocolError(
+                f"HTTP query was rejected with status {response.status_code}")
+        header = response.headers.get(HELLO_HEADER)
+        source = self._http_input(response)
+        limit = self._message_limit()
+        if header == str(HELLO_VERSION):
+            self._hello_version = HELLO_VERSION
+            return multipart_response(
+                source, response.headers.get('Content-Type', ''), limit, finished)
+        if header not in (None, str(LEGACY_HELLO_VERSION)):
+            raise ProtocolError("Unsupported HTTP hello version")
+        # 0.20 gateways have no hello header. Only a valid legacy envelope
+        # identifies that protocol; HTML/proxy errors never trigger fallback.
+        try:
+            envelope = json.loads(source.all(limit))
+            if not isinstance(envelope, dict) or not {'json', 'blobs'} <= envelope.keys():
+                raise ValueError("Not a legacy response envelope")
+            if not isinstance(envelope['json'], (dict, list)) or not isinstance(envelope['blobs'], list):
+                raise ValueError("Invalid legacy response envelope")
+            blobs = [base64.b64decode(blob, validate=True)
+                     for blob in envelope['blobs']]
+        except (TypeError, ValueError, UnicodeError) as error:
+            raise ProtocolError(
+                "Invalid legacy HTTP query response") from error
+        self._hello_version = LEGACY_HELLO_VERSION
+        return buffered_response(envelope['json'], blobs, finished)
 
-            self.connect()
-            if try_resume:
-                self._renew_session()
-
-        if tries == self.config.retry_max_attempts:
-            raise Exception(
-                f"Could not query ApertureDB {self.config} using REST.")
-        return (self.last_response, response_blob_array)
+    def _start_query_response(self, query_str, blobs, release):
+        response = self._post(query_str, blobs, self._hello_version)
+        try:
+            return self._read_http_response(response, release)
+        except BaseException:
+            response.close()
+            raise
 
     def _connect(self):
-        logger.info("Connecting to ApertureDB using REST")
-        self.connected = True
+        # A harmless empty query discovers HTTP hello support before helpers
+        # choose version-specific command forms. It never authenticates or
+        # performs database writes, and its result is discarded.
+        response = self._post('[]', [], HELLO_VERSION, authenticate=False)
+        try:
+            stream = self._read_http_response(response, lambda _: None)
+            with stream:
+                try:
+                    next(stream.blobs)
+                except StopIteration:
+                    pass
+                else:
+                    raise ProtocolError(
+                        "Protocol discovery returned unexpected blobs")
+            self.connected = True
+            self._ever_connected = True
+        except BaseException:
+            response.close()
+            self._close_transport()
+            raise

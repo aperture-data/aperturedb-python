@@ -73,7 +73,9 @@ jobs:
         COMPOSE_DOCKER_CLI_BUILD: 1
         BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         TARGET_BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
-        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
+        # Preserve the complete historical suite on its supported command API.
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:0.20.0
+        SDK_COMPAT_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
         SKIP_SLOW_TESTS: true
       run: ./ci.sh
       shell: bash
@@ -114,7 +116,7 @@ jobs:
         docker run --rm -v ${{ github.workspace }}:/workspace alpine sh -c "rm -rf /workspace/test/aperturedb" || true
         rm -rf docker/pytorch-gpu/aperturedata
         mkdir -p docker/pytorch-gpu/aperturedata/test
-        cp -r aperturedb pyproject.toml README.md docker/pytorch-gpu/aperturedata
+        cp -r aperturedb examples pyproject.toml README.md docker/pytorch-gpu/aperturedata
         cp -r test/*.py test/*.sh test/input test/pytest.ini docker/pytorch-gpu/aperturedata/test
         bash docker/pytorch-gpu/build.sh
       shell: bash
@@ -132,7 +134,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         RUNNER_NAME: ${{ runner.name }}_${{ github.run_id }}
-        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:0.20.0
         SKIP_SLOW_TESTS: true
       run: |
         cd test

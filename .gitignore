@@ -153,3 +153,4 @@ docker/pytorch-gpu/aperturedata/*
 test/data/
 # Test stacks (test/stack.sh)
 test/aperturedb/
+/qualification/

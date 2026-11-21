@@ -62,7 +62,7 @@ def test_add_descriptorset_sends_the_engines_object():
     (None, "HNSW", "HNSW"), ("Flat", "HNSW", "Flat"), (None, None, None)])
 def test_find_similar_names_an_engine(engine, resolved, expected):
     descriptors = Descriptors(MagicMock())
-    with patch("aperturedb.Descriptors.descriptorset_engine", return_value=resolved), \
+    with patch("aperturedb.DescriptorEngines.descriptorset_engine", return_value=resolved), \
             patch("aperturedb.Descriptors.execute_query",
                   return_value=(0, [{"FindDescriptor": {"entities": []}}], [])) as run:
         descriptors.find_similar("faces", [0.0, 1.0], 3, engine=engine)

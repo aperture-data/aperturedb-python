@@ -23,6 +23,21 @@ jobs:
 
     - uses: actions/checkout@v3
 
+    - name: Initialize modern stack identity receipt
+      if: always()
+      run: |
+        mkdir -p qualification
+        printf '%s\n' '{"schema_version":2,"state":"not_run","service":"aperturedb"}' > qualification/sdk-modern-stack.json
+      shell: bash
+
+    - name: Check modern stack receipt controls
+      run: python3 -m unittest discover -s test -p 'modern_stack_receipt_checks.py' -v
+      shell: bash
+
+    - name: Check release publication controls
+      run: python3 -m unittest discover -s test -p 'release_publication_checks.py' -v
+      shell: bash
+
     - name: Login to DockerHub
       uses: docker/login-action@v2
       with:
@@ -61,9 +76,23 @@ jobs:
         # pulled via --cache-from in ci.sh.
         DOCKER_BUILDKIT: 1
         COMPOSE_DOCKER_CLI_BUILD: 1
-        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
+        # Preserve the complete historical suite on its supported command API.
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:0.20.0
+        SDK_COMPAT_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:1.0.0
       run: RUN_TESTS=true ./ci.sh
       shell: bash
+
+    - name: Require captured modern stack identity
+      run: python3 test/require_modern_stack.py qualification/sdk-modern-stack.json
+      shell: bash
+
+    - name: Upload modern stack identity receipt
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: sdk-modern-stack-${{ github.run_id }}-${{ github.run_attempt }}
+        path: qualification/sdk-modern-stack.json
+        if-no-files-found: error
 
   build_and_deploy_docs:
     needs:

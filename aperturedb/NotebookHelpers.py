@@ -76,7 +76,7 @@ def display(images_array, save=False):
     """
 
     for im in images_array:
-        nparr = np.fromstring(im, np.uint8)
+        nparr = np.frombuffer(im, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         plt.subplots()
@@ -95,7 +95,7 @@ def display(images_array, save=False):
 
 def draw_bboxes(image, boxes=[], tags=[], save=False):
 
-    nparr    = np.fromstring(image, np.uint8)
+    nparr    = np.frombuffer(image, np.uint8)
     cv_image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     # Draw a rectangle around the faces

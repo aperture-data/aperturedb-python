@@ -66,18 +66,17 @@ class Entities(Subscriptable):
 
         spec = fs
 
+        query, blobs_in = spec.query(client=client)
         cls.known_entities = load_entities_registry(
-            custom_entities=spec.command_properties(prop="with_class"))
+            custom_entities=spec.command_properties(prop="registry_type"))
         cls.client = client
-
-        query, blobs_in = spec.query()
         logger.debug(f"query={query}")
         res, r, b = execute_query(client, query, blobs_in)
         if res > 0:
             logger.warning(f"resp={r}")
         results = []
         for wc, req, blobs, resp in zip(
-                spec.command_properties(prop="with_class"),
+                spec.command_properties(prop="registry_type"),
                 spec.command_properties(prop="find_command"),
                 spec.command_properties(prop="blobs"),
                 r):
@@ -173,13 +172,13 @@ class Entities(Subscriptable):
         return self.known_entities[self.type](client=self.client, response=list(filter(predicate, self.response)), type=self.type)
 
     def __add__(self, other: Entities) -> Entities:
-        return Entities(response = self.response + other.response, type=self.type)
+        return Entities(response=self.response + other.response, type=self.type)
 
     def __sub__(self, other: Entities) -> Entities:
-        return Entities(response = [x for x in self.response if x not in other.response], type=self.type)
+        return Entities(response=[x for x in self.response if x not in other.response], type=self.type)
 
     def sort(self, key) -> Entities:
-        return Entities(response = sorted(self.response, key=key), type=self.type)
+        return Entities(response=sorted(self.response, key=key), type=self.type)
 
     def inspect(self, **kwargs) -> pd.DataFrame:
         return pd.json_normalize([item for item in self])
@@ -288,5 +287,13 @@ def load_entities_registry(custom_entities: List[str] = None) -> dict:
     }
     for entity in set(custom_entities or []):
         if entity not in known_entities:
-            known_entities[entity] = Entities
+            target, _ = QueryBuilder.split_type_selector(entity)
+            if target is not None:
+                from aperturedb.ServerCompatibility import OBJECT_TYPES
+                object_type = next(
+                    name for name, value in OBJECT_TYPES.items() if value == target)
+                known_entities[entity] = known_entities.get(
+                    "_" + object_type, Entities)
+            else:
+                known_entities[entity] = Entities
     return known_entities

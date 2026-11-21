@@ -4,6 +4,7 @@ import datetime
 import os
 import json
 import requests
+from packaging.version import Version, InvalidVersion
 from string import Template
 import platform
 import faulthandler
@@ -88,6 +89,11 @@ except Exception as e:
     logger.warning(
         f"Failed to get latest version: {e}. You are using version {__version__}")
     latest_version = None
-if __version__ != latest_version:
+try:
+    update_available = latest_version is not None and Version(
+        __version__) < Version(latest_version)
+except InvalidVersion:
+    update_available = False
+if update_available:
     logger.warning(
         f"The latest version of aperturedb is {latest_version}. You are using version {__version__}. It is recommended to upgrade.")

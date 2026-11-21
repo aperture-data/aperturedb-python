@@ -8,6 +8,8 @@ from aperturedb.Operations import Operations
 from aperturedb.Sort import Sort
 from pydantic import BaseModel
 from aperturedb.Sources import Sources
+from aperturedb.ServerCompatibility import OBJECT_TYPES, hello_version as negotiated_hello_version, vector_index_commands
+from aperturedb.DescriptorEngines import engines_object, descriptor_search
 import struct
 
 
@@ -52,6 +54,10 @@ def class_entity(db_class: Union[str, ObjectType]):
     members = [m.value for m in ObjectType]
     db_class = db_class if not isinstance(
         db_class, ObjectType) else db_class.value
+    if ":" in db_class:
+        target = db_class.split(":", 1)[0]
+        if target in OBJECT_TYPES.values():
+            return next(name for name, value in OBJECT_TYPES.items() if value == target)
     if db_class.startswith("_"):
         if db_class in members:
             return f"{db_class[1:]}"
@@ -74,7 +80,7 @@ def get_handlers():
     return source_url_handlers
 
 
-def get_specific(obj: BaseModel) -> dict:
+def get_specific(obj: BaseModel, hello_version: int = 1) -> dict:
     """This function is used to get the specific parameters for the object.
     Example: For a Descriptor object, the vector is packed into a blob.
     """
@@ -102,9 +108,7 @@ def get_specific(obj: BaseModel) -> dict:
         }, []
     elif obj.type == ObjectType.DESCRIPTOR:
         blob = struct.pack("%sf" % len(obj.vector), *obj.vector)
-        return {
-            "set": obj.set.name
-        }, [blob]
+        return {"class" if hello_version >= 2 else "set": obj.set.name}, [blob]
     elif obj.type == ObjectType.DESCRIPTORSET:
         return {
             "name": obj.name,
@@ -118,7 +122,9 @@ def generate_add_query(
         cached: List[str] = None,
         source_field: str = None,
         index: int = 1,
-        parent: int = 0) -> Tuple[List[object], List[bytearray], int]:
+        parent: int = 0,
+        client=None,
+        hello_version: int = None) -> Tuple[List[object], List[bytearray], int]:
     """
     Takes the user model, and builds out a sequence of commands that creates
     a similar structure on ApertureDB's graph. For example, given the following
@@ -152,6 +158,7 @@ def generate_add_query(
         source_field (str, optional): Preserves the relevant connection information from user objects. Defaults to None.
         index (int, optional): The index to start creating references from. Defaults to 1.
         parent (int, optional): The parent of the current node. Defaults to None.
+        client (Connector, optional): The connected client used to select the server's command API.
 
     Returns:
         tuple : Contains 3 items:
@@ -161,6 +168,10 @@ def generate_add_query(
               in current query
     """
     source_url_handlers = get_handlers()
+    version = negotiated_hello_version(
+        client) if hello_version is None else hello_version
+    if version not in (1, 2):
+        raise ValueError("Model queries support hello versions 1 and 2")
     if cached == None:
         cached = []
     query = []
@@ -178,9 +189,9 @@ def generate_add_query(
             if "_" == p[0]:
                 continue
             subobj = getattr(obj, p)
-            meta = obj.model_fields[p].metadata
+            meta = type(obj).model_fields[p].metadata
             if len(meta) > 0 and meta[0] == PropertyType.SYSTEM:
-                specific_params, specific_blobs = get_specific(obj)
+                specific_params, specific_blobs = get_specific(obj, version)
             elif isinstance(subobj, int) or isinstance(subobj, str) or isinstance(subobj, str) or isinstance(subobj, float):
                 props[p] = subobj
             elif isinstance(subobj, Enum):
@@ -190,14 +201,24 @@ def generate_add_query(
             elif isinstance(subobj, list):
                 for i, si in enumerate(subobj):
                     q, b, index = generate_add_query(
-                        si, cached=cached, source_field=f"{p}[{i}]", index=index + 1, parent=cindex)
+                        si, cached=cached, source_field=f"{p}[{i}]", index=index + 1, parent=cindex,
+                        client=client, hello_version=version)
                     dependents_blobs.extend(b)
                     dependents.extend(q)
             else:
                 q, b, index = generate_add_query(
-                    subobj, cached=cached, source_field=f"{p}", index=index + 1, parent=cindex)
+                    subobj, cached=cached, source_field=f"{p}", index=index + 1, parent=cindex,
+                    client=client, hello_version=version)
                 dependents.extend(q)
                 dependents_blobs.extend(b)
+
+    if version >= 2 and obj.type == ObjectType.DESCRIPTORSET:
+        if parent or dependents:
+            raise ValueError(
+                "Server 1.0 vector indexes cannot be graph objects or connection endpoints")
+        return vector_index_commands(version, obj.name, obj.dimensions,
+                                     getattr(obj, "metric", None) or ["CS"],
+                                     getattr(obj, "engines", None) or engines_object("IVF"), props), [], index
 
     # We still want to create dummy Add* commands so that references
     # for creating already created instances are mantained.
@@ -210,6 +231,14 @@ def generate_add_query(
             "id", "==", props["id"] if "id" in props else obj.id)
     for k, v in specific_params.items():
         params[k] = v
+    if obj.type == ObjectType.DESCRIPTOR:
+        params["class" if version >= 2 else "set"] = obj.set.name
+    if version >= 2 and obj.type != ObjectType.ENTITY:
+        class_name = params.get("class", getattr(
+            obj, "class_name", None) or type(obj).__name__)
+        if not isinstance(class_name, str) or not class_name or class_name.startswith("_"):
+            raise ValueError("Model objects require an application class_name")
+        params["class"] = class_name
     blobs.extend(specific_blobs)
     if hasattr(obj, "type"):
         props.pop('type', None)
@@ -224,6 +253,8 @@ def generate_add_query(
                     params["constraints"] = params["if_not_found"]
                     params.pop("if_not_found", None)
                 params.pop("properties", None)
+                if version >= 2:
+                    params["with_class"] = params.pop("class")
                 query.append(
                     QueryBuilder.find_command(obj.type.value, params=params))
         if obj.type in [ObjectType.IMAGE, ObjectType.VIDEO, ObjectType.BLOB]:
@@ -243,13 +274,15 @@ def generate_add_query(
             # Generates an AddEntity
             if obj.type == ObjectType.ENTITY:
                 query.append(
-                    QueryBuilder.add_command(type(obj).__name__, params=params))
+                    QueryBuilder.add_command(
+                        (getattr(obj, "class_name", None) or type(obj).__name__) if version >= 2 else type(obj).__name__, params=params))
 
         cached.append(obj.id)
 
     if parent > 0:
         if obj.type == ObjectType.CLIP:
-            query[0]["AddClip"]["video_ref"] = parent
+            if "AddClip" in query[0]:
+                query[0]["AddClip"]["video_ref"] = parent
 
         else:
             params = {
@@ -270,6 +303,20 @@ def generate_add_query(
 
 
 class QueryBuilder():
+    @staticmethod
+    def split_type_selector(selector):
+        """Split explicit selectors such as ``image:Assets`` into type/class."""
+        if not isinstance(selector, str) or ":" not in selector:
+            return None, None
+        target, class_name = selector.split(":", 1)
+        targets = set(OBJECT_TYPES.values())
+        if target not in targets:
+            return None, None
+        if not class_name or class_name.startswith("_"):
+            raise ValueError(
+                "Typed selectors require a nonempty application class")
+        return target, class_name
+
     @classmethod
     def get_query_cmd(cls, query: Union[dict, list]) -> str:
         known_constraint_keywords = ['results', 'apply']
@@ -302,6 +349,33 @@ class QueryBuilder():
     @classmethod
     def build_command(self, oclass: Union[str, ObjectType], params: dict, operation: str) -> dict:
         oclass = oclass if not isinstance(oclass, ObjectType) else oclass.value
+        target, class_name = self.split_type_selector(oclass)
+        if target == "connection":
+            classes = params.get("class", {})
+            if "with_class" in params or not isinstance(classes, dict) or "connection" in classes:
+                raise ValueError(
+                    "The typed selector already supplies the connection class")
+            if operation == "Add" and ("class" in params or "target" in params):
+                raise ValueError(
+                    "AddConnection determines endpoint classes and types from its references")
+            if operation == "Find":
+                types = params.get("target")
+                for side in ("src", "dst"):
+                    class_filter = side in classes
+                    type_filter = isinstance(types, dict) and side in types
+                    if side in params and (class_filter or type_filter):
+                        raise ValueError(
+                            f"The {side} reference already identifies that endpoint")
+            if "class" in params:
+                grouped = {**classes, "connection": class_name}
+                return {f"{operation}Connection": {**params, "class": grouped}}
+            params = dict(params)
+        if target is not None:
+            object_type = next(
+                name for name, value in OBJECT_TYPES.items() if value == target)
+            params["class" if operation ==
+                   "Add" else "with_class"] = class_name
+            return {f"{operation}{object_type}": params}
         command = {
             f"{operation}Entity": params
         }
@@ -315,7 +389,7 @@ class QueryBuilder():
                 raise Exception(
                     f"Invalid Object type. Should not begin with _, except for {members}")
         else:
-            if operation == "Find":
+            if operation != "Add":
                 params["with_class"] = oclass
             else:
                 params["class"] = oclass
@@ -377,7 +451,8 @@ class Query():
              set: str = None,
              vector: List[float] = None,
              k_neighbors: int = 0,
-             engine: str = None
+             engine: str = None,
+             metric: str = None
              ) -> Query:
         """
         The [specification](/query_language/Overview/API%20Description) for a command to be used in a query.
@@ -389,7 +464,9 @@ class Query():
             sort (Sort, optional): _description_. Defaults to None.
             list (List[str], optional): _description_. Defaults to None.
             engine (str, optional): Descriptor search engine for k_neighbors searches.
-                Defaults to None, which uses the set's first configured engine.
+                Defaults to the preferred index on the selected descriptor class.
+            metric (str, optional): Descriptor distance metric. When a client is supplied,
+                the first configured metric is selected by default.
 
         Returns:
             Query: The query object.
@@ -406,7 +483,8 @@ class Query():
             set=set,
             vector=vector,
             k_neighbors=k_neighbors,
-            engine=engine
+            engine=engine,
+            metric=metric
         )
 
     def __init__(self,
@@ -422,7 +500,8 @@ class Query():
                  set: str = None,
                  vector: List[float] = None,
                  k_neighbors: int = 0,
-                 engine: str = None
+                 engine: str = None,
+                 metric: str = None
                  ):
         self.constraints = constraints
         self.operations = operations
@@ -437,8 +516,27 @@ class Query():
         self.vector = vector
         self.k_neighbors = k_neighbors
         self.engine = engine
+        self.metric = metric
 
-    def query(self) -> List[dict]:
+    def query(self, client=None, hello_version: int = None) -> List[dict]:
+        version = negotiated_hello_version(
+            client) if hello_version is None else hello_version
+        if version not in (1, 2):
+            raise ValueError("Query builders support hello versions 1 and 2")
+        object_type = self.db_object.value if isinstance(
+            self.db_object, ObjectType) else self.db_object
+        if version >= 2 and self.with_class:
+            target, class_name = QueryBuilder.split_type_selector(
+                self.with_class)
+            if target is not None and object_type != "Entity":
+                if OBJECT_TYPES.get(object_type.lstrip("_")) != target:
+                    raise ValueError(
+                        "Typed class selector conflicts with the query's object type")
+                self.with_class = class_name
+            selected = class_name if target == "descriptor" else self.with_class
+            if self.set and selected != self.set and (target == "descriptor" or object_type == ObjectType.DESCRIPTOR.value):
+                raise ValueError(
+                    "set and with_class select different descriptor classes")
         results_section = "results"
         cmd_params = {results_section: {}, "_ref": self.adj_to}
         if self.limit != -1:
@@ -456,21 +554,48 @@ class Query():
         if self.operations:
             cmd_params["operations"] = self.operations.operations_arr
         if self.set:
-            cmd_params["set"] = self.set
+            cmd_params["with_class" if version >= 2 else "set"] = self.set
         if self.k_neighbors > 0:
             cmd_params["k_neighbors"] = self.k_neighbors
             if self.engine:
                 cmd_params["engine"] = self.engine
+            if self.metric:
+                cmd_params["metric"] = self.metric
+            if version >= 2:
+                descriptor_class = self.set or self.with_class
+                if not descriptor_class:
+                    raise ValueError(
+                        "A descriptor class is required for nearest-neighbor search")
+                if client is None:
+                    if not self.engine or not self.metric:
+                        raise ValueError(
+                            "Pass client= to resolve vector-index engine and metric")
+                else:
+                    target, name = QueryBuilder.split_type_selector(
+                        descriptor_class)
+                    cmd_params.update(descriptor_search(client, name if target == "descriptor" else descriptor_class,
+                                                        self.engine, self.metric))
 
         self.blob = None
         if self.vector:
             self.blob = struct.pack("%sf" % len(self.vector), *self.vector)
 
-        self.with_class = self.with_class if self.db_object == "Entity" else \
-            self.db_object if not isinstance(
-                self.db_object, ObjectType) else self.db_object.value
+        object_type = self.db_object.value if isinstance(
+            self.db_object, ObjectType) else self.db_object
+        if version < 2:
+            self.with_class = self.with_class if object_type == "Entity" else object_type
+        elif object_type != "Entity" and self.with_class:
+            cmd_params["with_class"] = self.with_class
+        selector = self.with_class if object_type == "Entity" else object_type
+        target, _ = QueryBuilder.split_type_selector(selector)
+        self.registry_type = "_" + \
+            next(name for name, value in OBJECT_TYPES.items()
+                 if value == target) if target else selector
+        if version >= 2 and object_type == ObjectType.DESCRIPTORSET.value:
+            raise ValueError(
+                "Server 1.0 descriptor sets are vector indexes; use Utils.get_indexes()")
         cmd = QueryBuilder.find_command(
-            oclass=self.with_class, params=cmd_params)
+            oclass=selector, params=cmd_params)
         self.find_command = list(cmd.keys())[0]
         query = [cmd]
         blobs = []
@@ -478,7 +603,8 @@ class Query():
             blobs.append(self.blob)
 
         if self.next:
-            next_commands, next_blobs = self.next.query()
+            next_commands, next_blobs = self.next.query(
+                client=client, hello_version=version)
             list(next_commands[0].values())[0]["is_connected_to"] = {
                 "ref": self.adj_to
             }
