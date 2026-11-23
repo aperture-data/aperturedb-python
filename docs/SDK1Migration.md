@@ -1,29 +1,23 @@
 ---
 slug: /python_sdk/compatibility/1.0.0
-sidebar_label: Server 1.0.0
+sidebar_label: Connections and queries
 sidebar_position: 1
 ---
 
-# ApertureDB 1.0.0 compatibility
+# Connections, queries and streaming
 
-SDK 1.0.2 supports ApertureDB server 0.20.0 and 1.0.0 through native TCP/TLS
-and HTTP. Upgrade the SDK while the database still runs 0.20.0, migrate custom
-queries, then upgrade the server. Database upgrades must pass through 0.20.0.
+The default connector uses native TCP with TLS. It requires an endpoint that
+accepts hello version 2. To connect through HTTPS, use `ConnectorRest` or set
+`use_rest=True` in your connection profile and select the HTTP gateway port.
+The HTTP client negotiates the response format with the gateway.
 
-| Server | Native queries | HTTP responses |
-| --- | --- | --- |
-| 0.20.0 | Protobuf envelope | JSON with base64 blobs |
-| 1.0.0 | JSON command array and sized binary blobs | Multipart JSON and raw binary blobs |
+## Buffered queries
 
-The connector selects the transport automatically.
-
-## Existing buffered queries
-
-`client.query(commands, blobs)` keeps returning `(json_response, output_blobs)`.
-It buffers the complete response before returning. Connection establishment can
-be retried, and a complete authentication rejection can renew a session and
-retry because no commands ran. A transport failure after query transmission is
-never replayed automatically. Inspect committed effects before retrying a write.
+`client.query(commands, blobs)` returns `(json_response, output_blobs)` after
+reading the complete response. The SDK can retry connection establishment. It
+can also renew a session and retry a query if authentication failed before any
+commands ran. If the connection fails after transmission, inspect committed
+effects before retrying a write. The SDK leaves that retry to the caller.
 Dataset wrappers follow the same rule and create independent sessions in forked
 workers before sending queries.
 
@@ -42,35 +36,35 @@ with client.query_stream(query) as result:
                 output.write(chunk)
 ```
 
-JSON metadata is eager; each output blob is read when the application advances
-the iterator. `blob.read()` collects one blob, while `blob.iter_chunks()` bounds
+JSON metadata is available immediately. Each output blob is read when the
+application advances the iterator. `blob.read()` collects one blob, while `blob.iter_chunks()` bounds
 application buffering. Finish each blob before requesting another. Exhaust the
 blob iterator, including for HTTP responses with no output blobs, to validate
-complete framing and the closing multipart boundary. Valid JSON alone does not
-mean the operation completed successfully.
+complete framing and the closing multipart boundary.
 
 Exiting the context with unread data or receiving an incomplete blob closes the
-connection. Another query on that connector is rejected while its response is
-active; clone the connector for concurrent work. Late storage/encoding failures
-raise `ConnectionError`. Server 0.20.0 buffers its protobuf response before
-exposing the same iterator; incremental wire delivery requires server 1.0.0.
+connection. Clone the connector for concurrent work while a response is active.
+Late storage or encoding failures raise `ConnectionError`. Native responses and
+multipart HTTP responses support incremental delivery. If the gateway returns
+JSON with base64-encoded blobs, the HTTP client buffers the response before
+exposing the same iterator.
 Some encoded media must materialize one object to determine its byte length.
 
 ## Classes, descriptors and helpers
 
-Raw queries use the connected server's command API. SDK 1.0.2 does not rewrite
-arbitrary raw descriptor-set commands, cached paging, or missing application
-classes. Server 1.0 requires explicit classes on additions and array-expression
-constraints. Result selection such as `limit` and `sort` belongs at the command
-level. Owner selectors use `image_ref`/`video_ref` when finding regions or
-video parts, and `bounding_box_ref`/`polygon_ref`/`frame_ref`/`clip_ref` for their
-parents. To create a customer connection, supply its name as a string, for
+Raw queries use the connected server's command API. When writing queries for
+typed application classes, specify the class on additions, use array-expression
+constraints, and put `limit` and `sort` at the command level.
+Owner selectors use `image_ref`/`video_ref` when finding regions or video parts,
+and `bounding_box_ref`/`polygon_ref`/`frame_ref`/`clip_ref` for their parents.
+To create a customer connection, supply its name as a string, for
 example `{"AddConnection":{"class":"HasLine","src":1,"dst":2}}`. The referenced
 objects determine the endpoint classes and types. Inline `connect` also takes a
 string connection name and a reference, for example `{"ref":2,"class":"HasLine"}`.
-Use `is_connected_to` to traverse customer connections. `FindDescriptorBatch` and ingestion batch sizes remain supported.
+Use `is_connected_to` to traverse customer connections, `FindDescriptorBatch`
+for batch searches, and the loader's batch size to group insertions.
 
-The wrapper helpers choose equivalent forms for the connected server:
+The SDK helpers select the appropriate command forms for the connected server.
 
 ```python
 from aperturedb.Utils import Utils
@@ -85,19 +79,20 @@ neighbors = Descriptors(client)
 neighbors.find_similar("Embeddings", vector, 10, metric="CS")
 ```
 
-This creates a descriptor set on 0.20.0 and a descriptor class/native vector
-index on 1.0.0. Existing `add_descriptorset`, listing, counting and removal helper
-names remain available and use the appropriate server representation. In 1.0,
-set properties become index `metadata`, and `FindDescriptor` uses `with_class`
-in place of `set`. Searches resolve an explicit engine and metric from the
-native definition; pass them to select a particular configuration. Native
-index results preserve metadata, progress and endpoint selectors.
+The helpers use a descriptor class and native vector index when the server supports
+them, or a descriptor set on endpoints that use sets. The `add_descriptorset`,
+listing, counting and removal helpers select the corresponding representation.
+For a native index, pass properties in `metadata` and select the class with
+`FindDescriptor.with_class`. When multiple index configurations exist, pass the
+engine and metric to select one. Native index results include metadata, progress
+and endpoint selectors.
 
-`Utils.get_schema()` returns the server's original format: 1.0 uses `nodes` and
-`edges` arrays. SDK schema summaries, diagrams and SPARQL support both forms.
-Type-qualified selectors such as `image:Photos` keep identically named classes
-of different object types distinct. The same connection selector works for index
-creation, lookup and removal on server 1.0.
+`Utils.get_schema()` returns the server's schema representation, including the
+`nodes` and `edges` arrays on typed-schema endpoints. SDK schema summaries,
+diagrams and SPARQL handle both schema representations. Type-qualified selectors
+such as `image:Photos` distinguish identically named classes of different object
+types. Use the same grouped selector to create, look up and remove a connection
+index on endpoints that support grouped connection selectors.
 
 ```python
 classes = {"src": "People", "connection": "AppearsIn", "dst": "Photos"}
@@ -108,9 +103,10 @@ utils.remove_connection_index(class_name=classes, property_key="id", target=targ
 ```
 
 For a lookup, either dictionary can contain just the fields you want to match.
-On server 0.20, pass the connection class name as a string.
+If the endpoint accepts only a name for a connection index, pass the connection
+class as a string.
 
-In server 1.0 connection filters and metadata definitions, `class.src`,
+In grouped connection filters and metadata definitions, `class.src`,
 `class.connection`, and `class.dst` identify the three classes. Endpoint types
 go in `target.src` and `target.dst`. To count all `HasLine` connections from
 `Order` objects to `LineItem` objects, pass the three names to `FindConnection`.
@@ -160,7 +156,7 @@ returns definitions in the same format as the `CreateAggregate` body.
 
 ## Loaders and model queries
 
-Media CSV loaders need an application class for server 1.0:
+For typed media, pass the application class to the CSV loader.
 
 ```python
 from aperturedb.ImageDataCSV import ImageDataCSV
@@ -171,21 +167,20 @@ ParallelLoader(client).ingest(data, batchsize=32)
 ```
 
 Parallel loaders select the connected server’s command format before index
-setup and iteration, including sliced CSV inputs and Dask workers. Descriptor CSV `set` values name
-the descriptor class on 1.0. Descriptor-set CSV rows create native vector
-indexes; graph conditions and references on those index definitions cannot be
-represented and are rejected. Typed connection CSV headers use selectors such
-as `entity:People@id` and `image:Photos@id`.
+setup and iteration, including sliced CSV inputs and Dask workers. For native
+vector indexes, descriptor CSV `set` values name the descriptor class.
+Descriptor-set CSV rows define the indexes. The loader rejects graph conditions
+and references on index definitions. Typed connection CSV headers use selectors
+such as `entity:People@id` and `image:Photos@id`.
 
-Pass `client=client` when generating native model queries
-outside wrappers. Model application classes use their Python model names, with
-an optional `class_name` override. Specialized query wrappers honor
-`with_class`; generic builders accept type-qualified selectors. Custom
-`generate_query()` implementations still need their own explicit server-1.0
-command forms.
+Pass `client=client` when generating native model queries outside wrappers.
+Model application classes use their Python model names, with an optional
+`class_name` override. Specialized query wrappers honor `with_class`, and
+generic builders accept type-qualified selectors. Custom `generate_query()`
+implementations must emit commands accepted by the connected server.
 
-PyTorch/TensorFlow dataset wrappers keep cached paging on 0.20.0 and use ordinary
-`offset`/`limit` pages on 1.0.0. Keep their selected data fixed while iterating:
-ordinary pages do not retain a snapshot across writes. Modern dataset queries
-must be read-only, and their `batch_size` controls client paging without sending
-the removed server `batch` parameter.
+PyTorch and TensorFlow dataset wrappers select the paging mode for the
+endpoint. With `offset`/`limit` paging, the query must be read-only and
+`batch_size` controls each client page. Keep the selected data fixed while
+iterating because writes can move records between pages. Endpoints with cached
+paging use the server's cached result.

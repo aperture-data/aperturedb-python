@@ -60,6 +60,18 @@ def object_json(value):
     return result
 
 
+def parse_release(raw):
+    require(len(raw.encode("utf-8")) <= 4096, "invalid_release_metadata")
+    release = object_json(raw)
+    require(set(release) == {"version", "branch",
+            "commit"}, "invalid_release_metadata")
+    require(isinstance(release["version"], str) and VERSION.fullmatch(release["version"])
+            and release["branch"] in ("main", "develop")
+            and isinstance(release["commit"], str) and re.fullmatch(r"[0-9a-f]{40}", release["commit"]),
+            "invalid_release_metadata")
+    return release
+
+
 def collect(project, run=read):
     require(isinstance(project, str) and PROJECT.fullmatch(
         project), "invalid_project_name")
@@ -87,14 +99,7 @@ def collect(project, run=read):
     # Bound the only file read inside the container. Nothing executes from that file.
     raw = run(["docker", "exec", container, "head",
               "-c", "4097", "/VERSION.json"])
-    require(len(raw.encode("utf-8")) <= 4096, "invalid_release_metadata")
-    release = object_json(raw)
-    require(set(release) == {"version", "branch",
-            "commit"}, "invalid_release_metadata")
-    require(isinstance(release["version"], str) and VERSION.fullmatch(release["version"])
-            and release["branch"] in ("main", "develop")
-            and isinstance(release["commit"], str) and re.fullmatch(r"[0-9a-f]{40}", release["commit"]),
-            "invalid_release_metadata")
+    release = parse_release(raw)
     # Docker's observed .Image identity can use different store representations;
     # retain it exactly and separately retain the official immutable RepoDigests.
     return {"schema_version": 2, "state": "passed", "service": "aperturedb",

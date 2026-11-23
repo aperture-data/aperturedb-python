@@ -17,7 +17,7 @@ mkdir -p test/aperturedb/logs/runner_state
 mkdir -p docker/tests/aperturedata
 
 # 2. Copy the Python source and configurations over
-cp -r aperturedb pyproject.toml README.md docker/tests/aperturedata
+cp -r aperturedb examples pyproject.toml README.md docker/tests/aperturedata
 mkdir -m 777 -p docker/tests/aperturedata/test/aperturedb
 
 # 3. Copy test inputs and test scripts over
@@ -31,68 +31,37 @@ DOCKER_BUILDKIT=1 docker build -t aperturedata/aperturedb-python-tests:latest -f
 
 ---
 
-## 2. Running the Complete Test Suite
+## 2. Running the integration suite
 
-Once the test image is built, use the `run_test_container.sh` wrapper script located in the `test/` directory to coordinate the backend integration environment and run the test suite.
+From the repository root, run the test image against the infra-promoted
+Compose stack. The test container exercises native TLS and HTTPS on the same
+isolated network and records the database image digest and source revision.
 
 ```bash
-cd test
-set -a && source .env && set +a
-bash run_test_container.sh
+RUNNER_NAME=sdk_local ./test/run_compatibility_container.sh
 ```
 
-This script:
-1. Starts an `aperturedb`, `lenz`, `http-proxy` and `webui` stack for each protocol from the Docker Compose artifact named by `ADB_COMPOSE` (`stack.sh`). The stacks publish no host ports.
-2. Starts two parallel test suites (HTTP and non-HTTP modes), each in its own isolated network.
-3. Mounts the local `test/run_test.sh` into each test container so changes to it take effect without rebuilding the image.
-4. Checks exit codes for successes or failures and cleans up.
-
-Expected results with a clean environment: ~118 passed + 4 skipped for non-HTTP, ~75 passed + 4 skipped for HTTP. The 4 skipped tests require the `slow` mark which is not selected by default.
+The local runner defaults to the same Compose tag as CI. Set `ADB_COMPOSE` to
+test a different published artifact locally. See the [SDK validation
+guide](docs/SDK1Validation.md) for report paths.
 
 ---
 
-## 3. Running tests and bypassing AWS/GCP API requirements
-
-A subset of the `pytest` tests interact with external objects, such as fetching blob configurations directly from cloud providers (AWS S3, Google Storage - GS). If your local environment or the automated agent lacks valid AWS/GCP credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `GCP_SERVICE_ACCOUNT_KEY`), you will hit authentication validation errors when resolving `storage.Client()` architectures or boto3 structures during execution.
-
-To skip these tests, set `SKIP_SLOW_TESTS=true` before running `run_test_container.sh`. This environment variable is passed into the container and automatically appends `and not slow and not external_network` to the `pytest` marker expression.
-
-```bash
-cd test
-set -a && source .env && set +a
-SKIP_SLOW_TESTS=true bash run_test_container.sh
-```
-
-By setting this variable, any LLM/agent can successfully execute internal `aperturedb` connector + python-centric API tests without raising failures tied strictly to external cloud requirements.
-
----
-
-## 4. Known Warnings (non-fatal)
+## 3. Known Warnings (non-fatal)
 
 These warnings appear during a successful local run and can be ignored:
 
-- **`PytestUnknownMarkWarning`** for `slow`, `external_network`, `remote_credentials`, `tcp`, `http`, `dask` — these custom marks are used but not registered in `pyproject.toml`. Tests still run and filter correctly.
-- **`CoverageWarning: No data was collected`** — the `--cov=aperturedb` flag collects coverage data inside the container, but the HTML report step (`coverage html`) cannot find it. This is a known limitation of the containerized test setup and does not indicate test failures.
 - **`Port 8787 is already in use`** (Dask) — when two test suites run in parallel and both use Dask, the scheduler port conflicts. Dask auto-reassigns to an available port; no action needed.
 - **Pydantic V2 deprecation** (`model_fields` on instance) — library internals, not caused by test code.
 - **`numpy.fromstring` deprecation** in `aperturedb/transformers/clip.py` — use `np.frombuffer` instead; harmless for current numpy version.
 
 ---
 
-## 5. Local vs CI Differences
+## 4. Local and CI runs
 
-| Aspect | Local | CI (GitHub Actions) |
-|--------|-------|---------------------|
-| **DB stack** | `aperturedb-compose-single-node:latest` (from `test/.env`) | `aperturedb-compose-single-node:dev` |
-| **Test filtering** | Skips `remote_credentials`, `external_network`, S3/GCS loaders | Runs all tests including cloud-dependent ones |
-| **AWS/GCP credentials** | Not present — use `SKIP_SLOW_TESTS=true` | Present as GitHub secrets |
-| **Log upload on failure** | Skipped (no AWS creds) | Uploads to S3 bucket `python-ci-runs` |
-| **`BUILD_AUX_IMAGES`** | `true` (default in `ci.sh`) — builds notebook/coverage images | `false` — skips aux images to save time |
-| **`TEST_PROTOCOL`** | `both` (default in `run_test_container.sh`) | `both` (explicit in `pr.yaml`) |
-| **`RUNNER_NAME`** | `default` (from `test/.env`) | `${{ runner.name }}_pr` |
-| **Docker cache** | Local layer cache only | BuildKit + `--cache-from` inline cache from registry |
-| **Image push** | Never pushes | Pushes on merge to main (controlled by `NO_PUSH`) |
-| **Kaggle credentials** | Dummy (`KAGGLE_username=ci`, `KAGGLE_key=dummy`) | Same dummy values |
-| **Coverage HTML** | `coverage html` fails (no data in container path) | Same issue; coverage not collected meaningfully |
-| **Concurrency** | N/A | New push to PR cancels in-progress run |
-| **`run_test.sh` override** | Mounted as volume — edits locally apply immediately | Also mounted as volume |
+| Setting | Local container runner | CI |
+|---------|------------------------|----|
+| Compose tag | Defaults to `latest` | Pull requests, develop, main and nightly use `latest`. |
+| Test image | Rebuild after editing the SDK or Python tests. | CI builds from the checkout. The GPU PR job uses the PyTorch GPU image. |
+| Stack name | Set a unique `RUNNER_NAME` per concurrent run. | The workflow sets a name for each job. |
+| Coverage | Open `test/output/index.html` after a direct runner invocation. | Jobs that build the coverage image copy the report into it. |

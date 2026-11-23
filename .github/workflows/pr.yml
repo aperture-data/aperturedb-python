@@ -24,10 +24,10 @@ jobs:
         sudo rm -rf ${{ github.workspace }}/test/aperturedb
       continue-on-error: true
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Login to DockerHub
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         username: ${{ fromJson(secrets.DOCKERHUB).username }}
         password: ${{ fromJson(secrets.DOCKERHUB).password }}
@@ -49,12 +49,6 @@ jobs:
 
     - name: Build and Run Tests
       env:
-        # Run both protocols inside a single job. run_test_container.sh starts
-        # the http and non_http stacks in parallel and runs both test
-        # containers concurrently, so wall-clock time is roughly max(http,
-        # non_http) instead of the previous matrix approach which duplicated
-        # all docker image builds (notebook/tests/coverage/deps) per protocol.
-        TEST_PROTOCOL: both
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -73,10 +67,7 @@ jobs:
         COMPOSE_DOCKER_CLI_BUILD: 1
         BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         TARGET_BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
-        # Preserve the complete historical suite on its supported command API.
-        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:0.20.0
-        SDK_COMPAT_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:dev
-        SKIP_SLOW_TESTS: true
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:latest
       run: ./ci.sh
       shell: bash
 
@@ -95,10 +86,10 @@ jobs:
         sudo rm -rf ${{ github.workspace }}/test/aperturedb
       continue-on-error: true
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Login to DockerHub
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         username: ${{ fromJson(secrets.DOCKERHUB).username }}
         password: ${{ fromJson(secrets.DOCKERHUB).password }}
@@ -134,8 +125,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         RUNNER_NAME: ${{ runner.name }}_${{ github.run_id }}
-        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:0.20.0
-        SKIP_SLOW_TESTS: true
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:latest
       run: |
         cd test
-        ./run_test_container.sh aperturedata/aperturedb-pytorch-gpu
+        ./run_compatibility_container.sh aperturedata/aperturedb-pytorch-gpu

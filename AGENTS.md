@@ -16,21 +16,14 @@ This guide provides high-signal context for AI agents working in this repository
 The test suite is located in `test/` and heavily relies on a local isolated container environment. It is NOT a standard simple pytest suite.
 
 ### Running Containerized Tests
-1. The full suite starts one stack per protocol (`aperturedb`, `lenz`, `http-proxy`, `webui`) from the Docker Compose artifact named by `ADB_COMPOSE`, using `test/stack.sh`.
-2. **Crucial for Agents**: To run tests without AWS/GCP credentials (which agents typically lack), you **must** use `SKIP_SLOW_TESTS=true`.
-3. To build the test image and run the full suite:
-   ```bash
-   # Build the image using the CI script
-   source version.sh && NO_PUSH=true RUN_TESTS=true BUILD_AUX_IMAGES=false bash ci.sh
-   # OR build manually if needed:
-   # mkdir -p docker/tests/aperturedata && cp -r aperturedb pyproject.toml README.md docker/tests/aperturedata && mkdir -p docker/tests/aperturedata/test/aperturedb && cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test && docker build -t aperturedata/aperturedb-python-tests:latest -f docker/tests/Dockerfile .
-   ```
-4. If the test image is already built, you can run the suite directly:
-   ```bash
-   cd test
-   set -a && source .env && set +a
-   SKIP_SLOW_TESTS=true bash run_test_container.sh
-   ```
+
+Build the current SDK test image and run the integration suite against a single Compose stack over native TLS and HTTPS.
+
+```bash
+RUNNER_NAME=sdk_local NO_PUSH=true RUN_TESTS=true BUILD_AUX_IMAGES=false bash ci.sh
+```
+
+To reuse the test image, run `RUNNER_NAME=sdk_local ./test/run_compatibility_container.sh`. The release gate and report paths are documented in [SDK validation](docs/SDK1Validation.md).
 
 ### Running Tests Natively (Focused Verification)
 If you only need to run a single test file (e.g. `test_Session.py`) and don't want to run the full containerized suite:
@@ -46,12 +39,9 @@ If you only need to run a single test file (e.g. `test_Session.py`) and don't wa
    ```
 
 ### Known Test Warnings (Non-fatal)
-- `PytestUnknownMarkWarning`: For `slow`, `external_network`, `remote_credentials`, `tcp`, `http`, `dask`. Tests still filter correctly.
-- `CoverageWarning: No data was collected`: Known limitation of the containerized setup.
 - `Port 8787 is already in use`: Dask parallel run conflict, Dask auto-reassigns port.
 Ignore these warnings during a successful test run.
 
 ## Workflow Rules
-- Prefer executable sources of truth: if tests fail, look at the container output and `.log` files generated in `test/output/client/`.
-- `run_test.sh` is mounted into the test container as a volume; edits to it apply locally without a container rebuild.
+- For integration failures, inspect the container output and the JUnit report in `qualification/sdk-compat/junit.xml`. Rebuild the SDK test image after changing the SDK or Python tests.
 - When generating ML placeholders or dummy assets, keep them minimal. The test environment has built-in dummy generation via `generateInput.py` and `download_images.py`.

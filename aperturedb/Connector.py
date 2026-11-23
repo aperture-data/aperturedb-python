@@ -26,7 +26,6 @@
 #
 from __future__ import annotations
 from typing import Optional, Any
-from . import queryMessage
 import sys
 import os
 import socket
@@ -46,7 +45,7 @@ from contextlib import contextmanager
 
 from aperturedb._query_wire import (
     BufferedInput, ProtocolError, QueryResponse, HELLO_VERSION,
-    LEGACY_HELLO_VERSION, MAX_BLOBS, buffered_response, native_response)
+    MAX_BLOBS, native_response)
 from aperturedb.Configuration import Configuration
 from aperturedb.LoggingUtils import censor_tokens
 
@@ -54,14 +53,13 @@ logger = logging.getLogger(__name__)
 
 
 PROTOCOL_VERSION = HELLO_VERSION
-MESSAGE_LENGTH_FORMAT = '<I'
-MESSAGE_LENGTH_SIZE = struct.calcsize(MESSAGE_LENGTH_FORMAT)
 
 # Protocol types
 PROTOCOL_TCP = 1
 PROTOCOL_SSL = 2
 
 DEFAULT_PORT = 55555
+LEGACY_NATIVE_HINT = "For ApertureDB 0.20, use HTTPS."
 # aperturedb's param ADB_MAX_CONNECTION_MESSAGE_SIZE_MB = 2048 by default
 DEFAULT_MAX_MESSAGE_SIZE_MB = 2048
 
@@ -269,28 +267,21 @@ class Connector(object):
         return limit << 20
 
     @staticmethod
-    def _receive_exact(connection, size):
-        result = bytearray()
-        while len(result) < size:
-            packet = connection.recv(size - len(result))
-            if not packet:
-                raise ProtocolError("Incomplete hello message")
-            result.extend(packet)
-        return bytes(result)
-
-    def _send_msg(self, data):
-        if len(data) > self._message_limit() or len(data) >= 1 << 32:
-            raise ValueError("Query exceeds the configured message size limit")
-        self.conn.sendall(struct.pack(MESSAGE_LENGTH_FORMAT, len(data)))
-        self.conn.sendall(data)
-
-    def _recv_msg(self):
-        size = struct.unpack(MESSAGE_LENGTH_FORMAT,
-                             self._wire_input.exact(MESSAGE_LENGTH_SIZE))[0]
-        if size > self._message_limit():
-            raise ProtocolError(
-                "Response exceeds the configured message size limit")
-        return self._wire_input.exact(size)
+    def _exchange_hello(connection, protocol):
+        header = struct.Struct('<III')
+        reply = bytearray()
+        try:
+            connection.sendall(header.pack(8, HELLO_VERSION, protocol))
+            while len(reply) < header.size:
+                packet = connection.recv(header.size - len(reply))
+                if not packet:
+                    raise ProtocolError(
+                        f"Incomplete native hello reply. {LEGACY_NATIVE_HINT}")
+                reply.extend(packet)
+        except (BrokenPipeError, ConnectionResetError, TimeoutError) as error:
+            raise ConnectionError(
+                f"Native hello failed ({error}). {LEGACY_NATIVE_HINT}") from error
+        return header.unpack(reply)
 
     def _authenticate(self, user, password="", token=""):
 
@@ -314,12 +305,12 @@ class Connector(object):
         # reconnect must not try to renew the session and acquire it again.
         response, _ = self._query(query, try_resume=False)
 
-        if not isinstance(response, (list, tuple)) or not response or \
-                "Authenticate" not in response[0]:
-            raise Exception(
-                "Unexpected response from server upon authenticate request: " +
-                str(response))
-        session_info = response[0]["Authenticate"]
+        session_info = None
+        if isinstance(response, (list, tuple)) and response and isinstance(response[0], dict):
+            session_info = response[0].get("Authenticate")
+        if not isinstance(session_info, dict) or "status" not in session_info:
+            raise ProtocolError(
+                "Unexpected response from server upon authenticate request")
         if session_info["status"] != STATUS_OK:
             raise Exception(session_info["info"])
 
@@ -427,53 +418,42 @@ class Connector(object):
 
     def _connect(self):
         protocol = PROTOCOL_SSL if self.use_ssl else PROTOCOL_TCP
-        # Start one version behind: 0.20 accepts this, and 1.0 deliberately
-        # returns a v2 hint without blacklisting the connecting client.
-        version = LEGACY_HELLO_VERSION
-        for attempt in range(2):
-            connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.conn = connection
-            try:
-                connection.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
-                if self.use_keepalive:
-                    keepalive.set(connection)
-                if sys.platform.startswith('linux'):
-                    connection.setsockopt(
-                        socket.SOL_TCP, socket.TCP_QUICKACK, 1)
-                connection.settimeout(10)
-                connection.connect((self.host, self.port))
-                connection.sendall(struct.pack('<III', 8, version, protocol))
-                size, supported, selected = struct.unpack(
-                    '<III', self._receive_exact(connection, 12))
-                if size != 8 or supported not in (1, 2) or selected not in (0, 1, 2):
-                    raise ProtocolError("Unsupported or invalid server hello")
-                if supported == HELLO_VERSION and version == LEGACY_HELLO_VERSION:
-                    if selected != 0:
-                        raise ProtocolError(
-                            "Invalid server version-discovery reply")
-                    connection.close()
-                    self.conn = None
-                    version = HELLO_VERSION
-                    continue
-                if supported != version or selected != protocol:
-                    raise ProtocolError(
-                        "Server did not accept the requested transport")
-                if self.use_ssl:
-                    context = self._build_ssl_context()
-                    connection = context.wrap_socket(
-                        connection,
-                        server_hostname=self.host if self.config.verify_hostname else None)
-                    self.conn = connection
-                connection.settimeout(None)
-                self._hello_version = supported
-                self._wire_input = BufferedInput(connection.recv)
-                self.connected = True
-                self._ever_connected = True
-                return
-            except BaseException:
-                self._close_transport()
-                raise
-        raise ProtocolError("Server hello negotiation did not complete")
+        connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.conn = connection
+        try:
+            connection.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY, 1)
+            if self.use_keepalive:
+                keepalive.set(connection)
+            if sys.platform.startswith('linux'):
+                connection.setsockopt(
+                    socket.SOL_TCP, socket.TCP_QUICKACK, 1)
+            connection.settimeout(10)
+            connection.connect((self.host, self.port))
+            size, supported, selected = self._exchange_hello(
+                connection, protocol)
+            if size != 8:
+                raise ProtocolError("Invalid server hello")
+            if supported != HELLO_VERSION:
+                raise ProtocolError(
+                    f"Native transport requires hello version {HELLO_VERSION} "
+                    f"(server reported {supported}). {LEGACY_NATIVE_HINT}")
+            if selected != protocol:
+                raise ProtocolError(
+                    "Server did not accept the requested transport")
+            if self.use_ssl:
+                context = self._build_ssl_context()
+                connection = context.wrap_socket(
+                    connection,
+                    server_hostname=self.host if self.config.verify_hostname else None)
+                self.conn = connection
+            connection.settimeout(None)
+            self._hello_version = supported
+            self._wire_input = BufferedInput(connection.recv)
+            self.connected = True
+            self._ever_connected = True
+        except BaseException:
+            self._close_transport()
+            raise
 
     def _ensure_connection(self, details=None):
         if self.connected:
@@ -495,7 +475,7 @@ class Connector(object):
                 if maximum and attempts >= maximum:
                     raise ConnectionError(
                         f"Could not connect to ApertureDB {self.config}; "
-                        f"self.connected=False, attempts={attempts}") from error
+                        f"self.connected=False, attempts={attempts}: {error}") from error
                 logger.warning("Connection attempt failed for %s%s", self.config,
                                f" ({details})" if details else "")
                 time.sleep(self.config.retry_interval_seconds)
@@ -516,23 +496,6 @@ class Connector(object):
         session = self.shared_data.session
         token = "" if session is None else session.session_token
         limit = self._message_limit()
-        if self._hello_version == LEGACY_HELLO_VERSION:
-            request = queryMessage.queryMessage()
-            request.json = query_str
-            request.token = token
-            request.blobs.extend(blobs)
-            self._send_msg(request.SerializeToString())
-            message = queryMessage.queryMessage()
-            data = self._recv_msg()
-            try:
-                queryMessage.ParseFromString(message, data)
-                metadata = json.loads(message.json)
-                if not isinstance(metadata, (dict, list)):
-                    raise ValueError("Expected a response array or object")
-            except Exception as error:
-                raise ProtocolError("Invalid legacy query response") from error
-            return buffered_response(metadata, list(message.blobs), release)
-
         token_json = json.dumps(token, ensure_ascii=False).encode('utf-8')
         query_json = query_str.encode('utf-8')
         size = len(token_json) + 1 + len(query_json) + 4

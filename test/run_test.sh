@@ -56,9 +56,9 @@ else
 fi
 
 if [ -n "$pytest_filter" ]; then
-	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb -m "$pytest_filter" test_*.py -v | tee "${CLIENT_PATH}/test.log"
+	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=../aperturedb -m "$pytest_filter" test_*.py -v | tee "${CLIENT_PATH}/test.log"
 else
-	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=aperturedb test_*.py -v | tee "${CLIENT_PATH}/test.log"
+	PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy python3 -m pytest --cov=../aperturedb test_*.py -v | tee "${CLIENT_PATH}/test.log"
 fi
 RESULT=$?
 cp error*.log -v "$CLIENT_PATH" || true
@@ -81,6 +81,5 @@ if [[ $RESULT != 0 ]]; then
 else
 	echo "Generating coverage..."
 	coverage html -i --directory=output
-	python adb_timing_tests.py
 fi
 

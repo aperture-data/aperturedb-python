@@ -1,49 +1,12 @@
-from aperturedb.DescriptorDataCSV import DescriptorDataCSV
 from aperturedb.ParallelLoader import ParallelLoader
-from io import BytesIO, TextIOWrapper
-import sys
-
-# stats had some issues with displaying of computed data.
-# These tests reproduce the issue.
-# Run it with: (to avoid pytest's output)
-# pytest  test_Stats.py -s --no-summary
 
 
-class TestStats():
-    def ingest_with_capture(self, data, db):
+class TestStats:
+    def test_stats_all_errors_non_equal_last_batch(self, db, capsys):
         loader = ParallelLoader(db)
-        # setup the environment
-        old_stdout = sys.stdout
-        sys.stdout = TextIOWrapper(BytesIO(), sys.stdout.encoding)
+        data = [([{"BadCommand": {}}], []) for _ in range(5)]
+        loader.ingest(data, batchsize=2, numthreads=1, stats=True)
 
-        loader.ingest(data, batchsize=99, numthreads=31, stats=True)
-        sys.stdout.seek(0)      # jump to the start
-        out = sys.stdout.read()  # read output
-
-        sys.stdout = old_stdout
-        return out
-
-    def validate_stats(self, out, assertions):
-        for line in out.splitlines():
-            if ":" in line:
-                stats = line.split(":")
-                if len(stats) == 2:
-                    first, second = line.split(":")
-                    print(first, second)
-                    if first in assertions:
-                        assert assertions[first.strip()](second.strip()) is True, (
-                            f"Assertion failed for '{first}' "
-                            f"with value {second}"
-                        )
-
-    def test_stats_all_errors_non_equal_last_batch(self, db, utils):
-        utils.remove_all_objects()
-        # Try to ingest descriptors, with no descriptor set, so all queries fail
-        data = DescriptorDataCSV(
-            "./input/setA.adb.csv", blobs_relative_to_csv=True)
-        out = self.ingest_with_capture(data, db)
-        assertions = {
-            "Total inserted elements": lambda x: float(x) == 0,
-            "Overall insertion throughput (element/s)": lambda x: float(x) == 0,
-        }
-        self.validate_stats(out, assertions)
+        assert loader.get_succeeded_queries() == 0
+        assert loader.get_succeeded_commands() == 0
+        assert "All queries failed!" in capsys.readouterr().out
