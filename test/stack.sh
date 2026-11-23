@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 ADB_COMPOSE=${ADB_COMPOSE:-oci://aperturedata/aperturedb-compose-single-node:latest}
 CLEANUP_IMAGE=${CLEANUP_IMAGE:-alpine:3}
 
-usage="usage: stack.sh up|down <project>"
+usage="usage: stack.sh up|down|image <project>"
 action=${1:?$usage}
 project=${2:?$usage}
 # Compose project names; this also keeps the project inside aperturedb/.
@@ -53,6 +53,10 @@ remove_files() {
 }
 
 case "${action}" in
+    image)
+        compose config --resolve-image-digests --format json aperturedb |
+            python3 -c 'import json, sys; print(json.load(sys.stdin)["services"]["aperturedb"]["image"])'
+        ;;
     up)
         compose down --volumes --remove-orphans > /dev/null 2>&1 || true
         remove_files

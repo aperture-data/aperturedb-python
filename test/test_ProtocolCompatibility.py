@@ -1,7 +1,7 @@
 """Optional live SDK compatibility matrix, with no cloud dependencies.
 
 Set ADB_COMPAT_ENDPOINTS to a JSON array of endpoint objects, for example:
-[{"port":55020,"hello_version":1}, {"port":55010,"hello_version":2},
+[{"port":55010,"hello_version":2},
  {"port":55220,"hello_version":1,"rest":true},
  {"port":55110,"hello_version":2,"rest":true}].
 

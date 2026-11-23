@@ -53,8 +53,8 @@ The following files are under *rest_api*
 
 | File | Description | instructions |
 | -----| ------------| -----|
-| rest_api.py | Dual-version HTTP access with ConnectorRest and streamed raw image responses | ``python rest_api.py``|
-| rest_api.js | Dual-version HTTP access using fetch and raw multipart responses | Is included in index.html |
+| rest_api.py | HTTPS queries with ConnectorRest and streamed image downloads | ``python rest_api.py``|
+| rest_api.js | HTTP queries using fetch and multipart responses | Is included in index.html |
 | index.html | A web page that renders from responses from aperturedb | Serve with the API on the same origin, then enter the endpoint and credentials |
 
 ## Example 5: Adding Data to aperturedb with User defined models
@@ -65,13 +65,15 @@ The following files are under *loading_with_models*
 | -----| ------------| -----|
 | models.ipynb | A notebook with some sample code to add data using models | Also available to read at [Aperturedb model example](https://docs.aperturedata.io/HowToGuides/Ingestion/DataModels)|
 
-## Server compatibility
+## Connecting the examples
 
-SDK 1.0.2 supports server 0.20.0 and 1.0. Generators in this folder can bind to a
-client with `dataset.configure_server(client)`. `ParallelLoader` configures the
-generators before producing commands. Bind the generator before materializing
-a dataset into a plain list.
-Custom raw query generators keep their own command language.
+SDK 1.0.3 uses native TCP with TLS by default and requires hello version 2
+on the native port. For HTTPS, use `ConnectorRest` or set `use_rest=True` in a
+connection profile and select the HTTP gateway port.
+
+Call `dataset.configure_server(client)` before materializing a generator into a
+plain list. `ParallelLoader` configures generators before producing commands.
+Custom raw query generators must emit commands accepted by the connected server.
 
 The Python REST example uses the normal SDK connection profile and HTTP(S)
 port. To upload and retrieve a local image, run:

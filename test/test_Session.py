@@ -44,6 +44,7 @@ class TestSession():
             db.shared_data.session.valid()))
         assert db.shared_data.session.valid() == True
 
+    @pytest.mark.tcp
     def test_SSL_error_on_query(self, monkeypatch):
         db = Connector(
             dbinfo.DB_TCP_HOST, dbinfo.DB_TCP_PORT,
@@ -104,6 +105,7 @@ class TestSession():
 
         assert connect_attempts == 3
 
+    @pytest.mark.tcp
     def test_socket_send_error_initial(self, monkeypatch):
         send_attempts = 0
 
@@ -132,6 +134,7 @@ class TestSession():
         # Only initial hello negotiation is retried; no query was sent.
         assert send_attempts == 3
 
+    @pytest.mark.tcp
     def test_socket_recv_error_initial(self, monkeypatch):
         connect_attempts = 0
 
@@ -190,16 +193,6 @@ class TestSession():
         def interrupted(query, blobs, release):
             nonlocal count
             count += 1
-            if db.hello_version == 1:
-                original_recv = db._recv_msg
-
-                def failed_recv():
-                    db.conn.close()
-                    return original_recv()
-
-                with monkeypatch.context() as local:
-                    local.setattr(db, "_recv_msg", failed_recv)
-                    return original(query, blobs, release)
             original_receive = db._wire_input.receive
 
             def failed_receive(size):

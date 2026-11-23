@@ -9,20 +9,21 @@ The **ApertureDB Python SDK** provides a seamless interface for interacting with
 
 This SDK includes comprehensive utilities to efficiently ingest and retrieve data, manage graph-based metadata, perform similarity searches on embeddings, and seamlessly integrate with the broader ML/AI ecosystem.
 
-## SDK 1.0.2 server compatibility
+## Connecting and querying with SDK 1.0.3
 
-SDK 1.0.2 supports server **0.20.0 and 1.0.0** over TCP/TLS and HTTP. The connector selects
-the transport and helper commands automatically. Existing
-`query()` calls retain their buffered return shape; `query_stream()` provides
-JSON metadata followed by lazy blobs/chunks on server 1.0. Queries are never
-replayed automatically after uncertain transport failures.
+The default `Connector` uses native TCP with TLS and requires an endpoint that
+accepts hello version 2. For HTTPS, use `ConnectorRest` or a connection profile
+with `use_rest=True` and the HTTP gateway port. Use `query()` for a buffered
+response and `query_stream()` to consume blobs in chunks. The client buffers HTTP
+responses that carry blobs as base64 in JSON. If a transport failure
+leaves a write's outcome uncertain, check its effects before retrying.
 
-Server 1.0 custom queries require explicit application classes and native vector
-indexes. `AddConnection` takes a string connection name and source and destination
-references. Connection filters and index selectors group class names under
-`class` and endpoint types under `target`. Use `limit` and `offset` for paging. SDK helpers and loaders
-handle both supported APIs; custom query generators must use the selected
-server's command language. See the [server 1.0 migration and streaming guide](docs/SDK1Migration.md).
+SDK helpers and loaders select commands for the connected server. Custom query
+generators must use its command language. For typed classes, supply application
+class names on inserts and use native vector indexes. `AddConnection` takes a
+connection name and source and destination references. Grouped connection
+selectors put class names under `class` and endpoint types under `target`.
+[Connection, query and streaming examples](docs/SDK1Migration.md)
 
 ## 🚀 Integrations & Capabilities
 
@@ -46,6 +47,21 @@ To install just the base client without optional deep learning extras:
 
 ```bash
 pip install aperturedb
+```
+
+CI builds can install the promoted wheel from Docker Hub with ORAS. SDK main
+publishes the versioned artifact first (for example, `1.0.3`). That tag is
+available as soon as the SDK release completes. Infra assigns `latest` to the
+wheel and publishes it to PyPI when the component reaches main.
+
+After the first wheel promotion, Dockerfiles that used
+`FROM aperturedata/aperturedb-python:latest` need a Python base image. Pull the
+wheel with ORAS and install it into that environment.
+
+```bash
+wheel_dir=$(mktemp -d)
+oras pull registry-1.docker.io/aperturedata/aperturedb-python:latest -o "$wheel_dir"
+python -m pip install "$wheel_dir"/aperturedb-*-py3-none-any.whl
 ```
 
 ## Authentication and shared sessions
@@ -111,16 +127,20 @@ CA_CERT      = 'aperturedb/local/ca/ca.crt'
 
 ### Executing Tests
 
-To run the entire test suite, export the necessary credentials and execute the test runner script:
+Run the release integration suite from the repository root with a test image
+built from the current checkout.
 
 ```bash
-export GCP_SERVICE_ACCOUNT_KEY=<content of a GCP SERVICE ACCOUNT JSON file>
-bash run_test.sh
+RUNNER_NAME=sdk_local ./test/run_compatibility_container.sh
 ```
 
-To run a specific test file natively via `pytest`:
+The suite exercises native TLS and HTTPS on one server. Build instructions are
+in the [testing guide](robots.md).
+
+To run a specific test file against the local stack, use the test directory.
 
 ```bash
+cd test
 PROJECT=aperturedata KAGGLE_username=ci KAGGLE_key=dummy coverage run -m pytest test_Session.py -v -s --log-cli-level=DEBUG
 ```
 

@@ -85,15 +85,15 @@ fi
 # Set image extension according to branch
 if [ "${BRANCH_NAME}" == 'main' ]
 then
-    IMAGE_EXTENSION_WITH_VERSION=":v${BUILD_VERSION}"
+    IMAGE_EXTENSION_WITH_VERSION=":${BUILD_VERSION}"
     IMAGE_EXTENSION_LATEST=":latest"
     DEPLOY_SERVER=yes
 elif [ "${BRANCH_NAME}" == 'develop' ]
 then
-    IMAGE_EXTENSION_WITH_VERSION="-develop:v${BUILD_VERSION}-${COMMIT_HASH}"
+    IMAGE_EXTENSION_WITH_VERSION="-develop:${BUILD_VERSION}-${COMMIT_HASH}"
     DEPLOY_SERVER=yes
 else
-    IMAGE_EXTENSION_WITH_VERSION="-${BRANCH_NAME}:v${BUILD_VERSION}"
+    IMAGE_EXTENSION_WITH_VERSION="-${BRANCH_NAME}:${BUILD_VERSION}"
     DEPLOY_SERVER=no
 fi
 
@@ -192,7 +192,7 @@ build_coverage_image(){
 
         ECR_REPO_NAME=aperturedb-python-coverage
         COV_IMAGE=${DOCKER_REPOSITORY}/${ECR_REPO_NAME}${IMAGE_EXTENSION_WITH_VERSION}
-        ECR_NAME=${ECR_REPO_NAME}:v${BUILD_VERSION}
+        ECR_NAME=${ECR_REPO_NAME}:${BUILD_VERSION}
         push_aws_ecr ${COV_IMAGE} ${ECR_NAME} ${ECR_REPO_NAME}
     fi
 }
@@ -234,7 +234,7 @@ then
     build_tests
 
     pushd "test"
-    ./run_test_container.sh
+    ./run_compatibility_container.sh
     if [ "${BUILD_AUX_IMAGES}" == "true" ]
     then
         build_coverage_image

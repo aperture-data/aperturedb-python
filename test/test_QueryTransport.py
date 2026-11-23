@@ -9,7 +9,6 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from aperturedb import queryMessage
 from aperturedb.Connector import Connector, Session
 from aperturedb.ConnectorRest import ConnectorRest
 from aperturedb._query_wire import (
@@ -22,14 +21,6 @@ def native(metadata, blobs=()):
     for blob in blobs:
         result += struct.pack('!Q', len(blob)) + blob
     return result
-
-
-def legacy(metadata, blobs=()):
-    message = queryMessage.queryMessage()
-    message.json = json.dumps(metadata)
-    message.blobs.extend(blobs)
-    data = message.SerializeToString()
-    return struct.pack('<I', len(data)) + data
 
 
 def multipart(metadata, blobs=(), boundary=b'example-boundary'):
@@ -115,11 +106,11 @@ class QueryTransportTests(unittest.TestCase):
         logger.start()
         self.addCleanup(logger.stop)
 
-    def connector(self, data, version=2, fragment=65536):
+    def connector(self, data, fragment=65536):
         db = Connector(authenticate=False, use_ssl=False, use_keepalive=False)
         db.conn = FakeSocket(data, fragment)
         db.connected = True
-        db._hello_version = version
+        db._hello_version = 2
         db._wire_input = BufferedInput(db.conn.recv)
         self.addCleanup(db.close)
         return db
@@ -163,15 +154,6 @@ class QueryTransportTests(unittest.TestCase):
         self.assertEqual(db.query([]), ([], []))
         self.assertEqual(db.query([{'GetStatus': {}}])[
                          0][0]['GetStatus']['status'], 0)
-
-    def test_legacy_partial_length_prefix_and_stream_interface(self):
-        db = self.connector(legacy([{'FindBlob': {'status': 0}}], [
-                            b'old', b'']), version=1, fragment=1)
-        with db.query_stream([{'FindBlob': {'blobs': True}}]) as response:
-            self.assertEqual([blob.read()
-                             for blob in response.blobs], [b'old', b''])
-            self.assertTrue(response.complete)
-        self.assertTrue(db.connected)
 
     def test_stream_reads_only_current_blob_chunks(self):
         payload = b'x' * (200 * 1024)
@@ -221,35 +203,31 @@ class QueryTransportTests(unittest.TestCase):
 
     def test_session_rejection_with_blobs_cannot_replay_write(self):
         rejection = {'status': -1, 'code': 'unauthenticated'}
-        for version, frame in ((1, legacy), (2, native)):
-            with self.subTest(version=version):
-                db = self.connector(frame(rejection, [b'']), version=version)
-                db.should_authenticate = True
-                db.shared_data.session = Session(
-                    'token', 'refresh', 3600, 7200, time.time())
-                connection = db.conn
-                with self.assertRaises(ProtocolError):
-                    db.query([{'AddEntity': {'class': 'NoReplay'}}])
-                self.assertEqual(
-                    b''.join(connection.sent).count(b'AddEntity'), 1)
-                self.assertTrue(connection.closed)
+        db = self.connector(native(rejection, [b'']))
+        db.should_authenticate = True
+        db.shared_data.session = Session(
+            'token', 'refresh', 3600, 7200, time.time())
+        connection = db.conn
+        with self.assertRaises(ProtocolError):
+            db.query([{'AddEntity': {'class': 'NoReplay'}}])
+        self.assertEqual(
+            b''.join(connection.sent).count(b'AddEntity'), 1)
+        self.assertTrue(connection.closed)
 
     def test_streamed_session_rejection_with_empty_blob_cannot_replay(self):
         rejection = {'status': -1, 'code': 'unauthenticated'}
-        for version, frame in ((1, legacy), (2, native)):
-            with self.subTest(version=version):
-                db = self.connector(frame(rejection, [b'']), version=version)
-                db.should_authenticate = True
-                db.shared_data.session = Session(
-                    'token', 'refresh', 3600, 7200, time.time())
-                connection = db.conn
-                with self.assertRaises(ProtocolError):
-                    with db.query_stream([{'AddEntity': {'class': 'NoReplay'}}]):
-                        self.fail(
-                            'Malformed rejection must not yield a stream')
-                self.assertEqual(
-                    b''.join(connection.sent).count(b'AddEntity'), 1)
-                self.assertTrue(connection.closed)
+        db = self.connector(native(rejection, [b'']))
+        db.should_authenticate = True
+        db.shared_data.session = Session(
+            'token', 'refresh', 3600, 7200, time.time())
+        connection = db.conn
+        with self.assertRaises(ProtocolError):
+            with db.query_stream([{'AddEntity': {'class': 'NoReplay'}}]):
+                self.fail(
+                    'Malformed rejection must not yield a stream')
+        self.assertEqual(
+            b''.join(connection.sent).count(b'AddEntity'), 1)
+        self.assertTrue(connection.closed)
 
     def test_native_rejects_count_bomb_and_excessive_lengths(self):
         for suffix in (struct.pack('!I', 1 << 24), struct.pack('!I', 1) + struct.pack('!Q', 1 << 63)):
@@ -257,34 +235,63 @@ class QueryTransportTests(unittest.TestCase):
             with self.assertRaises(ProtocolError):
                 db.query([])
 
-    def test_native_hello_discovers_old_and_new_without_query(self):
-        for version in (1, 2):
-            with self.subTest(version=version):
-                if version == 1:
-                    connections = [FakeSocket(struct.pack('<III', 8, 1, 1), 1)]
-                else:
-                    connections = [FakeSocket(struct.pack('<III', 8, 2, 0), 1),
-                                   FakeSocket(struct.pack('<III', 8, 2, 1), 1)]
-                db = Connector(authenticate=False,
-                               use_ssl=False, use_keepalive=False)
-                with patch('aperturedb.Connector.socket.socket', side_effect=connections):
-                    self.assertEqual(db.hello_version, version)
-                self.assertEqual(
-                    b''.join(connections[0].sent), struct.pack('<III', 8, 1, 1))
-                if version == 2:
-                    self.assertTrue(connections[0].closed)
-                    self.assertEqual(
-                        b''.join(connections[1].sent), struct.pack('<III', 8, 2, 1))
-                db.close()
+    def test_native_hello_requests_v2_without_query(self):
+        connection = FakeSocket(struct.pack('<III', 8, 2, 1), fragment=1)
+        db = Connector(authenticate=False, use_ssl=False, use_keepalive=False)
+        self.addCleanup(db.close)
+        with patch('aperturedb.Connector.socket.socket', return_value=connection) as create:
+            self.assertEqual(db.hello_version, 2)
+        self.assertEqual(create.call_count, 1)
+        self.assertEqual(connection.sent, [struct.pack('<III', 8, 2, 1)])
 
     def test_unsupported_hello_is_not_guessed_or_retried(self):
-        connection = FakeSocket(struct.pack('<III', 8, 3, 0))
-        db = Connector(authenticate=False, use_ssl=False, use_keepalive=False)
-        with patch('aperturedb.Connector.socket.socket', return_value=connection) as create:
-            with self.assertRaises(ProtocolError):
-                _ = db.hello_version
-        self.assertEqual(create.call_count, 1)
-        self.assertTrue(connection.closed)
+        for version in (1, 3):
+            with self.subTest(version=version):
+                connection = FakeSocket(struct.pack('<III', 8, version, 0))
+                db = Connector(authenticate=False,
+                               use_ssl=False, use_keepalive=False)
+                with patch('aperturedb.Connector.socket.socket', return_value=connection) as create:
+                    with self.assertRaisesRegex(ProtocolError, "Native transport requires hello version 2"):
+                        db.query([{'AddEntity': {'class': 'NoReplay'}}])
+                self.assertEqual(create.call_count, 1)
+                self.assertEqual(connection.sent, [
+                                 struct.pack('<III', 8, 2, 1)])
+                self.assertTrue(connection.closed)
+
+    def test_native_gateway_closes_during_hello(self):
+        for reply in (b'', b'\x08'):
+            with self.subTest(reply=reply):
+                connection = FakeSocket(reply)
+                db = Connector(authenticate=False,
+                               use_ssl=False, use_keepalive=False)
+                with patch('aperturedb.Connector.socket.socket', return_value=connection) as create:
+                    with self.assertRaisesRegex(ProtocolError, "Incomplete native hello reply.*use HTTPS"):
+                        db.connect()
+                self.assertEqual(create.call_count, 1)
+                self.assertTrue(connection.closed)
+
+    def test_native_hello_reset_and_timeout_retain_connection_retries(self):
+        for error in (ConnectionResetError('reset'), TimeoutError('timed out')):
+            with self.subTest(error=error):
+                connection = FakeSocket()
+                db = Connector(authenticate=False, use_ssl=False, use_keepalive=False,
+                               retry_max_attempts=2, retry_interval_seconds=0)
+                with patch.object(connection, 'recv', side_effect=error), patch(
+                        'aperturedb.Connector.socket.socket', return_value=connection) as create:
+                    with self.assertRaisesRegex(ConnectionError, r"attempts=2: Native hello failed.*use HTTPS"):
+                        db.connect()
+                self.assertEqual(create.call_count, 2)
+                self.assertTrue(connection.closed)
+
+    def test_native_connect_failure_reports_original_cause(self):
+        connection = FakeSocket()
+        db = Connector(authenticate=False, use_ssl=False, use_keepalive=False,
+                       retry_max_attempts=1)
+        with patch.object(connection, 'connect', side_effect=ConnectionRefusedError('refused')), patch(
+                'aperturedb.Connector.socket.socket', return_value=connection):
+            with self.assertRaisesRegex(ConnectionError, 'refused') as caught:
+                db.connect()
+        self.assertNotIn('use HTTPS', str(caught.exception))
 
     def rest(self, responses):
         db = ConnectorRest(use_ssl=False)

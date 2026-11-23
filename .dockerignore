@@ -128,9 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Allow wheels from dist for docker builds
-!dist/*.whl
-
 # VSCode
 .vscode/
 

@@ -118,6 +118,11 @@ pid1=0
 pid2=0
 
 if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
+    # Run transport-independent tests once, including on an HTTP-only stack.
+    http_filter=http
+    if [ "$TEST_PROTOCOL" == "http" ]; then
+        http_filter="not tcp"
+    fi
     echo "running tests on docker image $REPOSITORY against ${RUNNER_NAME}_http"
     docker run --rm \
         -v $(pwd)/output:/aperturedata/test/output \
@@ -130,7 +135,7 @@ if [ "$TEST_PROTOCOL" == "http" ] || [ "$TEST_PROTOCOL" == "both" ]; then
         -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
         -e GCP_SERVICE_ACCOUNT_KEY="$GCP_SERVICE_ACCOUNT_KEY" \
         -e APERTUREDB_LOG_PATH="${TESTING_LOG_PATH}" \
-        -e FILTER="http" \
+        -e FILTER="$http_filter" \
         -e SKIP_SLOW_TESTS="${SKIP_SLOW_TESTS:-false}" \
         $REPOSITORY &
     pid1=$!
@@ -175,12 +180,6 @@ fi
 if [ $exit_code2 -ne 0 ]; then
     echo "Tests failed for NON_HTTP"
     exit $exit_code2
-fi
-
-# A separate stack exercises the modern command API without hiding legacy
-# integration tests behind version-based skips.
-if [ -n "${SDK_COMPAT_COMPOSE:-}" ]; then
-    ./run_compatibility_container.sh "$REPOSITORY"
 fi
 
 echo "Tests completed"
