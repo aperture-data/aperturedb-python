@@ -88,7 +88,7 @@ jobs:
         path: qualification/sdk-modern-stack.json
         if-no-files-found: error
 
-  build_notebooks_and_publish_pypi:
+  publish_release:
     needs:
     - build_and_test
 
@@ -98,10 +98,12 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Login to DockerHub
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         username: ${{ fromJson(secrets.DOCKERHUB).username }}
         password: ${{ fromJson(secrets.DOCKERHUB).password }}
@@ -117,15 +119,18 @@ jobs:
       run: BUILD_COMPLETE=true ./ci.sh
       shell: bash
 
-    - name: Publish to PyPi
-      env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: |
-        bash publish.sh
-
     - name: Tag release version
       run: './tag.sh'
+      shell: bash
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: oras-project/setup-oras@v1
+      with:
+        version: '1.3.0'
+    - name: Publish versioned SDK wheel
+      run: bash publish.sh
       shell: bash
 
     - name: GitHub Release
@@ -136,17 +141,17 @@ jobs:
       run: |
         source version.sh
         read_version
-        docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" -f docs-content/Dockerfile -t "aperturedata/aperturedb-python-docs:v$BUILD_VERSION" .
-        docker push "aperturedata/aperturedb-python-docs:v$BUILD_VERSION"
+        docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" -f docs-content/Dockerfile -t "aperturedata/aperturedb-python-docs:$BUILD_VERSION" .
+        docker push "aperturedata/aperturedb-python-docs:$BUILD_VERSION"
       shell: bash
 
-    - name: Update docs provider version in infra
+    - name: Update SDK component version in infra
       env:
         GH_TOKEN: ${{ secrets.PAT_INFRA }}
       run: |
         source version.sh
         read_version
-        jq -n --arg tag "v$BUILD_VERSION" \
+        jq -n --arg tag "$BUILD_VERSION" \
           '{event_type:"update-tag",client_payload:{environment:"develop",component:"python-client",tag:$tag}}' \
           | curl --fail-with-body --silent --show-error \
               --request POST \
@@ -156,20 +161,4 @@ jobs:
               --header "Content-Type: application/json" \
               --data-binary @- \
               https://api.github.com/repos/aperture-data/infra/dispatches
-      shell: bash
-
-  trigger_demos_buils:
-    runs-on: ubuntu-latest
-    needs:
-      - build_notebooks_and_publish_pypi
-    steps:
-    - uses: actions/checkout@v3
-    - name: repository dispatch
-      run: |
-        curl -X POST https://api.github.com/repos/aperture-data/demos/actions/workflows/13727133/dispatches \
-        -H "Accept: application/vnd.github+json" \
-        -H "Authorization: Bearer ${{ secrets.GITHUBPAT }}" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        -d '{"ref":"main","inputs":{}}'
-
       shell: bash
