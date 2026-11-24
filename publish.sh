@@ -12,7 +12,20 @@ revision=$(git rev-parse HEAD)
 
 # A retry must promote the same bytes that infra may already have published.
 tags=$(oras repo tags "$repository")
-if grep -Fxq "$tag" <<< "$tags"; then
+target="$repository:$tag"
+push_options=()
+# The original 1.0.3 wheel was archived before reissuing the SDK with the
+# loader fix. Only that exact manifest can be replaced under this version.
+original_103=sha256:63db9600a16b4ef0e8c7ca05e82b41c12b89a2425923b8454d71458699acce1f
+if [[ $tag == 1.0.3 ]] && grep -Fxq "$tag" <<< "$tags" &&
+   [[ $(oras resolve "$target") == "$original_103" ]]; then
+    backup="$repository:$tag-pre-loader"
+    if [[ $(oras resolve "$backup") != "$original_103" ]]; then
+        echo "Original SDK wheel is missing from $backup" >&2
+        exit 1
+    fi
+    target="$repository"
+elif grep -Fxq "$tag" <<< "$tags"; then
     manifest=$(oras manifest fetch "$repository:$tag")
     if ! jq -e --arg type "$artifact_type" --arg version "$tag" --arg wheel "$wheel" \
         '.artifactType == $type and .annotations["org.opencontainers.image.version"] == $version
@@ -63,7 +76,23 @@ mkdir "$dist/source"
 git archive "$revision" | tar -x -C "$dist/source"
 python3 -m pip wheel --no-deps --wheel-dir "$dist" "$dist/source"
 cd "$dist"
-oras push "$repository:$tag" --artifact-type "$artifact_type" \
+if [[ $target == "$repository" ]]; then
+    # Stage by digest while the original version tag is still serving readers.
+    push_options=(--export-manifest "$dist/manifest.json")
+fi
+oras push "$target" "${push_options[@]}" --artifact-type "$artifact_type" \
     --annotation "org.opencontainers.image.revision=$revision" \
     --annotation "org.opencontainers.image.version=$BUILD_VERSION" \
     "$wheel:application/zip"
+
+if [[ $target == "$repository" ]]; then
+    digest=sha256:$(sha256sum "$dist/manifest.json" | cut -d' ' -f1)
+    if [[ $(oras resolve "$repository@$digest") != "$digest" ||
+          $(oras resolve "$backup") != "$original_103" ||
+          $(oras resolve "$repository:$tag") != "$original_103" ]]; then
+        echo "SDK wheel or release tag changed before publication" >&2
+        exit 1
+    fi
+    oras tag "$repository@$digest" "$tag"
+    [[ $(oras resolve "$repository:$tag") == "$digest" ]]
+fi

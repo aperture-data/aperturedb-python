@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -161,6 +162,84 @@ class PublicationControls(unittest.TestCase):
 
     def test_differing_remote_tag_is_not_force_updated(self):
         self.git_case(False)
+
+
+class WheelReissueControls(unittest.TestCase):
+    def test_only_archived_103_wheel_can_be_replaced(self):
+        original = "sha256:63db9600a16b4ef0e8c7ca05e82b41c12b89a2425923b8454d71458699acce1f"
+        other = "sha256:" + "f" * 64
+        version, backup = "1.0.3", "1.0.3-pre-loader"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tools = root / "bin"
+            tools.mkdir()
+            work = root / "source"
+            (work / "aperturedb").mkdir(parents=True)
+            (work / "aperturedb/__init__.py").write_text('__version__ = "1.0.3"\n')
+            for name in ("publish.sh", "version.sh"):
+                shutil.copy(ROOT / name, work)
+            env = os.environ | {"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null",
+                                "PATH": str(tools) + os.pathsep + os.environ["PATH"],
+                                "STATE": str(root), "OTHER": other}
+            for args in (["init", "-q"], ["add", "."],
+                         ["-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+                          "commit", "-qm", "candidate"]):
+                subprocess.run(["git", *args], cwd=work, env=env, check=True)
+            (work / "untracked").touch()
+
+            (tools / "python3").write_text("""#!/bin/bash
+set -eu
+[[ "$1 $2 $3" == "-m pip wheel" && -f "$7/aperturedb/__init__.py" && ! -f "$7/untracked" ]]
+touch "$6/aperturedb-1.0.3-py3-none-any.whl"
+""")
+            (tools / "oras").write_text("""#!/bin/bash
+set -eu
+repo=registry-1.docker.io/aperturedata/aperturedb-python
+case "$1" in
+    repo) echo 1.0.3 ;;
+    resolve)
+        case "$2" in
+            "$repo:"*) cat "$STATE/${2#"$repo:"}" ;;
+            "$repo@"*) cat "$STATE/staged" ;;
+            *) exit 1 ;;
+        esac ;;
+    manifest) echo '{}' ;;
+    push)
+        [[ "$2" == "$repo" && -f aperturedb-1.0.3-py3-none-any.whl ]]
+        while [[ "$1" != --export-manifest ]]; do shift; done
+        echo '{"release":"candidate"}' > "$2"
+        echo "sha256:$(sha256sum "$2" | cut -d' ' -f1)" > "$STATE/staged"
+        if [[ -n "$CHANGE" ]]; then echo "$OTHER" > "$STATE/$CHANGE"; fi ;;
+    tag)
+        [[ "$2" == "$repo@$(cat "$STATE/staged")" && "$3" == 1.0.3 ]]
+        cp "$STATE/staged" "$STATE/$3"
+        touch "$STATE/retagged" ;;
+    *) exit 1 ;;
+esac
+""")
+            for tool in tools.iterdir():
+                tool.chmod(0o755)
+            for initial, change in (("", ""), (version, ""), (backup, ""),
+                                    ("", version), ("", backup)):
+                with self.subTest(initial=initial, changed_after_push=change):
+                    for name in (version, backup):
+                        (root / name).write_text(other if name ==
+                                                 initial else original)
+                    for name in ("retagged", "staged"):
+                        (root / name).unlink(missing_ok=True)
+                    result = subprocess.run(["bash", "publish.sh"], cwd=work,
+                                            env=env | {"CHANGE": change},
+                                            capture_output=True, text=True)
+                    allowed = not (initial or change)
+                    self.assertEqual(result.returncode == 0,
+                                     allowed, result.stderr)
+                    self.assertEqual((root / "retagged").exists(), allowed)
+                    self.assertEqual((root / "staged").exists(), not initial)
+                    self.assertEqual((root / backup).read_text().strip(),
+                                     other if backup in (initial, change) else original)
+                    if allowed:
+                        self.assertEqual(
+                            (root / version).read_text(), (root / "staged").read_text())
 
 
 if __name__ == "__main__":
