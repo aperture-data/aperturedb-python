@@ -6,6 +6,9 @@ ENTITY_CLASS = "EntityClass"
 PROPERTIES = "properties"
 CONSTRAINTS = "constraints"
 
+# For small batches, setting up pandas' column iterators costs more than scalar reads.
+_MIN_TUPLE_BATCH_SIZE = 16
+
 
 class EntityDataCSV(CSVParser.CSVParser):
     """**ApertureDB Entity Data.**
@@ -68,6 +71,31 @@ class EntityDataCSV(CSVParser.CSVParser):
 
         q.append(ae)
         return q, []
+
+    def _getitems(self, indices):
+        # Custom row builders and nonstandard indices use the scalar path.
+        if (type(self) is not EntityDataCSV or self.use_dask or len(indices) < _MIN_TUPLE_BATCH_SIZE
+                or indices.step != 1 or indices.start < 0 or indices.stop > len(self)
+                or getattr(self.df.index, "step", None) != 1
+                or not self.df.columns.is_unique):
+            return super()._getitems(indices)
+
+        frame = self.df.iloc[indices.start:indices.stop]
+        # CSVParser stores object columns. A caller can replace a column with
+        # another dtype, for which tuple iteration may box scalars differently.
+        if any(dtype != object for dtype in frame.dtypes):
+            return super()._getitems(indices)
+
+        columns = list(frame.columns)
+        batch = []
+        for idx, values in zip(frame.index, frame.itertuples(index=False, name=None)):
+            row = dict(zip(columns, values))
+            query = self._parsed_command(
+                idx, {"class": row[ENTITY_CLASS]},
+                properties=self._row_properties(row.__getitem__),
+                constraints=self._row_constraints(row.__getitem__))
+            batch.append(([query], []))
+        return batch
 
     def validate(self):
         if self.header[0] != ENTITY_CLASS:

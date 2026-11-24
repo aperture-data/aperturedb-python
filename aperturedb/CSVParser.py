@@ -150,22 +150,25 @@ class CSVParser(Subscriptable):
         return key, val
 
     def parse_properties(self, idx):
+        return self._row_properties(lambda key: self.df.loc[idx, key])
 
+    def _row_properties(self, get_value):
         properties = {}
-        if len(self.props_keys) > 0:
-            for key in self.props_keys:
-                prop, value = self._parse_prop(key, self.df.loc[idx, key])
-                if value == value:  # skips nan valies
-                    properties[prop] = value
+        for key in self.props_keys:
+            prop, value = self._parse_prop(key, get_value(key))
+            if value == value:  # Skip NaN properties.
+                properties[prop] = value
         return properties
 
     def parse_constraints(self, idx):
+        return self._row_constraints(lambda key: self.df.loc[idx, key])
 
+    def _row_constraints(self, get_value):
         constraints = {}
-        if len(self.constraints_keys) > 0:
-            for key in self.constraints_keys:
-                prop, value = self._parse_prop(key, self.df.loc[idx, key])
-                constraints[prop] = ["==", self.df.loc[idx, key]]
+        for key in self.constraints_keys:
+            value = get_value(key)
+            prop, _ = self._parse_prop(key, value)
+            constraints[prop] = ["==", value]
         return constraints
 
     def parse_other_constraint(self, constraint_name, keys, idx):

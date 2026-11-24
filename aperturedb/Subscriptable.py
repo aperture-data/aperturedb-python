@@ -64,15 +64,16 @@ class Subscriptable():
             start = len(self) + start if start < 0 else start
             stop = subscript.stop if subscript.stop else len(self)
             step = subscript.step if subscript.step else 1
+            indices = range(start, stop, step)
             wrapper = Wrapper(
-                [self.getitem(i) for i in range(start, stop, step)],
+                self._getitems(indices),
                 self.response_handler if hasattr(
                     self, "response_handler") else None,
                 self.strict_response_validation if hasattr(
                     self, "strict_response_validation") else None,
                 self.blobs_relative_to_csv if hasattr(
                     self, "blobs_relative_to_csv") else False,
-                source=self, indices=list(range(start, stop, step))
+                source=self, indices=list(indices)
             )
             return wrapper
 
@@ -84,6 +85,9 @@ class Subscriptable():
 
     def getitem(self, subscript):
         raise Exception("To be implemented in subclass")
+
+    def _getitems(self, indices):
+        return [self.getitem(i) for i in indices]
 
     def __iter__(self):
         self.ind = 0

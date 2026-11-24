@@ -20,7 +20,7 @@ REQUIRED_TESTS = {
 }
 TEST_FILES = [
     "test_QueryTransport.py", "test_ServerCompatibility.py",
-    "test_DescriptorEngines.py", "test_ServerVersionLoaders.py",
+    "test_DescriptorEngines.py", "test_ServerVersionLoaders.py", "test_EntityDataCSV.py",
     "test_DatasetPaging.py", "test_SPARQLCompatibility.py",
     "test_CompatibilityRunner.py", "test_ExampleCompatibility.py", "test_Session.py",
     "test_ProtocolCompatibility.py", "test_HelperCompatibility.py",
