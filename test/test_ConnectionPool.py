@@ -1,5 +1,6 @@
 import unittest
 import threading
+import pytest
 from aperturedb.ConnectionPool import ConnectionPool
 from aperturedb.Connector import Connector
 try:
@@ -22,6 +23,7 @@ def _make_connector():
     )
 
 
+@pytest.mark.tcp
 class TestConnectionPool(unittest.TestCase):
     def setUp(self):
         pass

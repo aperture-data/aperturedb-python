@@ -9,8 +9,6 @@ from aperturedb import PyTorchDataset
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
-from aperturedb.ConnectorRest import ConnectorRest
-
 logger = logging.getLogger(__name__)
 
 
@@ -31,18 +29,16 @@ class TestTorchDatasets():
         if time_taken != 0:
             logger.info(f"Throughput (imgs/s): {len(dataset) / time_taken}")
 
-    def test_nativeConstraints(self, db, utils, images):
-        assert len(images) > 0
-        # This is a hack against a bug in batch API.
-        dim = 224 if isinstance(db, ConnectorRest) else 225
+    def test_nativeConstraints(self, db, dataset_image_count):
         query = [{
             "FindImage": {
+                "with_class": "DatasetImage",
                 "constraints": ["$age", ">=", 0],
                 "operations": [
                     {
                         "type": "resize",
-                        "width": dim,
-                        "height": dim
+                        "width": 16,
+                        "height": 16
                     }
                 ],
                 "results": {
@@ -54,40 +50,32 @@ class TestTorchDatasets():
         dataset = PyTorchDataset.ApertureDBDataset(
             db, query, label_prop="license")
 
-        self.validate_dataset(dataset, utils.count_images())
+        self.validate_dataset(dataset, dataset_image_count)
 
-    def test_findBlob(self, db, utils, insert_data_from_csv):
-        blobs, _ = insert_data_from_csv("./input/blobs.adb.csv")
-        assert len(blobs) > 0
+    def test_findBlob(self, db, dataset_blob_labels):
         query = [{
             "FindBlob": {
-                "results": {}
+                "with_class": "DatasetBlob"
             }
         }]
 
         dataset = PyTorchDataset.ApertureDBDataset(
             db, query, label_prop="license")
 
-        assert len(dataset) == utils.count_entities("_Blob")
-        for blob, label in dataset:
-            # For FindBlob, the return is raw bytes and label should be an int when label_prop='license'
-            assert isinstance(blob, bytes)
-            assert isinstance(label, int)
-            break
+        assert len(dataset) == len(dataset_blob_labels)
+        assert dict(dataset) == dataset_blob_labels
 
-    def test_datasetWithMultiprocessing(self, db, utils, images):
-        len_limit = utils.count_images()
-        # This is a hack against a bug in batch API.
-        # TODO Fixme
-        dim = 224 if isinstance(db, ConnectorRest) else 225
+    def test_datasetWithMultiprocessing(self, db, dataset_image_count):
+        len_limit = dataset_image_count
         query = [{
             "FindImage": {
+                "with_class": "DatasetImage",
                 "constraints": ["$age", ">=", 0],
                 "operations": [
                     {
                         "type": "resize",
-                        "width": dim,
-                        "height": dim
+                        "width": 16,
+                        "height": 16
                     }
                 ],
                 "limit": len_limit,
@@ -117,7 +105,6 @@ class TestTorchDatasets():
             batch_size=batch_size,          # pick random values here to test
             num_workers=4,          # num_workers > 1 to test multiprocessing works
             pin_memory=True,
-            drop_last=True,
         )
 
         self.validate_dataset(data_loader, len_limit)
@@ -134,7 +121,6 @@ class TestTorchDatasets():
             batch_size=batch_size,          # pick random values here to test
             num_workers=4,          # num_workers > 1 to test multiprocessing works
             pin_memory=True,
-            drop_last=True,
         )
 
         self.validate_dataset(data_loader, len_limit)

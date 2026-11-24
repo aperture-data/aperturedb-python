@@ -225,6 +225,33 @@ def images(insert_data_from_csv):
     return insert_data_from_csv("./input/images.adb.csv")
 
 
+@pytest.fixture
+def dataset_image_count(db):
+    import cv2
+    import numpy as np
+
+    encoded, png = cv2.imencode(".png", np.zeros((8, 12, 3), dtype=np.uint8))
+    assert encoded
+    commands = [{"AddImage": {"class": "DatasetImage", "format": "png",
+                              "properties": {"age": label, "license": label}}}
+                for label in range(12)]
+    response, _ = db.query(commands, [png.tobytes()] * len(commands))
+    assert len(response) == len(commands)
+    assert all(item["AddImage"]["status"] == 0 for item in response), response
+    return len(commands)
+
+
+@pytest.fixture
+def dataset_blob_labels(db):
+    labels = {b"first blob": 1, b"second blob": 2}
+    commands = [{"AddBlob": {"class": "DatasetBlob", "properties": {"license": label}}}
+                for label in labels.values()]
+    response, _ = db.query(commands, list(labels))
+    assert len(response) == len(commands)
+    assert all(item["AddBlob"]["status"] == 0 for item in response), response
+    return labels
+
+
 @pytest.fixture()
 def retired_persons(db, insert_data_from_csv, utils):
     utils.remove_entities(class_name="Person")

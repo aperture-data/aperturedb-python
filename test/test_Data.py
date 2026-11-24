@@ -1,7 +1,8 @@
 import pytest
-import numpy as np
 import pandas as pd
 import os.path as osp
+from aperturedb.BlobDataCSV import BlobDataCSV
+from aperturedb.ParallelLoader import ParallelLoader
 from aperturedb.Query import Query
 from aperturedb.Entities import Entities
 from aperturedb.Constraints import Constraints
@@ -77,29 +78,29 @@ class TestEntityLoader():
             self.assertEqual(total_descriptors,
                              utils.count_entities("_Descriptor"))
 
-    def test_BlobLoader(self, db, utils, insert_data_from_csv):
-        # Assert that we have a clean slate to begin with.
-        self.assertTrue(utils.remove_all_indexes())
-        self.assertTrue(utils.remove_all_objects())
+    def test_BlobLoader(self, db, tmp_path):
+        first = b"\x00first\xff"
+        second = b"\x00second\xff"
+        (tmp_path / "first.blob").write_bytes(first)
+        (tmp_path / "second.blob").write_bytes(second)
+        csv = tmp_path / "blobs.csv"
+        csv.write_text("filename,license\nfirst.blob,1\nsecond.blob,2\n")
 
-        data, _ = insert_data_from_csv(in_csv_file = "./input/blobs.adb.csv")
-        self.assertEqual(len(data), utils.count_entities("_Blob"))
+        rows = BlobDataCSV(str(csv), class_name="LoaderBlob",
+                           blobs_relative_to_csv=True)
+        loader = ParallelLoader(db)
+        loader.ingest(rows, batchsize=2, numthreads=1, stats=False)
+        assert loader.error_counter == 0
 
-        query = [{
-            "FindBlob": {
-                "blobs": True,
-                "limit": 1,
-                "results": {
-                    "list": ["license"]
-                }
-            }
-        }]
-
-        res, blob = db.query(query)
-        self.assertEqual(len(blob), 1)
-
-        arr = np.frombuffer(blob[0])
-        self.assertEqual(arr[2], 3.3)
+        response, blobs = db.query([{"FindBlob": {
+            "blobs": True, "results": {"list": ["license"]}
+        }}])
+        result = response[0]["FindBlob"]
+        assert result["status"] == 0, response
+        assert len(result["entities"]) == len(blobs) == 2
+        payloads = {row["license"]: blobs[row["_blob_index"]]
+                    for row in result["entities"]}
+        assert payloads == {1: first, 2: second}
 
     def test_conditional_add(self, utils, insert_data_from_csv):
         logger.debug(f"Cleaning existing data")

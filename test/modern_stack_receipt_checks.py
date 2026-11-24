@@ -154,22 +154,33 @@ class ModernStackReceipt(unittest.TestCase):
 
 class QualifiedStackReceipt(unittest.TestCase):
     def identity(self):
-        return {"schema_version": 2, "state": "passed", "service": "aperturedb",
-                "image_id": sorted(qualified.CORE_IDS)[0],
-                "official_database_repo_digests": [qualified.CORE_IMAGE],
-                "release": {"version": "1.0.0", "branch": "main", "commit": qualified.CORE_COMMIT}}
+        return receipt.collect("sdk_gate", FakeDocker())
 
-    def test_qualified_source_and_known_store_identities_pass(self):
-        for identity in qualified.CORE_IDS:
-            value = self.identity()
-            value["image_id"] = identity
-            qualified.validate(value)
+    def check(self, value, expected_branch=None):
+        def selected_image(args):
+            if args[1:3] == ["image", "inspect"] and args[-1] == REFERENCE:
+                return IMAGE
+            if args[1] == "run" and args[-4] == REFERENCE:
+                return json.dumps(RELEASE)
+            self.fail("Unexpected Docker operation")
+        qualified.validate(value, REFERENCE, selected_image,
+                           expected_branch=expected_branch)
+
+    def test_compose_selected_source_and_image_pass(self):
+        self.check(self.identity())
+
+    def test_release_requires_main_branch_of_compose_selected_image(self):
+        self.check(self.identity(), expected_branch="main")
+        with patch.dict(RELEASE, branch="develop"):
+            self.check(self.identity())
+            with self.assertRaisesRegex(ValueError, "unexpected_server_branch"):
+                self.check(self.identity(), expected_branch="main")
 
     def test_same_version_stale_source_fails(self):
         value = self.identity()
         value["release"]["commit"] = "7a40" + "0" * 36
         with self.assertRaises(ValueError):
-            qualified.validate(value)
+            self.check(value)
 
     def test_wrong_official_root_unknown_image_or_standalone_fails(self):
         for change in ({"image_id": "sha256:" + "9" * 64},
@@ -177,13 +188,15 @@ class QualifiedStackReceipt(unittest.TestCase):
                            "aperturedata/aperturedb@sha256:" + "9" * 64]},
                        {"official_database_repo_digests": ["aperturedata/aperturedb-standalone@sha256:" + "9" * 64]}):
             with self.assertRaises(ValueError):
-                qualified.validate(self.identity() | change)
+                self.check(self.identity() | change)
 
     def test_incomplete_legacy_or_extra_private_shape_cannot_qualify(self):
         for value in ({"schema_version": 2, "state": "not_run", "service": "aperturedb"},
                       self.identity() | {"schema_version": 1}, self.identity() | {"Env": ["SECRET"]}):
             with self.assertRaises(ValueError):
-                qualified.validate(value)
+                self.check(value)
+        with patch.dict(RELEASE, version="0.20.0"), self.assertRaises(ValueError):
+            self.check(self.identity())
 
     def test_actual_launcher_scopes_pin_and_rejects_stale_before_client_run(self):
         source = Path(__file__).resolve().parent
@@ -198,6 +211,8 @@ class QualifiedStackReceipt(unittest.TestCase):
                 trace = root / "trace.jsonl"
                 common = "import json,os,sys\nfrom pathlib import Path\n"
                 (scripts / "stack.sh").write_text("#!/usr/bin/env python3\n" + common +
+                                                  "if sys.argv[1]=='image': print(" + repr(
+                                                      "docker.io/aperturedata/aperturedb:test@" + REFERENCE.split("@")[1]) + ")\n"
                                                   "with Path(os.environ['TRACE_PATH']).open('a') as stream:\n"
                                                   " stream.write(json.dumps({'kind':'stack','action':sys.argv[1],"
                                                   "'image':os.environ.get('APERTUREDB_IMAGE'),'ssl':os.environ.get('LNZ_FORCE_SSL')})+'\\n')\n")
@@ -207,9 +222,11 @@ class QualifiedStackReceipt(unittest.TestCase):
                     release["commit"] = "7a40" + "0" * 36
                 docker = ("#!/usr/bin/env python3\n" + common + "args=sys.argv[1:]\n" +
                           "if args[:2]==['container','ls']: print('a'*64)\n" +
-                          "elif args[:2]==['container','inspect']: print(" + repr(sorted(qualified.CORE_IDS)[0]) + ")\n" +
+                          "elif args[:2]==['container','inspect']: print(" + repr(IMAGE) + ")\n" +
+                          "elif args[:2]==['image','inspect'] and args[-1]==" + repr(REFERENCE) + ": print(" + repr(IMAGE) + ")\n" +
+                          "elif args[0]=='run' and '--read-only' in args: print(" + repr(json.dumps(RELEASE)) + ")\n" +
                           "elif args[:2]==['image','inspect']: print(" + repr(json.dumps({
-                              "id": sorted(qualified.CORE_IDS)[0], "repo_digests": [qualified.CORE_IMAGE]})) + ")\n" +
+                              "id": IMAGE, "repo_digests": [REFERENCE]})) + ")\n" +
                           "elif args[0]=='exec': print(" + repr(json.dumps(release)) + ")\n" +
                           "elif args[0]=='run':\n with Path(os.environ['TRACE_PATH']).open('a') as stream:\n" +
                           "  stream.write(json.dumps({'kind':'client','image':os.environ.get('APERTUREDB_IMAGE'),'ssl':os.environ.get('LNZ_FORCE_SSL')})+'\\n')\n" +
@@ -218,17 +235,17 @@ class QualifiedStackReceipt(unittest.TestCase):
                 (binaries / "docker").chmod(0o755)
                 env = os.environ | {"PATH": str(binaries) + os.pathsep + os.environ["PATH"],
                                     "TRACE_PATH": str(trace), "RUNNER_NAME": "unit_guard",
-                                    "SDK_COMPAT_COMPOSE": "qualified-compose.yml",
+                                    "ADB_COMPOSE": "qualified-compose.yml",
                                     "APERTUREDB_IMAGE": "legacy-must-remain-unchanged", "LNZ_FORCE_SSL": "legacy-mode-unchanged"}
-                env.pop("SDK_COMPAT_APERTUREDB_IMAGE", None)
                 result = subprocess.run(["bash", str(scripts / "run_compatibility_container.sh")],
                                         env=env, capture_output=True, timeout=30)
                 rows = [json.loads(line)
                         for line in trace.read_text().splitlines()]
                 self.assertEqual(
-                    [row["action"] for row in rows if row["kind"] == "stack"], ["up", "down"])
+                    [row["action"] for row in rows if row["kind"] == "stack"], ["image", "up", "down"])
+                self.assertIsNone(rows[0]["image"])
                 self.assertTrue(all(
-                    row["image"] == qualified.CORE_IMAGE and row["ssl"] == "true" for row in rows if row["kind"] == "stack"))
+                    row["image"] == REFERENCE and row["ssl"] == "true" for row in rows[1:] if row["kind"] == "stack"))
                 clients = [row for row in rows if row["kind"] == "client"]
                 if stale:
                     self.assertNotEqual(result.returncode, 0)

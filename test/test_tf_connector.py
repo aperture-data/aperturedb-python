@@ -4,8 +4,6 @@ import logging
 import tensorflow as tf
 from aperturedb.TensorFlowDataset import ApertureDBTensorFlowDataset
 
-from aperturedb.ConnectorRest import ConnectorRest
-
 logger = logging.getLogger(__name__)
 
 
@@ -30,18 +28,16 @@ class TestTfDatasets():
         if time_taken != 0:
             logger.info(f"Throughput (imgs/s): {expected_length / time_taken}")
 
-    def test_nativeConstraints(self, db, utils, images):
-        assert len(images) > 0
-        # This is a hack against a bug in batch API.
-        dim = 224 if isinstance(db, ConnectorRest) else 225
+    def test_nativeConstraints(self, db, dataset_image_count):
         query = [{
             "FindImage": {
+                "with_class": "DatasetImage",
                 "constraints": ["$age", ">=", 0],
                 "operations": [
                     {
                         "type": "resize",
-                        "width": dim,
-                        "height": dim
+                        "width": 16,
+                        "height": 16
                     }
                 ],
                 "results": {
@@ -54,20 +50,19 @@ class TestTfDatasets():
             db, query, label_prop="license")
         dataset = dataset_wrapper.get_dataset()
 
-        self.validate_dataset(dataset, utils.count_images())
+        self.validate_dataset(dataset, dataset_image_count)
 
-    def test_batchedDataset(self, db, utils, images):
-        len_limit = utils.count_images()
-        # This is a hack against a bug in batch API.
-        dim = 224 if isinstance(db, ConnectorRest) else 225
+    def test_batchedDataset(self, db, dataset_image_count):
+        len_limit = dataset_image_count
         query = [{
             "FindImage": {
+                "with_class": "DatasetImage",
                 "constraints": ["$age", ">=", 0],
                 "operations": [
                     {
                         "type": "resize",
-                        "width": dim,
-                        "height": dim
+                        "width": 16,
+                        "height": 16
                     }
                 ],
                 "limit": len_limit,
@@ -138,12 +133,10 @@ class TestTfDatasets():
             dataset_f = dataset_wrapper_f.get_dataset()
             assert dataset_f.element_spec[1].dtype == tf.float32
 
-    def test_findBlob(self, db, utils, insert_data_from_csv):
-        blobs, _ = insert_data_from_csv("./input/blobs.adb.csv")
-        assert len(blobs) > 0
+    def test_findBlob(self, db, dataset_blob_labels):
         query = [{
             "FindBlob": {
-                "results": {}
+                "with_class": "DatasetBlob"
             }
         }]
 
@@ -151,13 +144,11 @@ class TestTfDatasets():
             db, query, label_prop="license")
         dataset = dataset_wrapper.get_dataset()
 
-        count = 0
+        actual = {}
         for blob, label in dataset:
-            assert isinstance(blob.numpy(), bytes)
             assert label.dtype == tf.int32
-            count += 1
-
-        assert count == utils.count_entities("_Blob")
+            actual[blob.numpy()] = label.numpy()
+        assert actual == dataset_blob_labels
 
     def test_findVideo_mocked(self):
         from unittest.mock import patch

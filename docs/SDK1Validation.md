@@ -1,29 +1,26 @@
-# Python SDK 1.0.2 release validation
+# Python SDK release validation
 
-CI tests the supported ApertureDB server releases over native TCP/TLS and HTTPS.
-The server 0.20.0 stack runs the integration suite, including query, CSV, and
-framework tests. Pull requests use the configured slow and external test
-filters. The develop, main, and nightly workflows run the full suite.
+Pull requests, develop, main and nightly integration tests all use the
+infra-promoted `aperturedata/aperturedb-compose-single-node:latest` artifact.
+The runner resolves the database image digest before startup, verifies the
+running image against that digest and records the server's source revision.
+Before publishing, SDK main also checks that the server was built from main.
 
-The server 1.0.0 stack runs the SDK compatibility suite with certificate and
-hostname verification. The suite covers raw binary uploads, streaming,
-reconnection, descriptor index creation and removal, class removal, schema
-rendering, SPARQL, and image similarity. It also exercises command generation
-for queries, CSVs, and model-backed loaders. Both transports must pass the
-required cases. CI checks the running server's source revision and image
-digest before publishing the SDK.
+A single stack serves native TLS and HTTPS with certificate and hostname
+verification. Both transports exercise authentication, binary uploads,
+streaming, reconnection, descriptors, graph queries and image similarity.
+The same run also checks native connection pooling, SDK session handling,
+CSV ingestion and indexing, process-worker reauthentication, model-backed
+helpers and CLI timing for both connection profiles.
 
-Run both CPU suites with a built SDK test image.
+Run the integration suite from the repository root with a test image built from
+the current checkout.
 
 ```bash
-cd test
-RUNNER_NAME=sdk1_validation \
-ADB_COMPOSE=oci://aperturedata/aperturedb-compose-single-node:0.20.0 \
-SDK_COMPAT_COMPOSE=oci://aperturedata/aperturedb-compose-single-node:1.0.0 \
-SKIP_SLOW_TESTS=true ./run_test_container.sh
+RUNNER_NAME=sdk_validation ./test/run_compatibility_container.sh
 ```
 
-To run the server 1.0.0 suite on its own, set `RUNNER_NAME` and
-`SDK_COMPAT_COMPOSE` and run `./run_compatibility_container.sh` from the
-`test` directory. The JUnit report is written to
-`test/output/client/sdk-compat/junit.xml`. Each runner removes its own test stack.
+Local runs default to `oci://aperturedata/aperturedb-compose-single-node:latest`.
+Set `ADB_COMPOSE` to select another published artifact. The runner writes the
+image identity to `qualification/sdk-modern-stack.json`, the JUnit report to
+`qualification/sdk-compat/junit.xml` and HTML coverage to `test/output/index.html`.

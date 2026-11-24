@@ -1,5 +1,6 @@
 """Offline command generation must match the negotiated server API."""
 import json
+import os
 from pathlib import Path
 import struct
 import tempfile
@@ -387,17 +388,22 @@ class VersionedGenerators(unittest.TestCase):
         self.assertEqual(
             indexes[('owns', 'entity', 'People', 'image', 'Photos')], {'id'})
 
-    @unittest.skipUnless(__import__('os').environ.get('SDK_LIVE_NATIVE_PORTS'), 'Set SDK_LIVE_NATIVE_PORTS for disposable live databases')
-    def test_live_csv_indexing_and_ingestion_on_both_server_apis(self):
-        import os
+    @unittest.skipUnless(os.getenv('ADB_COMPAT_ENDPOINTS') or os.getenv('SDK_LIVE_NATIVE_PORTS'),
+                         'Configure a disposable database to exercise live CSV loaders')
+    def test_live_csv_indexing_and_ingestion(self):
         from uuid import uuid4
-        from aperturedb.Connector import Connector
         from aperturedb.EntityDataCSV import EntityDataCSV
         from aperturedb.ParallelLoader import ParallelLoader
-        for port in os.environ['SDK_LIVE_NATIVE_PORTS'].split(','):
-            with self.subTest(port=port):
-                client = Connector(host='127.0.0.1', port=int(
-                    port), user='admin', password='admin', use_ssl=False)
+        from test_HelperCompatibility import endpoint_client
+
+        if os.getenv('ADB_COMPAT_ENDPOINTS'):
+            endpoints = json.loads(os.environ['ADB_COMPAT_ENDPOINTS'])
+        else:
+            endpoints = [
+                {'port': int(port)} for port in os.environ['SDK_LIVE_NATIVE_PORTS'].split(',')]
+        for endpoint in endpoints:
+            with self.subTest(port=endpoint['port'], rest=endpoint.get('rest', False)):
+                client = endpoint_client(endpoint)
                 prefix = 'SDKCSV' + uuid4().hex
                 prop = 'csv_' + uuid4().hex[:12]
                 people, files, edge = prefix + 'People', prefix + 'Files', prefix + 'Owns'

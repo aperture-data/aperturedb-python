@@ -19,7 +19,7 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Initialize modern stack identity receipt
       if: always()
@@ -37,7 +37,7 @@ jobs:
       shell: bash
 
     - name: Login to DockerHub
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         username: ${{ fromJson(secrets.DOCKERHUB).username }}
         password: ${{ fromJson(secrets.DOCKERHUB).password }}
@@ -59,10 +59,6 @@ jobs:
 
     - name: Build and Run Tests
       env:
-        # Single job runs both protocols in parallel via run_test_container.sh
-        # rather than spinning up two matrix runners that each rebuild every
-        # docker image.
-        TEST_PROTOCOL: both
         AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION:    ${{ secrets.AWS_DEFAULT_REGION }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -70,14 +66,12 @@ jobs:
         RUNNER_NAME: ${{ runner.name }}_main
         DOCKER_BUILDKIT: 1
         COMPOSE_DOCKER_CLI_BUILD: 1
-        # Preserve the complete historical suite on its supported command API.
-        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:0.20.0
-        SDK_COMPAT_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:1.0.0
+        ADB_COMPOSE: oci://aperturedata/aperturedb-compose-single-node:latest
       run: RUN_TESTS=true ./ci.sh
       shell: bash
 
     - name: Require captured modern stack identity
-      run: python3 test/require_modern_stack.py qualification/sdk-modern-stack.json
+      run: python3 test/require_modern_stack.py qualification/sdk-modern-stack.json --expected-image "$(cat qualification/sdk-selected-image)" --expected-branch main
       shell: bash
 
     - name: Upload modern stack identity receipt
@@ -85,7 +79,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: sdk-modern-stack-${{ github.run_id }}-${{ github.run_attempt }}
-        path: qualification/sdk-modern-stack.json
+        path: |
+          qualification/sdk-modern-stack.json
+          qualification/sdk-selected-image
+          qualification/sdk-compat/junit.xml
         if-no-files-found: error
 
   publish_release:

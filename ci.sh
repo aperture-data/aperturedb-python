@@ -234,7 +234,7 @@ then
     build_tests
 
     pushd "test"
-    ./run_test_container.sh
+    ./run_compatibility_container.sh
     if [ "${BUILD_AUX_IMAGES}" == "true" ]
     then
         build_coverage_image
