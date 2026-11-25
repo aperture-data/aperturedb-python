@@ -1,6 +1,6 @@
 # Python SDK release validation
 
-Pull requests, develop, main and nightly integration tests all use the
+Pull requests, develop and main integration tests all use the
 infra-promoted `aperturedata/aperturedb-compose-single-node:latest` artifact.
 The runner resolves the database image digest before startup, verifies the
 running image against that digest and records the server's source revision.
