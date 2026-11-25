@@ -149,7 +149,7 @@ jobs:
         source version.sh
         read_version
         jq -n --arg tag "$BUILD_VERSION" \
-          '{event_type:"update-tag",client_payload:{environment:"develop",component:"python-client",tag:$tag}}' \
+          '{event_type:"update-tag",client_payload:{component:"aperturedb-python",tag:$tag}}' \
           | curl --fail-with-body --silent --show-error \
               --request POST \
               --header "Accept: application/vnd.github+json" \
