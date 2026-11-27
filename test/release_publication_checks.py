@@ -242,5 +242,98 @@ esac
                             (root / version).read_text(), (root / "staged").read_text())
 
 
+class WorkflowsWheelLookupControls(unittest.TestCase):
+    target = "registry-1.docker.io/aperturedata/aperturedb-workflows:9.9.9"
+    wheel = "aperturedb_workflows-9.9.9-py3-none-any.whl"
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+        self.work = self.root / "source"
+        runtime = self.work / "aperturedb-workflows"
+        for package in (self.work / "aperturedb", runtime / "aperturedb_workflows"):
+            package.mkdir(parents=True)
+            (package / "__init__.py").write_text('__version__ = "9.9.9"\n')
+        shutil.copy(ROOT / "version.sh", self.work)
+        shutil.copy(ROOT / "aperturedb-workflows/publish.sh", runtime)
+        self.git("init", "-q")
+        self.git("add", ".")
+        self.git("commit", "-qm", "fixture")
+        self.revision = self.git("rev-parse", "HEAD")
+
+        self.tools = self.root / "bin"
+        self.tools.mkdir()
+        (self.tools / "oras").write_text("""#!/bin/bash
+set -eu
+case "$1" in
+    manifest)
+        [[ "$2" == fetch && "$3" == "$TARGET" ]]
+        if [[ -n "$LOOKUP_ERROR" ]]; then echo "$LOOKUP_ERROR" >&2; exit 1; fi
+        cat "$STATE/manifest.json" ;;
+    push)
+        [[ "$2" == "$TARGET" && -f "$WHEEL" ]]
+        touch "$STATE/pushed" ;;
+    *) exit 2 ;;
+esac
+""")
+        (self.tools / "python3").write_text("""#!/bin/bash
+set -eu
+[[ "$1 $2 $3" == "-m pip wheel" ]]
+touch "$STATE/built" "$6/$WHEEL"
+""")
+        for tool in self.tools.iterdir():
+            tool.chmod(0o755)
+
+    def git(self, *args):
+        return subprocess.check_output(
+            ["git", "-c", "user.name=Test", "-c",
+                "user.email=test@example.invalid", *args],
+            cwd=self.work, text=True).strip()
+
+    def publish(self, error=""):
+        env = os.environ | {"PATH": str(self.tools) + os.pathsep + os.environ["PATH"],
+                            "STATE": str(self.root), "TARGET": self.target,
+                            "WHEEL": self.wheel, "LOOKUP_ERROR": error}
+        return subprocess.run(["bash", "aperturedb-workflows/publish.sh"], cwd=self.work,
+                              env=env, capture_output=True, text=True)
+
+    def test_first_publication_on_missing_target(self):
+        error = ('Error response from registry: failed to fetch the content of '
+                 f'"{self.target}": {self.target}: not found')
+        result = self.publish(error)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.root / "pushed").exists())
+
+    def test_lookup_failures_stop_before_build(self):
+        for error in ("unauthorized", "connection timed out", "503 Service Unavailable",
+                      "credential helper: not found"):
+            with self.subTest(error=error):
+                result = self.publish(error)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(error, result.stderr)
+                self.assertFalse((self.root / "built").exists())
+                self.assertFalse((self.root / "pushed").exists())
+
+    def test_existing_wheel_reused_only_for_unchanged_runtime(self):
+        manifest = {"artifactType": "application/vnd.aperturedata.python-wheel.v1",
+                    "annotations": {"org.opencontainers.image.version": "9.9.9",
+                                    "org.opencontainers.image.revision": self.revision},
+                    "layers": [{"mediaType": "application/zip",
+                                "annotations": {"org.opencontainers.image.title": self.wheel}}]}
+        (self.root / "manifest.json").write_text(json.dumps(manifest))
+        result = self.publish()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Reusing", result.stdout)
+        (self.work / "aperturedb-workflows/new-file").touch()
+        self.git("add", ".")
+        self.git("commit", "-qm", "change runtime")
+        result = self.publish()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("bump the version", result.stderr)
+        self.assertFalse((self.root / "built").exists())
+        self.assertFalse((self.root / "pushed").exists())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

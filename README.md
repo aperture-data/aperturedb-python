@@ -104,7 +104,7 @@ pip install -e '.[dev]'
 
 ## 🧪 Running Tests
 
-The tests are located inside the `test/` directory. They run against an ApertureDB stack (`aperturedb`, `lenz`, `http-proxy` and `webui`) started from the published Docker Compose artifact `aperturedata/aperturedb-compose-single-node`. `ADB_COMPOSE` selects the artifact; the default is the latest release.
+The tests are located inside the `test/` directory. They run against an ApertureDB stack (`aperturedb`, `lenz`, `http-proxy` and `webui`) started from the published Docker Compose artifact `aperturedata/aperturedb-compose-single-node`. `ADB_COMPOSE` selects the artifact; the default is `dev`, the newest athena main release, which infra stages in its develop environment.
 
 If you'd like to bring up the environment manually, ensure your working directory is `test/` and run:
 

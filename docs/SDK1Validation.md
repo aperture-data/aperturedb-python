@@ -1,10 +1,12 @@
 # Python SDK release validation
 
 Pull requests, develop and main integration tests all use the
-infra-promoted `aperturedata/aperturedb-compose-single-node:latest` artifact.
-The runner resolves the database image digest before startup, verifies the
-running image against that digest and records the server's source revision.
-Before publishing, SDK main also checks that the server was built from main.
+infra-promoted `aperturedata/aperturedb-compose-single-node:dev` artifact, the
+newest athena main release, which infra stages in its develop environment. The
+runner resolves the database image digest before startup, verifies the running
+image against that digest and records the server's source revision. Before
+publishing, SDK main checks that the receipt is for that image and that the
+server was built from athena main.
 
 A single stack serves native TLS and HTTPS with certificate and hostname
 verification. Both transports exercise authentication, binary uploads,
@@ -20,7 +22,7 @@ the current checkout.
 RUNNER_NAME=sdk_validation ./test/run_compatibility_container.sh
 ```
 
-Local runs default to `oci://aperturedata/aperturedb-compose-single-node:latest`.
+Local runs default to `oci://aperturedata/aperturedb-compose-single-node:dev`.
 Set `ADB_COMPOSE` to select another published artifact. The runner writes the
 image identity to `qualification/sdk-modern-stack.json`, the JUnit report to
 `qualification/sdk-compat/junit.xml` and HTML coverage to `test/output/index.html`.

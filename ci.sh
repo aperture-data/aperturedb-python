@@ -38,11 +38,13 @@ update_version() {
     echo "Updating version ${BUILD_VERSION} to ${VERSION_BUMP}"
     # Replace version in __init__.py
     printf '%s\n' "%s/__version__ = .*/__version__ = \"${VERSION_BUMP}\"/g" 'x' | ex aperturedb/__init__.py
+    # The workflows runtime is released under the SDK version.
+    printf '%s\n' "%s/__version__ = .*/__version__ = \"${VERSION_BUMP}\"/g" 'x' | ex aperturedb-workflows/aperturedb_workflows/__init__.py
 
     # Commit and push version bump
     git config --local user.name "github-actions[bot]"
     git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-    git add ./aperturedb/__init__.py
+    git add ./aperturedb/__init__.py ./aperturedb-workflows/aperturedb_workflows/__init__.py
     git commit -m "Version bump: ${BUILD_VERSION} to ${VERSION_BUMP}"
     git push --set-upstream origin ${BRANCH_NAME}
     BUILD_VERSION=${VERSION_BUMP}
@@ -86,7 +88,6 @@ fi
 if [ "${BRANCH_NAME}" == 'main' ]
 then
     IMAGE_EXTENSION_WITH_VERSION=":${BUILD_VERSION}"
-    IMAGE_EXTENSION_LATEST=":latest"
     DEPLOY_SERVER=yes
 elif [ "${BRANCH_NAME}" == 'develop' ]
 then
@@ -105,7 +106,9 @@ fi
 echo "Repository: ${DOCKER_REPOSITORY}"
 
 build_tests(){
+    # The tests run from the local :latest; only the build cache is pushed.
     TESTS_IMAGE=${DOCKER_REPOSITORY}/aperturedb-python-tests:latest
+    CACHE_IMAGE=${DOCKER_REPOSITORY}/aperturedb-python-tests:cache
     mkdir -p docker/tests/aperturedata
     # test/stack.sh creates each test stack's files; clear any left by earlier runs.
     sudo rm -rf test/aperturedb
@@ -114,13 +117,14 @@ build_tests(){
     cp -r test/*.py test/*.sh test/input docker/tests/aperturedata/test
 
     echo "Building image ${TESTS_IMAGE}"
-    docker pull ${TESTS_IMAGE} || true
-    docker build ${INLINE_CACHE_ARG} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${TESTS_IMAGE} --cache-from ${TESTS_IMAGE} -f docker/tests/Dockerfile .
-    # Push the tests image so --cache-from works across runners and cold starts.
+    docker pull ${CACHE_IMAGE} || true
+    docker build ${INLINE_CACHE_ARG} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${TESTS_IMAGE} --cache-from ${CACHE_IMAGE} -f docker/tests/Dockerfile .
+    # Push the cache so --cache-from works across runners and cold starts.
     # Skipped on PR runs (NO_PUSH=true) to avoid polluting the registry with PR images.
     if [ "${NO_PUSH}" != "true" ]
     then
-        docker push ${TESTS_IMAGE}
+        docker tag ${TESTS_IMAGE} ${CACHE_IMAGE}
+        docker push ${CACHE_IMAGE}
     fi
 }
 
@@ -168,16 +172,16 @@ build_notebook_image(){
     NOTEBOOK_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook${IMAGE_EXTENSION_WITH_VERSION}
     mkdir -p docker/notebook/aperturedata
     cp -r aperturedb pyproject.toml LICENSE README.md docker/notebook/aperturedata
-    LATEST_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook${IMAGE_EXTENSION_LATEST}
-    CPU_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook:cpu
-    docker pull ${LATEST_IMAGE} || true
+    # Infra moves dev and latest from the versioned images; latest is only a cache here.
+    CACHE_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook:latest
+    CPU_IMAGE=${DOCKER_REPOSITORY}/aperturedb-notebook-cpu${IMAGE_EXTENSION_WITH_VERSION}
+    docker pull ${CACHE_IMAGE} || true
     echo "Building image ${NOTEBOOK_IMAGE}"
-    docker build ${INLINE_CACHE_ARG} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${NOTEBOOK_IMAGE} -t ${LATEST_IMAGE} --cache-from ${LATEST_IMAGE} -f docker/notebook/Dockerfile .
+    docker build ${INLINE_CACHE_ARG} --build-arg PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST} --build-arg PIP_INDEX_URL=${PIP_INDEX_URL}  -t ${NOTEBOOK_IMAGE} --cache-from ${CACHE_IMAGE} -f docker/notebook/Dockerfile .
     docker build -t ${CPU_IMAGE} -f docker/notebook/Dockerfile.cpu .
     if [ "${NO_PUSH}" != "true" ]
     then
         docker push "$NOTEBOOK_IMAGE"
-        docker push "$LATEST_IMAGE"
         docker push "$CPU_IMAGE"
     fi
 }

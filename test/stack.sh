@@ -4,8 +4,8 @@
 #   stack.sh up <project>     start the stack
 #   stack.sh down <project>   stop it and delete its files
 #
-# ADB_COMPOSE selects the artifact; the default is the latest release. Each
-# project keeps its files under aperturedb/<project>/:
+# ADB_COMPOSE selects the artifact; the default is dev, the newest athena main
+# release. Each project keeps its files under aperturedb/<project>/:
 #   ca/ca.crt    the stack's generated certificate, valid for lenz,
 #                http-proxy and localhost; clients use it as their CA
 #   data/        database and server logs (data/aperturedb_logs)
@@ -16,7 +16,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-ADB_COMPOSE=${ADB_COMPOSE:-oci://aperturedata/aperturedb-compose-single-node:latest}
+ADB_COMPOSE=${ADB_COMPOSE:-oci://aperturedata/aperturedb-compose-single-node:dev}
 CLEANUP_IMAGE=${CLEANUP_IMAGE:-alpine:3}
 
 usage="usage: stack.sh up|down|image <project>"

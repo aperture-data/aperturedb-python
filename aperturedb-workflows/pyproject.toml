@@ -1,0 +1,63 @@
+[project]
+name = "aperturedb-workflows"
+dynamic = ["version"]
+description = "Runtime shared by ApertureDB workflow images"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "ApertureData Engineering", email = "team@aperturedata.io"}
+]
+dependencies = [
+    "aperturedb",
+    "fastapi",
+    "prometheus_client",
+    "requests",
+    "slack_sdk",
+    "typer",
+    "uvicorn",
+]
+
+[project.optional-dependencies]
+# Install the CPU build of torch and torchvision first when the image has no GPU.
+embeddings = [
+    "torch>=2.0",
+    "torchvision",
+    "open_clip_torch>=2.23",
+    "clip @ git+https://github.com/openai/CLIP.git",
+    "gpt4all",
+    "sentence-transformers",
+]
+# A single word keeps pip before 23.3 from skipping the extra.
+text = [
+    "beautifulsoup4",
+    "langchain-text-splitters",
+    "pdfplumber",
+    "tiktoken",
+]
+
+[project.scripts]
+wf-start = "aperturedb_workflows.cli:start"
+wf-argparse = "aperturedb_workflows.wf_argparse:main"
+wf-status = "aperturedb_workflows.status_tools:main"
+wf-status-server = "aperturedb_workflows.status_server:main"
+wf-log-processor = "aperturedb_workflows.log_processor:app"
+wf-userlog = "aperturedb_workflows.userlog:run"
+wf-slack-alert = "aperturedb_workflows.slack_alert:run"
+
+[tool.setuptools]
+packages = [
+    "aperturedb_workflows",
+    "aperturedb_workflows.embeddings",
+    "aperturedb_workflows.text_extraction",
+]
+
+[tool.setuptools.package-data]
+aperturedb_workflows = ["*.sh", "site/sitecustomize.py"]
+
+[tool.setuptools.dynamic]
+version = {attr = "aperturedb_workflows.__version__"}
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
