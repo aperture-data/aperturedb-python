@@ -82,7 +82,8 @@ def test_json_object_literals_are_not_interpreted_as_functions():
 ])
 def test_text_constraints(method, operator, pattern, match, miss):
     constraint = getattr(Constraints(), method)("name", pattern)
-    assert constraint.constraints == ["all", ["$name", operator, literal(pattern)]]
+    assert constraint.constraints == [
+        "all", ["$name", operator, literal(pattern)]]
     assert constraint.check({"name": match})
     assert not constraint.check({"name": miss})
     assert not constraint.check({})
