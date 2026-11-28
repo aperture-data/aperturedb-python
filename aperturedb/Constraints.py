@@ -1,5 +1,6 @@
 from __future__ import annotations
 from enum import Enum
+from fnmatch import fnmatchcase
 from typing import Any, List, Optional
 
 
@@ -68,6 +69,24 @@ def _to_expression_group(constraints: dict, conjunction: str) -> Optional[list]:
     return [conjunction] + terms
 
 
+def _like(subject: str, pattern: str) -> bool:
+    """Match SQL LIKE with Python's case-sensitive shell-pattern matcher."""
+    # Only % and _ are wildcards in LIKE. Escape the fnmatch metacharacters
+    # so a literal bracket, star or question mark keeps its original meaning.
+    translations = {"%": "*", "_": "?", "[": "[[]", "*": "[*]", "?": "[?]"}
+    glob = []
+    chars = iter(pattern)
+    for char in chars:
+        if char == "\\":
+            char = next(chars, None)
+            if char not in ("%", "_", "\\"):
+                raise ValueError("Invalid LIKE escape")
+            glob.append(char)
+        else:
+            glob.append(translations.get(char, char))
+    return fnmatchcase(subject, "".join(glob))
+
+
 class Constraints(object):
     """
     **Constraints object for the Object mapper API**
@@ -109,6 +128,24 @@ class Constraints(object):
     def is_in(self, key, val_array) -> Constraints:
         return self._add(key, "in", val_array)
 
+    def contains(self, key: str, value: str) -> Constraints:
+        return self._add(key, "contains", value)
+
+    def icontains(self, key: str, value: str) -> Constraints:
+        return self._add(key, "icontains", value)
+
+    def startswith(self, key: str, value: str) -> Constraints:
+        return self._add(key, "starts_with", value)
+
+    def istartswith(self, key: str, value: str) -> Constraints:
+        return self._add(key, "istarts_with", value)
+
+    def like(self, key: str, value: str) -> Constraints:
+        return self._add(key, "like", value)
+
+    def ilike(self, key: str, value: str) -> Constraints:
+        return self._add(key, "ilike", value)
+
     def check(self, entity):
         results = []
         for key, op, value in self._predicates:
@@ -128,6 +165,19 @@ class Constraints(object):
                 results.append(entity[key] < value)
             elif op == "in":
                 results.append(entity[key] in value)
+            elif op in ("contains", "icontains", "starts_with", "istarts_with", "like", "ilike"):
+                subject = entity[key]
+                if not isinstance(subject, str) or not isinstance(value, str):
+                    results.append(False)
+                    continue
+                if op.startswith("i"):
+                    subject, value = subject.casefold(), value.casefold()
+                if op in ("contains", "icontains"):
+                    results.append(value in subject)
+                elif op in ("starts_with", "istarts_with"):
+                    results.append(subject.startswith(value))
+                else:
+                    results.append(_like(subject, value))
             else:
                 raise Exception("invalid constraint operation: " + op)
         if self._conjunction == Conjunction.OR.value:

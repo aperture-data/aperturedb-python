@@ -70,3 +70,27 @@ def test_json_object_literals_are_not_interpreted_as_functions():
     assert literal(value) == {"json": value}
     assert to_expression({"payload": ["==", value]}) == [
         "$payload", "==", {"json": value}]
+
+
+@pytest.mark.parametrize("method, operator, pattern, match, miss", [
+    ("contains", "contains", "$b", "a$b", "a$B"),
+    ("icontains", "icontains", "STRASSE", "die Straße", "die Gasse"),
+    ("startswith", "starts_with", "Pre", "Prefix", "prefix"),
+    ("istartswith", "istarts_with", "STRASSE", "Straßenbahn", "Nebenstraße"),
+    ("like", "like", r"a\%\_\\_*?[%", "a%_\\x*?[\n", "aX_\\x*?["),
+    ("ilike", "ilike", "STRA__E", "Straße", "Strase"),
+])
+def test_text_constraints(method, operator, pattern, match, miss):
+    constraint = getattr(Constraints(), method)("name", pattern)
+    assert constraint.constraints == ["all", ["$name", operator, literal(pattern)]]
+    assert constraint.check({"name": match})
+    assert not constraint.check({"name": miss})
+    assert not constraint.check({})
+    assert not constraint.check({"name": None})
+    assert not constraint.check({"name": 42})
+
+
+@pytest.mark.parametrize("pattern", ["unescaped\\", r"bad\q"])
+def test_like_rejects_invalid_escapes(pattern):
+    with pytest.raises(ValueError, match="Invalid LIKE escape"):
+        Constraints().like("name", pattern).check({"name": "example"})
